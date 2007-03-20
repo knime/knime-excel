@@ -1,0 +1,309 @@
+<HTML>
+<HEAD>
+<META http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<TITLE>POI Change Log</TITLE>
+</HEAD>
+<BODY text="#000000" vlink="#000000" alink="#000000" link="#000000">
+<style type="text/css">
+          body, p {
+          font-family: verdana,arial,helvetica;
+          font-size: 100%;
+          color:#000000;
+          }
+	  .dateAndAuthor {
+          font-family: verdana,arial,helvetica;
+          font-size: 100%;
+          font-weight: bold;
+          text-align:left;
+          background:#a6caf0;
+	  }
+          tr, td{
+          font-family: verdana,arial,helvetica;
+          font-size: 120%;
+          background:#eeeee0;
+          }	  
+	  </style>
+<h1>
+<a name="top">POI Change Log</a>
+</h1>
+<hr size="2">
+<TABLE CELLSPACING="1" CELLPADDING="3" WIDTH="100%" BORDER="0">
+<TR>
+<TD class="dateAndAuthor" colspan="2">2004-08-04 01:44 glens</TD>
+</TR>
+<TR>
+<TD width="20">    </TD><TD>
+<pre>
+<b>Change list for upcoming release.</b>
+</pre>
+<ul>
+<li>
+<a href="http://cvs.apache.org/viewcvs/jakarta-poi/src/documentation/content/xdocs/status.xml?rev=1.2.2.6&content-type=text/x-cvsweb-markup">src/documentation/content/xdocs/status.xml (1.2.2.6)
+      </a>
+</li>
+</ul>
+</TD>
+</TR>
+<TR>
+<TD class="dateAndAuthor" colspan="2">2004-08-04 00:43 glens</TD>
+</TR>
+<TR>
+<TD width="20">    </TD><TD>
+<pre>
+<b>Applied patch 27574
+
+When setting a cell's value to the date 2004-03-28 08:00 it is presented as
+07:00 in Excel. This only happens on the days when DST starts or ends.</b>
+</pre>
+<ul>
+<li>
+<a href="http://cvs.apache.org/viewcvs/jakarta-poi/src/java/org/apache/poi/hssf/usermodel/HSSFDateUtil.java?rev=1.6.2.3&content-type=text/x-cvsweb-markup">src/java/org/apache/poi/hssf/usermodel/HSSFDateUtil.java (1.6.2.3)
+      </a>
+</li>
+<li>
+<a href="http://cvs.apache.org/viewcvs/jakarta-poi/src/testcases/org/apache/poi/hssf/usermodel/TestHSSFDateUtil.java?rev=1.3.2.2&content-type=text/x-cvsweb-markup">src/testcases/org/apache/poi/hssf/usermodel/TestHSSFDateUtil.java (1.3.2.2)
+      </a>
+</li>
+</ul>
+</TD>
+</TR>
+<TR>
+<TD class="dateAndAuthor" colspan="2">2004-08-04 00:16 glens</TD>
+</TR>
+<TR>
+<TD width="20">    </TD><TD>
+<pre>
+<b>Bug 26465: HSSF sheets with even row numbers are read incorrectly by MS Project.
+Cause: Wrong lastrow entry in DimensionsRecord as written by
+method org.apache.poi.hssf.model.Sheet.addRow(RowRecord)</b>
+</pre>
+<ul>
+<li>
+<a href="http://cvs.apache.org/viewcvs/jakarta-poi/src/java/org/apache/poi/hssf/model/Sheet.java?r1=1.31.2.13&r2=1.31.2.12">src/java/org/apache/poi/hssf/model/Sheet.java (1.31.2.13)
+      </a>
+</li>
+</ul>
+</TD>
+</TR>
+<TR>
+<TD class="dateAndAuthor" colspan="2">2004-07-28 13:06 glens</TD>
+</TR>
+<TR>
+<TD width="20">    </TD><TD>
+<pre>
+<b>Support for outlining.  Enjoy.</b>
+</pre>
+<ul>
+<li>
+<a href="http://cvs.apache.org/viewcvs/jakarta-poi/src/documentation/content/xdocs/hssf/quick-guide.xml?rev=1.3.2.4&content-type=text/x-cvsweb-markup">src/documentation/content/xdocs/hssf/quick-guide.xml (1.3.2.4)
+      </a>
+</li>
+</ul>
+</TD>
+</TR>
+<TR>
+<TD class="dateAndAuthor" colspan="2">2004-07-28 13:06 glens</TD>
+</TR>
+<TR>
+<TD width="20">    </TD><TD>
+<pre>
+<b>branches:  1.1.2;
+file Outlines.java was initially added on branch REL_2_BRANCH.</b>
+</pre>
+<ul>
+<li>
+<a href="http://cvs.apache.org/viewcvs/jakarta-poi/src/examples/src/org/apache/poi/hssf/usermodel/examples/Outlines.java?r1=1.1&r2=1.1.2.1">src/examples/src/org/apache/poi/hssf/usermodel/examples/Outlines.java (1.1)
+      </a>
+</li>
+</ul>
+</TD>
+</TR>
+<TR>
+<TD class="dateAndAuthor" colspan="2">2004-07-28 13:06 glens</TD>
+</TR>
+<TR>
+<TD width="20">    </TD><TD>
+<pre>
+<b>branches:  1.1.2;
+file TestSheet.java was initially added on branch REL_2_BRANCH.</b>
+</pre>
+<ul>
+<li>
+<a href="http://cvs.apache.org/viewcvs/jakarta-poi/src/testcases/org/apache/poi/hssf/model/TestSheet.java?r1=1.1&r2=1.1.2.1">src/testcases/org/apache/poi/hssf/model/TestSheet.java (1.1)
+      </a>
+</li>
+</ul>
+</TD>
+</TR>
+<TR>
+<TD class="dateAndAuthor" colspan="2">2004-07-28 13:06 glens</TD>
+</TR>
+<TR>
+<TD width="20">    </TD><TD>
+<pre>
+<b>Support for outlining.  Enjoy.</b>
+</pre>
+<ul>
+<li>
+<a href="http://cvs.apache.org/viewcvs/jakarta-poi/src/java/org/apache/poi/hssf/usermodel/EscherGraphics.java?rev=1.1.2.4&content-type=text/x-cvsweb-markup">src/java/org/apache/poi/hssf/usermodel/EscherGraphics.java (1.1.2.4)
+      </a>
+</li>
+<li>
+<a href="http://cvs.apache.org/viewcvs/jakarta-poi/src/java/org/apache/poi/hssf/usermodel/EscherGraphics2d.java?rev=1.1.2.3&content-type=text/x-cvsweb-markup">src/java/org/apache/poi/hssf/usermodel/EscherGraphics2d.java (1.1.2.3)
+      </a>
+</li>
+<li>
+<a href="http://cvs.apache.org/viewcvs/jakarta-poi/src/java/org/apache/poi/hssf/usermodel/HSSFRow.java?rev=1.12.2.2&content-type=text/x-cvsweb-markup">src/java/org/apache/poi/hssf/usermodel/HSSFRow.java (1.12.2.2)
+      </a>
+</li>
+<li>
+<a href="http://cvs.apache.org/viewcvs/jakarta-poi/src/java/org/apache/poi/hssf/usermodel/HSSFSheet.java?rev=1.21.2.7&content-type=text/x-cvsweb-markup">src/java/org/apache/poi/hssf/usermodel/HSSFSheet.java (1.21.2.7)
+      </a>
+</li>
+<li>
+<a href="http://cvs.apache.org/viewcvs/jakarta-poi/src/java/org/apache/poi/hssf/usermodel/HSSFWorkbook.java?rev=1.24.2.9&content-type=text/x-cvsweb-markup">src/java/org/apache/poi/hssf/usermodel/HSSFWorkbook.java (1.24.2.9)
+      </a>
+</li>
+<li>
+<a href="http://cvs.apache.org/viewcvs/jakarta-poi/src/java/org/apache/poi/util/POILogger.java?rev=1.6.2.2&content-type=text/x-cvsweb-markup">src/java/org/apache/poi/util/POILogger.java (1.6.2.2)
+      </a>
+</li>
+<li>
+<a href="http://cvs.apache.org/viewcvs/jakarta-poi/src/testcases/org/apache/poi/hssf/model/TestSheet.java?rev=1.1.2.1&content-type=text/x-cvsweb-markup">src/testcases/org/apache/poi/hssf/model/TestSheet.java (1.1.2.1)
+      </a>
+</li>
+</ul>
+</TD>
+</TR>
+<TR>
+<TD class="dateAndAuthor" colspan="2">2004-07-28 13:06 glens</TD>
+</TR>
+<TR>
+<TD width="20">    </TD><TD>
+<pre>
+<b>Support for outlining.  Enjoy.</b>
+</pre>
+<ul>
+<li>
+<a href="http://cvs.apache.org/viewcvs/jakarta-poi/src/examples/src/org/apache/poi/hssf/usermodel/examples/Outlines.java?rev=1.1.2.1&content-type=text/x-cvsweb-markup">src/examples/src/org/apache/poi/hssf/usermodel/examples/Outlines.java (1.1.2.1)
+      </a>
+</li>
+<li>
+<a href="http://cvs.apache.org/viewcvs/jakarta-poi/src/java/org/apache/poi/hssf/model/Sheet.java?rev=1.31.2.12&content-type=text/x-cvsweb-markup">src/java/org/apache/poi/hssf/model/Sheet.java (1.31.2.12)
+      </a>
+</li>
+<li>
+<a href="http://cvs.apache.org/viewcvs/jakarta-poi/src/java/org/apache/poi/hssf/model/Workbook.java?rev=1.29.2.9&content-type=text/x-cvsweb-markup">src/java/org/apache/poi/hssf/model/Workbook.java (1.29.2.9)
+      </a>
+</li>
+<li>
+<a href="http://cvs.apache.org/viewcvs/jakarta-poi/src/java/org/apache/poi/hssf/record/aggregates/ColumnInfoRecordsAggregate.java?rev=1.1.2.1&content-type=text/x-cvsweb-markup">src/java/org/apache/poi/hssf/record/aggregates/ColumnInfoRecordsAggregate.java (1.1.2.1)
+      </a>
+</li>
+<li>
+<a href="http://cvs.apache.org/viewcvs/jakarta-poi/src/java/org/apache/poi/hssf/record/aggregates/RowRecordsAggregate.java?rev=1.6.2.2&content-type=text/x-cvsweb-markup">src/java/org/apache/poi/hssf/record/aggregates/RowRecordsAggregate.java (1.6.2.2)
+      </a>
+</li>
+</ul>
+</TD>
+</TR>
+<TR>
+<TD class="dateAndAuthor" colspan="2">2004-07-28 13:06 glens</TD>
+</TR>
+<TR>
+<TD width="20">    </TD><TD>
+<pre>
+<b>branches:  1.1.2;
+file ColumnInfoRecordsAggregate.java was initially added on branch REL_2_BRANCH.</b>
+</pre>
+<ul>
+<li>
+<a href="http://cvs.apache.org/viewcvs/jakarta-poi/src/java/org/apache/poi/hssf/record/aggregates/ColumnInfoRecordsAggregate.java?r1=1.1&r2=1.1.2.1">src/java/org/apache/poi/hssf/record/aggregates/ColumnInfoRecordsAggregate.java (1.1)
+      </a>
+</li>
+</ul>
+</TD>
+</TR>
+<TR>
+<TD class="dateAndAuthor" colspan="2">2004-07-11 04:40 sackley</TD>
+</TR>
+<TR>
+<TD width="20">    </TD><TD>
+<pre>
+<b>Item removed from ignoreList</b>
+</pre>
+<ul>
+<li>
+<a href="http://cvs.apache.org/viewcvs/jakarta-poi/.cvsignore?r1=1.18&r2=1.17">.cvsignore (1.18)
+      </a>
+</li>
+</ul>
+</TD>
+</TR>
+<TR>
+<TD class="dateAndAuthor" colspan="2">2004-07-11 04:35 sackley</TD>
+</TR>
+<TR>
+<TD width="20">    </TD><TD>
+<pre>
+<b>Item added to ignoreList</b>
+</pre>
+<ul>
+<li>
+<a href="http://cvs.apache.org/viewcvs/jakarta-poi/.cvsignore?r1=1.16&r2=1.15">.cvsignore (1.16)
+      </a>
+</li>
+</ul>
+</TD>
+</TR>
+<TR>
+<TD class="dateAndAuthor" colspan="2">2004-07-11 04:35 sackley</TD>
+</TR>
+<TR>
+<TD width="20">    </TD><TD>
+<pre>
+<b>Item added to ignoreList</b>
+</pre>
+<ul>
+<li>
+<a href="http://cvs.apache.org/viewcvs/jakarta-poi/.cvsignore?rev=1.15&content-type=text/x-cvsweb-markup">.cvsignore (1.15)
+      </a>
+</li>
+</ul>
+</TD>
+</TR>
+<TR>
+<TD class="dateAndAuthor" colspan="2">2004-07-11 04:35 sackley</TD>
+</TR>
+<TR>
+<TD width="20">    </TD><TD>
+<pre>
+<b>Item removed from ignoreList</b>
+</pre>
+<ul>
+<li>
+<a href="http://cvs.apache.org/viewcvs/jakarta-poi/.cvsignore?r1=1.17&r2=1.16">.cvsignore (1.17)
+      </a>
+</li>
+</ul>
+</TD>
+</TR>
+<TR>
+<TD class="dateAndAuthor" colspan="2">2004-07-11 00:10 glens</TD>
+</TR>
+<TR>
+<TD width="20">    </TD><TD>
+<pre>
+<b>Removed unused log4j dependency.</b>
+</pre>
+<ul>
+<li>
+<a href="http://cvs.apache.org/viewcvs/jakarta-poi/src/contrib/src/org/apache/poi/hssf/usermodel/contrib/HSSFRegionUtil.java?rev=1.5&content-type=text/x-cvsweb-markup">src/contrib/src/org/apache/poi/hssf/usermodel/contrib/HSSFRegionUtil.java (1.5)
+      </a>
+</li>
+</ul>
+</TD>
+</TR>
+</TABLE>
+</BODY>
+</HTML>

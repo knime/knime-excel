@@ -1,0 +1,1073 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>HPSF HOW-TO</title>
+<link type="text/css" href="../skin/page.css" rel="stylesheet">
+</head>
+<body text="#000000" bgcolor="#FFFFFF">
+<!--================= start Navigation Path ==================-->
+<table summary="navigation path" width="100%" border="0" cellpadding="0" cellspacing="0">
+<tr>
+<td nowrap="nowrap" valign="middle" bgcolor="#CFDCED" height="20"><img height="1" width="5" alt="" src="../skin/images/spacer.gif" class="spacer"><!--===== breadcrumb trail (javascript-generated) ====--><font size="2" face="Arial, Helvetica, Sans-serif"><script src="../skin/breadcrumbs.js" language="JavaScript" type="text/javascript"></script></font></td>
+</tr>
+<tr>
+<td bgcolor="#4C6C8F" height="2"><img height="2" width="2" alt="" src="../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+</table>
+<!--================= end Navigation Path ==================-->
+<!--================= start Banner ==================-->
+<table summary="header with logos" width="100%" border="0" cellpadding="0" cellspacing="0">
+<tr>
+<!--================= start Group Logo ==================-->
+<td bgcolor="#294563"><a href="http://jakarta.apache.org"><img border="0" class="logoImage" alt="Jakarta" src="../resources/images/group-logo.gif"></a></td>
+<!--================= end Group Logo ==================-->
+<!--================= start Project Logo ==================--><td width="100%" align="center" bgcolor="#294563"><a href="http://jakarta.apache.org/poi/"><img border="0" class="logoImage" alt="POI" src="../resources/images/project-logo.gif"></a></td>
+<!--================= end Project Logo ==================-->
+<!--================= start Search ==================--><td valign="top" rowspan="2" bgcolor="#294563">
+<form target="_blank" action="http://www.google.com/search" method="get">
+<table summary="search" border="0" cellspacing="0" cellpadding="0" bgcolor="#4C6C8F">
+<tr>
+<td colspan="3"><img height="10" width="1" alt="" src="../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td><img height="1" width="1" alt="" src="../skin/images/spacer.gif" class="spacer"></td><td nowrap="nowrap"><input value="jakarta.apache.org" name="sitesearch" type="hidden"><input size="15" name="q" id="query" type="text"><img height="1" width="5" alt="" src="../skin/images/spacer.gif" class="spacer"><input name="Search" value="Search" type="submit">
+<br>
+<font face="Arial, Helvetica, Sans-serif" size="2" color="white">
+                      the jakarta site
+                      
+                      
+                    </font></td><td><img height="1" width="1" alt="" src="../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td><img alt="" border="0" height="10" width="9" src="../skin/images/search-left.gif"></td><td><img height="1" width="1" alt="" src="../skin/images/spacer.gif" class="spacer"></td><td><img alt="" border="0" height="10" width="9" src="../skin/images/search-right.gif"></td>
+</tr>
+</table>
+</form>
+</td>
+<!--================= start Search ==================--><td bgcolor="#294563"><img height="10" width="10" alt="" src="../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td valign="bottom" bgcolor="#294563" colspan="2">
+<!--================= start Tabs ==================-->
+<div class="tab">
+<table summary="tab bar" border="0" cellpadding="0" cellspacing="0">
+<tr>
+<td width="6"><img alt="" height="8" width="6" src="../skin/images/spacer.gif"></td><td valign="bottom">
+<table summary="selected tab" style="height: 1.8em" border="0" cellpadding="0" cellspacing="0">
+<tr>
+<td valign="top" width="5" bgcolor="#4C6C8F"><img height="5" width="5" alt="" src="../skin/images/tabSel-left.gif"></td><td valign="middle" bgcolor="#4C6C8F"><font color="#ffffff" size="2" face="Arial, Helvetica, Sans-serif"><b><a class="base-selected" href="../index.html">Home</a></b></font></td><td valign="top" width="5" bgcolor="#4C6C8F"><img height="5" width="5" alt="" src="../skin/images/tabSel-right.gif"></td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</div>
+<!--================= end Tabs ==================-->
+</td><td bgcolor="#294563"><img alt="" width="1" height="1" src="../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td bgcolor="#4C6C8F" colspan="4"><img width="1" height="10" alt="" src="../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+</table>
+<!--================= end Banner ==================-->
+<!--================= start Menu, NavBar, Content ==================-->
+<table summary="page content" bgcolor="#ffffff" width="100%" border="0" cellpadding="0" cellspacing="0">
+<tr>
+<td valign="top">
+<table summary="menu" border="0" cellspacing="0" cellpadding="0">
+<tr>
+<!--================= start left top NavBar ==================-->
+<td rowspan="3" valign="top">
+<table summary="blue line" border="0" cellpadding="0" cellspacing="0">
+<tr>
+<td bgcolor="#294563"><img width="10" height="1" alt="" src="../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td bgcolor="#CFDCED"><font color="#4C6C8F" size="4" face="Arial, Helvetica, Sans-serif">&nbsp;</font></td>
+</tr>
+<tr>
+<td bgcolor="#294563"><img width="10" height="1" alt="" src="../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+</table>
+</td>
+<!--================= end left top NavBar ==================--><td bgcolor="#294563"><img width="1" height="1" alt="" src="../skin/images/spacer.gif" class="spacer"></td><td valign="bottom" bgcolor="#4C6C8F"><img width="10" height="10" alt="" src="../skin/images/spacer.gif" class="spacer"></td><td nowrap="nowrap" valign="top" bgcolor="#4C6C8F">
+<!--================= start Menu items ==================-->
+<div class="menu">
+<ul>
+<li>
+<font color="#CFDCED">Navigation</font>
+<ul>
+    
+<li>
+<a href="../index.html">Main</a>
+</li>
+  
+</ul>
+</li>
+<li>
+<font color="#CFDCED">HPSF</font>
+<ul>
+    
+<li>
+<a href="index.html">Overview</a>
+</li>
+    
+<li>
+<span class="sel"><font color="#ffcc00">How To</font></span>
+</li>
+    
+<li>
+<a href="thumbnails.html">Thumbnails</a>
+</li>
+    
+<li>
+<a href="internals.html">Internals</a>
+</li>
+    
+<li>
+<a href="todo.html">To Do</a>
+</li>
+  
+</ul>
+</li>
+</ul>
+</div>
+<!--================= end Menu items ==================-->
+</td><td valign="bottom" bgcolor="#4C6C8F"><img width="10" height="10" alt="" src="../skin/images/spacer.gif" class="spacer"></td><td bgcolor="#294563"><img width="1" height="1" alt="" src="../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td valign="bottom" align="left" colspan="2" rowspan="2" bgcolor="#4C6C8F"><img height="10" width="10" border="0" alt="" src="../skin/images/menu-left.gif"></td><td bgcolor="#4C6C8F"><img height="10" width="10" alt="" src="../skin/images/spacer.gif" class="spacer"></td><td valign="bottom" align="right" colspan="2" rowspan="2" bgcolor="#4C6C8F"><img height="10" width="10" border="0" alt="" src="../skin/images/menu-right.gif"></td>
+</tr>
+<tr>
+<td height="1" bgcolor="#294563"><img width="1" height="1" alt="" src="../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+</table>
+</td><td valign="top" width="100%">
+<table summary="content" width="100%" border="0" cellpadding="0" cellspacing="0">
+<!--================= start middle NavBar ==================-->
+<tr>
+<td colspan="4" bgcolor="#294563"><img width="10" height="1" alt="" src="../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td align="left" width="10" bgcolor="#CFDCED"><img width="10" height="1" alt="" src="../skin/images/spacer.gif" class="spacer"></td><td align="left" width="50%" bgcolor="#CFDCED"><font color="#4C6C8F" size="3" face="Arial, Helvetica, Sans-serif">
+                &nbsp;
+                
+                </font><img width="10" height="8" alt="" src="../skin/images/spacer.gif" class="spacer"></td><td align="right" width="50%" bgcolor="#CFDCED"><font color="#4C6C8F" size="3" face="Arial, Helvetica, Sans-serif">
+                &nbsp;
+                
+                </font><img width="10" height="8" alt="" src="../skin/images/spacer.gif" class="spacer"></td><td width="10" bgcolor="#CFDCED"><img width="10" height="1" alt="" src="../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td colspan="4" bgcolor="#294563"><img width="10" height="1" alt="" src="../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<!--================= end middle NavBar ==================-->
+<!--================= start Content==================-->
+<tr>
+<td align="left" width="10"><img width="10" height="1" alt="" src="../skin/images/spacer.gif" class="spacer"></td><td colspan="2" align="left" width="100%">
+<div class="content">
+<table class="title" summary="">
+<tr>
+<td valign="middle">
+<h1>HPSF HOW-TO</h1>
+</td><td nowrap="nowrap" width="40" align="center"><a class="dida" href="how-to.pdf"><img alt="PDF" src="../skin/images/pdfdoc.gif" class="skin"><br>
+          PDF</a></td>
+</tr>
+</table>
+<ul class="minitoc">
+<li>
+<a href="#How+To+Use+the+HPSF+APIs">How To Use the HPSF APIs</a>
+<ul class="minitoc">
+<li>
+<a href="#Reading+Standard+Properties">Reading Standard Properties</a>
+</li>
+<li>
+<a href="#Additional+Standard+Properties%2C+Exceptions+And+Embedded+Objects">Additional Standard Properties, Exceptions And Embedded Objects</a>
+</li>
+<li>
+<a href="#Reading+Non-Standard+Properties">Reading Non-Standard Properties</a>
+</li>
+</ul>
+</li>
+</ul>
+  
+<a name="N10015"></a><a name="How+To+Use+the+HPSF+APIs"></a>
+<h3>How To Use the HPSF APIs</h3>
+<div style="margin-left: 0 ; border: 2px">
+<p>This HOW-TO is organized in three sections. You should read them
+    sequentially because the later sections build upon the earlier ones.</p>
+<ol>
+    
+<li>
+     The <a href="#sec1">first section</a> explains how to read
+      the most important standard properties of a Microsoft Office
+      document. Standard properties are things like title, author, creation
+      date etc. It is quite likely that you will find here what you need and
+      don't have to read the other sections.
+    </li>
+
+    
+<li>
+     The <a href="#sec2">second section</a> goes a small step
+      further and focusses on reading additional standard properties. It also
+      talks about exceptions that may be thrown when dealing with HPSF and
+      shows how you can read properties of embedded objects.
+     </li>
+
+    
+<li>
+     The <a href="#sec3">third section</a> tells how to read
+      non-standard properties. Non-standard properties are application-specific
+      triples consisting of an ID, a type, and a value.
+     </li>
+   
+</ol>
+<a name="sec1"></a><a name="N10038"></a><a name="Reading+Standard+Properties"></a>
+<h4>Reading Standard Properties</h4>
+<div style="margin-left: 0 ; border: 2px">
+<div class="frame note">
+<div class="label">Note</div>
+<div class="content">This section explains how to read
+      the most important standard properties of a Microsoft Office
+      document. Standard properties are things like title, author, creation
+      date etc. Chances are that you will find here what you need and
+      don't have to read the other sections.</div>
+</div>
+<p>The first thing you should understand is that properties are stored in
+     separate documents inside the POI filesystem. (If you don't know what a
+     POI filesystem is, read the <a href="../poifs/index.html">POIFS
+      documentation</a>.)  A document in a POI filesystem is also called a
+     <strong>stream</strong>.</p>
+<p>The following example shows how to read a POI filesystem's
+     "title" property. Reading other properties is similar. Consider the API
+     documentation of <span class="codefrag">org.apache.poi.hpsf.SummaryInformation</span> to
+     learn which methods are available!</p>
+<p>The standard properties this section focusses on can be found in a
+     document called <em>\005SummaryInformation</em> located in the root of the
+     POI filesystem. The notation <em>\005</em> in the document's name means
+     the character with the decimal value of 5. In order to read the title, an
+     application has to perform the following steps:</p>
+<ol>
+     
+<li>
+      Open the document <em>\005SummaryInformation</em> located in the root
+       of the POI filesystem.
+     </li>
+     
+<li>
+      Create an instance of the class <span class="codefrag">SummaryInformation</span> from
+       that document.
+     </li>
+     
+<li>
+      Call the <span class="codefrag">SummaryInformation</span> instance's
+       <span class="codefrag">getTitle()</span> method.
+     </li>
+    
+</ol>
+<p>Sounds easy, doesn't it? Here are the steps in detail.</p>
+<a name="N10074"></a><a name="Open+the+document+%5C005SummaryInformation+in+the+root+of+the%0A+++++++POI+filesystem"></a>
+<h5>Open the document \005SummaryInformation in the root of the
+       POI filesystem</h5>
+<div style="margin-left: 0 ; border: 2px">
+<p>An application that wants to open a document in a POI filesystem
+      (POIFS) proceeds as shown by the following code fragment. (The full
+      source code of the sample application is available in the
+      <em>examples</em> section of the POI source tree as
+      <em>ReadTitle.java</em>.</p>
+<pre class="code">
+import java.io.*;
+import org.apache.poi.hpsf.*;
+import org.apache.poi.poifs.eventfilesystem.*;
+
+// ...
+
+public static void main(String[] args)
+    throws IOException
+{
+    final String filename = args[0];
+    POIFSReader r = new POIFSReader();
+    r.registerListener(new MyPOIFSReaderListener(),
+                       "\005SummaryInformation");
+    r.read(new FileInputStream(filename));
+}</pre>
+<p>The first interesting statement is</p>
+<pre class="code">POIFSReader r = new POIFSReader();</pre>
+<p>It creates a
+      <span class="codefrag">org.apache.poi.poifs.eventfilesystem.POIFSReader</span> instance
+      which we shall need to read the POI filesystem. Before the application
+      actually opens the POI filesystem we have to tell the
+      <span class="codefrag">POIFSReader</span> which documents we are interested in. In this
+      case the application should do something with the document
+      <em>\005SummaryInformation</em>.</p>
+<pre class="code">
+r.registerListener(new MyPOIFSReaderListener(),
+                   "\005SummaryInformation");</pre>
+<p>This method call registers a
+      <span class="codefrag">org.apache.poi.poifs.eventfilesystem.POIFSReaderListener</span>
+      with the <span class="codefrag">POIFSReader</span>. The <span class="codefrag">POIFSReaderListener</span>
+      interface specifies the method <span class="codefrag">processPOIFSReaderEvent</span>
+      which processes a document. The class
+      <span class="codefrag">MyPOIFSReaderListener</span> implements the
+      <span class="codefrag">POIFSReaderListener</span> and thus the
+      <span class="codefrag">processPOIFSReaderEvent</span> method. The eventing POI filesystem
+      calls this method when it finds the <em>\005SummaryInformation</em>
+      document. In the sample application <span class="codefrag">MyPOIFSReaderListener</span> is
+      a static class in the <em>ReadTitle.java</em> source file.</p>
+<p>Now everything is prepared and reading the POI filesystem can
+      start:</p>
+<pre class="code">r.read(new FileInputStream(filename));</pre>
+<p>The following source code fragment shows the
+      <span class="codefrag">MyPOIFSReaderListener</span> class and how it retrieves the
+      title.</p>
+<pre class="code">
+static class MyPOIFSReaderListener implements POIFSReaderListener
+{
+    public void processPOIFSReaderEvent(POIFSReaderEvent event)
+    {
+        SummaryInformation si = null;
+        try
+        {
+            si = (SummaryInformation)
+                 PropertySetFactory.create(event.getStream());
+        }
+        catch (Exception ex)
+        {
+            throw new RuntimeException
+                ("Property set stream \"" +
+                 event.getPath() + event.getName() + "\": " + ex);
+        }
+        final String title = si.getTitle();
+        if (title != null)
+            System.out.println("Title: \"" + title + "\"");
+        else
+            System.out.println("Document has no title.");
+    }
+}
+</pre>
+<p>The line</p>
+<pre class="code">SummaryInformation si = null;</pre>
+<p>declares a <span class="codefrag">SummaryInformation</span> variable and initializes it
+      with <span class="codefrag">null</span>. We need an instance of this class to access the
+      title. The instance is created in a <span class="codefrag">try</span> block:</p>
+<pre class="code">si = (SummaryInformation)
+                 PropertySetFactory.create(event.getStream());</pre>
+<p>The expression <span class="codefrag">event.getStream()</span> returns the input stream
+      containing the bytes of the property set stream named
+      <em>\005SummaryInformation</em>. This stream is passed into the
+      <span class="codefrag">create</span> method of the factory class
+      <span class="codefrag">org.apache.poi.hpsf.PropertySetFactory</span> which returns
+      a <span class="codefrag">org.apache.poi.hpsf.PropertySet</span> instance. It is more or
+      less safe to cast this result to <span class="codefrag">SummaryInformation</span>, a
+      convenience class with methods like <span class="codefrag">getTitle()</span>,
+      <span class="codefrag">getAuthor()</span> etc.</p>
+<p>The <span class="codefrag">PropertySetFactory.create</span> method may throw all sorts
+      of exceptions. We'll deal with them in the next sections. For now we just
+      catch all exceptions and throw a <span class="codefrag">RuntimeException</span>
+      containing the message text of the origin exception.</p>
+<p>If all goes well, the sample application retrieves the title and prints
+     it to the standard output. As you can see you must be prepared for the
+      case that the POI filesystem does not have a title.</p>
+<pre class="code">final String title = si.getTitle();
+if (title != null)
+    System.out.println("Title: \"" + title + "\"");
+else
+    System.out.println("Document has no title.");</pre>
+<p>Please note that a Microsoft Office document does not necessarily
+      contain the <em>\005SummaryInformation</em> stream. The documents created
+      by the Microsoft Office suite have one, as far as I know. However, an
+      Excel spreadsheet exported from StarOffice 5.2 won't have a
+      <em>\005SummaryInformation</em> stream. In this case the applications
+      won't throw an exception but simply does not call the
+      <span class="codefrag">processPOIFSReaderEvent</span> method. You have been warned!</p>
+</div>
+</div>
+<a name="sec2"></a><a name="N1012A"></a><a name="Additional+Standard+Properties%2C+Exceptions+And+Embedded+Objects"></a>
+<h4>Additional Standard Properties, Exceptions And Embedded Objects</h4>
+<div style="margin-left: 0 ; border: 2px">
+<div class="frame note">
+<div class="label">Note</div>
+<div class="content">This section focusses on reading additional standard properties. It
+     also talks about exceptions that may be thrown when dealing with HPSF and
+     shows how you can read properties of embedded objects.</div>
+</div>
+<p>A couple of <strong>additional standard properties</strong> are not
+     contained in the <em>\005SummaryInformation</em> stream explained above,
+     for example a document's category or the number of multimedia clips in a
+     PowerPoint presentation. Microsoft has invented an additional stream named
+     <em>\005DocumentSummaryInformation</em> to hold these properties. With two
+     minor exceptions you can proceed exactly as described above to read the
+     properties stored in <em>\005DocumentSummaryInformation</em>:</p>
+<ul>
+     
+<li>Instead of <em>\005SummaryInformation</em> use
+       <em>\005DocumentSummaryInformation</em> as the stream's name.</li>
+     
+<li>Replace all occurrences of the class
+       <span class="codefrag">SummaryInformation</span> by
+       <span class="codefrag">DocumentSummaryInformation</span>.</li>
+    
+</ul>
+<p>And of course you cannot call <span class="codefrag">getTitle()</span> because
+     <span class="codefrag">DocumentSummaryInformation</span> has different query methods. See
+     the Javadoc API documentation for the details!</p>
+<p>In the previous section the application simply caught all
+     <strong>exceptions</strong> and was in no way interested in any
+     details. However, a real application will likely want to know what went
+     wrong and act appropriately. Besides any IO exceptions there are three
+     HPSF resp. POI specific exceptions you should know about:</p>
+<dl>
+     
+<dt>
+<span class="codefrag">NoPropertySetStreamException</span>:</dt>
+     
+<dd>
+      This exception is thrown if the application tries to create a
+       <span class="codefrag">PropertySet</span> instance from a stream that is not a
+       property set stream. (<span class="codefrag">SummaryInformation</span> and
+       <span class="codefrag">DocumentSummaryInformation</span> are subclasses of
+       <span class="codefrag">PropertySet</span>.) A faulty property set stream counts as not
+       being a property set stream at all. An application should be prepared to
+       deal with this case even if it opens streams named
+       <em>\005SummaryInformation</em> or
+       <em>\005DocumentSummaryInformation</em> only. These are just names. A
+       stream's name by itself does not ensure that the stream contains the
+       expected contents and that this contents is correct.
+     </dd>
+
+     
+<dt>
+<span class="codefrag">UnexpectedPropertySetTypeException</span>
+</dt>
+     
+<dd>This exception is thrown if a certain type of property set is
+       expected somewhere (e.g. a <span class="codefrag">SummaryInformation</span> or
+       <span class="codefrag">DocumentSummaryInformation</span>) but the provided property
+       set is not of that type.</dd>
+
+     
+<dt>
+<span class="codefrag">MarkUnsupportedException</span>
+</dt>
+     
+<dd>This exception is thrown if an input stream that is to be parsed
+       into a property set does not support the
+       <span class="codefrag">InputStream.mark(int)</span> operation. The POI filesystem uses
+       the <span class="codefrag">DocumentInputStream</span> class which does support this
+       operation, so you are safe here. However, if you read a property set
+       stream from another kind of input stream things may be
+       different.</dd>
+    
+</dl>
+<p>Many Microsoft Office documents contain <strong>embedded
+      objects</strong>, for example an Excel sheet on a page in a Word
+     document. Embedded objects may have property sets of their own. An
+     application can open these property set streams as described above. The
+     only difference is that they are not located in the POI filesystem's root
+     but in a <strong>nested directory</strong> instead. Just register a
+     <span class="codefrag">POIFSReaderListener</span> for the property set streams you are
+     interested in. For example, the <em>POIBrowser</em> application in the
+     contrib section tries to open each and every document in a POI filesystem
+     as a property set stream. If this operation was successful it displays the
+     properties.</p>
+</div>
+<a name="sec3"></a><a name="N101AF"></a><a name="Reading+Non-Standard+Properties"></a>
+<h4>Reading Non-Standard Properties</h4>
+<div style="margin-left: 0 ; border: 2px">
+<div class="frame note">
+<div class="label">Note</div>
+<div class="content">This section tells how to read non-standard properties. Non-standard
+     properties are application-specific ID/type/value triples.</div>
+</div>
+<a name="N101B7"></a><a name="Overview"></a>
+<h5>Overview</h5>
+<div style="margin-left: 0 ; border: 2px">
+<p>Now comes the real hardcode stuff. As mentioned above,
+      <span class="codefrag">SummaryInformation</span> and
+      <span class="codefrag">DocumentSummaryInformation</span> are just special cases of the
+      general concept of a property set. This concept says that a
+      <strong>property set</strong> consists of properties and that each
+      <strong>property</strong> is an entity with an <strong>ID</strong>, a
+      <strong>type</strong>, and a <strong>value</strong>.</p>
+<p>Okay, that was still rather easy. However, to make things more
+      complicated, Microsoft in its infinite wisdom decided that a property set
+      shalt be broken into one or more <strong>sections</strong>. Each section
+      holds a bunch of properties. But since that's still not complicated
+      enough, a section may have an optional <strong>dictionary</strong> that
+      maps property IDs to <strong>property names</strong> - we'll explain
+      later what that means.</p>
+<p>The procedure to get to the properties is the following:</p>
+<ol>
+      
+<li>Use the <strong><span class="codefrag">PropertySetFactory</span></strong> class to
+       create a <span class="codefrag">PropertySet</span> object from a property set stream. If
+       you don't know whether an input stream is a property set stream, just
+       try to call <span class="codefrag">PropertySetFactory.create(java.io.InputStream)</span>:
+       You'll either get a <span class="codefrag">PropertySet</span> instance returned or an
+       exception is thrown.</li>
+
+      
+<li>Call the <span class="codefrag">PropertySet</span>'s method <span class="codefrag">getSections()</span>
+       to get the sections contained in the property set. Each section is
+       an instance of the <span class="codefrag">Section</span> class.</li>
+
+      
+<li>Each section has a format ID. The format ID of the first section in a
+       property set determines the property set's type. For example, the first
+       (and only) section of the SummaryInformation property set has a format
+       ID of <span class="codefrag">F29F85E0-4FF9-1068-AB-91-08-00-2B-27-B3-D9</span>. You can
+       get the format ID with <span class="codefrag">Section.getFormatID()</span>.</li>
+
+      
+<li>The properties contained in a <span class="codefrag">Section</span> can be retrieved
+       with <span class="codefrag">Section.getProperties()</span>. The result is an array of
+       <span class="codefrag">Property</span> instances.</li>
+
+      
+<li>A property has a name, a type, and a value. The <span class="codefrag">Property</span>
+       class has methods to retrieve them.</li>
+     
+</ol>
+</div>
+<a name="N1021E"></a><a name="A+Sample+Application"></a>
+<h5>A Sample Application</h5>
+<div style="margin-left: 0 ; border: 2px">
+<p>Let's have a look at a sample Java application that dumps all property
+      set streams contained in a POI file system. The full source code of this
+      program can be found as <em>ReadCustomPropertySets.java</em> in the
+      <em>examples</em> area of the POI source code tree. Here are the key
+      sections:</p>
+<pre class="code">import java.io.*;
+import java.util.*;
+import org.apache.poi.hpsf.*;
+import org.apache.poi.poifs.eventfilesystem.*;
+import org.apache.poi.util.HexDump;</pre>
+<p>The most important package the application needs is
+     <span class="codefrag">org.apache.poi.hpsf.*</span>. This package contains the HPSF
+     classes. Most classes named below are from the HPSF package. Of course we
+     also need the POIFS event file system's classes and <span class="codefrag">java.io.*</span>
+     since we are dealing with POI I/O. From the <span class="codefrag">java.util</span> package
+     we use the <span class="codefrag">List</span> and <span class="codefrag">Iterator</span> class. The class
+     <span class="codefrag">org.apache.poi.util.HexDump</span> provides a methods to dump byte
+     arrays as nicely formatted strings.</p>
+<pre class="code">public static void main(String[] args)
+    throws IOException
+{
+    final String filename = args[0];
+    POIFSReader r = new POIFSReader();
+
+    /* Register a listener for *all* documents. */
+    r.registerListener(new MyPOIFSReaderListener());
+    r.read(new FileInputStream(filename));
+}</pre>
+<p>The <span class="codefrag">POIFSReader</span> is set up in a way that the listener
+     <span class="codefrag">MyPOIFSReaderListener</span> is called on every file in the POI file
+    system.</p>
+</div>
+<a name="N10255"></a><a name="The+Property+Set"></a>
+<h5>The Property Set</h5>
+<div style="margin-left: 0 ; border: 2px">
+<p>The listener class tries to create a <span class="codefrag">PropertySet</span> from each
+     stream using the <span class="codefrag">PropertySetFactory.create()</span> method:</p>
+<pre class="code">static class MyPOIFSReaderListener implements POIFSReaderListener
+{
+    public void processPOIFSReaderEvent(POIFSReaderEvent event)
+    {
+        PropertySet ps = null;
+        try
+        {
+            ps = PropertySetFactory.create(event.getStream());
+        }
+        catch (NoPropertySetStreamException ex)
+        {
+            out("No property set stream: \"" + event.getPath() +
+                event.getName() + "\"");
+            return;
+        }
+        catch (Exception ex)
+        {
+            throw new RuntimeException
+                ("Property set stream \"" +
+                 event.getPath() + event.getName() + "\": " + ex);
+        }
+
+        /* Print the name of the property set stream: */
+        out("Property set stream \"" + event.getPath() +
+            event.getName() + "\":");</pre>
+<p>Creating the <span class="codefrag">PropertySet</span> is done in a <span class="codefrag">try</span>
+     block, because not each stream in the POI file system contains a property
+     set. If it is some other file, the
+     <span class="codefrag">PropertySetFactory.create()</span> throws a
+     <span class="codefrag">NoPropertySetStreamException</span>, which is caught and
+     logged. Then the program continues with the next stream. However, all
+     other types of exceptions cause the program to terminate by throwing a
+     runtime exception. If all went well, we can print the name of the property
+     set stream.</p>
+</div>
+<a name="N10278"></a><a name="The+Sections"></a>
+<h5>The Sections</h5>
+<div style="margin-left: 0 ; border: 2px">
+<p>The next step is to print the number of sections followed by the
+     sections themselves:</p>
+<pre class="code">/* Print the number of sections: */
+final long sectionCount = ps.getSectionCount();
+out("   No. of sections: " + sectionCount);
+
+/* Print the list of sections: */
+List sections = ps.getSections();
+int nr = 0;
+for (Iterator i = sections.iterator(); i.hasNext();)
+{
+    /* Print a single section: */
+    Section sec = (Section) i.next();
+
+    // See below for the complete loop body.
+}</pre>
+<p>The <span class="codefrag">PropertySet</span>'s method <span class="codefrag">getSectionCount()</span>
+      returns the number of sections.</p>
+<p>To retrieve the sections, use the <span class="codefrag">getSections()</span>
+      method. This method returns a <span class="codefrag">java.util.List</span> containing
+      instances of the <span class="codefrag">Section</span> class in their proper order.</p>
+<p>The sample code shows a loop that retrieves the <span class="codefrag">Section</span>
+      objects one by one and prints some information about each one. Here is
+      the complete body of the loop:</p>
+<pre class="code">/* Print a single section: */
+Section sec = (Section) i.next();
+out("   Section " + nr++ + ":");
+String s = hex(sec.getFormatID().getBytes());
+s = s.substring(0, s.length() - 1);
+out("      Format ID: " + s);
+
+/* Print the number of properties in this section. */
+int propertyCount = sec.getPropertyCount();
+out("      No. of properties: " + propertyCount);
+
+/* Print the properties: */
+Property[] properties = sec.getProperties();
+for (int i2 = 0; i2 &lt; properties.length; i2++)
+{
+    /* Print a single property: */
+    Property p = properties[i2];
+    int id = p.getID();
+    long type = p.getType();
+    Object value = p.getValue();
+    out("      Property ID: " + id + ", type: " + type +
+        ", value: " + value);
+}</pre>
+</div>
+<a name="N102A6"></a><a name="The+Section%27s+Format+ID"></a>
+<h5>The Section's Format ID</h5>
+<div style="margin-left: 0 ; border: 2px">
+<p>The first method called on the <span class="codefrag">Section</span> instance is
+      <span class="codefrag">getFormatID()</span>. As explained above, the format ID of the
+      first section in a property set determines the type of the property
+      set. Its type is <span class="codefrag">ClassID</span> which is essentially a sequence of
+      16 bytes. A real application using its own type of a custom property set
+      should have defined a unique format ID and, when reading a property set
+      stream, should check the format ID is equal to that unique format ID. The
+      sample program just prints the format ID it finds in a section:</p>
+<pre class="code">String s = hex(sec.getFormatID().getBytes());
+s = s.substring(0, s.length() - 1);
+out("      Format ID: " + s);</pre>
+<p>As you can see, the <span class="codefrag">getFormatID()</span> method returns a
+      <span class="codefrag">ClassID</span> object. An array containing the bytes can be
+      retrieved with <span class="codefrag">ClassID.getBytes()</span>. In order to get a nicely
+      formatted printout, the sample program uses the <span class="codefrag">hex()</span> helper
+      method which in turn uses the POI utility class <span class="codefrag">HexDump</span> in
+      the <span class="codefrag">org.apache.poi.util</span> package. Another helper method is
+      <span class="codefrag">out()</span> which just saves typing
+      <span class="codefrag">System.out.println()</span>.</p>
+</div>
+<a name="N102D8"></a><a name="The+Properties"></a>
+<h5>The Properties</h5>
+<div style="margin-left: 0 ; border: 2px">
+<p>Before getting the properties, it is possible to find out how many
+      properties are available in the section via the
+      <span class="codefrag">Section.getPropertyCount()</span>. The sample application uses this
+      method to print the number of properties to the standard output:</p>
+<pre class="code">int propertyCount = sec.getPropertyCount();
+out("      No. of properties: " + propertyCount);</pre>
+<p>Now its time to get to the properties themselves. You can retrieve a
+      section's properties with the method
+      <span class="codefrag">Section.getProperties()</span>:</p>
+<pre class="code">Property[] properties = sec.getProperties();</pre>
+<p>As you can see the result is an array of <span class="codefrag">Property</span>
+      objects. This class has three methods to retrieve a property's ID, its
+      type, and its value. The following code snippet shows how to call
+      them:</p>
+<pre class="code">for (int i2 = 0; i2 &lt; properties.length; i2++)
+{
+    /* Print a single property: */
+    Property p = properties[i2];
+    int id = p.getID();
+    long type = p.getType();
+    Object value = p.getValue();
+    out("      Property ID: " + id + ", type: " + type +
+        ", value: " + value);
+}</pre>
+</div>
+<a name="N102FF"></a><a name="Sample+Output"></a>
+<h5>Sample Output</h5>
+<div style="margin-left: 0 ; border: 2px">
+<p>The output of the sample program might look like the following. It
+      shows the summary information and the document summary information
+      property sets of a Microsoft Word document. However, unlike the first and
+      second section of this HOW-TO the application does not have any code
+      which is specific to the <span class="codefrag">SummaryInformation</span> and
+      <span class="codefrag">DocumentSummaryInformation</span> classes.</p>
+<pre class="code">Property set stream "/SummaryInformation":
+   No. of sections: 1
+   Section 0:
+      Format ID: 00000000 F2 9F 85 E0 4F F9 10 68 AB 91 08 00 2B 27 B3 D9 ....O..h....+'..
+      No. of properties: 17
+      Property ID: 1, type: 2, value: 1252
+      Property ID: 2, type: 30, value: Titel
+      Property ID: 3, type: 30, value: Thema
+      Property ID: 4, type: 30, value: Rainer Klute (Autor)
+      Property ID: 5, type: 30, value: Test (Stichw&ouml;rter)
+      Property ID: 6, type: 30, value: This is a document for testing HPSF
+      Property ID: 7, type: 30, value: Normal.dot
+      Property ID: 8, type: 30, value: Unknown User
+      Property ID: 9, type: 30, value: 3
+      Property ID: 18, type: 30, value: Microsoft Word 9.0
+      Property ID: 12, type: 64, value: Mon Jan 01 00:59:25 CET 1601
+      Property ID: 13, type: 64, value: Thu Jul 18 16:22:00 CEST 2002
+      Property ID: 14, type: 3, value: 1
+      Property ID: 15, type: 3, value: 20
+      Property ID: 16, type: 3, value: 93
+      Property ID: 19, type: 3, value: 0
+      Property ID: 17, type: 71, value: [B@13582d
+Property set stream "/DocumentSummaryInformation":
+   No. of sections: 2
+   Section 0:
+      Format ID: 00000000 D5 CD D5 02 2E 9C 10 1B 93 97 08 00 2B 2C F9 AE ............+,..
+      No. of properties: 14
+      Property ID: 1, type: 2, value: 1252
+      Property ID: 2, type: 30, value: Test
+      Property ID: 14, type: 30, value: Rainer Klute (Manager)
+      Property ID: 15, type: 30, value: Rainer Klute IT-Consulting GmbH
+      Property ID: 5, type: 3, value: 3
+      Property ID: 6, type: 3, value: 2
+      Property ID: 17, type: 3, value: 111
+      Property ID: 23, type: 3, value: 592636
+      Property ID: 11, type: 11, value: false
+      Property ID: 16, type: 11, value: false
+      Property ID: 19, type: 11, value: false
+      Property ID: 22, type: 11, value: false
+      Property ID: 13, type: 4126, value: [B@56a499
+      Property ID: 12, type: 4108, value: [B@506411
+   Section 1:
+      Format ID: 00000000 D5 CD D5 05 2E 9C 10 1B 93 97 08 00 2B 2C F9 AE ............+,..
+      No. of properties: 7
+      Property ID: 0, type: 0, value: {6=Test-JaNein, 5=Test-Zahl, 4=Test-Datum, 3=Test-Text, 2=_PID_LINKBASE}
+      Property ID: 1, type: 2, value: 1252
+      Property ID: 2, type: 65, value: [B@c9ba38
+      Property ID: 3, type: 30, value: This is some text.
+      Property ID: 4, type: 64, value: Wed Jul 17 00:00:00 CEST 2002
+      Property ID: 5, type: 3, value: 27
+      Property ID: 6, type: 11, value: true
+No property set stream: "/WordDocument"
+No property set stream: "/CompObj"
+No property set stream: "/1Table"</pre>
+<p>There are some interesting items to note:</p>
+<ul>
+      
+<li>The first property set (summary information) consists of a single
+       section, the second property set (document summary information) consists
+       of two sections.</li>
+
+      
+<li>Each section type (identified by its format ID) has its own domain of
+       property ID. For example, in the second property set the properties with
+       ID 2 have different meanings in the two section. By the way, the format
+       IDs of these sections are <strong>not</strong> equal, but you have to
+       look hard to find the difference.</li>
+
+      
+<li>The properties are not in any particular order in the section,
+       although they slightly tend to be sorted by their IDs.</li>
+     
+</ul>
+</div>
+<a name="N10325"></a><a name="Property+IDs"></a>
+<h5>Property IDs</h5>
+<div style="margin-left: 0 ; border: 2px">
+<p>Properties in the same section are distinguished by their IDs. This is
+      similar to variables in a programming language like Java, which are
+      distinguished by their names. But unlike variable names, property IDs are
+      simple integral numbers. There is another similarity, however. Just like
+      a Java variable has a certain scope (e.g. a member variables in a class),
+      a property ID also has its scope of validity: the section.</p>
+<p>Two property IDs in sections with different section format IDs
+      don't have the same meaning even though their IDs might be equal. For
+      example, ID 4 in the first (and only) section of a summary
+      information property set denotes the document's author, while ID 4 in the
+      first section of the document summary information property set means the
+      document's byte count. The sample output above does not show a property
+      with an ID of 4 in the first section of the document summary information
+      property set. That means that the document does not have a byte
+      count. However, there is a property with an ID of 4 in the
+      <em>second</em> section: This is a user-defined property ID - we'll get
+      to that topic in a minute.</p>
+<p>So, how can you find out what the meaning of a certain property ID in
+      the summary information and the document summary information property set
+      is? The standard property sets as such don't have any hints about the
+      <strong>meanings of their property IDs</strong>. For example, the summary
+      information property set does not tell you that the property ID 4 stands
+      for the document's author. This is external knowledge. Microsoft defined
+      standard meanings for some of the property IDs in the summary information
+      and the document summary information property sets. As a help to the Java
+      and POI programmer, the class <span class="codefrag">PropertyIDMap</span> in the
+      <span class="codefrag">org.apache.poi.hpsf.wellknown</span> package defines constants
+      for the "well-known" property IDs. For example, there is the
+      definition</p>
+<pre class="code">public final static int PID_AUTHOR = 4;</pre>
+<p>These definitions allow you to use symbolic names instead of
+      numbers.</p>
+<p>In order to provide support for the other way, too, - i.e. to map
+      property IDs to property names - the class <span class="codefrag">PropertyIDMap</span>
+      defines two static methods:
+      <span class="codefrag">getSummaryInformationProperties()</span> and
+      <span class="codefrag">getDocumentSummaryInformationProperties()</span>. Both return
+      <span class="codefrag">java.util.Map</span> objects which map property IDs to
+      strings. Such a string gives a hint about the property's meaning. For
+      example,
+      <span class="codefrag">PropertyIDMap.getSummaryInformationProperties().get(4)</span>
+      returns the string "PID_AUTHOR". An application could use this string as
+      a key to a localized string which is displayed to the user, e.g. "Author"
+      in English or "Verfasser" in German. HPSF might provide such
+      language-dependend ("localized") mappings in a later release.</p>
+<p>Usually you won't have to deal with those two maps. Instead you should
+      call the <span class="codefrag">Section.getPIDString(int)</span> method. It returns the
+      string associated with the specified property ID in the context of the
+      <span class="codefrag">Section</span> object.</p>
+<p>Above you learned that property IDs have a meaning in the scope of a
+      section only. However, there are two exceptions to the rule: The property
+      IDs 0 and 1 have a fixed meaning in <strong>all</strong> sections:</p>
+<table class="ForrestTable" cellspacing="1" cellpadding="4">
+      
+<tr>
+       
+<th colspan="1" rowspan="1">Property ID</th>
+       <th colspan="1" rowspan="1">Meaning</th>
+      
+</tr>
+
+      
+<tr>
+       
+<td colspan="1" rowspan="1">0</td>
+       <td colspan="1" rowspan="1">The property's value is a <strong>dictionary</strong>, i.e. a
+	mapping from property IDs to strings.</td>
+      
+</tr>
+
+      
+<tr>
+       
+<td colspan="1" rowspan="1">1</td>
+       <td colspan="1" rowspan="1">The property's value is the number of a <strong>codepage</strong>,
+	i.e. a mapping from character codes to characters. All strings in the
+	section containing this property must be interpreted using this
+	codepage. Typical property values are 1252 (8-bit "western" characters)
+	or 1200 (16-bit Unicode characters).</td>
+      
+</tr>
+     
+</table>
+</div>
+<a name="N10399"></a><a name="Property+types"></a>
+<h5>Property types</h5>
+<div style="margin-left: 0 ; border: 2px">
+<p>A property is nothing without its value. It is stored in a property set
+      stream as a sequence of bytes. You must know the property's
+      <strong>type</strong> in order to properly interpret those bytes and
+      reasonably handle the value. A property's type is one of the so-called
+      Microsoft-defined <strong>"variant types"</strong>. When you call
+      <span class="codefrag">Property.getType()</span> you'll get a <span class="codefrag">long</span> value
+      which denoting the property's variant type. The class
+      <span class="codefrag">Variant</span> in the <span class="codefrag">org.apache.poi.hpsf</span> package
+      holds most of those <span class="codefrag">long</span> values as named constants. For
+      example, the constant <span class="codefrag">VT_I4 = 3</span> means a signed integer value
+      of four bytes. Examples of other types are <span class="codefrag">VT_LPSTR = 30</span>
+      meaning a null-terminated string of 8-bit characters, <span class="codefrag">VT_LPWSTR =
+       31</span> which means a null-terminated Unicode string, or <span class="codefrag">VT_BOOL
+       = 11</span> denoting a boolean value.</p>
+<p>In most cases you won't need a property's type because HPSF does all
+      the work for you.</p>
+</div>
+<a name="N103C6"></a><a name="Property+values"></a>
+<h5>Property values</h5>
+<div style="margin-left: 0 ; border: 2px">
+<p>When an application wants to retrieve a property's value and calls
+      <span class="codefrag">Property.getValue()</span>, HPSF has to interpret the bytes making
+      out the value according to the property's type. The type determines how
+      many bytes the value consists of and what
+      to do with them. For example, if the type is <span class="codefrag">VT_I4</span>, HPSF
+      knows that the value is four bytes long and that these bytes
+      comprise a signed integer value in the little-endian format. This is
+      quite different from e.g. a type of <span class="codefrag">VT_LPWSTR</span>. In this case
+      HPSF has to scan the value bytes for a Unicode null character and collect
+      everything from the beginning to that null character as a Unicode
+      string.</p>
+<p>The good new is that HPSF does another job for you, too: It maps the
+      variant type to an adequate Java type.</p>
+<table class="ForrestTable" cellspacing="1" cellpadding="4">
+      
+<tr>
+       
+<th colspan="1" rowspan="1">Variant type:</th>
+       <th colspan="1" rowspan="1">Java type:</th>
+      
+</tr>
+
+      
+<tr>
+       
+<td colspan="1" rowspan="1">VT_I2</td>
+       <td colspan="1" rowspan="1">java.lang.Integer</td>
+      
+</tr>
+
+      
+<tr>
+       
+<td colspan="1" rowspan="1">VT_I4</td>
+       <td colspan="1" rowspan="1">java.lang.Long</td>
+      
+</tr>
+
+      
+<tr>
+       
+<td colspan="1" rowspan="1">VT_FILETIME</td>
+       <td colspan="1" rowspan="1">java.util.Date</td>
+      
+</tr>
+
+      
+<tr>
+       
+<td colspan="1" rowspan="1">VT_LPSTR</td>
+       <td colspan="1" rowspan="1">java.lang.String</td>
+      
+</tr>
+
+      
+<tr>
+       
+<td colspan="1" rowspan="1">VT_LPWSTR</td>
+       <td colspan="1" rowspan="1">java.lang.String</td>
+      
+</tr>
+
+      
+<tr>
+       
+<td colspan="1" rowspan="1">VT_CF</td>
+       <td colspan="1" rowspan="1">byte[]</td>
+      
+</tr>
+
+      
+<tr>
+       
+<td colspan="1" rowspan="1">VT_BOOL</td>
+       <td colspan="1" rowspan="1">java.lang.Boolean</td>
+      
+</tr>
+
+     
+</table>
+<p>The bad news is that there are still a couple of variant types HPSF
+      does not yet support. If it encounters one of these types it
+      returns the property's value as a byte array and leaves it to be
+      interpreted by the application.</p>
+<p>An application retrieves a property's value by calling the
+      <span class="codefrag">Property.getValue()</span> method. This method's return type is the
+      abstract <span class="codefrag">Object</span> class. The <span class="codefrag">getValue()</span> method
+      looks up the property's variant type, reads the property's value bytes,
+      creates an instance of an adequate Java type, assigns it the property's
+      value and returns it. Primitive types like <span class="codefrag">int</span> or
+      <span class="codefrag">long</span> will be returned as the corresponding class,
+      e.g. <span class="codefrag">Integer</span> or <span class="codefrag">Long</span>.</p>
+</div>
+<a name="N10461"></a><a name="Dictionaries"></a>
+<h5>Dictionaries</h5>
+<div style="margin-left: 0 ; border: 2px">
+<p>The property with ID 0 has a very special meaning: It is a
+      <strong>dictionary</strong> mapping property IDs to property names. We
+      have seen already that the meanings of standard properties in the
+      summary information and the document summary information property sets
+      have been defined by Microsoft. The advantage is that the labels of
+      properties like "Author" or "Title" don't have to be stored in the
+      property set. However, a user can define custom fields in, say, Microsoft
+      Word. For each field the user has to specify a name, a type, and a
+      value.</p>
+<p>The names of the custom-defined fields (i.e. the property names) are
+      stored in the document summary information second section's
+      <strong>dictionary</strong>. The dictionary is a map which associates
+      property IDs with property names.</p>
+<p>The method <span class="codefrag">Section.getPIDString(int)</span> not only returns with
+      the well-known property names of the summary information and document
+      summary information property sets, but with self-defined properties,
+      too. It should also work with self-defined properties in self-defined
+      sections.</p>
+</div>
+<a name="N10479"></a><a name="Codepage+support"></a>
+<h5>Codepage support</h5>
+<div style="margin-left: 0 ; border: 2px">
+<div class="frame fixme">
+<div class="label">Fixme (Rainer Klute)</div>
+<div class="content">Improve codepage support!</div>
+</div>
+<p>The property with ID 1 holds the number of the codepage which was used
+      to encode the strings in this section. The present HPSF codepage support
+      is still very limited: When reading property value strings, HPSF
+      distinguishes between 16-bit characters and 8-bit characters. 16-bit
+      characters should be Unicode characters and thus be okay. 8-bit
+      characters are interpreted according to the platform's default character
+      set. This is fine as long as the document being read has been written on
+      a platform with the same default character set. However, if you receive a
+      document from another region of the world and want to process it with
+      HPSF you are in trouble - unless the creator used Unicode, of course.</p>
+</div>
+<a name="N10486"></a><a name="Further+Reading"></a>
+<h5>Further Reading</h5>
+<div style="margin-left: 0 ; border: 2px">
+<p>There are still some aspects of HSPF left which are not covered by this
+      HOW-TO. You should dig into the Javadoc API documentation to learn
+      further details. Since you've struggled through this document up to this
+      point, you are well prepared.</p>
+</div>
+</div>
+</div>
+ 
+<div class="attribution">by&nbsp;Rainer Klute</div>
+</div>
+</td><td width="10"><img width="10" height="1" alt="" src="../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<!--================= end Content==================-->
+</table>
+</td>
+</tr>
+</table>
+<!--================= end Menu, NavBar, Content ==================-->
+<!--================= start Footer ==================-->
+<table summary="footer" cellspacing="0" cellpadding="0" width="100%" border="0">
+<tr>
+<td colspan="2" height="1" bgcolor="#4C6C8F"><img height="1" width="1" alt="" src="../skin/images/spacer.gif" class="spacer"><a href="../skin/images/label.gif"></a><a href="../skin/images/page.gif"></a><a href="../skin/images/chapter.gif"></a><a href="../skin/images/chapter_open.gif"></a><a href="../skin/images/current.gif"></a><a href="/favicon.ico"></a></td>
+</tr>
+<tr>
+<td colspan="2" bgcolor="#CFDCED" class="copyright" align="center"><font size="2" face="Arial, Helvetica, Sans-Serif">Copyright &copy;
+          2003&nbsp;The Apache Software Foundation. All rights reserved.<script type="text/javascript" language="JavaScript"><!--
+              document.write(" - "+"Last Published: " + document.lastModified);
+            //  --></script></font></td>
+</tr>
+<tr>
+<td colspan="2" align="left" bgcolor="#CFDCED" class="logos"></td>
+</tr>
+</table>
+<!--================= end Footer ==================-->
+</body>
+</html>

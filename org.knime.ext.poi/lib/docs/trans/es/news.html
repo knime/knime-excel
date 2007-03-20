@@ -1,0 +1,676 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Jakarta POI - En las Noticias del mundo</title>
+<link type="text/css" href="../../skin/page.css" rel="stylesheet">
+</head>
+<body text="#000000" bgcolor="#FFFFFF">
+<!--================= start Navigation Path ==================-->
+<table summary="navigation path" width="100%" border="0" cellpadding="0" cellspacing="0">
+<tr>
+<td nowrap="nowrap" valign="middle" bgcolor="#CFDCED" height="20"><img height="1" width="5" alt="" src="../../skin/images/spacer.gif" class="spacer"><!--===== breadcrumb trail (javascript-generated) ====--><font size="2" face="Arial, Helvetica, Sans-serif"><script src="../../skin/breadcrumbs.js" language="JavaScript" type="text/javascript"></script></font></td>
+</tr>
+<tr>
+<td bgcolor="#4C6C8F" height="2"><img height="2" width="2" alt="" src="../../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+</table>
+<!--================= end Navigation Path ==================-->
+<!--================= start Banner ==================-->
+<table summary="header with logos" width="100%" border="0" cellpadding="0" cellspacing="0">
+<tr>
+<!--================= start Group Logo ==================-->
+<td bgcolor="#294563"><a href="http://jakarta.apache.org"><img border="0" class="logoImage" alt="Jakarta" src="../../resources/images/group-logo.gif"></a></td>
+<!--================= end Group Logo ==================-->
+<!--================= start Project Logo ==================--><td width="100%" align="center" bgcolor="#294563"><a href="http://jakarta.apache.org/poi/"><img border="0" class="logoImage" alt="POI" src="../../resources/images/project-logo.gif"></a></td>
+<!--================= end Project Logo ==================-->
+<!--================= start Search ==================--><td valign="top" rowspan="2" bgcolor="#294563">
+<form target="_blank" action="http://www.google.com/search" method="get">
+<table summary="search" border="0" cellspacing="0" cellpadding="0" bgcolor="#4C6C8F">
+<tr>
+<td colspan="3"><img height="10" width="1" alt="" src="../../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td><img height="1" width="1" alt="" src="../../skin/images/spacer.gif" class="spacer"></td><td nowrap="nowrap"><input value="jakarta.apache.org" name="sitesearch" type="hidden"><input size="15" name="q" id="query" type="text"><img height="1" width="5" alt="" src="../../skin/images/spacer.gif" class="spacer"><input name="Search" value="Search" type="submit">
+<br>
+<font face="Arial, Helvetica, Sans-serif" size="2" color="white">
+                      the jakarta site
+                      
+                      
+                    </font></td><td><img height="1" width="1" alt="" src="../../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td><img alt="" border="0" height="10" width="9" src="../../skin/images/search-left.gif"></td><td><img height="1" width="1" alt="" src="../../skin/images/spacer.gif" class="spacer"></td><td><img alt="" border="0" height="10" width="9" src="../../skin/images/search-right.gif"></td>
+</tr>
+</table>
+</form>
+</td>
+<!--================= start Search ==================--><td bgcolor="#294563"><img height="10" width="10" alt="" src="../../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td valign="bottom" bgcolor="#294563" colspan="2">
+<!--================= start Tabs ==================-->
+<div class="tab">
+<table summary="tab bar" border="0" cellpadding="0" cellspacing="0">
+<tr>
+<td width="6"><img alt="" height="8" width="6" src="../../skin/images/spacer.gif"></td><td valign="bottom">
+<table summary="selected tab" style="height: 1.8em" border="0" cellpadding="0" cellspacing="0">
+<tr>
+<td valign="top" width="5" bgcolor="#4C6C8F"><img height="5" width="5" alt="" src="../../skin/images/tabSel-left.gif"></td><td valign="middle" bgcolor="#4C6C8F"><font color="#ffffff" size="2" face="Arial, Helvetica, Sans-serif"><b><a class="base-selected" href="../../index.html">Home</a></b></font></td><td valign="top" width="5" bgcolor="#4C6C8F"><img height="5" width="5" alt="" src="../../skin/images/tabSel-right.gif"></td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</div>
+<!--================= end Tabs ==================-->
+</td><td bgcolor="#294563"><img alt="" width="1" height="1" src="../../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td bgcolor="#4C6C8F" colspan="4"><img width="1" height="10" alt="" src="../../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+</table>
+<!--================= end Banner ==================-->
+<!--================= start Menu, NavBar, Content ==================-->
+<table summary="page content" bgcolor="#ffffff" width="100%" border="0" cellpadding="0" cellspacing="0">
+<tr>
+<td valign="top">
+<table summary="menu" border="0" cellspacing="0" cellpadding="0">
+<tr>
+<!--================= start left top NavBar ==================-->
+<td rowspan="3" valign="top">
+<table summary="blue line" border="0" cellpadding="0" cellspacing="0">
+<tr>
+<td bgcolor="#294563"><img width="10" height="1" alt="" src="../../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td bgcolor="#CFDCED"><font color="#4C6C8F" size="4" face="Arial, Helvetica, Sans-serif">&nbsp;</font></td>
+</tr>
+<tr>
+<td bgcolor="#294563"><img width="10" height="1" alt="" src="../../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+</table>
+</td>
+<!--================= end left top NavBar ==================--><td bgcolor="#294563"><img width="1" height="1" alt="" src="../../skin/images/spacer.gif" class="spacer"></td><td valign="bottom" bgcolor="#4C6C8F"><img width="10" height="10" alt="" src="../../skin/images/spacer.gif" class="spacer"></td><td nowrap="nowrap" valign="top" bgcolor="#4C6C8F">
+<!--================= start Menu items ==================-->
+<div class="menu">
+<ul>
+<li>
+<font color="#CFDCED">Apache POI</font>
+<ul>
+        
+<li>
+<a href="index.html">TOP</a>
+</li>
+    
+</ul>
+</li>
+<li>
+<font color="#CFDCED">Marketing</font>
+<ul>
+    
+<li>
+<a href="casestudies.html">Casos</a>
+</li>
+  
+</ul>
+</li>
+<li>
+<font color="#CFDCED">Proyecto</font>
+<ul>
+    
+<li>
+<a href="overview.html">Descripci&oacute;n General</a>
+</li>
+    
+<li>
+<a href="../../poifs/index.html">POIFS [EN]</a>
+</li>
+    
+<li>
+<a href="../../hssf/index.html">HSSF [EN]</a>
+</li>
+    
+<li>
+<a href="http://jakarta.apache.org/poi/hwpf/index.html">HWPF [EN]</a>
+</li>
+    
+<li>
+<a href="../../hpsf/index.html">HPSF [EN]</a>
+</li>
+    
+<li>
+<a href="../../utils/index.html">POI-Utils [EN]</a>
+</li>
+    
+<li>
+<a href="http://jakarta.apache.org/builds/jakarta-poi/">Descargas</a>
+</li>
+  
+</ul>
+</li>
+<li>
+<font color="#CFDCED">Comunidad</font>
+<ul>
+    
+<li>
+<span class="sel"><font color="#ffcc00">Noticias</font></span>
+</li>    
+    
+<li>
+<a href="../../mirrors.html">Espejos [EN]</a>
+</li>    
+    
+    
+<li>
+<a href="todo.html">Tareas</a>
+</li> 
+    
+<li>
+<a href="../../getinvolved/index.html">Contribuya [EN]</a>
+</li>
+    
+<li>
+<a href="http://jakarta.apache.org/site/mail2.html#poi">Listas de Correo</a>
+</li>
+    
+<li>
+<a href="../../plan/POI20Vision.html">Visi&oacute;n [EN]</a>
+</li>
+    
+<li>
+<a href="historyandfuture.html">Historia y Futuro</a>
+</li>
+    
+<li>
+<a href="who.html">Qui&eacute;nes Somos</a>
+</li> 
+    
+<li>
+<a href="../../resolutions/index.html">Resoluciones [EN]</a>
+</li>    
+  
+</ul>
+</li>
+<li>
+<font color="#CFDCED">Documentaci&oacute;n</font>
+<ul>
+    
+<li>
+<a href="http://jakarta.apache.org/poi/javadocs/">Javadocs</a>
+</li>  
+    
+<li>
+<a href="faq.html">FAQ</a>
+</li>
+    
+<li>
+<a href="../../references/index.html">Referencias</a>
+</li>  
+  
+</ul>
+</li>
+<li>
+<font color="#CFDCED">Traducciones</font>
+<ul>
+    
+<li>
+<a href="../../trans/index.html">&Iacute;ndice</a>
+</li>
+    
+<li>
+<a href="../../trans/guidelines.html">Procedimientos</a>
+</li>
+        
+<li>
+<a href="../de/index.html">Alem&aacute;n (DE)</a>
+</li>
+    
+<li>
+<a href="index.html">Espa&ntilde;ol</a>
+</li>
+        
+<li>
+<a href="http://jakarta.terra-intl.com/poi/">Japon&eacute;s (Web)</a>
+</li>
+        
+<li>
+<a href="http://jakarta.apache-korea.org/poi/">Coreano(Web)</a>
+</li>
+  
+</ul>
+</li>
+<li>
+<font color="#CFDCED">C&oacute;digo</font>
+<ul>
+           
+    
+<li>
+<a href="http://jakarta.apache.org/site/cvsindex.html">CVS</a>
+</li>  
+    
+<li>
+<a href="http://nagoya.apache.org/bugzilla/buglist.cgi?votes=1&product=POI&order=bugs.votes">Fallos (Bugs) M&aacute;s Votados</a>
+</li>  
+    
+<li>
+<a href="http://nagoya.apache.org/bugzilla/buglist.cgi?product=POI">Base de Datos de Fallos</a>
+</li>  
+    
+<li>
+<a href="http://nagoya.apache.org/bugzilla/buglist.cgi?product=POI&short_desc=%5BPATCH%5D&short_desc_type=allwordssubstr">Parches</a>
+</li>  
+
+    
+<li>
+<a href="../../junit/index.html">Resultados de Pruebas Junit</a>
+</li>  
+    
+<li>
+<a href="../../jdepend/index.html">M&eacute;tricas de Dependencia</a>
+</li> 
+     
+  
+</ul>
+</li>
+</ul>
+</div>
+<!--================= end Menu items ==================-->
+</td><td valign="bottom" bgcolor="#4C6C8F"><img width="10" height="10" alt="" src="../../skin/images/spacer.gif" class="spacer"></td><td bgcolor="#294563"><img width="1" height="1" alt="" src="../../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td valign="bottom" align="left" colspan="2" rowspan="2" bgcolor="#4C6C8F"><img height="10" width="10" border="0" alt="" src="../../skin/images/menu-left.gif"></td><td bgcolor="#4C6C8F"><img height="10" width="10" alt="" src="../../skin/images/spacer.gif" class="spacer"></td><td valign="bottom" align="right" colspan="2" rowspan="2" bgcolor="#4C6C8F"><img height="10" width="10" border="0" alt="" src="../../skin/images/menu-right.gif"></td>
+</tr>
+<tr>
+<td height="1" bgcolor="#294563"><img width="1" height="1" alt="" src="../../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+</table>
+</td><td valign="top" width="100%">
+<table summary="content" width="100%" border="0" cellpadding="0" cellspacing="0">
+<!--================= start middle NavBar ==================-->
+<tr>
+<td colspan="4" bgcolor="#294563"><img width="10" height="1" alt="" src="../../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td align="left" width="10" bgcolor="#CFDCED"><img width="10" height="1" alt="" src="../../skin/images/spacer.gif" class="spacer"></td><td align="left" width="50%" bgcolor="#CFDCED"><font color="#4C6C8F" size="3" face="Arial, Helvetica, Sans-serif">
+                &nbsp;
+                
+                </font><img width="10" height="8" alt="" src="../../skin/images/spacer.gif" class="spacer"></td><td align="right" width="50%" bgcolor="#CFDCED"><font color="#4C6C8F" size="3" face="Arial, Helvetica, Sans-serif">
+                &nbsp;
+                
+                </font><img width="10" height="8" alt="" src="../../skin/images/spacer.gif" class="spacer"></td><td width="10" bgcolor="#CFDCED"><img width="10" height="1" alt="" src="../../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td colspan="4" bgcolor="#294563"><img width="10" height="1" alt="" src="../../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<!--================= end middle NavBar ==================-->
+<!--================= start Content==================-->
+<tr>
+<td align="left" width="10"><img width="10" height="1" alt="" src="../../skin/images/spacer.gif" class="spacer"></td><td colspan="2" align="left" width="100%">
+<div class="content">
+<table class="title" summary="">
+<tr>
+<td valign="middle">
+<h1>Jakarta POI - En las Noticias del mundo</h1>
+</td><td nowrap="nowrap" width="40" align="center"><a class="dida" href="news.pdf"><img alt="PDF" src="../../skin/images/pdfdoc.gif" class="skin"><br>
+          PDF</a></td>
+</tr>
+</table>
+<ul class="minitoc">
+<li>
+<a href="#POI+en+los+medios+de+comunicaci%F3n">POI en los medios de comunicaci&oacute;n</a>
+</li>
+<li>
+<a href="#Ingl%E9s">Ingl&eacute;s</a>
+</li>
+<li>
+<a href="#Nederlandstalige+%28Holand%E9s%29">Nederlandstalige (Holand&eacute;s)</a>
+</li>
+<li>
+<a href="#Deutsch+%28Alem%E1n%29">Deutsch (Alem&aacute;n)</a>
+</li>
+<li>
+<a href="#Espa%F1ol+%28Spanish%29">Espa&ntilde;ol (Spanish)</a>
+</li>
+<li>
+<a href="#Francais+%28Franc%E9s%29">Francais (Franc&eacute;s)</a>
+</li>
+<li>
+<a href="#Nihongo+%28Japon%E9s%29">Nihongo (Japon&eacute;s)</a>
+</li>
+<li>
+<a href="#Russkii+Yazyk+%28Ruso%29">Russkii Yazyk (Ruso)</a>
+</li>
+<li>
+<a href="#Hangul+%28Coreano%29">Hangul (Coreano)</a>
+</li>
+<li>
+<a href="#Ni+idea">Ni idea</a>
+</li>
+</ul>
+    
+<a name="N1001F"></a><a name="POI+en+los+medios+de+comunicaci%F3n"></a>
+<h3>POI en los medios de comunicaci&oacute;n</h3>
+<div style="margin-left: 0 ; border: 2px">
+<p>
+                Estos son art&iacute;culos/etc. sobre POI publicados en la red. Si ves
+		alguna noticia sobre POI o alg&uacute;n sitio en el que se le menciona
+		de manera notable (no en tu propia p&aacute;gina en la que pones la palabra
+		POI para que enlacemos contigo y en la que casualmente hay una foto
+		de tu mujer e hijos) entonces env&iacute;a un parche a la lista. En general
+		dedicaremos el mismo tiempo as&iacute; que no teng&aacute;is reparos en enviar
+		difamaciones col&eacute;ricas as&iacute; como comentarios favorables, t&eacute;cnicos y
+		objetivos. No mencionaremos mensajes realmente est&uacute;pidos (lo sentimos).
+        </p>
+</div>
+    
+<a name="N10028"></a><a name="Ingl%E9s"></a>
+<h3>Ingl&eacute;s</h3>
+<div style="margin-left: 0 ; border: 2px">
+<ul>
+                
+<li>   
+                      
+<a href="http://archive.midrange.com/web400/200204/msg00023.html">Discusi&oacute;n sobre el uso de POI en AS/400s</a>
+                
+</li>
+                
+<li>
+                      
+<a href="http://www.somelist.com/mails/23819.html">Discusi&oacute;n de cuando casi tuvimos POI como el filtro para KOffice si asuntos de pol&iacute;tica y licencias no lo hubieran condenado al fracaso</a> 
+                
+</li>
+                
+<li>
+                       
+<a href="http://www.oreillynet.com/pub/wlg/1552?page=last&x-showcontent=text">Discusi&oacute;n Java en O'Reilly Network incluyendo discusi&oacute;n sobre POI</a> - O'Reilly.net
+                </li>
+                
+<li>   
+                       
+<a href="http://www.rollerweblogger.org/page/roller/20020715">Poor Obfuscation Implementation (Implementaci&oacute;n Pobre de Ofuscaci&oacute;n).</a> - Blog de David M. Johnson
+                </li>
+		
+<li>   
+                       
+<a href="http://www.jsurfer.org/article.php?sid=322">
+                        Descarga POI 1.5-dev-rc2 </a> - JSurfer
+                </li>
+
+                
+<li>
+                       
+<a href="http://directory.google.com/Top/Computers/Programming/Languages/Java/Class_Libraries/Data_Formats/Microsoft_Formats/"> Google dice que somos los m&aacute;s importantes en nuestra categor&iacute;a </a>
+                
+</li>
+                
+<li>
+                       
+<a href="http://www.javaworld.com/javaworld/javaqa/2002-05/01-qa-0503-excel3.html">It's POI-fect</a> - Tony Sintes, Javaworld
+                </li>
+                
+<li>
+                       
+<a href="http://www.need-a-cake.com/categories/cocoonWeblog/2002/03/07.html">
+			Nicola anuncia c&oacute;digo de serializaci&oacute;n POI
+                       </a> - Matthew Langham's Radio Weblog
+                </li>
+                
+<li>
+                        
+<a href="http://javalobby.org/discussionContext/showThreaded/frm/javalobby?folderId=20&discussionContextId=11523">
+                        Descarga Jakarta POI 1.4583</a> - JavaLobby
+                </li>        
+                
+<li>
+                        
+<a href="http://javalobby.org/discussionContext/showThreaded/frm/javalobby?discussionContextId=11442&folderId=20">
+                        El proyecto POI se mueve a Jakarta (OLE 2 CDF/Excel/Word en 
+                        java puro)</a> - JavaLobby
+                </li>
+                
+<li>
+                        
+<a href="http://www.geocities.com/marcoschmidt.geo/java-image-coding.html">
+                        Listado de bibliotecas Java para leer y escribir ficheros de im&aacute;genes y documentos
+                        </a> - P&aacute;gina de Marco Schmidt (normalmente no anunciar&iacute;amos
+			la p&aacute;gina personal de nadie, pero es un listado extensivo de informaci&oacute;n
+			que incluye "alternativas a POI" (para aquellos que son muy ricos). &iexcl;Pero, qu&eacute;
+			l3ch3s, creo que voy a marcar esta p&aacute;gina para m&iacute; puesto que tiene enlaces a
+			direcciones que en conjunto contienen o enlazan con todo el conocimiento de la humanidad!)
+                </li>
+                
+<li>
+                        
+<a href="http://radio.weblogs.com/0101350/">
+			Experiencias de un Operador (M&aring;ns af Klercker)
+                        </a> - radio.weblogs.com
+                </li>
+                
+<li>
+                        
+<a href="http://dataconv.org/apps_office.html">
+                        DATACONV - Herramientas de Conversi&oacute;n de Datos: Office
+                        </a> DATACONV
+                </li>
+                
+<li>
+                        
+<a href="http://chicago.sourceforge.net/devel/">
+                        P&aacute;gina del Desarrollador de Chicago
+                        </a>                        
+                
+</li>
+                
+<li>
+                        
+<a href="http://www.onjava.com/pub/d/1157">
+                        POI/Proyecto de Serializaci&oacute;n de POI
+                        </a> - T&iacute;o, sabes que est&aacute;s en lo alto cuando le gustas a
+                        O'Reilly.  ;-)
+                </li>
+                
+<li>
+                        
+<a href="http://www.javaworld.com/netnews/index.shtml">
+                        Noticias en la Red
+                        </a> - Java World
+                </li>
+                
+        
+</ul>
+</div>
+    
+<a name="N100A1"></a><a name="Nederlandstalige+%28Holand%E9s%29"></a>
+<h3>Nederlandstalige (Holand&eacute;s)</h3>
+<div style="margin-left: 0 ; border: 2px">
+<ul>
+                
+<li>
+                        
+<a href="http://www.ster.be/java/java9.html">
+                        Een Excel-werkboek maken vanuit Java - Lieven Smits 
+                        </a>
+                
+</li>
+        
+</ul>
+</div>
+    
+<a name="N100B1"></a><a name="Deutsch+%28Alem%E1n%29"></a>
+<h3>Deutsch (Alem&aacute;n)</h3>
+<div style="margin-left: 0 ; border: 2px">
+<ul>
+                
+<li> 
+<a href="http://www.entwickler.com/itr/news/show.php3?id=6132&nodeid=82 ">Apache POI verffentlicht</a> - entwicker.com 
+                </li>
+                
+<li>
+                       
+<a href="http://www.jsp-develop.de/newsletter/10/">
+                       Apache Jakarta-Projekt bringt Word und Excel in die Java-Welt </a> - jsp-develop.de  (for the misguided who use JSP ;-) )
+                </li>
+                
+<li>
+                        
+<a href="http://www.entwickler.com/news/2002/02/5718/news.shtml">
+                        Neues Apache-Projekt bringt Word- und Excel nach Java
+                        </a> - entwickler.com
+                </li>
+        
+</ul>
+</div>
+    
+<a name="N100CF"></a><a name="Espa%F1ol+%28Spanish%29"></a>
+<h3>Espa&ntilde;ol (Spanish)</h3>
+<div style="margin-left: 0 ; border: 2px">
+<ul>
+                
+<li>
+                        
+<a href="http://www.javahispano.com/noticias/todas.jsp">
+                        OLE2 desde Java nativo
+                        </a> - javaHispano
+                </li>
+                
+<li>
+                      
+<a href="http://p2p.wrox.com/archive/java_espanol/2002-08/3.asp">Discusi&oacute;n sobre Excel y Java incluyendo POI de los foros de Wrox</a>
+                
+</li> 
+        
+</ul>
+</div>
+    
+<a name="N100E6"></a><a name="Francais+%28Franc%E9s%29"></a>
+<h3>Francais (Franc&eacute;s)</h3>
+<div style="margin-left: 0 ; border: 2px">
+<ul>
+		
+<li>
+			
+<a href="http://linuxfr.org/section/D%E9veloppeur,0,1,8,0.html">
+			Excel/OLE accessibles   
+                        </a> - Da Linux French Page
+                </li>
+                
+<li>
+                        
+<a href="http://www.sogid.com/javalist/f2002/traiter_word_java.html">Discusi&oacute;n sobre POI en franc&eacute;s</a>
+                
+</li>
+        
+</ul>
+</div>
+    
+<a name="N100FD"></a><a name="Nihongo+%28Japon%E9s%29"></a>
+<h3>Nihongo (Japon&eacute;s)</h3>
+<div style="margin-left: 0 ; border: 2px">
+<ul>
+                
+<li>
+                        
+<a href="http://drpanda.freezope.org/Memo/docs/jakarta/poi/poi_sample">100% PureJava...</a> - Dr. Panda Portal
+                </li>
+                
+<li>
+                        
+<a href="http://www.gimlay.org/~andoh/java/javanew.html">
+                        What's new with java?
+                        </a> - gimlay.org
+                </li>
+                
+<li>
+<a href="http://taka-2.com/jclass/POI/">Java?Excel?????</a> - appears to show how to use Japanese with POI</li>
+                
+<li>
+<a href="http://www.tech-arts.co.jp/macosx/webobjects-jp/htdocs/3200/3218.html">Various discussion in Japanese including on POI</a>
+</li>
+                
+<li>
+<a href="http://muimi.com/j/jakarta/">Japanese resources on Jakarta projects including POI</a>
+</li>
+                
+<li>
+<a href="http://www.fk.urban.ne.jp/home/kishida/">Kishida's site</a> -- Weekly Forte Lectures -- includes a snip about POI and Japanese.</li>
+        
+</ul>
+</div>
+    
+<a name="N1012A"></a><a name="Russkii+Yazyk+%28Ruso%29"></a>
+<h3>Russkii Yazyk (Ruso)</h3>
+<div style="margin-left: 0 ; border: 2px">
+<ul>
+          
+<li>
+             
+<a href="http://www.nestor.minsk.by/kg/kg02/21/kg22108.html">
+             Probably a translation of the Javalobby announcement of 1.5-final
+             </a> -- Computer News (What's New)
+          </li>
+        
+</ul>
+</div>
+    
+<a name="N1013A"></a><a name="Hangul+%28Coreano%29"></a>
+<h3>Hangul (Coreano)</h3>
+<div style="margin-left: 0 ; border: 2px">
+<ul>
+           
+<li>
+             
+<a href="http://www.javabrain.co.kr/AnswerView?questionId=1189&categoryId=8">Various discussion in Korean about Excel output/APIs including POI</a>
+           
+</li>
+        
+</ul>
+</div>
+    
+<a name="N1014A"></a><a name="Ni+idea"></a>
+<h3>Ni idea</h3>
+<div style="margin-left: 0 ; border: 2px">
+<p>
+                &iexcl;Si entiendes alguno de estos idiomas, env&iacute;a un correo a la lista
+		dici&eacute;ndonos en qu&eacute; idioma est&aacute; escrito y lo pondremos donde corresponda!
+        </p>
+<ul>
+                
+<li> 
+                       
+<a href="http://www.javacentrix.com/index.htm">
+                       Si tuviera que adivinar, dir&iacute;a que es Tailand&eacute;s, pero a lo mejor
+		       alguno de vosotros lo sabe con seguridad.</a> - javacentrix.com
+                </li>
+        
+</ul>
+</div>
+  
+<div class="attribution">by&nbsp;Andrew C. Oliver,&nbsp;Tetsuya Kitahata,&nbsp;Agust&iacute;n Mart&iacute;n Barbero</div>
+</div>
+</td><td width="10"><img width="10" height="1" alt="" src="../../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<!--================= end Content==================-->
+</table>
+</td>
+</tr>
+</table>
+<!--================= end Menu, NavBar, Content ==================-->
+<!--================= start Footer ==================-->
+<table summary="footer" cellspacing="0" cellpadding="0" width="100%" border="0">
+<tr>
+<td colspan="2" height="1" bgcolor="#4C6C8F"><img height="1" width="1" alt="" src="../../skin/images/spacer.gif" class="spacer"><a href="../../skin/images/label.gif"></a><a href="../../skin/images/page.gif"></a><a href="../../skin/images/chapter.gif"></a><a href="../../skin/images/chapter_open.gif"></a><a href="../../skin/images/current.gif"></a><a href="/favicon.ico"></a></td>
+</tr>
+<tr>
+<td colspan="2" bgcolor="#CFDCED" class="copyright" align="center"><font size="2" face="Arial, Helvetica, Sans-Serif">Copyright &copy;
+          2003&nbsp;The Apache Software Foundation. All rights reserved.<script type="text/javascript" language="JavaScript"><!--
+              document.write(" - "+"Last Published: " + document.lastModified);
+            //  --></script></font></td>
+</tr>
+<tr>
+<td colspan="2" align="left" bgcolor="#CFDCED" class="logos"></td>
+</tr>
+</table>
+<!--================= end Footer ==================-->
+</body>
+</html>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE rss PUBLIC "-//Netscape Communications//DTD RSS 0.91//EN" "http://my.netscape.com/publish/formats/rss-0.91.dtd">
+<rss version="0.91"><channel><title>POI Changes</title><link>http://jakarta.apache.org/poi//changes.html</link><description>POI Changes</description><language>en-us</language><item><title>All add</title><link>http://jakarta.apache.org/poi//changes.html</link><description>All add
+              by 
+              POI-DEVELOPERS
+              :
+              Outlining support</description></item><item><title>All fix</title><link>http://jakarta.apache.org/poi//changes.html</link><description>All fix
+              by 
+              POI-DEVELOPERS
+              :
+              27574 - [PATCH] HSSFDateUtil.getExcelDate() is one hour off when DST changes</description></item><item><title>All fix</title><link>http://jakarta.apache.org/poi//changes.html</link><description>All fix
+              by 
+              POI-DEVELOPERS
+              :
+              26465 - [PATCH] wrong lastrow entry</description></item><item><title>All fix</title><link>http://jakarta.apache.org/poi//changes.html</link><description>All fix
+              by 
+              POI-DEVELOPERS
+              :
+              28203 - [PATCH] Unable to open read-write excel file including forms</description></item></channel></rss>

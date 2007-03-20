@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE knimeNode PUBLIC "-//UNIKN//DTD KNIME Node 1.0//EN" "http://www.knime.org/Node.dtd">
+<knimeNode type="Sink" icon="./xlswriter.gif">
+	<name>XLS Writer</name>
+	
+	<shortDescription>
+		Saves a datatable into a spreadsheet.
+	</shortDescription>
+	
+	<fullDescription>
+		<intro>
+ 		This node writes out the datatable coming through its input port
+ 		into a spreadsheet of a workbook. The files can be read then with 
+ 		other applications like Microsoft Excel, for example.
+ 		</intro>
+ 		<option name="Output file location">Enter a valid file name. 
+			You can also choose a previously selected file from the drop-down list,
+			or select a file from the &quot;Browse...&quot; dialog.
+			</option>		
+ 		<option name="Write column header">If checked, the column names will be
+ 			written out in the first row of the spreadsheet.
+			</option>		
+ 		<option name="Write row ID">If checked, the row IDs will be
+ 			added to the output, in the first colum of the spreadsheet.
+			</option>		
+ 		<option name="Missing Value Pattern">Enter a pattern 
+ 			that will be set for missing data values. If not specified, the
+ 			corresponding datacell of the spreadsheet will stay empty.
+			</option>
+	</fullDescription>
+	
+	<ports>
+		<dataIn index="0" name="Input table">The Datatable to write out.</dataIn>
+	</ports>	
+</knimeNode>
+
+

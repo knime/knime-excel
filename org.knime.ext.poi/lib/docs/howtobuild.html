@@ -1,0 +1,559 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>How To Build POI</title>
+<link type="text/css" href="skin/page.css" rel="stylesheet">
+</head>
+<body text="#000000" bgcolor="#FFFFFF">
+<!--================= start Navigation Path ==================-->
+<table summary="navigation path" width="100%" border="0" cellpadding="0" cellspacing="0">
+<tr>
+<td nowrap="nowrap" valign="middle" bgcolor="#CFDCED" height="20"><img height="1" width="5" alt="" src="skin/images/spacer.gif" class="spacer"><!--===== breadcrumb trail (javascript-generated) ====--><font size="2" face="Arial, Helvetica, Sans-serif"><script src="skin/breadcrumbs.js" language="JavaScript" type="text/javascript"></script></font></td>
+</tr>
+<tr>
+<td bgcolor="#4C6C8F" height="2"><img height="2" width="2" alt="" src="skin/images/spacer.gif" class="spacer"></td>
+</tr>
+</table>
+<!--================= end Navigation Path ==================-->
+<!--================= start Banner ==================-->
+<table summary="header with logos" width="100%" border="0" cellpadding="0" cellspacing="0">
+<tr>
+<!--================= start Group Logo ==================-->
+<td bgcolor="#294563"><a href="http://jakarta.apache.org"><img border="0" class="logoImage" alt="Jakarta" src="resources/images/group-logo.gif"></a></td>
+<!--================= end Group Logo ==================-->
+<!--================= start Project Logo ==================--><td width="100%" align="center" bgcolor="#294563"><a href="http://jakarta.apache.org/poi/"><img border="0" class="logoImage" alt="POI" src="resources/images/project-logo.gif"></a></td>
+<!--================= end Project Logo ==================-->
+<!--================= start Search ==================--><td valign="top" rowspan="2" bgcolor="#294563">
+<form target="_blank" action="http://www.google.com/search" method="get">
+<table summary="search" border="0" cellspacing="0" cellpadding="0" bgcolor="#4C6C8F">
+<tr>
+<td colspan="3"><img height="10" width="1" alt="" src="skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td><img height="1" width="1" alt="" src="skin/images/spacer.gif" class="spacer"></td><td nowrap="nowrap"><input value="jakarta.apache.org" name="sitesearch" type="hidden"><input size="15" name="q" id="query" type="text"><img height="1" width="5" alt="" src="skin/images/spacer.gif" class="spacer"><input name="Search" value="Search" type="submit">
+<br>
+<font face="Arial, Helvetica, Sans-serif" size="2" color="white">
+                      the jakarta site
+                      
+                      
+                    </font></td><td><img height="1" width="1" alt="" src="skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td><img alt="" border="0" height="10" width="9" src="skin/images/search-left.gif"></td><td><img height="1" width="1" alt="" src="skin/images/spacer.gif" class="spacer"></td><td><img alt="" border="0" height="10" width="9" src="skin/images/search-right.gif"></td>
+</tr>
+</table>
+</form>
+</td>
+<!--================= start Search ==================--><td bgcolor="#294563"><img height="10" width="10" alt="" src="skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td valign="bottom" bgcolor="#294563" colspan="2">
+<!--================= start Tabs ==================-->
+<div class="tab">
+<table summary="tab bar" border="0" cellpadding="0" cellspacing="0">
+<tr>
+<td width="6"><img alt="" height="8" width="6" src="skin/images/spacer.gif"></td><td valign="bottom">
+<table summary="selected tab" style="height: 1.8em" border="0" cellpadding="0" cellspacing="0">
+<tr>
+<td valign="top" width="5" bgcolor="#4C6C8F"><img height="5" width="5" alt="" src="skin/images/tabSel-left.gif"></td><td valign="middle" bgcolor="#4C6C8F"><font color="#ffffff" size="2" face="Arial, Helvetica, Sans-serif"><b><a class="base-selected" href="index.html">Home</a></b></font></td><td valign="top" width="5" bgcolor="#4C6C8F"><img height="5" width="5" alt="" src="skin/images/tabSel-right.gif"></td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</div>
+<!--================= end Tabs ==================-->
+</td><td bgcolor="#294563"><img alt="" width="1" height="1" src="skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td bgcolor="#4C6C8F" colspan="4"><img width="1" height="10" alt="" src="skin/images/spacer.gif" class="spacer"></td>
+</tr>
+</table>
+<!--================= end Banner ==================-->
+<!--================= start Menu, NavBar, Content ==================-->
+<table summary="page content" bgcolor="#ffffff" width="100%" border="0" cellpadding="0" cellspacing="0">
+<tr>
+<td valign="top">
+<table summary="menu" border="0" cellspacing="0" cellpadding="0">
+<tr>
+<!--================= start left top NavBar ==================-->
+<td rowspan="3" valign="top">
+<table summary="blue line" border="0" cellpadding="0" cellspacing="0">
+<tr>
+<td bgcolor="#294563"><img width="10" height="1" alt="" src="skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td bgcolor="#CFDCED"><font color="#4C6C8F" size="4" face="Arial, Helvetica, Sans-serif">&nbsp;</font></td>
+</tr>
+<tr>
+<td bgcolor="#294563"><img width="10" height="1" alt="" src="skin/images/spacer.gif" class="spacer"></td>
+</tr>
+</table>
+</td>
+<!--================= end left top NavBar ==================--><td bgcolor="#294563"><img width="1" height="1" alt="" src="skin/images/spacer.gif" class="spacer"></td><td valign="bottom" bgcolor="#4C6C8F"><img width="10" height="10" alt="" src="skin/images/spacer.gif" class="spacer"></td><td nowrap="nowrap" valign="top" bgcolor="#4C6C8F">
+<!--================= start Menu items ==================-->
+<div class="menu">
+<ul>
+<li>
+<font color="#CFDCED">Community</font>
+<ul>
+        
+<li>
+<a href="news.html">News</a>
+</li>
+        
+<li>
+<a href="mirrors.html">Mirrors</a>
+</li>
+        
+<li>
+<a href="changes.html">Changes</a>
+</li>
+        
+<li>
+<a href="todo.html">To Do</a>
+</li>
+        
+<li>
+<a href="getinvolved/index.html">Get Involved</a>
+</li>
+        
+<li>
+<a href="http://jakarta.apache.org/site/mail.html">Mailing Lists</a>
+</li>
+        
+<li>
+<a href="plan/POI20Vision.html">Vision</a>
+</li>
+        
+<li>
+<a href="historyandfuture.html">History and Future</a>
+</li>
+        
+<li>
+<a href="who.html">Who We Are</a>
+</li>
+        
+<li>
+<a href="resolutions/index.html">Resolutions</a>
+</li>
+    
+</ul>
+</li>
+<li>
+<font color="#CFDCED">Marketing</font>
+<ul>
+        
+<li>
+<a href="casestudies.html">Case Studies</a>
+</li>
+    
+</ul>
+</li>
+<li>
+<font color="#CFDCED">Project</font>
+<ul>
+        
+<li>
+<a href="overview.html">Overview</a>
+</li>
+        
+<li>
+<a href="poifs/index.html">POIFS</a>
+</li>
+        
+<li>
+<a href="hssf/index.html">HSSF</a>
+</li>
+        
+<li>
+<a href="http://jakarta.apache.org/poi/hwpf/index.html">HWPF</a>
+</li>
+        
+<li>
+<a href="hpsf/index.html">HPSF</a>
+</li>
+        
+<li>
+<a href="utils/index.html">POI-Utils</a>
+</li>
+        
+<li>
+<a href="http://jakarta.apache.org/builds/jakarta-poi/">Download</a>
+</li>
+    
+</ul>
+</li>
+<li>
+<font color="#CFDCED">Docs</font>
+<ul>
+        
+<li>
+<a href="apidocs/index.html">Javadocs</a>
+</li>
+        
+<li>
+<a href="faq.html">FAQ</a>
+</li>
+        
+<li>
+<a href="references/index.html">References</a>
+</li>
+        
+<li>
+<span class="sel"><font color="#ffcc00">How to Build</font></span>
+</li>
+    
+</ul>
+</li>
+<li>
+<font color="#CFDCED">Translations</font>
+<ul>
+        
+<li>
+<a href="trans/index.html">Index</a>
+</li>
+        
+<li>
+<a href="trans/guidelines.html">Guidelines</a>
+</li>
+        
+<li>
+<a href="trans/de/index.html">German</a>
+</li>
+        
+<li>
+<a href="trans/es/index.html">Spanish</a>
+</li>
+        
+<li>
+<a href="http://www.terra-intl.com/jakarta/poi/">Japanese</a>
+</li>
+    
+</ul>
+</li>
+<li>
+<font color="#CFDCED">Code</font>
+<ul>
+        
+        
+<li>
+<a href="http://jakarta.apache.org/site/cvsindex.html">CVS</a>
+</li>
+        
+<li>
+<a href="changelog.html">CVS Changelog</a>
+</li>
+        
+<li>
+<a href="http://nagoya.apache.org/bugzilla/buglist.cgi?votes=1&product=POI&order=bugs.votes">Top Voted Bugs</a>
+</li>
+        
+<li>
+<a href="http://nagoya.apache.org/bugzilla/buglist.cgi?product=POI">Bug Database</a>
+</li>
+        
+<li>
+<a href="http://nagoya.apache.org/bugzilla/buglist.cgi?product=POI&short_desc=%5BPATCH%5D&short_desc_type=allwordssubstr">Patches</a>
+</li>
+
+        
+<li>
+<a href="junit/index.html">Junit Test Results</a>
+</li>
+        
+<li>
+<a href="jdepend/index.html">Dependency Metrics</a>
+</li>
+        
+    
+</ul>
+</li>
+</ul>
+</div>
+<!--================= end Menu items ==================-->
+</td><td valign="bottom" bgcolor="#4C6C8F"><img width="10" height="10" alt="" src="skin/images/spacer.gif" class="spacer"></td><td bgcolor="#294563"><img width="1" height="1" alt="" src="skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td valign="bottom" align="left" colspan="2" rowspan="2" bgcolor="#4C6C8F"><img height="10" width="10" border="0" alt="" src="skin/images/menu-left.gif"></td><td bgcolor="#4C6C8F"><img height="10" width="10" alt="" src="skin/images/spacer.gif" class="spacer"></td><td valign="bottom" align="right" colspan="2" rowspan="2" bgcolor="#4C6C8F"><img height="10" width="10" border="0" alt="" src="skin/images/menu-right.gif"></td>
+</tr>
+<tr>
+<td height="1" bgcolor="#294563"><img width="1" height="1" alt="" src="skin/images/spacer.gif" class="spacer"></td>
+</tr>
+</table>
+</td><td valign="top" width="100%">
+<table summary="content" width="100%" border="0" cellpadding="0" cellspacing="0">
+<!--================= start middle NavBar ==================-->
+<tr>
+<td colspan="4" bgcolor="#294563"><img width="10" height="1" alt="" src="skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td align="left" width="10" bgcolor="#CFDCED"><img width="10" height="1" alt="" src="skin/images/spacer.gif" class="spacer"></td><td align="left" width="50%" bgcolor="#CFDCED"><font color="#4C6C8F" size="3" face="Arial, Helvetica, Sans-serif">
+                &nbsp;
+                
+                </font><img width="10" height="8" alt="" src="skin/images/spacer.gif" class="spacer"></td><td align="right" width="50%" bgcolor="#CFDCED"><font color="#4C6C8F" size="3" face="Arial, Helvetica, Sans-serif">
+                &nbsp;
+                
+                </font><img width="10" height="8" alt="" src="skin/images/spacer.gif" class="spacer"></td><td width="10" bgcolor="#CFDCED"><img width="10" height="1" alt="" src="skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td colspan="4" bgcolor="#294563"><img width="10" height="1" alt="" src="skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<!--================= end middle NavBar ==================-->
+<!--================= start Content==================-->
+<tr>
+<td align="left" width="10"><img width="10" height="1" alt="" src="skin/images/spacer.gif" class="spacer"></td><td colspan="2" align="left" width="100%">
+<div class="content">
+<table class="title" summary="">
+<tr>
+<td valign="middle">
+<h1>How To Build POI</h1>
+</td><td nowrap="nowrap" width="40" align="center"><a class="dida" href="howtobuild.pdf"><img alt="PDF" src="skin/images/pdfdoc.gif" class="skin"><br>
+          PDF</a></td>
+</tr>
+</table>
+<ul class="minitoc">
+<li>
+<a href="#Installing+Ant">Installing Ant</a>
+</li>
+<li>
+<a href="#Running+the+Build">Running the Build</a>
+</li>
+</ul>
+        
+<a name="N10015"></a><a name="Installing+Ant"></a>
+<h3>Installing Ant</h3>
+<div style="margin-left: 0 ; border: 2px">
+<p>
+                The POI build system requires two components to perform a
+                build.
+                <a href="http://jakarta.apache.org/ant/">Ant</a> and
+                <a href="http://xml.apache.org/forrest/">forrest</a>.
+            </p>
+<p>
+                Specifically the build has been tested to work with Ant version
+                1.5.3 and Forrest 0.4.  To install these products download
+                the distributions and follow the instructions in their
+                documentation.  Make sure you don't forget to set the
+                environment variables FORREST_HOME and ANT_HOME.  The
+                ANT_HOME/bin directory should be in the path.
+            </p>
+<p>
+                One these products are installed you will also need to
+                download some extra jar files required by the build.
+            </p>
+<table class="ForrestTable" cellspacing="1" cellpadding="4">
+                
+<tr>
+                    
+<th colspan="1" rowspan="1">Library</th>
+                    <th colspan="1" rowspan="1">Location</th>
+                
+</tr>
+                
+<tr>
+                    
+<td colspan="1" rowspan="1">junit</td>
+                    <td colspan="1" rowspan="1">http://www.ibiblio.org/maven/junit/jars/</td>
+                
+</tr>
+                
+<tr>
+                    
+<td colspan="1" rowspan="1">xerces</td>
+                    <td colspan="1" rowspan="1">http://www.ibiblio.org/maven/xerces/jars/</td>
+                
+</tr>
+                
+<tr>
+                    
+<td colspan="1" rowspan="1">jdepend</td>
+                    <td colspan="1" rowspan="1">http://www.ibiblio.org/maven/jdepend/jars/</td>
+                
+</tr>
+                
+<tr>
+                    
+<td colspan="1" rowspan="1">xalan</td>
+                    <td colspan="1" rowspan="1">http://www.ibiblio.org/maven/xalan/jars/</td>
+                
+</tr>
+            
+</table>
+<p>
+                Just pick the latest versions of these jars and place
+                them in ANT_HOME/lib
+            </p>
+</div>
+        
+<a name="N10074"></a><a name="Running+the+Build"></a>
+<h3>Running the Build</h3>
+<div style="margin-left: 0 ; border: 2px">
+<p>
+                On the first run the ant build system will download all
+                the jars required by the project to build ant.  If you're
+                behind a firewall this may cause some problems.  Should you
+                need to it's possible to manually put the jars in the
+                correct directories.  These can be obtained from here:
+            </p>
+<table class="ForrestTable" cellspacing="1" cellpadding="4">
+                
+<tr>
+                    
+<th colspan="1" rowspan="1">JAR</th>
+                    <th colspan="1" rowspan="1">Location</th>
+                
+</tr>
+                
+<tr>
+                    
+<td colspan="1" rowspan="1">/commons-logging/jars/commons-logging-1.0.1.jar</td>
+                    <td colspan="1" rowspan="1">lib</td>
+                
+</tr>
+                
+<tr>
+                    
+<td colspan="1" rowspan="1">/log4j/jars/log4j-1.2.8.jar</td>
+                    <td colspan="1" rowspan="1">lib</td>
+                
+</tr>
+                
+<tr>
+                    
+<td colspan="1" rowspan="1">/commons-beanutils/jars/commons-beanutils-1.6.jar</td>
+                    <td colspan="1" rowspan="1">src/contrib/lib</td>
+                
+</tr>
+                
+<tr>
+                    
+<td colspan="1" rowspan="1">/commons-collections/jars/commons-collections-2.1.jar</td>
+                    <td colspan="1" rowspan="1">src/contrib/lib</td>
+                
+</tr>
+                
+<tr>
+                    
+<td colspan="1" rowspan="1">/commons-lang/jars/commons-lang-1.0-b1.jar</td>
+                    <td colspan="1" rowspan="1">src/contrib/lib</td>
+                
+</tr>
+                
+<tr>
+                    
+<td colspan="1" rowspan="1">/junit/jars/junit-3.8.1.jar</td>
+                    <td colspan="1" rowspan="1">lib</td>
+                
+</tr>
+            
+</table>
+<p>
+                The main targets of interest to our users are:
+            </p>
+<table class="ForrestTable" cellspacing="1" cellpadding="4">
+                
+<tr>
+                    
+<th colspan="1" rowspan="1">Target</th>
+                    <th colspan="1" rowspan="1">Description</th>
+                
+</tr>
+                
+<tr>
+                    
+<td colspan="1" rowspan="1">clean</td>
+                    <td colspan="1" rowspan="1">Erase all build work products (ie, everything in the
+                        build directory</td>
+                
+</tr>
+                
+<tr>
+                    
+<td colspan="1" rowspan="1">compile</td>
+                    <td colspan="1" rowspan="1">Compiles all files from main, contrib and scratchpad</td>
+                
+</tr>
+                
+<tr>
+                    
+<td colspan="1" rowspan="1">test</td>
+                    <td colspan="1" rowspan="1">Run all unit tests from main, contrib and scratchpad</td>
+                
+</tr>
+                
+<tr>
+                    
+<td colspan="1" rowspan="1">docs</td>
+                    <td colspan="1" rowspan="1">Generate all documentation for the system</td>
+                
+</tr>
+                
+<tr>
+                    
+<td colspan="1" rowspan="1">generate-records</td>
+                    <td colspan="1" rowspan="1">Generate records from the XML record defintitions</td>
+                
+</tr>
+                
+<tr>
+                    
+<td colspan="1" rowspan="1">generate-types</td>
+                    <td colspan="1" rowspan="1">Generate types from the XML type definitions (this is
+                        for HDF).</td>
+                
+</tr>
+                
+<tr>
+                    
+<td colspan="1" rowspan="1">jar</td>
+                    <td colspan="1" rowspan="1">Produce jar files</td>
+                
+</tr>
+                
+<tr>
+                    
+<td colspan="1" rowspan="1">dist</td>
+                    <td colspan="1" rowspan="1">Create a distribution.</td>
+                
+</tr>
+                
+<tr>
+                    
+<td colspan="1" rowspan="1">clean-dist</td>
+                    <td colspan="1" rowspan="1">Runs clean before creating the distribution.</td>
+                
+</tr>
+            
+</table>
+</div>
+    
+<div class="attribution">by&nbsp;Glen Stampoultzis</div>
+</div>
+</td><td width="10"><img width="10" height="1" alt="" src="skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<!--================= end Content==================-->
+</table>
+</td>
+</tr>
+</table>
+<!--================= end Menu, NavBar, Content ==================-->
+<!--================= start Footer ==================-->
+<table summary="footer" cellspacing="0" cellpadding="0" width="100%" border="0">
+<tr>
+<td colspan="2" height="1" bgcolor="#4C6C8F"><img height="1" width="1" alt="" src="skin/images/spacer.gif" class="spacer"><a href="skin/images/label.gif"></a><a href="skin/images/page.gif"></a><a href="skin/images/chapter.gif"></a><a href="skin/images/chapter_open.gif"></a><a href="skin/images/current.gif"></a><a href="/favicon.ico"></a></td>
+</tr>
+<tr>
+<td colspan="2" bgcolor="#CFDCED" class="copyright" align="center"><font size="2" face="Arial, Helvetica, Sans-Serif">Copyright &copy;
+          2003&nbsp;The Apache Software Foundation. All rights reserved.<script type="text/javascript" language="JavaScript"><!--
+              document.write(" - "+"Last Published: " + document.lastModified);
+            //  --></script></font></td>
+</tr>
+<tr>
+<td colspan="2" align="left" bgcolor="#CFDCED" class="logos"></td>
+</tr>
+</table>
+<!--================= end Footer ==================-->
+</body>
+</html>

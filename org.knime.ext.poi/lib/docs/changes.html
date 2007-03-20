@@ -1,0 +1,990 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>History of Changes</title>
+<link type="text/css" href="skin/page.css" rel="stylesheet">
+</head>
+<body text="#000000" bgcolor="#FFFFFF">
+<!--================= start Navigation Path ==================-->
+<table summary="navigation path" width="100%" border="0" cellpadding="0" cellspacing="0">
+<tr>
+<td nowrap="nowrap" valign="middle" bgcolor="#CFDCED" height="20"><img height="1" width="5" alt="" src="skin/images/spacer.gif" class="spacer"><!--===== breadcrumb trail (javascript-generated) ====--><font size="2" face="Arial, Helvetica, Sans-serif"><script src="skin/breadcrumbs.js" language="JavaScript" type="text/javascript"></script></font></td>
+</tr>
+<tr>
+<td bgcolor="#4C6C8F" height="2"><img height="2" width="2" alt="" src="skin/images/spacer.gif" class="spacer"></td>
+</tr>
+</table>
+<!--================= end Navigation Path ==================-->
+<!--================= start Banner ==================-->
+<table summary="header with logos" width="100%" border="0" cellpadding="0" cellspacing="0">
+<tr>
+<!--================= start Group Logo ==================-->
+<td bgcolor="#294563"><a href="http://jakarta.apache.org"><img border="0" class="logoImage" alt="Jakarta" src="resources/images/group-logo.gif"></a></td>
+<!--================= end Group Logo ==================-->
+<!--================= start Project Logo ==================--><td width="100%" align="center" bgcolor="#294563"><a href="http://jakarta.apache.org/poi/"><img border="0" class="logoImage" alt="POI" src="resources/images/project-logo.gif"></a></td>
+<!--================= end Project Logo ==================-->
+<!--================= start Search ==================--><td valign="top" rowspan="2" bgcolor="#294563">
+<form target="_blank" action="http://www.google.com/search" method="get">
+<table summary="search" border="0" cellspacing="0" cellpadding="0" bgcolor="#4C6C8F">
+<tr>
+<td colspan="3"><img height="10" width="1" alt="" src="skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td><img height="1" width="1" alt="" src="skin/images/spacer.gif" class="spacer"></td><td nowrap="nowrap"><input value="jakarta.apache.org" name="sitesearch" type="hidden"><input size="15" name="q" id="query" type="text"><img height="1" width="5" alt="" src="skin/images/spacer.gif" class="spacer"><input name="Search" value="Search" type="submit">
+<br>
+<font face="Arial, Helvetica, Sans-serif" size="2" color="white">
+                      the jakarta site
+                      
+                      
+                    </font></td><td><img height="1" width="1" alt="" src="skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td><img alt="" border="0" height="10" width="9" src="skin/images/search-left.gif"></td><td><img height="1" width="1" alt="" src="skin/images/spacer.gif" class="spacer"></td><td><img alt="" border="0" height="10" width="9" src="skin/images/search-right.gif"></td>
+</tr>
+</table>
+</form>
+</td>
+<!--================= start Search ==================--><td bgcolor="#294563"><img height="10" width="10" alt="" src="skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td valign="bottom" bgcolor="#294563" colspan="2">
+<!--================= start Tabs ==================-->
+<div class="tab">
+<table summary="tab bar" border="0" cellpadding="0" cellspacing="0">
+<tr>
+<td width="6"><img alt="" height="8" width="6" src="skin/images/spacer.gif"></td><td valign="bottom">
+<table summary="selected tab" style="height: 1.8em" border="0" cellpadding="0" cellspacing="0">
+<tr>
+<td valign="top" width="5" bgcolor="#4C6C8F"><img height="5" width="5" alt="" src="skin/images/tabSel-left.gif"></td><td valign="middle" bgcolor="#4C6C8F"><font color="#ffffff" size="2" face="Arial, Helvetica, Sans-serif"><b><a class="base-selected" href="index.html">Home</a></b></font></td><td valign="top" width="5" bgcolor="#4C6C8F"><img height="5" width="5" alt="" src="skin/images/tabSel-right.gif"></td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</div>
+<!--================= end Tabs ==================-->
+</td><td bgcolor="#294563"><img alt="" width="1" height="1" src="skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td bgcolor="#4C6C8F" colspan="4"><img width="1" height="10" alt="" src="skin/images/spacer.gif" class="spacer"></td>
+</tr>
+</table>
+<!--================= end Banner ==================-->
+<!--================= start Menu, NavBar, Content ==================-->
+<table summary="page content" bgcolor="#ffffff" width="100%" border="0" cellpadding="0" cellspacing="0">
+<tr>
+<td valign="top">
+<table summary="menu" border="0" cellspacing="0" cellpadding="0">
+<tr>
+<!--================= start left top NavBar ==================-->
+<td rowspan="3" valign="top">
+<table summary="blue line" border="0" cellpadding="0" cellspacing="0">
+<tr>
+<td bgcolor="#294563"><img width="10" height="1" alt="" src="skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td bgcolor="#CFDCED"><font color="#4C6C8F" size="4" face="Arial, Helvetica, Sans-serif">&nbsp;</font></td>
+</tr>
+<tr>
+<td bgcolor="#294563"><img width="10" height="1" alt="" src="skin/images/spacer.gif" class="spacer"></td>
+</tr>
+</table>
+</td>
+<!--================= end left top NavBar ==================--><td bgcolor="#294563"><img width="1" height="1" alt="" src="skin/images/spacer.gif" class="spacer"></td><td valign="bottom" bgcolor="#4C6C8F"><img width="10" height="10" alt="" src="skin/images/spacer.gif" class="spacer"></td><td nowrap="nowrap" valign="top" bgcolor="#4C6C8F">
+<!--================= start Menu items ==================-->
+<div class="menu">
+<ul>
+<li>
+<font color="#CFDCED">Community</font>
+<ul>
+        
+<li>
+<a href="news.html">News</a>
+</li>
+        
+<li>
+<a href="mirrors.html">Mirrors</a>
+</li>
+        
+<li>
+<span class="sel"><font color="#ffcc00">Changes</font></span>
+</li>
+        
+<li>
+<a href="todo.html">To Do</a>
+</li>
+        
+<li>
+<a href="getinvolved/index.html">Get Involved</a>
+</li>
+        
+<li>
+<a href="http://jakarta.apache.org/site/mail.html">Mailing Lists</a>
+</li>
+        
+<li>
+<a href="plan/POI20Vision.html">Vision</a>
+</li>
+        
+<li>
+<a href="historyandfuture.html">History and Future</a>
+</li>
+        
+<li>
+<a href="who.html">Who We Are</a>
+</li>
+        
+<li>
+<a href="resolutions/index.html">Resolutions</a>
+</li>
+    
+</ul>
+</li>
+<li>
+<font color="#CFDCED">Marketing</font>
+<ul>
+        
+<li>
+<a href="casestudies.html">Case Studies</a>
+</li>
+    
+</ul>
+</li>
+<li>
+<font color="#CFDCED">Project</font>
+<ul>
+        
+<li>
+<a href="overview.html">Overview</a>
+</li>
+        
+<li>
+<a href="poifs/index.html">POIFS</a>
+</li>
+        
+<li>
+<a href="hssf/index.html">HSSF</a>
+</li>
+        
+<li>
+<a href="http://jakarta.apache.org/poi/hwpf/index.html">HWPF</a>
+</li>
+        
+<li>
+<a href="hpsf/index.html">HPSF</a>
+</li>
+        
+<li>
+<a href="utils/index.html">POI-Utils</a>
+</li>
+        
+<li>
+<a href="http://jakarta.apache.org/builds/jakarta-poi/">Download</a>
+</li>
+    
+</ul>
+</li>
+<li>
+<font color="#CFDCED">Docs</font>
+<ul>
+        
+<li>
+<a href="apidocs/index.html">Javadocs</a>
+</li>
+        
+<li>
+<a href="faq.html">FAQ</a>
+</li>
+        
+<li>
+<a href="references/index.html">References</a>
+</li>
+        
+<li>
+<a href="howtobuild.html">How to Build</a>
+</li>
+    
+</ul>
+</li>
+<li>
+<font color="#CFDCED">Translations</font>
+<ul>
+        
+<li>
+<a href="trans/index.html">Index</a>
+</li>
+        
+<li>
+<a href="trans/guidelines.html">Guidelines</a>
+</li>
+        
+<li>
+<a href="trans/de/index.html">German</a>
+</li>
+        
+<li>
+<a href="trans/es/index.html">Spanish</a>
+</li>
+        
+<li>
+<a href="http://www.terra-intl.com/jakarta/poi/">Japanese</a>
+</li>
+    
+</ul>
+</li>
+<li>
+<font color="#CFDCED">Code</font>
+<ul>
+        
+        
+<li>
+<a href="http://jakarta.apache.org/site/cvsindex.html">CVS</a>
+</li>
+        
+<li>
+<a href="changelog.html">CVS Changelog</a>
+</li>
+        
+<li>
+<a href="http://nagoya.apache.org/bugzilla/buglist.cgi?votes=1&product=POI&order=bugs.votes">Top Voted Bugs</a>
+</li>
+        
+<li>
+<a href="http://nagoya.apache.org/bugzilla/buglist.cgi?product=POI">Bug Database</a>
+</li>
+        
+<li>
+<a href="http://nagoya.apache.org/bugzilla/buglist.cgi?product=POI&short_desc=%5BPATCH%5D&short_desc_type=allwordssubstr">Patches</a>
+</li>
+
+        
+<li>
+<a href="junit/index.html">Junit Test Results</a>
+</li>
+        
+<li>
+<a href="jdepend/index.html">Dependency Metrics</a>
+</li>
+        
+    
+</ul>
+</li>
+</ul>
+</div>
+<!--================= end Menu items ==================-->
+</td><td valign="bottom" bgcolor="#4C6C8F"><img width="10" height="10" alt="" src="skin/images/spacer.gif" class="spacer"></td><td bgcolor="#294563"><img width="1" height="1" alt="" src="skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td valign="bottom" align="left" colspan="2" rowspan="2" bgcolor="#4C6C8F"><img height="10" width="10" border="0" alt="" src="skin/images/menu-left.gif"></td><td bgcolor="#4C6C8F"><img height="10" width="10" alt="" src="skin/images/spacer.gif" class="spacer"></td><td valign="bottom" align="right" colspan="2" rowspan="2" bgcolor="#4C6C8F"><img height="10" width="10" border="0" alt="" src="skin/images/menu-right.gif"></td>
+</tr>
+<tr>
+<td height="1" bgcolor="#294563"><img width="1" height="1" alt="" src="skin/images/spacer.gif" class="spacer"></td>
+</tr>
+</table>
+</td><td valign="top" width="100%">
+<table summary="content" width="100%" border="0" cellpadding="0" cellspacing="0">
+<!--================= start middle NavBar ==================-->
+<tr>
+<td colspan="4" bgcolor="#294563"><img width="10" height="1" alt="" src="skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td align="left" width="10" bgcolor="#CFDCED"><img width="10" height="1" alt="" src="skin/images/spacer.gif" class="spacer"></td><td align="left" width="50%" bgcolor="#CFDCED"><font color="#4C6C8F" size="3" face="Arial, Helvetica, Sans-serif">
+                &nbsp;
+                
+                </font><img width="10" height="8" alt="" src="skin/images/spacer.gif" class="spacer"></td><td align="right" width="50%" bgcolor="#CFDCED"><font color="#4C6C8F" size="3" face="Arial, Helvetica, Sans-serif">
+                &nbsp;
+                
+                </font><img width="10" height="8" alt="" src="skin/images/spacer.gif" class="spacer"></td><td width="10" bgcolor="#CFDCED"><img width="10" height="1" alt="" src="skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td colspan="4" bgcolor="#294563"><img width="10" height="1" alt="" src="skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<!--================= end middle NavBar ==================-->
+<!--================= start Content==================-->
+<tr>
+<td align="left" width="10"><img width="10" height="1" alt="" src="skin/images/spacer.gif" class="spacer"></td><td colspan="2" align="left" width="100%">
+<div class="content">
+<table class="title" summary="">
+<tr>
+<td valign="middle">
+<h1>History of Changes</h1>
+</td><td nowrap="nowrap" width="40" align="center"><a class="dida" href="changes.pdf"><img alt="PDF" src="skin/images/pdfdoc.gif" class="skin"><br>
+          PDF</a></td>
+</tr>
+</table>
+<ul class="minitoc">
+<li>
+<a href="#2.5.1-FINAL">Version 2.5.1-FINAL (29 Feburary 2004)</a>
+</li>
+<li>
+<a href="#2.5-FINAL">Version 2.5-FINAL (29 Feburary 2004)</a>
+</li>
+<li>
+<a href="#2.0-FINAL">Version 2.0-FINAL (26 Janurary 2004)</a>
+</li>
+<li>
+<a href="#2.0-RC2">Version 2.0-RC2 (11 Janurary 2004)</a>
+</li>
+<li>
+<a href="#">Version (2 November 2003)</a>
+</li>
+<li>
+<a href="#2.0-pre3">Version 2.0-pre3 (29 July 2003)</a>
+</li>
+<li>
+<a href="#2.0-pre2">Version 2.0-pre2 (6 July 2003)</a>
+</li>
+<li>
+<a href="#2.0-pre1">Version 2.0-pre1 (17 May 2003)</a>
+</li>
+<li>
+<a href="#1.10-dev">Version 1.10-dev (19 Feb 2003)</a>
+</li>
+<li>
+<a href="#1.8-dev">Version 1.8-dev (20 Sep 2002)</a>
+</li>
+<li>
+<a href="#1.7-dev">Version 1.7-dev (???)</a>
+</li>
+<li>
+<a href="#1.5.1">Version 1.5.1 (16 June 2002)</a>
+</li>
+<li>
+<a href="#1.5">Version 1.5 (06 May 2002)</a>
+</li>
+<li>
+<a href="#1.1.0">Version 1.1.0 (Release date not recorded)</a>
+</li>
+<li>
+<a href="#1.0.0">Version 1.0.0 (Release date not recorded)</a>
+</li>
+<li>
+<a href="#0.14.0">Version 0.14.0 (Release date not recorded)</a>
+</li>
+<li>
+<a href="#0.13.0">Version 0.13.0 (Release date not recorded)</a>
+</li>
+<li>
+<a href="#0.12.0">Version 0.12.0 (Release date not recorded)</a>
+</li>
+<li>
+<a href="#0.11.0">Version 0.11.0 (Release date not recorded)</a>
+</li>
+<li>
+<a href="#0.10.0">Version 0.10.0 (Release date not recorded)</a>
+</li>
+<li>
+<a href="#0.7 (and interim releases)">Version 0.7 (and interim releases) (Release date not recorded)</a>
+</li>
+<li>
+<a href="#0.6 (release)">Version 0.6 (release) (Release date not recorded)</a>
+</li>
+</ul>
+<p>
+<a href="changes.rss"><img alt="RSS" src="images/rss.png"></a>
+</p>
+
+        
+<a name="N1000E"></a><a name="2.5.1-FINAL"></a>
+<h3>Version 2.5.1-FINAL (29 Feburary 2004)</h3>
+<div style="margin-left: 0 ; border: 2px">
+<ul>
+            
+<li>
+<img class="icon" alt="add" src="images/add.jpg">Outlining support(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">27574 - [PATCH] HSSFDateUtil.getExcelDate() is one hour off when DST changes(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">26465 - [PATCH] wrong lastrow entry(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">28203 - [PATCH] Unable to open read-write excel file including forms(POI-DEVELOPERS)</li>
+        
+</ul>
+</div>
+ 
+        
+<a name="N1002D"></a><a name="2.5-FINAL"></a>
+<h3>Version 2.5-FINAL (29 Feburary 2004)</h3>
+<div style="margin-left: 0 ; border: 2px">
+<ul>
+            
+<li>
+<img class="icon" alt="add" src="images/add.jpg">Add support for the Escher file format(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">27005 java.lang.IndexOutOfBoundsException during Workbook.cloneSheet()(POI-DEVELOPERS)</li>
+        
+</ul>
+</div>
+
+        
+<a name="N10040"></a><a name="2.0-FINAL"></a>
+<h3>Version 2.0-FINAL (26 Janurary 2004)</h3>
+<div style="margin-left: 0 ; border: 2px">
+<ul>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">No changes(POI-DEVELOPERS)</li>
+        
+</ul>
+</div>
+
+        
+<a name="N1004D"></a><a name="2.0-RC2"></a>
+<h3>Version 2.0-RC2 (11 Janurary 2004)</h3>
+<div style="margin-left: 0 ; border: 2px">
+<ul>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">Bug 25695 - HSSFCell.getStringCellValue() on cell which has string formula will return swap bye unicode characters.(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">Updated website for upcoming release(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">Formula Parser fixes with tests, by Peter M Murray Bug 25457(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">Fixed cloning merge regions(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">The cloned reference for merged cells did not create a new collection, so deletes cascaded to the original.(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">Fix to 24519 call to getCustomPalette() from a newly created workbook now works(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">Fix supplied for bug 24397 where some compilation got ambiguous classes.  Explicitly imports the classes.  Patch supplied by Jean-Pierre Paris.(POI-DEVELOPERS)</li>
+        
+</ul>
+</div>
+
+        
+<a name="N1007E"></a>
+<h3>Version  (2 November 2003)</h3>
+<div style="margin-left: 0 ; border: 2px">
+<ul>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">12561 (Min)	HSSFWorkbook throws Exceptions(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">12730 (Nor)	values dont get copied to another sheet.(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">13224 (Maj)	Exception thrown when cell has =Names call(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">13796 (Nor)	Error Reading Formula Record (optimized if, external link)(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">13921 (Nor)	Sheet name cannot exceed 31 characters and cannot contain :(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">14330 (Nor)	Error reading FormulaRecord(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">14460 (Nor)	Name in Formula - ArrayOutOfBoundsException(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">15228 (Cri)	[Urgent] ArrayIndexoutofbounds Exception. POI - Version 1.8(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">16488 (Maj)	Unable to open written spreadsheet in Excel, but can in Open(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">16559 (Nor)	testCustomPalette.xls crashes Excel 97(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">16560 (Nor)	testBoolErr.xls crashes Excel '97(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">17374 (Min)	HSSFFont - BOLDWEIGHT_NORMAL(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">18800 (Maj)	The sheet made by HSSFWorkbook#cloneSheet() doesn't work cor(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">18846 (Min)	[PATCH][RFE]Refactor the transformation between byte array a(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">19599 (Min)	java.lang.IllegalArgumentException(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">19961 (Nor)	[PATCH] Sheet.getColumnWidth() returns wrong value(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">21066 (Blo)	Can not modify a blank spreadsheet(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">21444 (Enh)	[PATCH] Macro functions(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">21447 (Nor)	[RFE]String Formula Cells(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">21674 (Enh)	[PATCH] Documentation changes for @(Greater|Less|Not)EqualPt(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">21863 (Enh)	[PATCH] build.xml fixes(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">22195 (Nor)	[RFE] [PATCH] Support for Storage Class ID(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">22742 (Cri)	Failed to create HSSFWorkbook!(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">22922 (Cri)	HSSFSheet.shiftRows() throws java.lang.IndexOutOfBoundsExcep(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">22963 (Nor)	org.apache.poi.hpsf.SummaryInformation.getEditTime() should(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">24149 (Maj)	Error passing inputstream to POIFSFileSystem(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">21722 (Nor)	[PATCH] Add a ProtectRecord to Sheets and give control over(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">9576  (Nor) 	[PATCH] DBCELL, INDEX EXTSST (was Acess 97 import)(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">13478 (Blo)	[PATCH] [RFE] POIFS, RawDataBlock: Missing workaround for lo(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">14824 (Nor)	Unable to modify empty sheets(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">12843 (Cri)	[PATCH] Make POI handle chinese better(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">15353 (Nor)	[RFE] creating a cell with a hyperlink(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">15375 (Blo)	Post 1.5.1 POI causes spreadsheet to become unopenable.(POI-DEVELOPERS)</li>
+        
+</ul>
+</div>
+
+        
+<a name="N1014B"></a><a name="2.0-pre3"></a>
+<h3>Version 2.0-pre3 (29 July 2003)</h3>
+<div style="margin-left: 0 ; border: 2px">
+<ul>
+            
+<li>
+<img class="icon" alt="add" src="images/add.jpg">HPSF is now able to read properties which are given in the property set stream but which don't have a value ("variant" type VT_EMPTY). The getXXX() methods of the PropertySet class return null if their return type is a reference (like a string) or 0 if the return type is numeric. Details about the return types and about how to distinguish between a property value of zero and a property value that is not present can be found in the API documentation.(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">Gridlines can now be turned on and off(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">NamePTG refactoring/fixes(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">minor fixes to ExternSheet and formula strings(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">Sheet comparisons now ignore case(POI-DEVELOPERS)</li>
+        
+</ul>
+</div>
+
+        
+<a name="N10170"></a><a name="2.0-pre2"></a>
+<h3>Version 2.0-pre2 (6 July 2003)</h3>
+<div style="margin-left: 0 ; border: 2px">
+<ul>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">A nasty concurrency problem has been fixed. Any users working in a multithreaded environment should seriously consider upgrading to this release.(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">The EXTSST record has been implemented. This record is used by excel for optimized reading of strings.(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">When rows are shifted, the merged regions now move with them. If a row contains 2 merged cells, the resulting shifted row should have those cells merged as well.(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">There were some issues when removing merged
+		    regions (specifically, removing all of them and then adding some more) and have been resolved.(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">When a sheet contained shared formulas (when a formula is
+		    dragged across greater than 6 cells), the clone would fail. We now support cloning of
+		    sheets that contain this Excel optimization. (POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="add" src="images/add.jpg">Support added for reading formulas with UnaryPlus and UnaryMinus operators.(POI-DEVELOPERS)</li>
+        
+</ul>
+</div>
+        
+<a name="N1019B"></a><a name="2.0-pre1"></a>
+<h3>Version 2.0-pre1 (17 May 2003)</h3>
+<div style="margin-left: 0 ; border: 2px">
+<ul>
+            
+<li>
+<img class="icon" alt="add" src="images/add.jpg">Patch applied for deep cloning of worksheets was provided(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="add" src="images/add.jpg">Patch applied to allow sheet reordering(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="add" src="images/add.jpg">Added additional print area setting methods using row/column numbers(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">HDF:  Negative Array size fix(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">Added argument pointers to support the IF formula(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">Formulas: Added special character support for string literals, specifically for SUMIF formula support and addresses a bug as well(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">BlockingInputStream committed to help ensure reads(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">Fixed problem with NaN values differing from the investigated value from file reads in FormulaRecords(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">Patch for getColumnWidth in HSSF(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="add" src="images/add.jpg">Patch for dealing with mult-level numbered lists in HDF(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">Due to named reference work, several named-ranged bugs were closed(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">Patch applied to prevent sheet corruption after a template modification(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">Shared Formulas now Supported(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">Added GreaterEqual, LessEqual and NotEqual to Formula Parser(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">Added GreaterThan and LessThan functionality to formulas(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">Patches for i10n(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">POI Build System Updated(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">font names can now be null(POI-DEVELOPERS)</li>
+        
+</ul>
+</div>
+        
+<a name="N1020E"></a><a name="1.10-dev"></a>
+<h3>Version 1.10-dev (19 Feb 2003)</h3>
+<div style="margin-left: 0 ; border: 2px">
+<ul>
+            
+<li>
+<img class="icon" alt="add" src="images/add.jpg">Support for zoom level(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="add" src="images/add.jpg">Freeze and split pane support(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="add" src="images/add.jpg">Row and column headers on printouts(POI-DEVELOPERS)</li>
+        
+</ul>
+</div>
+        
+<a name="N10227"></a><a name="1.8-dev"></a>
+<h3>Version 1.8-dev (20 Sep 2002)</h3>
+<div style="margin-left: 0 ; border: 2px">
+<ul>
+            
+<li>
+<img class="icon" alt="add" src="images/add.jpg">Custom Data Format Support(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="add" src="images/add.jpg">Enhanced Unicode Support for Russian and Japanese(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="add" src="images/add.jpg">Enhanced formula support including read-only for
+                "optimized if" statements.(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="add" src="images/add.jpg">Support for cloning objects(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="add" src="images/add.jpg">Fixes for header/footer(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="add" src="images/add.jpg">Spanish Documentation translations(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="add" src="images/add.jpg">Support for preserving VBA macros(POI-DEVELOPERS)</li>
+        
+</ul>
+</div>
+        
+<a name="N10258"></a><a name="1.7-dev"></a>
+<h3>Version 1.7-dev (???)</h3>
+<div style="margin-left: 0 ; border: 2px">
+<ul>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">Removed runtime dependency on commons logging.(NKB)</li>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">Formula support(POI-DEVELOPERS)</li>
+        
+</ul>
+</div>
+        
+<a name="N1026B"></a><a name="1.5.1"></a>
+<h3>Version 1.5.1 (16 June 2002)</h3>
+<div style="margin-left: 0 ; border: 2px">
+<ul>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">Removed depedency on commons logging.  Now define poi.logging system property to enable logging to standard out.(GJS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">Fixed SST string handling so that spreadsheets with rich text or extended text will be read correctly.(GJS)</li>
+        
+</ul>
+</div>
+        
+<a name="N1027E"></a><a name="1.5"></a>
+<h3>Version 1.5 (06 May 2002)</h3>
+<div style="margin-left: 0 ; border: 2px">
+<ul>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">New project build.(NKB)</li>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">New project documentation system based on Cocoon.(NKB)</li>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">Package rename(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="fix" src="images/fix.jpg">Various bug fixes(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="add" src="images/add.jpg">Early stages of HSF development (not ready for development)(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="add" src="images/add.jpg">Initial low level record support for charting (not complete)(POI-DEVELOPERS)</li>
+        
+</ul>
+</div>
+        
+<a name="N102A9"></a><a name="1.1.0"></a>
+<h3>Version 1.1.0 (Release date not recorded)</h3>
+<div style="margin-left: 0 ; border: 2px">
+<ul>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">Created new event model(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">Optimizations made to HSSF including aggregate records for
+                values, rows, etc.(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">predictive sizing, offset based writing (instead of lots of
+                array copies)(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">minor re-factoring and bug fixes.(POI-DEVELOPERS)</li>
+        
+</ul>
+</div>
+        
+<a name="N102C8"></a><a name="1.0.0"></a>
+<h3>Version 1.0.0 (Release date not recorded)</h3>
+<div style="margin-left: 0 ; border: 2px">
+<ul>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">Minor documentation updates.(POI-DEVELOPERS)</li>
+        
+</ul>
+</div>
+        
+<a name="N102D5"></a><a name="0.14.0"></a>
+<h3>Version 0.14.0 (Release date not recorded)</h3>
+<div style="margin-left: 0 ; border: 2px">
+<ul>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">Added DataFormat helper class and exposed set and get format
+                on HSSFCellStyle(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">Fixed column width apis (unit wise) and various javadoc on
+                the subject(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">Fix for Dimensions record (again)... (one of these days I'll
+                write a unit test for this ;-p).(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">Some optimization on sheet creation.(POI-DEVELOPERS)</li>
+        
+</ul>
+</div>
+        
+<a name="N102F4"></a><a name="0.13.0"></a>
+<h3>Version 0.13.0 (Release date not recorded)</h3>
+<div style="margin-left: 0 ; border: 2px">
+<ul>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">Changes not recorded.(POI-DEVELOPERS)</li>
+        
+</ul>
+</div>
+        
+<a name="N10301"></a><a name="0.12.0"></a>
+<h3>Version 0.12.0 (Release date not recorded)</h3>
+<div style="margin-left: 0 ; border: 2px">
+<ul>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">Added MulBlank, Blank, ColInfo(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">Added log4j facility and removed all sys.out type logging(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">Added support for adding font's, styles and corresponding
+                high level api for styling cells(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">added support for changing row height, cell width and default
+                row height/cell width.(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">Added fixes for internationalization (UTF-16 should work now
+                from HSSFCell.setStringValue, etc when the encoding is set)(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">added support for adding/removing and naming sheets.(POI-DEVELOPERS)</li>
+        
+</ul>
+</div>
+        
+<a name="N1032C"></a><a name="0.11.0"></a>
+<h3>Version 0.11.0 (Release date not recorded)</h3>
+<div style="margin-left: 0 ; border: 2px">
+<ul>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">Bugfix release. We were throwing an exception when reading
+                RKRecord objects.(POI-DEVELOPERS)</li>
+        
+</ul>
+</div>
+        
+<a name="N10339"></a><a name="0.10.0"></a>
+<h3>Version 0.10.0 (Release date not recorded)</h3>
+<div style="margin-left: 0 ; border: 2px">
+<ul>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">Got continuation records to work (read/write)(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">Added various pre-support for formulas(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">Massive API reorganization, repackaging.(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">BiffViewer class added for validating HSSF &amp; POI and/or
+                HSSF Output.(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">Better API support for modification.(POI-DEVELOPERS)</li>
+        
+</ul>
+</div>
+        
+<a name="N1035E"></a><a name="0.7 (and interim releases)"></a>
+<h3>Version 0.7 (and interim releases) (Release date not recorded)</h3>
+<div style="margin-left: 0 ; border: 2px">
+<ul>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">Added encoding flag to high and low level api to use utf-16
+                when needed (HSSFCell.setEncoding())(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">added read only support for Label records (which are
+                reinterpreted as LabelSST when written)(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">Broken continuation record implementation (oops)(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">BiffViewer class added for validating HSSF &amp; POI and/or
+                HSSF Output.(POI-DEVELOPERS)</li>
+        
+</ul>
+</div>
+        
+<a name="N1037D"></a><a name="0.6 (release)"></a>
+<h3>Version 0.6 (release) (Release date not recorded)</h3>
+<div style="margin-left: 0 ; border: 2px">
+<ul>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">Support for read/write and modify.(POI-DEVELOPERS)</li>
+            
+<li>
+<img class="icon" alt="update" src="images/update.jpg">Read only support for MulRK records (converted to Number when
+                writing)
+            (POI-DEVELOPERS)</li>
+        
+</ul>
+</div>
+
+    
+<div class="attribution"></div>
+</div>
+</td><td width="10"><img width="10" height="1" alt="" src="skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<!--================= end Content==================-->
+</table>
+</td>
+</tr>
+</table>
+<!--================= end Menu, NavBar, Content ==================-->
+<!--================= start Footer ==================-->
+<table summary="footer" cellspacing="0" cellpadding="0" width="100%" border="0">
+<tr>
+<td colspan="2" height="1" bgcolor="#4C6C8F"><img height="1" width="1" alt="" src="skin/images/spacer.gif" class="spacer"><a href="skin/images/label.gif"></a><a href="skin/images/page.gif"></a><a href="skin/images/chapter.gif"></a><a href="skin/images/chapter_open.gif"></a><a href="skin/images/current.gif"></a><a href="/favicon.ico"></a></td>
+</tr>
+<tr>
+<td colspan="2" bgcolor="#CFDCED" class="copyright" align="center"><font size="2" face="Arial, Helvetica, Sans-Serif">Copyright &copy;
+          2003&nbsp;The Apache Software Foundation. All rights reserved.<script type="text/javascript" language="JavaScript"><!--
+              document.write(" - "+"Last Published: " + document.lastModified);
+            //  --></script></font></td>
+</tr>
+<tr>
+<td colspan="2" align="left" bgcolor="#CFDCED" class="logos"></td>
+</tr>
+</table>
+<!--================= end Footer ==================-->
+</body>
+</html>

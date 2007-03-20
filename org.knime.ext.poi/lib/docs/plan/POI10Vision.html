@@ -1,0 +1,949 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>POI 1.0 Vision Document</title>
+<link type="text/css" href="../skin/page.css" rel="stylesheet">
+</head>
+<body text="#000000" bgcolor="#FFFFFF">
+<!--================= start Navigation Path ==================-->
+<table summary="navigation path" width="100%" border="0" cellpadding="0" cellspacing="0">
+<tr>
+<td nowrap="nowrap" valign="middle" bgcolor="#CFDCED" height="20"><img height="1" width="5" alt="" src="../skin/images/spacer.gif" class="spacer"><!--===== breadcrumb trail (javascript-generated) ====--><font size="2" face="Arial, Helvetica, Sans-serif"><script src="../skin/breadcrumbs.js" language="JavaScript" type="text/javascript"></script></font></td>
+</tr>
+<tr>
+<td bgcolor="#4C6C8F" height="2"><img height="2" width="2" alt="" src="../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+</table>
+<!--================= end Navigation Path ==================-->
+<!--================= start Banner ==================-->
+<table summary="header with logos" width="100%" border="0" cellpadding="0" cellspacing="0">
+<tr>
+<!--================= start Group Logo ==================-->
+<td bgcolor="#294563"><a href="http://jakarta.apache.org"><img border="0" class="logoImage" alt="Jakarta" src="../resources/images/group-logo.gif"></a></td>
+<!--================= end Group Logo ==================-->
+<!--================= start Project Logo ==================--><td width="100%" align="center" bgcolor="#294563"><a href="http://jakarta.apache.org/poi/"><img border="0" class="logoImage" alt="POI" src="../resources/images/project-logo.gif"></a></td>
+<!--================= end Project Logo ==================-->
+<!--================= start Search ==================--><td valign="top" rowspan="2" bgcolor="#294563">
+<form target="_blank" action="http://www.google.com/search" method="get">
+<table summary="search" border="0" cellspacing="0" cellpadding="0" bgcolor="#4C6C8F">
+<tr>
+<td colspan="3"><img height="10" width="1" alt="" src="../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td><img height="1" width="1" alt="" src="../skin/images/spacer.gif" class="spacer"></td><td nowrap="nowrap"><input value="jakarta.apache.org" name="sitesearch" type="hidden"><input size="15" name="q" id="query" type="text"><img height="1" width="5" alt="" src="../skin/images/spacer.gif" class="spacer"><input name="Search" value="Search" type="submit">
+<br>
+<font face="Arial, Helvetica, Sans-serif" size="2" color="white">
+                      the jakarta site
+                      
+                      
+                    </font></td><td><img height="1" width="1" alt="" src="../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td><img alt="" border="0" height="10" width="9" src="../skin/images/search-left.gif"></td><td><img height="1" width="1" alt="" src="../skin/images/spacer.gif" class="spacer"></td><td><img alt="" border="0" height="10" width="9" src="../skin/images/search-right.gif"></td>
+</tr>
+</table>
+</form>
+</td>
+<!--================= start Search ==================--><td bgcolor="#294563"><img height="10" width="10" alt="" src="../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td valign="bottom" bgcolor="#294563" colspan="2">
+<!--================= start Tabs ==================-->
+<div class="tab">
+<table summary="tab bar" border="0" cellpadding="0" cellspacing="0">
+<tr>
+<td width="6"><img alt="" height="8" width="6" src="../skin/images/spacer.gif"></td><td valign="bottom">
+<table summary="selected tab" style="height: 1.8em" border="0" cellpadding="0" cellspacing="0">
+<tr>
+<td valign="top" width="5" bgcolor="#4C6C8F"><img height="5" width="5" alt="" src="../skin/images/tabSel-left.gif"></td><td valign="middle" bgcolor="#4C6C8F"><font color="#ffffff" size="2" face="Arial, Helvetica, Sans-serif"><b><a class="base-selected" href="../index.html">Home</a></b></font></td><td valign="top" width="5" bgcolor="#4C6C8F"><img height="5" width="5" alt="" src="../skin/images/tabSel-right.gif"></td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</div>
+<!--================= end Tabs ==================-->
+</td><td bgcolor="#294563"><img alt="" width="1" height="1" src="../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td bgcolor="#4C6C8F" colspan="4"><img width="1" height="10" alt="" src="../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+</table>
+<!--================= end Banner ==================-->
+<!--================= start Menu, NavBar, Content ==================-->
+<table summary="page content" bgcolor="#ffffff" width="100%" border="0" cellpadding="0" cellspacing="0">
+<tr>
+<td valign="top">
+<table summary="menu" border="0" cellspacing="0" cellpadding="0">
+<tr>
+<!--================= start left top NavBar ==================-->
+<td rowspan="3" valign="top">
+<table summary="blue line" border="0" cellpadding="0" cellspacing="0">
+<tr>
+<td bgcolor="#294563"><img width="10" height="1" alt="" src="../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td bgcolor="#CFDCED"><font color="#4C6C8F" size="4" face="Arial, Helvetica, Sans-serif">&nbsp;</font></td>
+</tr>
+<tr>
+<td bgcolor="#294563"><img width="10" height="1" alt="" src="../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+</table>
+</td>
+<!--================= end left top NavBar ==================--><td bgcolor="#294563"><img width="1" height="1" alt="" src="../skin/images/spacer.gif" class="spacer"></td><td valign="bottom" bgcolor="#4C6C8F"><img width="10" height="10" alt="" src="../skin/images/spacer.gif" class="spacer"></td><td nowrap="nowrap" valign="top" bgcolor="#4C6C8F">
+<!--================= start Menu items ==================-->
+<div class="menu">
+<ul>
+<li>
+<font color="#CFDCED">Navigation</font>
+<ul>
+    
+<li>
+<a href="../index.html">Main</a>
+</li>
+  
+</ul>
+</li>
+<li>
+<font color="#CFDCED">Planning Documents</font>
+<ul>
+    
+<li>
+<span class="sel"><font color="#ffcc00">1.0 Vision</font></span>
+</li>
+    
+<li>
+<a href="POI20Vision.html">2.0 Vision</a>
+</li>
+  
+</ul>
+</li>
+</ul>
+</div>
+<!--================= end Menu items ==================-->
+</td><td valign="bottom" bgcolor="#4C6C8F"><img width="10" height="10" alt="" src="../skin/images/spacer.gif" class="spacer"></td><td bgcolor="#294563"><img width="1" height="1" alt="" src="../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td valign="bottom" align="left" colspan="2" rowspan="2" bgcolor="#4C6C8F"><img height="10" width="10" border="0" alt="" src="../skin/images/menu-left.gif"></td><td bgcolor="#4C6C8F"><img height="10" width="10" alt="" src="../skin/images/spacer.gif" class="spacer"></td><td valign="bottom" align="right" colspan="2" rowspan="2" bgcolor="#4C6C8F"><img height="10" width="10" border="0" alt="" src="../skin/images/menu-right.gif"></td>
+</tr>
+<tr>
+<td height="1" bgcolor="#294563"><img width="1" height="1" alt="" src="../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+</table>
+</td><td valign="top" width="100%">
+<table summary="content" width="100%" border="0" cellpadding="0" cellspacing="0">
+<!--================= start middle NavBar ==================-->
+<tr>
+<td colspan="4" bgcolor="#294563"><img width="10" height="1" alt="" src="../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td align="left" width="10" bgcolor="#CFDCED"><img width="10" height="1" alt="" src="../skin/images/spacer.gif" class="spacer"></td><td align="left" width="50%" bgcolor="#CFDCED"><font color="#4C6C8F" size="3" face="Arial, Helvetica, Sans-serif">
+                &nbsp;
+                
+                </font><img width="10" height="8" alt="" src="../skin/images/spacer.gif" class="spacer"></td><td align="right" width="50%" bgcolor="#CFDCED"><font color="#4C6C8F" size="3" face="Arial, Helvetica, Sans-serif">
+                &nbsp;
+                
+                </font><img width="10" height="8" alt="" src="../skin/images/spacer.gif" class="spacer"></td><td width="10" bgcolor="#CFDCED"><img width="10" height="1" alt="" src="../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<tr>
+<td colspan="4" bgcolor="#294563"><img width="10" height="1" alt="" src="../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<!--================= end middle NavBar ==================-->
+<!--================= start Content==================-->
+<tr>
+<td align="left" width="10"><img width="10" height="1" alt="" src="../skin/images/spacer.gif" class="spacer"></td><td colspan="2" align="left" width="100%">
+<div class="content">
+<table class="title" summary="">
+<tr>
+<td valign="middle">
+<h1>POI 1.0 Vision Document</h1>
+</td><td nowrap="nowrap" width="40" align="center"><a class="dida" href="POI10Vision.pdf"><img alt="PDF" src="../skin/images/pdfdoc.gif" class="skin"><br>
+          PDF</a></td>
+</tr>
+</table>
+<ul class="minitoc">
+<li>
+<a href="#Preface">Preface</a>
+</li>
+<li>
+<a href="#1.+Introduction">1. Introduction</a>
+<ul class="minitoc">
+<li>
+<a href="#1.1+Purpose+of+this+document">1.1 Purpose of this document</a>
+</li>
+<li>
+<a href="#1.2+Project+Overview">1.2 Project Overview</a>
+</li>
+</ul>
+</li>
+<li>
+<a href="#2.+User+Description">2. User Description</a>
+<ul class="minitoc">
+<li>
+<a href="#2.1+User%2FMarket+Demographics">2.1 User/Market Demographics</a>
+</li>
+<li>
+<a href="#2.2.+User+environment">2.2. User environment</a>
+</li>
+<li>
+<a href="#2.3.+Key+User+Needs">2.3. Key User Needs</a>
+</li>
+<li>
+<a href="#2.4.+Alternatives+and+Competition">2.4. Alternatives and Competition</a>
+</li>
+</ul>
+</li>
+<li>
+<a href="#3.+Project+Overview">3. Project Overview</a>
+<ul class="minitoc">
+<li>
+<a href="#3.1.+Project+Perspective">3.1. Project Perspective</a>
+</li>
+<li>
+<a href="#3.2.+Project+Position+Statement">3.2. Project Position Statement</a>
+</li>
+<li>
+<a href="#3.3.+Summary+of+Capabilities">3.3. Summary of Capabilities</a>
+</li>
+<li>
+<a href="#3.4.+Assumptions+and+Dependencies">3.4. Assumptions and Dependencies</a>
+</li>
+</ul>
+</li>
+<li>
+<a href="#4.+Project+Features">4. Project Features</a>
+<ul class="minitoc">
+<li>
+<a href="#4.1+POI+Filesystem+API">4.1 POI Filesystem API</a>
+</li>
+<li>
+<a href="#4.2+HSSF+API">4.2 HSSF API</a>
+</li>
+<li>
+<a href="#4.3+HSSF+Serializer">4.3 HSSF Serializer</a>
+</li>
+</ul>
+</li>
+<li>
+<a href="#5.+Other+Product+Requirements">5. Other Product Requirements</a>
+<ul class="minitoc">
+<li>
+<a href="#5.1.+Applicable+Standards">5.1. Applicable Standards</a>
+</li>
+<li>
+<a href="#5.2.+System+Requirements">5.2. System Requirements</a>
+</li>
+<li>
+<a href="#5.3.+Performance+Requirements">5.3. Performance Requirements</a>
+</li>
+<li>
+<a href="#5.4.+Environmental+Requirements">5.4. Environmental Requirements</a>
+</li>
+</ul>
+</li>
+<li>
+<a href="#6.+Documentation+Requirements">6. Documentation Requirements</a>
+<ul class="minitoc">
+<li>
+<a href="#6.1+POI+Filesystem">6.1 POI Filesystem</a>
+</li>
+<li>
+<a href="#6.2.+POI+API">6.2. POI API</a>
+</li>
+<li>
+<a href="#6.3.+HSSF+File+Format">6.3. HSSF File Format</a>
+</li>
+<li>
+<a href="#6.4.+HSSF+API">6.4. HSSF API</a>
+</li>
+<li>
+<a href="#6.5.+HSSF+Serializer">6.5. HSSF Serializer</a>
+</li>
+<li>
+<a href="#6.6+HSSF+Serializer+Tag+language">6.6 HSSF Serializer Tag language</a>
+</li>
+</ul>
+</li>
+<li>
+<a href="#7.+Terminology">7. Terminology</a>
+<ul class="minitoc">
+<li>
+<a href="#7.1+Filesystem">7.1 Filesystem</a>
+</li>
+<li>
+<a href="#7.2+File">7.2 File</a>
+</li>
+</ul>
+</li>
+</ul>
+
+ 
+<a name="N10018"></a><a name="Preface"></a>
+<h3>Preface</h3>
+<div style="margin-left: 0 ; border: 2px">
+<p> 
+		(21-Jan-02) While this document is just full of useful project 
+		introductory information and I do suggest those interested in getting
+		involved in the project read it, it is woefully out of date.
+	</p>
+<p>
+		We deliberately allowed this document to run out of date because it 
+		is a good reflection of what the original vision was for POI 1.0.
+		You'll note that some of the terminology is not used in quite the same 
+		way any longer.  I've made some minor corrections where reading this
+		confused me.  An example: in some places this document may refer to
+		POI API instead of POIFS API.  When this vision was written we had 
+		an incomplete understanding of the project.  
+	</p>
+<p>
+		Lastly, the scope of the project expanded dramatically near the end 
+		of the 1.0 cycle.  Our vision at the time was to focus merely on the
+		Excel port (having no idea how the project would grow or be received)
+		and provide the OLE 2 Compound Document port for others to port later
+		formats.  We now plan to spearhead these ports under the umbrella of 
+		the POI project.  So, you've been warned.  Read on, but just realize
+		that we had a fuzzy view of things to come, and hindsight is 20-20.
+	</p>
+<p>
+		If I recall major holes were: a complete understanding of the format 
+		of OLE 2 Compound Document format, Excel file format, and exactly how
+		Cocoon 2 Serializers worked.  (that just about covers the whole range
+		huh?)
+	</p>
+</div>
+
+ 
+<a name="N1002A"></a><a name="1.+Introduction"></a>
+<h3>1. Introduction</h3>
+<div style="margin-left: 0 ; border: 2px">
+<a name="N1002F"></a><a name="1.1+Purpose+of+this+document"></a>
+<h4>1.1 Purpose of this document</h4>
+<div style="margin-left: 0 ; border: 2px">
+<p>
+		The purpose of this document is to
+		collect, analyze and define high-level requirements, user needs and
+		features of the HSSF Serializer for Cocoon 2 and related libraries.
+		The HSSF Serializer is a java class supporting the Serializer
+		interface from the Cocoon 2 project and outputting in a compatible
+		format of that used by the spreadsheet program Microsoft Excel '97.
+		The HSSF Serializer will be responsible for converting XML
+		spreadsheet-like documents into Excel-compatible XLS spreadsheets.
+	</p>
+</div>
+<a name="N10038"></a><a name="1.2+Project+Overview"></a>
+<h4>1.2 Project Overview</h4>
+<div style="margin-left: 0 ; border: 2px">
+<p>
+		Many web apps today hit a brick wall
+		when it comes to the user request that they be able to easily
+		manipulate their reports and data extracts in the popular Microsoft
+		Excel spreadsheet format. This often causes inferior technologies to be
+		chosen for the project simply because they easily support this
+		format. This project seeks to extend existing XML, Java and Apache
+		Cocoon 2 project technologies by: 	  
+	</p>
+<ul>
+			
+<li>
+				providing an extensible library
+				(POIFS) which reads/writes in a compatable format to OLE 2 Compound
+				Document Format (aka Structured Storage Format) for easy
+			  	implementation of other document types;
+			</li>
+			
+<li>
+				providing a library (HSSF) for
+				manipulating spreadsheet data and outputting it in a compatible
+				format to Microsoft Excel XLS format;
+			</li>
+			
+<li>
+				and providing a Cocoon 2
+				Serializer (HSSFSerializer) for serializing XML documents as
+				Excel-compatible spreadsheets.
+			</li>
+		
+</ul>
+</div>
+</div>
+ 
+<a name="N1004E"></a><a name="2.+User+Description"></a>
+<h3>2. User Description</h3>
+<div style="margin-left: 0 ; border: 2px">
+<a name="N10053"></a><a name="2.1+User%2FMarket+Demographics"></a>
+<h4>2.1 User/Market Demographics</h4>
+<div style="margin-left: 0 ; border: 2px">
+<p>
+		There are a number of enthusiastic
+		users of XML, UNIX and Java technology. Secondly, the Microsoft
+		solution for outputting Office Document formats often involves
+		actually manipulating the software as an OLE Server. This method
+		provides extremely low performance, extremely high overhead and is
+		only capable of handling one document at a time.
+	</p>
+<ol>
+		
+<li>
+		Our intended audience for the HSSF
+		Serializer portion of this project are developers writing reports or
+		data extracts in XML format. 
+		</li>
+		
+<li>
+		Our intended audience for the HSSF
+		library portion of this project is ourselves as we are developing
+		the Serializer and anyone who needs to write to Excel spreadsheets
+		in a non-XML Java environment or who has specific needs not
+		addressed by the Serializer.
+		</li>
+		
+<li>
+		Our intended audience for the
+		"POIFS" OLE 2 Compound Document format reader/writer is
+		ourselves as we are writing the HSSF library and secondly, anyone
+		wishing to provide other libraries for reading/writing OLE 2
+		Compound Document Format in Java.
+		</li>
+	
+</ol>
+</div>
+<a name="N10068"></a><a name="2.2.+User+environment"></a>
+<h4>2.2. User environment</h4>
+<div style="margin-left: 0 ; border: 2px">
+<p>
+		The users of this software shall be
+		developers in a Java environment on any Operating System or power
+		users who are capable of XML document generation/deployment.		
+	</p>
+</div>
+<a name="N10071"></a><a name="2.3.+Key+User+Needs"></a>
+<h4>2.3. Key User Needs</h4>
+<div style="margin-left: 0 ; border: 2px">
+<p>
+		The OLE 2 Compound Document format is
+		undocumented for all practical purposes and cryptic for all
+		impractical purposes. Developer needs in this area include
+		documentation and an easy to use library for reading and writing in
+		this format without requiring the developer to have intimate
+		knowledge of the format. 		
+	</p>
+<p>
+		There is currently no good way to write
+		to Microsoft Excel documents from Java or from a non-Microsoft
+		Windows based platform for that matter. Developers need an easy to
+		use library that supports a reasonable feature set and allows
+		seperation of data from formatting/stylistic concerns.
+	</p>
+<p>
+		There is currently no good way to
+		transform XML data to Microsoft Excel. Apache's Cocoon 2 project
+		supplies a complete framework for XML, but nothing for outputting in
+		Excel's XLS format. Developers and power users alike need a simple
+		method to output XML documents to Excel through server-side
+		processing.
+	</p>
+</div>
+<a name="N10080"></a><a name="2.4.+Alternatives+and+Competition"></a>
+<h4>2.4. Alternatives and Competition</h4>
+<div style="margin-left: 0 ; border: 2px">
+<p>
+        Originally there weren't any decent <a href="../hssf/alternatives.html">alternatives</a> for reading or writing
+        to Excel.  This has changed somewhat.
+	</p>
+</div>
+</div>
+ 
+<a name="N1008E"></a><a name="3.+Project+Overview"></a>
+<h3>3. Project Overview</h3>
+<div style="margin-left: 0 ; border: 2px">
+<a name="N10093"></a><a name="3.1.+Project+Perspective"></a>
+<h4>3.1. Project Perspective</h4>
+<div style="margin-left: 0 ; border: 2px">
+<p>
+		The produced code shall be licensed by
+		the Apache License as used by the Cocoon 2 project and maintained on
+		a project page until such time as the Cocoon 2 developers accept it
+		as a donation (at which time the copyright will be turned over to
+		them).	
+	</p>
+</div>
+<a name="N1009C"></a><a name="3.2.+Project+Position+Statement"></a>
+<h4>3.2. Project Position Statement</h4>
+<div style="margin-left: 0 ; border: 2px">
+<p>
+		For developers on a Java and/or XML
+		environment this project will provide all the tools necessary for
+		outputting XML data in the Microsoft Excel format. This project seeks
+		to make the use of Microsoft Windows based servers unnecessary for
+		file format considerations and to fully document the OLE 2 Compound
+		Document format. The project aims not only to provide the tools for
+		serializing XML to Excel's file format and the tools for writing to
+		that file format from Java, but also to provide the tools for later
+		projects to convert other OLE 2 Compound Document formats to pure
+		Java APIs.
+	</p>
+</div>
+<a name="N100A5"></a><a name="3.3.+Summary+of+Capabilities"></a>
+<h4>3.3. Summary of Capabilities</h4>
+<div style="margin-left: 0 ; border: 2px">
+<p>
+		HSSF Serializer for Apache Cocoon 2
+	</p>
+<table class="ForrestTable" cellspacing="1" cellpadding="4">
+		
+<tr>
+			
+<td colspan="1" rowspan="1">
+				Benefit
+			</td>
+			<td colspan="1" rowspan="1">
+				Supporting Features
+			</td>
+		
+</tr>
+		
+<tr>
+			
+<td colspan="1" rowspan="1">
+				Standard XML tag language for sheet data
+			</td>
+			<td colspan="1" rowspan="1">
+				Serializer will transform documents utilizing a defined tag
+				language
+			</td>
+		
+</tr>
+		
+<tr>
+			
+<td colspan="1" rowspan="1">
+				Utilize XML to output in Excel
+			</td>
+			<td colspan="1" rowspan="1">
+				Serializer will output in Excel
+			</td>
+		
+</tr>
+		
+<tr>
+			
+<td colspan="1" rowspan="1">
+				Java API to output in Excel on any platform
+			</td>
+			<td colspan="1" rowspan="1">
+				The project will develop an API that outputs in Excel using
+				pure Java.
+			</td>
+		
+</tr>
+		
+<tr>
+			
+<td colspan="1" rowspan="1">
+				Make it easy for developers to port other OLE 2 Compound
+				Document-based formats to Java.
+			</td>
+			<td colspan="1" rowspan="1">
+				The POIFS library will contain both a high-level abstraction
+				along with low-level constructs. The project will fully document
+				the OLE 2 Compound Document Format.
+			</td>
+		
+</tr>
+	
+</table>
+</div>
+<a name="N100F2"></a><a name="3.4.+Assumptions+and+Dependencies"></a>
+<h4>3.4. Assumptions and Dependencies</h4>
+<div style="margin-left: 0 ; border: 2px">
+<ul>
+		
+<li>
+			The HSSF Serializer will run on
+			any Java 2 supporting platform with Apache Cocoon 2 installed along
+			with the HSSF and POIFS APIs.
+		</li>
+		
+<li>
+			The HSSF API requires a Java 2
+			implementation and the POI API.
+		</li>
+		
+<li>
+			The POIFS API requires a Java 2
+			implementation.
+		</li>
+	
+</ul>
+</div>
+</div>
+ 
+<a name="N10105"></a><a name="4.+Project+Features"></a>
+<h3>4. Project Features</h3>
+<div style="margin-left: 0 ; border: 2px">
+<p> 
+		The POIFS API will include:
+	</p>
+<ul>
+		
+<li>
+			Low level structures representing
+			the structures in a POI filesystems.
+		</li>
+		
+<li>
+			A low-level API for
+			creating/manipulating POI filesystems.
+		</li>
+		
+<li>
+			A set of high level interfaces
+			abstracting the user from the POI filesystem constructs and
+			representing it as a standard filesystem (Files, directories, etc)
+		</li>
+	
+</ul>
+<p>
+		The HSSF API will include:
+	</p>
+<ul>
+		
+<li>
+			Low level structures representing
+			the structures in an Excel file.
+		</li>
+		
+<li>
+			A low-level API for creating and
+			manipulating Excel files and writing them into POI filesystems.
+		</li>
+		
+<li>
+			A high level model and style
+			interface for manipulating spreadsheet data without knowing anything
+			about the Excel format itself.
+		</li>
+	
+</ul>
+<a name="N10128"></a><a name="4.1+POI+Filesystem+API"></a>
+<h4>4.1 POI Filesystem API</h4>
+<div style="margin-left: 0 ; border: 2px">
+<p>
+		The POI Filesystem API includes:
+	</p>
+<ul>
+		
+<li>An implementation of Big Blocks</li>
+		
+<li>An implementation of Small Blocks</li>
+		
+<li>An implementation of Header Blocks</li>
+		
+<li>An implementation of Block Allocation Tables</li>
+		
+<li>An implementation of Property Sets</li>
+		
+<li>An implementation of the POI 
+		filesystem including functions to get and set the above constructs;
+		compound functions for reading/writing files/directories.
+		</li>
+		
+<li>An abstraction of the POI
+		filesystem providing interfaces representing Files, Directories,
+		FileSystems in normal terminology and encapulating the above
+		constructs.
+		</li>
+		
+<li>Full documentation of the POI file
+		format.
+		</li>
+		
+<li>Full documentation of the APIs and
+		interfaces provided through Javadoc, user documentation (aimed at
+		developers using the APIs)
+		</li>
+		
+<li>Examples aimed at teaching the
+		user to write code using POI. (titled: recipes for POI)
+		</li>
+		
+<li>Performance specifications.
+		(Example POI filesystems rated by some measure of complexity along
+		with system specifications and execution times for given operations)
+		</li>
+	
+</ul>
+</div>
+<a name="N10155"></a><a name="4.2+HSSF+API"></a>
+<h4>4.2 HSSF API</h4>
+<div style="margin-left: 0 ; border: 2px">
+<p>
+		The HSSF API includes:
+	</p>
+<ul>
+		
+<li>An implementation of Record
+		(binary 2 byte type followed by 2 byte size (n) followed by n bytes)</li>
+		
+<li>Implementations of many standard
+		record types mapping the data bytes to fields along with methods to
+		reserialize those fields</li>
+		
+<li>An implementation of the HSSF File
+		including functions to get/set the above constructs, create a blank
+		file with the minimum required record types and mappings between
+		getting/setting data and style in a workbook to the creation of
+		record types, and read HSSF files.</li>
+		
+<li>An abstraction of the HSSF file
+		format providing interfaces representing the HSSF File, HSSF
+		Workbook, HSSF Sheet, HSSF Column, HSSF Formulas in a manner
+		seperating the data from the styling and encapsulating the above
+		constructs.</li>
+		
+<li>Full documentation of the HSSF
+		file format (which will be a subset of the Excel '97 File format).
+		This must be done with care for legal reasons.</li>
+		
+<li>Full documentation of the APIs and
+		interfaces provided through Javadoc, user documentation (aimed at
+		developers using the apis).</li>
+		
+<li>Examples aimed at teaching
+		developers to use the APIs. 
+		</li>
+		
+<li>Performance specifications.
+		(Example files rated by some measure of complexity along with system
+		specifications and execution times for given operations - possibly
+		the same files used for POI's tests)</li>
+	
+</ul>
+</div>
+<a name="N10179"></a><a name="4.3+HSSF+Serializer"></a>
+<h4>4.3 HSSF Serializer</h4>
+<div style="margin-left: 0 ; border: 2px">
+<p>
+		The HSSF Serializer subproject:
+	</p>
+<ul>
+		
+<li>A class supporting the Cocoon 2
+		Serializer Interface.</li>
+		
+<li>An interface between the SAX
+		events and the HSSF APIs.</li>
+		
+<li>A specified tag language for using
+		with the Serializer.</li>
+		
+<li>Documentation on the tag language
+		for the HSSF Serializer</li>
+		
+<li>Normal javadocs.</li>
+		
+<li>Example XML files</li>
+		
+<li>Performance specifications.
+		(Example XML docs and stylesheets rated by some measure of
+		complexity along with system specifications and execution times)</li>
+	
+</ul>
+</div>
+</div>
+ 
+<a name="N1019B"></a><a name="5.+Other+Product+Requirements"></a>
+<h3>5. Other Product Requirements</h3>
+<div style="margin-left: 0 ; border: 2px">
+<a name="N101A0"></a><a name="5.1.+Applicable+Standards"></a>
+<h4>5.1. Applicable Standards</h4>
+<div style="margin-left: 0 ; border: 2px">
+<p>
+		All Java code will be 100% pure Java.
+	</p>
+</div>
+<a name="N101A9"></a><a name="5.2.+System+Requirements"></a>
+<h4>5.2. System Requirements</h4>
+<div style="margin-left: 0 ; border: 2px">
+<p>
+		The minimum system requirements for POIFS are:
+	</p>
+<ul>
+		
+<li>64 Mbytes memory</li>
+		
+<li>Java 2 environment</li>
+		
+<li>Pentium or better processor (or equivalent on other platforms)</li>
+	
+</ul>
+<p>
+		The minimum system requirements for HSSF are:
+	</p>
+<ul>
+		
+<li>64 Mbytes memory</li>
+		
+<li>Java 2 environment</li>
+		
+<li>Pentium or better processor (or equivalent on other platforms)</li>
+		
+<li>POIFS API</li>
+	
+</ul>
+<p>
+		The minimum system requirements for the HSSF Serializer are:
+	</p>
+<ul>
+		
+<li>64 Mbytes memory</li>
+		
+<li>Java 2 environment</li>
+		
+<li>Pentium or better processor (or equivalent on other platforms)</li>
+		
+<li>Cocoon 2</li>
+		
+<li>HSSF API</li>
+		
+<li>POI API</li>
+	
+</ul>
+</div>
+<a name="N101E8"></a><a name="5.3.+Performance+Requirements"></a>
+<h4>5.3. Performance Requirements</h4>
+<div style="margin-left: 0 ; border: 2px">
+<p>
+		All components must perform well enough
+		to be practical for use in a webserver environment (especially
+		Cocoon2/Tomcat/Apache combo)
+	</p>
+</div>
+<a name="N101F1"></a><a name="5.4.+Environmental+Requirements"></a>
+<h4>5.4. Environmental Requirements</h4>
+<div style="margin-left: 0 ; border: 2px">
+<p>
+		The software will run primarily in
+		developer environments. We should make some allowances for
+		not-highly-technical users to write XML documents for the HSSF
+		Serializer. All other components will assume intermediate Java 2
+		knowledge. No XML knowledge will be required except for using the
+		HSSF Serializer. As much documentation as is practical shall be
+		required for all components as XML is relatively new, and the
+		concepts introduced for writing spreadsheets and to POI filesystems
+		will be brand new to Java and many Java developers.
+	</p>
+</div>
+</div>
+ 
+<a name="N101FB"></a><a name="6.+Documentation+Requirements"></a>
+<h3>6. Documentation Requirements</h3>
+<div style="margin-left: 0 ; border: 2px">
+<a name="N10200"></a><a name="6.1+POI+Filesystem"></a>
+<h4>6.1 POI Filesystem</h4>
+<div style="margin-left: 0 ; border: 2px">
+<p>
+		The filesystem as read and written by
+		POI shall be fully documented and explained so that the average Java
+		developer can understand it.
+	</p>
+</div>
+<a name="N10209"></a><a name="6.2.+POI+API"></a>
+<h4>6.2. POI API</h4>
+<div style="margin-left: 0 ; border: 2px">
+<p>
+		The POI API will be fully documented
+		through Javadoc. A walkthrough of using the high level POI API shall
+		be provided. No documentation outside of the Javadoc shall be
+		provided for the low-level POI APIs.	
+	</p>
+</div>
+<a name="N10212"></a><a name="6.3.+HSSF+File+Format"></a>
+<h4>6.3. HSSF File Format</h4>
+<div style="margin-left: 0 ; border: 2px">
+<p>
+		The HSSF File Format as implemented by
+		the HSSF API will be fully documented. No documentation will be
+		provided for features that are not supported by HSSF API that are
+		supported by the Excel 97 File Format. Care will be taken not to
+		infringe on any "legal stuff".	
+	</p>
+</div>
+<a name="N1021B"></a><a name="6.4.+HSSF+API"></a>
+<h4>6.4. HSSF API</h4>
+<div style="margin-left: 0 ; border: 2px">
+<p>
+		The HSSF API will be documented by
+		javadoc. A walkthrough of using the high level HSSF API shall be
+		provided. No documentation outside of the Javadoc shall be provided
+		for the low level HSSF APIs.	
+	</p>
+</div>
+<a name="N10224"></a><a name="6.5.+HSSF+Serializer"></a>
+<h4>6.5. HSSF Serializer</h4>
+<div style="margin-left: 0 ; border: 2px">
+<p>
+		The HSSF Serializer will be documented
+		by javadoc. 	
+	</p>
+</div>
+<a name="N1022D"></a><a name="6.6+HSSF+Serializer+Tag+language"></a>
+<h4>6.6 HSSF Serializer Tag language</h4>
+<div style="margin-left: 0 ; border: 2px">
+<p>
+		The XML tag language along with
+		function and usage shall be fully documented. Examples will be
+		provided as well.
+	</p>
+</div>
+</div>
+ 
+<a name="N10237"></a><a name="7.+Terminology"></a>
+<h3>7. Terminology</h3>
+<div style="margin-left: 0 ; border: 2px">
+<a name="N1023C"></a><a name="7.1+Filesystem"></a>
+<h4>7.1 Filesystem</h4>
+<div style="margin-left: 0 ; border: 2px">
+<p>
+		filesystem shall refer only to the POI formatted archive.
+	</p>
+</div>
+<a name="N10245"></a><a name="7.2+File"></a>
+<h4>7.2 File</h4>
+<div style="margin-left: 0 ; border: 2px">
+<p>
+		file shall refer to the embedded data stream within a 
+		POI filesystem. This will be the actual embedded document. 
+	</p>
+</div>
+</div>
+
+<div class="attribution">by&nbsp;Andrew C. Oliver,&nbsp;Marcus W. Johnson</div>
+</div>
+</td><td width="10"><img width="10" height="1" alt="" src="../skin/images/spacer.gif" class="spacer"></td>
+</tr>
+<!--================= end Content==================-->
+</table>
+</td>
+</tr>
+</table>
+<!--================= end Menu, NavBar, Content ==================-->
+<!--================= start Footer ==================-->
+<table summary="footer" cellspacing="0" cellpadding="0" width="100%" border="0">
+<tr>
+<td colspan="2" height="1" bgcolor="#4C6C8F"><img height="1" width="1" alt="" src="../skin/images/spacer.gif" class="spacer"><a href="../skin/images/label.gif"></a><a href="../skin/images/page.gif"></a><a href="../skin/images/chapter.gif"></a><a href="../skin/images/chapter_open.gif"></a><a href="../skin/images/current.gif"></a><a href="/favicon.ico"></a></td>
+</tr>
+<tr>
+<td colspan="2" bgcolor="#CFDCED" class="copyright" align="center"><font size="2" face="Arial, Helvetica, Sans-Serif">Copyright &copy;
+          2003&nbsp;The Apache Software Foundation. All rights reserved.<script type="text/javascript" language="JavaScript"><!--
+              document.write(" - "+"Last Published: " + document.lastModified);
+            //  --></script></font></td>
+</tr>
+<tr>
+<td colspan="2" align="left" bgcolor="#CFDCED" class="logos"></td>
+</tr>
+</table>
+<!--================= end Footer ==================-->
+</body>
+</html>
