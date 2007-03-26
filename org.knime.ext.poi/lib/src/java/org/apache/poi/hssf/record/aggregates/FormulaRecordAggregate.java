@@ -194,7 +194,7 @@ public class FormulaRecordAggregate
     }
     
     /**
-     * @see java.lang.Object#clone()
+     * {@inheritDoc}
      */
     public Object clone() {
 			StringRecord clonedString = (stringRecord == null) ? null : (StringRecord)stringRecord.clone();

@@ -311,7 +311,7 @@ public class TestStringUtil
     }
 
     /**
-     * @see junit.framework.TestCase#setUp()
+     * {@inheritDoc}
      */
     protected void setUp() throws Exception
     {

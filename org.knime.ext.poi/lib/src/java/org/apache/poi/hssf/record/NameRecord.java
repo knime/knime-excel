@@ -882,7 +882,7 @@ public class NameRecord extends Record {
      */
 
     /**
-     * @see Object#toString()
+     * {@inheritDoc}
      */
     public String toString() {
         StringBuffer buffer = new StringBuffer();
