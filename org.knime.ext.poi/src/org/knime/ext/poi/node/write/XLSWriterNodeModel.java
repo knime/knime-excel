@@ -76,7 +76,7 @@ public class XLSWriterNodeModel extends NodeModel {
      */
     private void checkFileAccess(final String fileName)
             throws InvalidSettingsException {
-        if (fileName == null) {
+        if ((fileName == null) || (fileName.length() == 0)) {
             throw new InvalidSettingsException("No output file specified.");
         }
         File file = new File(fileName);
