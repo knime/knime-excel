@@ -33,7 +33,7 @@ public class POIActivator extends Plugin {
         logger.info("  This plug-in uses the POI libraries from the "
                 + "Jakarta POI project ");
         logger.info("  which is part of and copyrighted by the Apache "
-                + "Software FOundation.");
+                + "Software Foundation.");
     }
 
     /**
