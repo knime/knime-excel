@@ -49,9 +49,16 @@ public class XLSWriter {
 
     private static final NodeLogger LOGGER =
             NodeLogger.getLogger(XLSWriter.class);
+    
+    /**
+     * Excel (Ver. 2003) can handle datasheets up to 64k x 256 cells!
+     */
+    private static final int MAX_NUM_OF_ROWS = 65536;
+    
+    private static final int MAX_NUM_OF_COLS = 256;
 
     private final XLSWriterSettings m_settings;
-    
+
     private final FileOutputStream m_outStream;
 
     /**
@@ -91,16 +98,23 @@ public class XLSWriter {
         if ((sheetName == null) || (sheetName.trim().length() == 0)) {
             sheetName = table.getDataTableSpec().getName();
         }
+        // max sheetname length is 32 incl. added running index. We cut it to 25
+        if (sheetName.length() > 25) {
+            sheetName = sheetName.substring(0, 22) + "...";
+        }
+        // replace characters like \ / * ? [ ] etc.
+        sheetName = replaceInvalidChars(sheetName);
+
         HSSFSheet sheet = wb.createSheet(sheetName);
 
         DataTableSpec inSpec = table.getDataTableSpec();
         int numOfCols = inSpec.getNumColumns();
-        if (numOfCols > Short.MAX_VALUE) {
+        if (numOfCols > MAX_NUM_OF_COLS) {
             LOGGER.warn("The table to write has too many columns! Can't put"
-                    + " more than " + Short.MAX_VALUE
+                    + " more than " + MAX_NUM_OF_COLS
                     + " columns in one sheet." + " Truncating columns "
-                    + (Short.MAX_VALUE + 1) + " to " + numOfCols);
-            numOfCols = Short.MAX_VALUE;
+                    + (MAX_NUM_OF_COLS + 1) + " to " + numOfCols);
+            numOfCols = MAX_NUM_OF_COLS;
         }
         int numOfRows = -1;
         if (table instanceof BufferedDataTable) {
@@ -126,6 +140,9 @@ public class XLSWriter {
 
         } // end of if write column names
 
+        // Guess 80% of the job is generating the sheet, 20% is writing it out 
+        ExecutionMonitor e = exec.createSubProgress(0.8);
+        
         // write each row of the data
         int rowCnt = 0;
         for (DataRow tableRow : table) {
@@ -133,7 +150,7 @@ public class XLSWriter {
             colIdx = 0;
 
             // create a new sheet if the old one is full
-            if (rowIdx > Short.MAX_VALUE) {
+            if (rowIdx >= MAX_NUM_OF_ROWS) {
                 sheetIdx++;
                 sheet = wb.createSheet(sheetName + "(" + sheetIdx + ")");
                 rowIdx = 0;
@@ -151,7 +168,7 @@ public class XLSWriter {
                 msg =
                         "Writing row " + (rowCnt + 1) + " (\"" + rowID
                                 + "\") of " + numOfRows;
-                exec.setProgress(rowCnt / (double)numOfRows, msg);
+                e.setProgress(rowCnt / (double)numOfRows, msg);
             }
             // Check if execution was canceled !
             exec.checkCanceled();
@@ -191,11 +208,37 @@ public class XLSWriter {
 
                 colIdx++;
             }
+            
+            rowCnt++;
         } // end of for all rows in table
 
         // Write the output to a file
         wb.write(m_outStream);
 
+    }
+
+    /**
+     * Replaces characters that are illegal in sheet names. 
+     * These are \/:*?"<>|[].
+     * 
+     * @param name the name to clean
+     * @return returns the name with all of the above characters replaced by an
+     *         underscore.
+     */
+    private String replaceInvalidChars(final String name) {
+        StringBuilder result = new StringBuilder();
+        int l = name.length();
+        for (int i = 0; i < l; i++) {
+            char c = name.charAt(i);
+            if ((c == '\\') || (c == '/') || (c == ':') || (c == '*') 
+                    || (c == '?') || (c == '"') || (c == '<') || (c == '>') 
+                    || (c == '|') || (c == '[') || (c == ']')) {
+                result.append('_');
+            } else {
+                result.append(c);
+            }            
+        }
+        return result.toString();
     }
 
 }
