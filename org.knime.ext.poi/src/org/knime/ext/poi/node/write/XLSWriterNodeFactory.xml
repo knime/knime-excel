@@ -12,20 +12,24 @@
  		This node writes out the datatable coming through its input port
  		into a spreadsheet of a workbook. The files can be read then with 
  		other applications like Microsoft Excel, for example.
+ 		The maximum number of columns held by a spreadsheet is 256 (all 
+ 		additional columns in the datatable are truncated). If the input 
+ 		datatable has more than 65536 rows it is split into multiple 
+ 		spreadsheets (all stored in the created workbook).
  		</intro>
  		<option name="Output file location">Enter a valid file name. 
 			You can also choose a previously selected file from the drop-down list,
 			or select a file from the &quot;Browse...&quot; dialog.
 			</option>		
- 		<option name="Write column header">If checked, the column names will be
+ 		<option name="Write column header">If checked, the column names are
  			written out in the first row of the spreadsheet.
 			</option>		
- 		<option name="Write row ID">If checked, the row IDs will be
+ 		<option name="Write row ID">If checked, the row IDs are
  			added to the output, in the first colum of the spreadsheet.
 			</option>		
  		<option name="Missing Value Pattern">Enter a pattern 
- 			that will be set for missing data values. If not specified, the
- 			corresponding datacell of the spreadsheet will stay empty.
+ 			that is set for missing data values. If not specified, the
+ 			corresponding datacell of the spreadsheet stays empty.
 			</option>
 	</fullDescription>
 	

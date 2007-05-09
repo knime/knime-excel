@@ -37,6 +37,7 @@ import javax.swing.JTextField;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeDialogPane;
+import org.knime.core.node.NodeSettings;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NotConfigurableException;
@@ -54,7 +55,7 @@ class XLSWriterNodeDialogPane extends NodeDialogPane {
 
     private final DialogComponentFileChooser m_fileComponent =
             new DialogComponentFileChooser(m_filename, "XLSWRITER",
-                    JFileChooser.SAVE_DIALOG, false, (String[])null);
+                    JFileChooser.SAVE_DIALOG, false, new String[]{".xls"});
 
     private final JCheckBox m_writeColHdr = new JCheckBox();
 
@@ -155,6 +156,12 @@ class XLSWriterNodeDialogPane extends NodeDialogPane {
     @Override
     protected void saveSettingsTo(final NodeSettingsWO settings)
             throws InvalidSettingsException {
+        
+        // kind of a hack: the component only saves the history when
+        // we allow it to save its value.
+        NodeSettingsWO foo = new NodeSettings("foo");
+        m_fileComponent.saveSettingsTo(foo);
+        
         String filename = m_filename.getStringValue();
         if ((filename == null) || (filename.length() == 0)) {
             throw new InvalidSettingsException("Please specify an output"

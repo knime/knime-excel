@@ -49,12 +49,12 @@ public class XLSWriter {
 
     private static final NodeLogger LOGGER =
             NodeLogger.getLogger(XLSWriter.class);
-    
+
     /**
      * Excel (Ver. 2003) can handle datasheets up to 64k x 256 cells!
      */
     private static final int MAX_NUM_OF_ROWS = 65536;
-    
+
     private static final int MAX_NUM_OF_COLS = 256;
 
     private final XLSWriterSettings m_settings;
@@ -109,12 +109,14 @@ public class XLSWriter {
 
         DataTableSpec inSpec = table.getDataTableSpec();
         int numOfCols = inSpec.getNumColumns();
-        if (numOfCols > MAX_NUM_OF_COLS) {
+        int rowHdrIncr = m_settings.writeRowID() ? 1 : 0;
+
+        if (numOfCols + rowHdrIncr > MAX_NUM_OF_COLS) {
             LOGGER.warn("The table to write has too many columns! Can't put"
                     + " more than " + MAX_NUM_OF_COLS
                     + " columns in one sheet." + " Truncating columns "
                     + (MAX_NUM_OF_COLS + 1) + " to " + numOfCols);
-            numOfCols = MAX_NUM_OF_COLS;
+            numOfCols = MAX_NUM_OF_COLS - rowHdrIncr;
         }
         int numOfRows = -1;
         if (table instanceof BufferedDataTable) {
@@ -140,9 +142,9 @@ public class XLSWriter {
 
         } // end of if write column names
 
-        // Guess 80% of the job is generating the sheet, 20% is writing it out 
+        // Guess 80% of the job is generating the sheet, 20% is writing it out
         ExecutionMonitor e = exec.createSubProgress(0.8);
-        
+
         // write each row of the data
         int rowCnt = 0;
         for (DataRow tableRow : table) {
@@ -208,7 +210,7 @@ public class XLSWriter {
 
                 colIdx++;
             }
-            
+
             rowCnt++;
         } // end of for all rows in table
 
@@ -230,13 +232,13 @@ public class XLSWriter {
         int l = name.length();
         for (int i = 0; i < l; i++) {
             char c = name.charAt(i);
-            if ((c == '\\') || (c == '/') || (c == ':') || (c == '*') 
-                    || (c == '?') || (c == '"') || (c == '<') || (c == '>') 
+            if ((c == '\\') || (c == '/') || (c == ':') || (c == '*')
+                    || (c == '?') || (c == '"') || (c == '<') || (c == '>')
                     || (c == '|') || (c == '[') || (c == ']')) {
                 result.append('_');
             } else {
                 result.append(c);
-            }            
+            }
         }
         return result.toString();
     }
