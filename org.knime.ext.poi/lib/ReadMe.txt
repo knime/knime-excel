@@ -1,4 +1,4 @@
-This plugin makes uses the POI libraries of the Jakarta POI project which
+This plugin makes use of the POI libraries of the Jakarta POI project which
 is part of the Apache Software Foundation (http://www.apache.org).
 
 The libraries are copyrighted by their respective owners. 
