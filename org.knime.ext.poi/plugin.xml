@@ -3,12 +3,6 @@
 <plugin>
    <extension
          point="org.knime.workbench.repository.categories">
-      <category
-            after="meta"
-            description="miscellaneous nodes"
-            level-id="misc"
-            name="Misc"
-            path="/"/>
    </extension>
    <extension
          point="org.knime.workbench.repository.nodes">
