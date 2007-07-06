@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: KNIME POI Plug-in
 Bundle-SymbolicName: org.knime.ext.poi;singleton:=true
-Bundle-Version: 1.2.1.BETA
+Bundle-Version: 1.2.2.BETA
 Bundle-Activator: org.knime.ext.poi.POIActivator
 Bundle-Localization: plugin
 Require-Bundle: org.eclipse.core.runtime,
