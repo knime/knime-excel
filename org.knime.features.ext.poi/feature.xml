@@ -2,7 +2,7 @@
 <feature
       id="org.knime.features.ext.poi"
       label="XLS Writer Feature"
-      version="1.3.0.RC3"
+      version="1.4.0.ALPHA"
       provider-name="Chair for Bioinformatics and Information Mining, Prof. Berthold, University of Konstanz, Germany">
 
    <description url="http://www.knime.org/download_extensions.html">
