@@ -275,6 +275,8 @@ terms of this License.
       <update label="KNIME Update Site" url="http://www.knime.org/update"/>
    </url>
 
+   <plugin id="org.knime.features.ext.poi.source" version="0.0.0"/>
+
    <plugin
          id="org.knime.ext.poi"
          download-size="0"
