@@ -163,7 +163,7 @@ public class XLSWriter {
             }
 
             // set the progress
-            String rowID = tableRow.getKey().getId().toString();
+            String rowID = tableRow.getKey().getString();
             String msg;
             if (numOfRows <= 0) {
                 msg = "Writing row " + (rowCnt + 1) + " (\"" + rowID + "\")";
