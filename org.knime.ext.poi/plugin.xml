@@ -2,9 +2,6 @@
 <?eclipse version="3.0"?>
 <plugin>
    <extension
-         point="org.knime.workbench.repository.categories">
-   </extension>
-   <extension
          point="org.knime.workbench.repository.nodes">
       <node
             category-path="/io/write"
