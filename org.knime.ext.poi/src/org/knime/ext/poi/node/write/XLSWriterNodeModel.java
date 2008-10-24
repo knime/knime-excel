@@ -43,7 +43,6 @@ import org.knime.core.node.NodeSettingsWO;
  * @author ohl, University of Konstanz
  */
 public class XLSWriterNodeModel extends NodeModel {
-
     private XLSWriterSettings m_settings = null;
 
     /**
@@ -86,6 +85,11 @@ public class XLSWriterNodeModel extends NodeModel {
             throw new InvalidSettingsException("\"" + file.getAbsolutePath()
                     + "\" is a directory.");
         }
+        if (file.exists() && !m_settings.getOverwriteOK()) {
+            String throwString = "File '" + file.toString()
+                            + "' exists, cannot overwrite";
+            throw new InvalidSettingsException(throwString);
+        }
         if (!file.exists()) {
             // dunno how to check the write access to the directory. If we can't
             // create the file the execute of the node will fail. Well, too bad.
@@ -105,9 +109,13 @@ public class XLSWriterNodeModel extends NodeModel {
     @Override
     protected BufferedDataTable[] execute(final BufferedDataTable[] inData,
             final ExecutionContext exec) throws Exception {
-
-        FileOutputStream outStream =
-                new FileOutputStream(new File(m_settings.getFilename()));
+        File file = new File(m_settings.getFilename());
+        if (file.exists() && !m_settings.getOverwriteOK()) {
+            String throwString = "File '" + file.toString()
+            + "' exists, cannot overwrite";
+            throw new InvalidSettingsException(throwString);
+        }
+        FileOutputStream outStream = new FileOutputStream(file);
         
         XLSWriter xlsWriter = new XLSWriter(outStream, m_settings);
 
@@ -175,7 +183,6 @@ public class XLSWriterNodeModel extends NodeModel {
             throw new InvalidSettingsException("No output"
                      + " filename specified.");
         }
-
     }
 
 }

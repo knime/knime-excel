@@ -2,40 +2,57 @@
 <!DOCTYPE knimeNode PUBLIC "-//UNIKN//DTD KNIME Node 2.0//EN" "http://www.knime.org/Node.dtd">
 <knimeNode type="Sink" icon="./xlswriter.png">
 	<name>XLS Writer</name>
-	
+
 	<shortDescription>
 		Saves a datatable into a spreadsheet.
 	</shortDescription>
-	
+
 	<fullDescription>
 		<intro>
- 		This node writes out the datatable coming through its input port
- 		into a spreadsheet of a workbook. The files can be read then with 
- 		other applications like Microsoft Excel, for example.
- 		The maximum number of columns held by a spreadsheet is 256 (all 
- 		additional columns in the datatable are truncated). If the input 
- 		datatable has more than 65536 rows it is split into multiple 
- 		spreadsheets (all stored in the created workbook).
- 		</intro>
- 		<option name="Output file location">Enter a valid file name. 
-			You can also choose a previously selected file from the drop-down list,
-			or select a file from the &quot;Browse...&quot; dialog.
-			</option>		
- 		<option name="Write column header">If checked, the column names are
- 			written out in the first row of the spreadsheet.
-			</option>		
- 		<option name="Write row ID">If checked, the row IDs are
- 			added to the output, in the first colum of the spreadsheet.
-			</option>		
- 		<option name="Missing Value Pattern">Enter a pattern 
- 			that is set for missing data values. If not specified, the
- 			corresponding datacell of the spreadsheet stays empty.
-			</option>
+			This node writes out the datatable coming through its input
+			port into a spreadsheet of a workbook. The files can be read
+			then with other applications like Microsoft Excel, for
+			example. The maximum number of columns held by a spreadsheet
+			is 256 (all additional columns in the datatable are
+			truncated). If the input datatable has more than 65536 rows
+			it is split into multiple spreadsheets (all stored in the
+			created workbook).
+		</intro>
+		<option name="Output file location">
+			Enter a valid file name. You can also choose a previously
+			selected file from the drop-down list, or select a file from
+			the &quot;Browse...&quot; dialog.
+		</option>
+		<option name="Overwrite existing file">
+			If checked, the output file will be overridden if it exists. 
+			If unchecked, the node will fail during execution in order to 
+			retain the original file and to avoid unintentional overwrite.  
+		</option>
+		<option name="Output file location">
+			Enter a valid file name. You can also choose a previously
+			selected file from the drop-down list, or select a file from
+			the &quot;Browse...&quot; dialog.
+		</option>
+		<option name="Write column header">
+			If checked, the column names are written out in the first
+			row of the spreadsheet.
+		</option>
+		<option name="Write row ID">
+			If checked, the row IDs are added to the output, in the
+			first column of the spreadsheet.
+		</option>
+		<option name="Missing Value Pattern">
+			Enter a pattern that is set for missing data values. If not
+			specified, the corresponding datacell of the spreadsheet
+			stays empty.
+		</option>
 	</fullDescription>
-	
+
 	<ports>
-		<dataIn index="0" name="Input table">The Datatable to write out.</dataIn>
-	</ports>	
+		<dataIn index="0" name="Input table">
+			The Datatable to write out.
+		</dataIn>
+	</ports>
 </knimeNode>
 
 

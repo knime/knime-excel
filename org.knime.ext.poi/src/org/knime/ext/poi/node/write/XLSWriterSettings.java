@@ -49,6 +49,8 @@ public class XLSWriterSettings {
 
     private static final String CFGKEY_MISSINGPATTERN = "missingPattern";
 
+    private static final String CFG_OVERWRITE_OK = "overwrite_ok";
+
     private int m_xCellOffset;
 
     private int m_yCellOffset;
@@ -63,6 +65,8 @@ public class XLSWriterSettings {
 
     private String m_missingPattern;
 
+    private boolean m_overwriteOK;
+
     /**
      * Creates a new settings object with default settings but no filename.
      */
@@ -74,6 +78,7 @@ public class XLSWriterSettings {
         m_filename = null;
         m_sheetname = null;
         m_missingPattern = null;
+        m_overwriteOK = false;
     }
 
     /**
@@ -93,6 +98,10 @@ public class XLSWriterSettings {
         m_filename = settings.getString(CFGKEY_FILENAME);
         m_sheetname = settings.getString(CFGKEY_SHEETNAME);
         m_missingPattern = settings.getString(CFGKEY_MISSINGPATTERN);
+        // option added for KNIME 2.0, we use "true" as default in cases
+        // where this option is not present (old KNIME 1.x flows) in order
+        // to mimic the old functionality
+        m_overwriteOK = settings.getBoolean(CFG_OVERWRITE_OK, true);
     }
 
     /**
@@ -108,6 +117,7 @@ public class XLSWriterSettings {
         settings.addString(CFGKEY_FILENAME, m_filename);
         settings.addString(CFGKEY_SHEETNAME, m_sheetname);
         settings.addString(CFGKEY_MISSINGPATTERN, m_missingPattern);
+        settings.addBoolean(CFG_OVERWRITE_OK, m_overwriteOK);
     }
 
     /**
@@ -208,6 +218,17 @@ public class XLSWriterSettings {
      */
     public String getMissingPattern() {
         return m_missingPattern;
+    }
+
+    /** Set the overwrite ok property. 
+     * @param overwriteOK The property. */
+    public void setOverwriteOK(final boolean overwriteOK) {
+        m_overwriteOK = overwriteOK;
+    }
+
+    /** @return the overwrite ok property. */
+    public boolean getOverwriteOK() {
+        return (m_overwriteOK);
     }
 
 }

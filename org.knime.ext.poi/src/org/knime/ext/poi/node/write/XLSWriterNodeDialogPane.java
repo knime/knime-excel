@@ -30,6 +30,7 @@ import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JCheckBox;
+import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -63,6 +64,9 @@ class XLSWriterNodeDialogPane extends NodeDialogPane {
     private final JCheckBox m_writeRowHdr = new JCheckBox();
 
     private final JTextField m_missValue = new JTextField();
+    
+    private final JCheckBox m_overwriteOK = 
+        new JCheckBox("Overwrite existing file");
 
     /**
      * Creates a new dialog for the XLS writer node.
@@ -71,6 +75,9 @@ class XLSWriterNodeDialogPane extends NodeDialogPane {
         JPanel tab = new JPanel();
         tab.setLayout(new BoxLayout(tab, BoxLayout.Y_AXIS));
         tab.add(createFileBox());
+        
+        tab.add(createFileOverwriteBox());
+        tab.add(Box.createVerticalStrut(5));
         tab.add(createHeadersBox());
         tab.add(createMissingBox());
         tab.add(Box.createVerticalGlue());
@@ -81,6 +88,13 @@ class XLSWriterNodeDialogPane extends NodeDialogPane {
 
     private JPanel createFileBox() {
         return m_fileComponent.getComponentPanel();
+    }
+    
+    private JComponent createFileOverwriteBox() {
+        Box overwiteBox = Box.createHorizontalBox();
+        overwiteBox.add(Box.createHorizontalGlue());
+        overwiteBox.add(m_overwriteOK);
+        return overwiteBox;
     }
 
     private JPanel createHeadersBox() {
@@ -108,6 +122,7 @@ class XLSWriterNodeDialogPane extends NodeDialogPane {
                 .createEtchedBorder(), "Add names and IDs"));
         result.add(colHdrBox);
         result.add(rowHdrBox);
+
         return result;
 
     }
@@ -140,15 +155,18 @@ class XLSWriterNodeDialogPane extends NodeDialogPane {
     @Override
     protected void loadSettingsFrom(final NodeSettingsRO settings,
             final DataTableSpec[] specs) throws NotConfigurableException {
+        XLSWriterSettings newVals;
         try {
-            XLSWriterSettings newVals = new XLSWriterSettings(settings);
-            m_filename.setStringValue(newVals.getFilename());
-            m_missValue.setText(newVals.getMissingPattern());
-            m_writeColHdr.setSelected(newVals.writeColHeader());
-            m_writeRowHdr.setSelected(newVals.writeRowID());
+            newVals = new XLSWriterSettings(settings);
         } catch (InvalidSettingsException ise) {
             // keep the defaults.
+            newVals = new XLSWriterSettings();
         }
+        m_filename.setStringValue(newVals.getFilename());
+        m_missValue.setText(newVals.getMissingPattern());
+        m_writeColHdr.setSelected(newVals.writeColHeader());
+        m_writeRowHdr.setSelected(newVals.writeRowID());
+        m_overwriteOK.setSelected(newVals.getOverwriteOK());
     }
 
     /**
@@ -174,7 +192,7 @@ class XLSWriterNodeDialogPane extends NodeDialogPane {
         vals.setMissingPattern(m_missValue.getText());
         vals.setWriteColHeader(m_writeColHdr.isSelected());
         vals.setWriteRowID(m_writeRowHdr.isSelected());
-        
+        vals.setOverwriteOK(m_overwriteOK.isSelected());
         vals.saveSettingsTo(settings);
     }
 
