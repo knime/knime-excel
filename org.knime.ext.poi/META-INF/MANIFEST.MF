@@ -50,4 +50,4 @@ Export-Package: org.apache.poi.contrib.metrics,
  org.apache.poi.util,
  org.knime.ext.poi,
  org.knime.ext.poi.node.write
-Bundle-Vendor: Chair for Bioinformatics and Information Mining, University of Konstanz, Germany
+Bundle-Vendor: KNIME GmbH, Konstanz, Germany
