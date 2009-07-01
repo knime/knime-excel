@@ -269,7 +269,7 @@ terms of this License.
       <update label="KNIME Update Site" url="http://www.knime.org/update_2.x"/>
    </url>
 
-   <plugin id="org.knime.features.ext.poi.source" version="0.0.0"/>
+   <includes id="org.knime.features.ext.poi.source" version="0.0.0"/>
 
    <plugin download-size="0" id="org.knime.ext.poi" install-size="0" version="0.0.0"/>
 
