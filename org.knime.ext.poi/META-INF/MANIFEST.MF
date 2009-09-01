@@ -8,7 +8,6 @@ Require-Bundle: org.eclipse.core.runtime,
  org.knime.core,
  org.knime.workbench.repository,
  org.knime.base
-Eclipse-LazyStart: true
 Bundle-ClassPath: knime-poi-patches.jar,
  knime-poi.jar,
  lib/poi-2.5.1-final-20040804.jar,
@@ -51,3 +50,4 @@ Export-Package: org.apache.poi.contrib.metrics,
  org.knime.ext.poi,
  org.knime.ext.poi.node.write
 Bundle-Vendor: KNIME GmbH, Konstanz, Germany
+Bundle-ActivationPolicy: lazy
