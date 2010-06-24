@@ -1,5 +1,5 @@
-/*
- * ------------------------------------------------------------------------
+<!--
+========================================================================
  *
  *  Copyright (C) 2003 - 2010
  *  University of Konstanz, Germany and
@@ -43,53 +43,9 @@
  *  propagated with or for interoperation with KNIME.  The owner of a Node
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
- * -------------------------------------------------------------------
- */
-package org.knime.ext.poi;
-
-import org.eclipse.core.runtime.Plugin;
-import org.osgi.framework.BundleContext;
-
-/**
- * The activator class controls the plug-in life cycle.
- */
-public class POIActivator extends Plugin {
-
-    /** The plug-in ID. */
-    public static final String PLUGIN_ID = "org.knime.ext.poi";
-
-    // The shared instance
-    private static POIActivator plugin;
-
-    /**
-     * The constructor.
-     */
-    public POIActivator() {
-        plugin = this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void start(final BundleContext context) throws Exception {
-        super.start(context);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void stop(final BundleContext finalContext) throws Exception {
-        plugin = null;
-        super.stop(finalContext);
-    }
-
-    /**
-     * @return the shared instance
-     */
-    public static POIActivator getDefault() {
-        return plugin;
-    }
-
-}
+====================================================================
+-->
+<body>
+	Contains a node implementation that read data from one sheet of a 
+	XLS workbook and provides it as Data Table at its output port.
+</body>

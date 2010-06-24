@@ -7,5 +7,11 @@
             category-path="/io/write"
             factory-class="org.knime.ext.poi.node.write.XLSWriterNodeFactory"
             id="org.knime.ext.poi.node.write.XLSWriterNodeFactory"/>
+      <node
+            category-path="/io/read"
+            expert-flag="false"
+            factory-class="org.knime.ext.poi.node.read2.XLSReaderNodeFactory"
+            id="org.knime.ext.poi.node.read.XLSReaderNodeFactory">
+      </node>
    </extension>
 </plugin>

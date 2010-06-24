@@ -46,12 +46,11 @@
  * -------------------------------------------------------------------
  *
  * History
- *   Mar 15, 2007 (ohl): created
+ *   Apr 8, 2009 (ohl): created
  */
-package org.knime.ext.poi.node.write;
+package org.knime.ext.poi.node.read2;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 
 import org.knime.core.data.DataTableSpec;
@@ -66,89 +65,17 @@ import org.knime.core.node.NodeSettingsWO;
 
 /**
  *
- * @author ohl, University of Konstanz
+ * @author Peter Ohl, KNIME.com, Zurich, Switzerland
  */
-public class XLSWriterNodeModel extends NodeModel {
-    private XLSWriterSettings m_settings = null;
+public class XLSReaderNodeModel extends NodeModel {
+
+    private XLSUserSettings m_settings = new XLSUserSettings();
 
     /**
      *
      */
-    public XLSWriterNodeModel() {
-        super(1, 0); // one input, no output
-
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected DataTableSpec[] configure(final DataTableSpec[] inSpecs)
-            throws InvalidSettingsException {
-        if (m_settings == null) {
-            m_settings = new XLSWriterSettings();
-        }
-        // throws an Exception if things are not okay and sets a warning
-        // message if file gets overridden.
-        checkFileAccess(m_settings.getFilename());
-        return new DataTableSpec[]{};
-    }
-
-    /**
-     * Helper that checks some properties for the file argument.
-     *
-     * @param fileName the file to check
-     * @throws InvalidSettingsException if that fails
-     */
-    private void checkFileAccess(final String fileName)
-            throws InvalidSettingsException {
-        if ((fileName == null) || (fileName.length() == 0)) {
-            throw new InvalidSettingsException("No output file specified.");
-        }
-        File file = new File(fileName);
-
-        if (file.isDirectory()) {
-            throw new InvalidSettingsException("\"" + file.getAbsolutePath()
-                    + "\" is a directory.");
-        }
-        if (file.exists() && !m_settings.getOverwriteOK()) {
-            String throwString = "File '" + file.toString()
-                            + "' exists, cannot overwrite";
-            throw new InvalidSettingsException(throwString);
-        }
-        if (!file.exists()) {
-            // dunno how to check the write access to the directory. If we can't
-            // create the file the execute of the node will fail. Well, too bad.
-            return;
-        }
-        if (!file.canWrite()) {
-            throw new InvalidSettingsException("Cannot write to file \""
-                    + file.getAbsolutePath() + "\".");
-        }
-        setWarningMessage("Selected output file exists and will be "
-                + "overwritten!");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected BufferedDataTable[] execute(final BufferedDataTable[] inData,
-            final ExecutionContext exec) throws Exception {
-        File file = new File(m_settings.getFilename());
-        if (file.exists() && !m_settings.getOverwriteOK()) {
-            String throwString = "File '" + file.toString()
-            + "' exists, cannot overwrite";
-            throw new InvalidSettingsException(throwString);
-        }
-        FileOutputStream outStream = new FileOutputStream(file);
-
-        XLSWriter xlsWriter = new XLSWriter(outStream, m_settings);
-
-        xlsWriter.write(inData[0], exec);
-
-        return new BufferedDataTable[]{};
-
+    public XLSReaderNodeModel() {
+        super(0, 1);
     }
 
     /**
@@ -158,7 +85,24 @@ public class XLSWriterNodeModel extends NodeModel {
     protected void loadInternals(final File nodeInternDir,
             final ExecutionMonitor exec) throws IOException,
             CanceledExecutionException {
-        // nothing to save
+        /*
+         * This is a special "deal" for the reader: The reader, if previously
+         * executed, has data at it's output - even if the file that was read
+         * doesn't exist anymore. In order to warn the user that the data cannot
+         * be recreated we check here if the file exists and set a warning
+         * message if it doesn't.
+         */
+        String fName = m_settings.getFileLocation();
+        if (fName == null || fName.isEmpty()) {
+            return;
+        }
+
+        File location = new File(fName);
+
+        if (!location.canRead() || location.isDirectory()) {
+            setWarningMessage("The file '" + location.getAbsolutePath()
+                    + "' can't be accessed anymore!");
+        }
     }
 
     /**
@@ -167,7 +111,7 @@ public class XLSWriterNodeModel extends NodeModel {
     @Override
     protected void loadValidatedSettingsFrom(final NodeSettingsRO settings)
             throws InvalidSettingsException {
-        m_settings = new XLSWriterSettings(settings);
+        m_settings = XLSUserSettings.load(settings);
     }
 
     /**
@@ -175,7 +119,7 @@ public class XLSWriterNodeModel extends NodeModel {
      */
     @Override
     protected void reset() {
-        // nothing to reset
+        // empty
     }
 
     /**
@@ -185,7 +129,7 @@ public class XLSWriterNodeModel extends NodeModel {
     protected void saveInternals(final File nodeInternDir,
             final ExecutionMonitor exec) throws IOException,
             CanceledExecutionException {
-        // nothing to save
+        // empty
     }
 
     /**
@@ -194,7 +138,7 @@ public class XLSWriterNodeModel extends NodeModel {
     @Override
     protected void saveSettingsTo(final NodeSettingsWO settings) {
         if (m_settings != null) {
-            m_settings.saveSettingsTo(settings);
+            m_settings.save(settings);
         }
     }
 
@@ -204,11 +148,51 @@ public class XLSWriterNodeModel extends NodeModel {
     @Override
     protected void validateSettings(final NodeSettingsRO settings)
             throws InvalidSettingsException {
-        String filename = new XLSWriterSettings(settings).getFilename();
-        if ((filename == null) || (filename.length() == 0)) {
-            throw new InvalidSettingsException("No output"
-                     + " filename specified.");
+        XLSUserSettings.load(settings);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected DataTableSpec[] configure(final DataTableSpec[] inSpecs)
+            throws InvalidSettingsException {
+
+        if (m_settings == null) {
+            throw new InvalidSettingsException("Node not configured.");
         }
+
+        String errMsg = m_settings.getStatus(true);
+        if (errMsg != null) {
+            throw new InvalidSettingsException(errMsg);
+        }
+
+        XLSTableSettings s;
+        try {
+            s = new XLSTableSettings(m_settings);
+        } catch (Exception e) {
+            if (e.getMessage() != null) {
+                errMsg = e.getMessage();
+            } else {
+                errMsg = e.getClass().getSimpleName();
+            }
+            throw new InvalidSettingsException(errMsg);
+        }
+
+        return new DataTableSpec[]{s.getDataTableSpec()};
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected BufferedDataTable[] execute(final BufferedDataTable[] inData,
+            final ExecutionContext exec) throws Exception {
+
+        XLSTable table = new XLSTable(m_settings);
+        return new BufferedDataTable[]{exec
+                .createBufferedDataTable(table, exec)};
+
     }
 
 }

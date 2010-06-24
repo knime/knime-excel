@@ -44,52 +44,61 @@
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
  * -------------------------------------------------------------------
+ *
+ * History
+ *   Apr 8, 2009 (ohl): created
  */
-package org.knime.ext.poi;
+package org.knime.ext.poi.node.read2;
 
-import org.eclipse.core.runtime.Plugin;
-import org.osgi.framework.BundleContext;
+import org.knime.core.node.NodeDialogPane;
+import org.knime.core.node.NodeFactory;
+import org.knime.core.node.NodeView;
 
 /**
- * The activator class controls the plug-in life cycle.
+ *
+ * @author Peter Ohl, KNIME.com, Zurich, Switzerland
  */
-public class POIActivator extends Plugin {
-
-    /** The plug-in ID. */
-    public static final String PLUGIN_ID = "org.knime.ext.poi";
-
-    // The shared instance
-    private static POIActivator plugin;
+public class XLSReaderNodeFactory extends NodeFactory<XLSReaderNodeModel> {
 
     /**
-     * The constructor.
+     * {@inheritDoc}
      */
-    public POIActivator() {
-        plugin = this;
+    @Override
+    protected NodeDialogPane createNodeDialogPane() {
+        return new XLSReaderNodeDialog();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void start(final BundleContext context) throws Exception {
-        super.start(context);
+    public XLSReaderNodeModel createNodeModel() {
+        return new XLSReaderNodeModel();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void stop(final BundleContext finalContext) throws Exception {
-        plugin = null;
-        super.stop(finalContext);
+    public NodeView<XLSReaderNodeModel> createNodeView(final int viewIndex,
+            final XLSReaderNodeModel nodeModel) {
+        return null;
     }
 
     /**
-     * @return the shared instance
+     * {@inheritDoc}
      */
-    public static POIActivator getDefault() {
-        return plugin;
+    @Override
+    protected int getNrNodeViews() {
+        return 0;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected boolean hasDialog() {
+        return true;
     }
 
 }
