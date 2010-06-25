@@ -76,7 +76,6 @@ import javax.swing.border.TitledBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import org.knime.core.data.DataTable;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeDialogPane;
@@ -120,9 +119,13 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
 
     private final TableView m_fileTable = new TableView();
 
+    private XLSTable m_fileDataTable = null;
+
     private final JPanel m_fileTablePanel = new JPanel();
 
     private final TableView m_previewTable = new TableView();
+
+    private XLSTable m_previewDataTable = null;
 
     private final JLabel m_errorLabel = new JLabel();
 
@@ -423,6 +426,10 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         ViewUtils.runOrInvokeLaterInEDT(new Runnable() {
             public void run() {
                 m_previewTable.setDataTable(null);
+                if (m_previewDataTable != null) {
+                    m_previewDataTable.dispose();
+                }
+                m_previewDataTable = null;
             }
         });
     }
@@ -431,6 +438,10 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         ViewUtils.runOrInvokeLaterInEDT(new Runnable() {
             public void run() {
                 m_fileTable.setDataTable(null);
+                if (m_fileDataTable != null) {
+                    m_fileDataTable.dispose();
+                }
+                m_fileDataTable = null;
             }
         });
     }
@@ -454,7 +465,7 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         }
 
         XLSUserSettings s;
-        final DataTable dt;
+        final XLSTable dt;
         try {
             s = createFileviewSettings(file, sheet);
             dt = new XLSTable(s);
@@ -470,6 +481,10 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         ViewUtils.runOrInvokeLaterInEDT(new Runnable() {
             public void run() {
                 m_fileTable.setDataTable(dt);
+                if (m_fileDataTable != null) {
+                    m_fileDataTable.dispose();
+                }
+                m_fileDataTable = dt;
             }
         });
 
@@ -504,7 +519,7 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         }
 
         XLSUserSettings s;
-        final DataTable dt;
+        final XLSTable dt;
         try {
             s = createSettingsFromComponents();
             dt = new XLSTable(s);
@@ -522,6 +537,10 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
             public void run() {
                 try {
                     m_previewTable.setDataTable(dt);
+                    if (m_previewDataTable != null) {
+                        m_previewDataTable.dispose();
+                    }
+                    m_previewDataTable = dt;
                 } catch ( Throwable t) {
                     m_errorLabel.setText(t.getMessage());
                 }

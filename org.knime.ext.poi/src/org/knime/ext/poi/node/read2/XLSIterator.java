@@ -142,13 +142,32 @@ class XLSIterator extends RowIterator {
     }
 
     /**
+     * Call this before releasing the last reference to this iterator. It closes
+     * the underlying source file. Especially if the iterator didn't run to the
+     * end of the table, it is required to call this method. Otherwise the file
+     * handle is not released until the garbage collector cleans up. A call to
+     * {@link #next()} after disposing of the iterator has undefined behavior.
+     */
+    public void dispose() {
+        closeStream();
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
     protected void finalize() throws Throwable {
+        closeStream();
         super.finalize();
+    }
+
+    private void closeStream() {
         if (m_fileStream != null) {
-            m_fileStream.close();
+            try {
+                m_fileStream.close();
+            } catch (IOException e) {
+                // then don't close it
+            }
         }
     }
 
@@ -162,6 +181,7 @@ class XLSIterator extends RowIterator {
         HSSFRow nextXLrow = null;
 
         if (m_currentSheet == null) {
+            closeStream();
             return;
         }
 
@@ -169,10 +189,12 @@ class XLSIterator extends RowIterator {
             m_nextRowIdx++;
             if (m_nextRowIdx > XLSTable.getLastRowIdx(m_currentSheet)) {
                 // end of data in the sheet
+                closeStream();
                 return;
             }
             if (m_nextRowIdx > m_settings.getLastRow()) {
                 // beyond range selected by user
+                closeStream();
                 return;
             }
             if (m_settings.getHasColHeaders()
@@ -219,6 +241,7 @@ class XLSIterator extends RowIterator {
             // no next row after an exception
             m_nextRow = null;
             m_exception.set(null);
+            closeStream();
             throw t;
         }
 

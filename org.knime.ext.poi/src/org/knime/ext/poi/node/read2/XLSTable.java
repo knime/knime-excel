@@ -54,7 +54,9 @@ import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.LinkedList;
 
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -72,11 +74,16 @@ class XLSTable implements DataTable {
 
     private final XLSTableSettings m_settings;
 
+    // list of all iterators to close the source, when the table is disposed of
+    private final LinkedList<WeakReference<XLSIterator>> m_iterators;
+
     /**
      * Settings must contain a file name and must be run through analyze.
      *
      * @param settings settings to use for reading the XLS file.
      * @throws InvalidSettingsException if settings are invalid
+     * @throws IOException
+     * @throws FileNotFoundException
      */
     XLSTable(final XLSUserSettings settings) throws InvalidSettingsException,
             IOException, FileNotFoundException {
@@ -84,23 +91,44 @@ class XLSTable implements DataTable {
             throw new IllegalArgumentException(
                     "Settings with valid filename must be provided.");
         }
-
+        m_iterators = new LinkedList<WeakReference<XLSIterator>>();
         m_settings = new XLSTableSettings(settings);
 
     }
 
     /**
      * Settings will be taken over. Not cloned.
+     * @param tableSettings
      */
     public XLSTable(final XLSTableSettings tableSettings) {
         if (tableSettings == null) {
-            throw new IllegalArgumentException(
-                    "Table settings can't be null");
+            throw new IllegalArgumentException("Table settings can't be null");
         }
-
+        m_iterators = new LinkedList<WeakReference<XLSIterator>>();
         m_settings = tableSettings;
 
     }
+
+    /**
+     * Call this before releasing the last reference to this table. It closes
+     * the underlying source file. Especially if the iterator didn't run to the
+     * end of the table, it is required to call this method. Otherwise the file
+     * handle is not released until the garbage collector cleans up. A call to
+     * {@link RowIterator#next()} after disposing of the table has undefined
+     * behavior.
+     */
+    public void dispose() {
+        synchronized (m_iterators) {
+            for (WeakReference<XLSIterator> w : m_iterators) {
+                XLSIterator i = w.get();
+                if (i != null) {
+                    i.dispose();
+                }
+            }
+            m_iterators.clear();
+        }
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -113,7 +141,11 @@ class XLSTable implements DataTable {
      */
     public RowIterator iterator() {
         try {
-            return new XLSIterator(m_settings);
+            synchronized (m_iterators) {
+                XLSIterator i = new XLSIterator(m_settings);
+                m_iterators.add(new WeakReference<XLSIterator>(i));
+                return i;
+            }
         } catch (IOException e) {
             throw new IllegalArgumentException(e);
         } catch (InvalidSettingsException e) {
@@ -283,6 +315,5 @@ class XLSTable implements DataTable {
 
         return result - 1;
     }
-
 
 }
