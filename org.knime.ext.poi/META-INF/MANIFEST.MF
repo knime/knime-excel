@@ -10,9 +10,11 @@ Require-Bundle: org.eclipse.core.runtime,
  org.knime.base
 Bundle-ClassPath: knime-poi-patches.jar,
  knime-poi.jar,
- lib/poi-3.2-FINAL-20081019.jar,
- lib/poi-contrib-3.2-FINAL-20081019.jar,
- lib/poi-scratchpad-3.2-FINAL-20081019.jar
+ lib/poi-3.6-20091214.jar,
+ lib/poi-scratchpad-3.6-20091214.jar,
+ lib/poi-contrib-3.6-20091214.jar,
+ lib/poi-ooxml-3.6-20091214.jar,
+ lib/poi-ooxml-schemas-3.6-20091214.jar
 Export-Package: org.knime.ext.poi.node.read2,
  org.knime.ext.poi.node.write
 Bundle-Vendor: KNIME GmbH, Konstanz, Germany
