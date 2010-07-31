@@ -76,6 +76,7 @@ import javax.swing.border.TitledBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeDialogPane;
@@ -95,7 +96,7 @@ import org.knime.core.node.util.ViewUtils;
 public class XLSReaderNodeDialog extends NodeDialogPane {
 
     private final FilesHistoryPanel m_fileName =
-            new FilesHistoryPanel("XLSReader", ".xls");
+            new FilesHistoryPanel("XLSReader", ".xls", ".xlsx");
 
     private final JComboBox m_sheetName = new JComboBox();
 
@@ -209,7 +210,7 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
                 .createEtchedBorder(), "Column Names:"));
 
         m_hasColHdr.setText("Table contains column names in row number:");
-        m_hasColHdr.setToolTipText("Enter A, B, C, .... or an index 0 ... 255");
+        m_hasColHdr.setToolTipText("Enter a number. First row has number 1.");
         m_hasColHdr.addItemListener(new ItemListener() {
             public void itemStateChanged(final ItemEvent e) {
                 checkBoxChanged();
@@ -241,6 +242,7 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
 
         Box rowBox = Box.createHorizontalBox();
         m_hasRowIDs.setText("Table contains row IDs in column:");
+        m_hasRowIDs.setToolTipText("Enter A, B, C, .... or a number 1 ...");
         m_hasRowIDs.addItemListener(new ItemListener() {
             public void itemStateChanged(final ItemEvent e) {
                 checkBoxChanged();
@@ -248,7 +250,7 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         });
         m_rowIDCol.setPreferredSize(new Dimension(75, 25));
         m_rowIDCol.setMaximumSize(new Dimension(75, 25));
-        m_rowIDCol.setToolTipText("Enter a number. First row has number 1.");
+        m_rowIDCol.setToolTipText("Enter A, B, C, .... or a number 1 ...");
         addFocusLostListener(m_rowIDCol);
         rowBox.add(Box.createHorizontalGlue());
         rowBox.add(m_hasRowIDs);
@@ -319,15 +321,17 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         });
         m_readAllData.setSelected(false);
         readAllBox.add(Box.createHorizontalGlue());
+        readAllBox.add(Box.createHorizontalGlue());
         readAllBox.add(m_readAllData);
+        readAllBox.add(Box.createHorizontalGlue());
 
         Box areaBox = Box.createVerticalBox();
         areaBox.setBorder(BorderFactory.createTitledBorder(BorderFactory
                 .createEtchedBorder(), "Set the Area Of Interest:"));
         areaBox.add(labelBox);
+        areaBox.add(readAllBox);
         areaBox.add(colsBox);
         areaBox.add(rowsBox);
-        areaBox.add(readAllBox);
         return areaBox;
     }
 
@@ -395,8 +399,8 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         JTabbedPane viewTabs = new JTabbedPane();
 
         m_fileTablePanel.setLayout(new BorderLayout());
-        m_fileTablePanel.setBorder(BorderFactory.createTitledBorder(BorderFactory
-                .createEtchedBorder(), "XL Sheet Content:"));
+        m_fileTablePanel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createEtchedBorder(), "XL Sheet Content:"));
         m_fileTablePanel.add(m_fileTable, BorderLayout.CENTER);
 
         JPanel previewBox = new JPanel();
@@ -541,7 +545,7 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
                         m_previewDataTable.dispose();
                     }
                     m_previewDataTable = dt;
-                } catch ( Throwable t) {
+                } catch (Throwable t) {
                     m_errorLabel.setText(t.getMessage());
                 }
             }
@@ -568,33 +572,34 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
             if (m_hasColHdr.isSelected()) {
                 throw new InvalidSettingsException("Column Header Row: "
                         + ise.getMessage());
-            } // else ignore and don't store an invalid value
+            }
+            s.setColHdrRow(-1);
         }
         s.setUniquifyRowIDs(m_uniquifyRowIDs.isSelected());
         s.setHasRowHeaders(m_hasRowIDs.isSelected());
         try {
-            s.setRowHdrCol(getColumnIndexFromTextField(m_rowIDCol));
+            s.setRowHdrCol(getColumnNumberFromTextField(m_rowIDCol) - 1);
         } catch (InvalidSettingsException ise) {
             if (m_hasRowIDs.isSelected()) {
                 throw new InvalidSettingsException("Row Header Column Idx: "
                         + ise.getMessage());
-            } // else ignore and don't store an invalid value
+            }
+            s.setRowHdrCol(-1);
         }
         try {
-            s.setFirstColumn(getColumnIndexFromTextField(m_firstCol));
+            s.setFirstColumn(getColumnNumberFromTextField(m_firstCol) - 1);
         } catch (InvalidSettingsException ise) {
             if (!m_readAllData.isSelected()) {
                 throw new InvalidSettingsException("First Column: "
                         + ise.getMessage());
             }
+            s.setFirstColumn(-1);
         }
         try {
-            s.setLastColumn(getColumnIndexFromTextField(m_lastCol));
+            s.setLastColumn(getColumnNumberFromTextField(m_lastCol) - 1);
         } catch (InvalidSettingsException ise) {
-            if (!m_readAllData.isSelected()) {
-                throw new InvalidSettingsException("Last Column: "
-                        + ise.getMessage());
-            }
+            // no last column specified
+            s.setLastColumn(-1);
         }
         try {
             s.setFirstRow(getNumberFromTextField(m_firstRow) - 1);
@@ -603,14 +608,13 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
                 throw new InvalidSettingsException("First Row: "
                         + ise.getMessage());
             }
+            s.setFirstRow(-1);
         }
         try {
             s.setLastRow(getNumberFromTextField(m_lastRow) - 1);
         } catch (InvalidSettingsException ise) {
-            if (!m_readAllData.isSelected()) {
-                throw new InvalidSettingsException("Last Row: "
-                        + ise.getMessage());
-            }
+            // no last row set
+            s.setLastRow(-1);
         }
 
         return s;
@@ -641,14 +645,14 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
 
     /**
      * Creates an int from the specified text field. It accepts numbers between
-     * 0 and 255 (incl.) or XL column headers (starting at 'A', 'B', ... 'Z',
+     * 1 and 256 (incl.) or XL column headers (starting at 'A', 'B', ... 'Z',
      * 'AA', etc.) Throws a ISE if the entered value is not valid.
      */
-    private int getColumnIndexFromTextField(final JTextField t)
+    private int getColumnNumberFromTextField(final JTextField t)
             throws InvalidSettingsException {
         String input = t.getText();
         if (input == null || input.isEmpty()) {
-            throw new InvalidSettingsException("please enter a column index.");
+            throw new InvalidSettingsException("please enter a column number.");
         }
         int i;
         try {
@@ -656,16 +660,17 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         } catch (NumberFormatException nfe) {
             try {
                 i = XLSTable.getColumnIndex(input.toUpperCase());
+                // we want a number here (not an index)...
+                i++;
             } catch (IllegalArgumentException iae) {
                 throw new InvalidSettingsException(
-                        "not a valid column index (enter a number or 'A', 'B', ..., 'Z', 'AA', etc.)");
+                        "not a valid column number (enter a number or "
+                                + "'A', 'B', ..., 'Z', 'AA', etc.)");
             }
         }
-        if (i < 0) {
-            throw new InvalidSettingsException("column index can't negative.");
-        }
-        if (i > 255) {
-            throw new InvalidSettingsException("largest column index is 255");
+        if (i <= 0) {
+            throw new InvalidSettingsException(
+                    "column number must be larger than zero");
         }
         return i;
     }
@@ -678,39 +683,40 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         m_skipEmptyRows.setSelected(s.getSkipEmptyRows());
         m_readAllData.setSelected(s.getReadAllData());
 
+        // dialog shows numbers - internally we use indices
         m_hasColHdr.setSelected(s.getHasColHeaders());
         m_colHdrRow.setText("" + (s.getColHdrRow() + 1));
         m_hasRowIDs.setSelected(s.getHasRowHeaders());
         m_uniquifyRowIDs.setSelected(s.getUniquifyRowIDs());
 
         int val;
-        val = s.getRowHdrCol();
-        if (val >= 0 && val <= 255) {
-            m_rowIDCol.setText(XLSTable.getColLabel(s.getRowHdrCol()));
+        val = s.getRowHdrCol(); // getColLabel wants an index
+        if (val >= 0) {
+            m_rowIDCol.setText(XLSTable.getColLabel(val));
         } else {
             m_rowIDCol.setText("A");
         }
-        val = s.getFirstColumn();
-        if (val >= 0 && val <= 255) {
-            m_firstCol.setText(XLSTable.getColLabel(s.getFirstColumn()));
+        val = s.getFirstColumn(); // getColLabel wants an index
+        if (val >= 0) {
+            m_firstCol.setText(XLSTable.getColLabel(val));
         } else {
             m_firstCol.setText("A");
         }
-        val = s.getLastColumn();
-        if (val >= 0 && val <= 255) {
-            m_lastCol.setText(XLSTable.getColLabel(s.getLastColumn()));
+        val = s.getLastColumn() + 1;
+        if (val >= 1) {
+            m_lastCol.setText(XLSTable.getColLabel(val));
         } else {
             m_lastCol.setText("");
         }
-        val = s.getFirstRow();
-        if (val >= 0) {
-            m_firstRow.setText("" + (s.getFirstRow() + 1));
+        val = s.getFirstRow() + 1;
+        if (val >= 1) {
+            m_firstRow.setText("" + val);
         } else {
             m_firstRow.setText("1");
         }
-        val = s.getLastRow();
-        if (val >= 0) {
-            m_lastRow.setText("" + (s.getLastRow() + 1));
+        val = s.getLastRow() + 1;
+        if (val >= 1) {
+            m_lastRow.setText("" + val);
         } else {
             m_lastRow.setText("");
         }
@@ -763,10 +769,12 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
      *             valid.
      * @throws FileNotFoundException if the file is not there
      * @throws IOException if an I/O Error occurred
+     * @throws InvalidFormatException
      */
     private static XLSUserSettings createFileviewSettings(
             final String fileName, final String sheetName)
-            throws InvalidSettingsException, FileNotFoundException, IOException {
+            throws InvalidSettingsException, FileNotFoundException,
+            IOException, InvalidFormatException {
         if (fileName == null || fileName.isEmpty()) {
             throw new NullPointerException("File location must be set.");
         }
@@ -783,7 +791,7 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         result.setSkipEmptyColumns(false);
         result.setSkipEmptyRows(false);
         result.setSkipHiddenColumns(false);
-        result.setKeepXLColNames(true);
+        result.setKeepXLNames(true);
         result.setReadAllData(true);
 
         XLSTableSettings tableSettings = new XLSTableSettings(result);
@@ -812,10 +820,11 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
     }
 
     private void addFocusLostListener(final JTextField field) {
-        field.addFocusListener(new FocusListener(){
+        field.addFocusListener(new FocusListener() {
             public void focusLost(final FocusEvent e) {
                 updatePreviewTable();
             }
+
             public void focusGained(final FocusEvent e) {
                 // TODO Auto-generated method stub
 

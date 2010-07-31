@@ -58,9 +58,10 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
-import org.apache.poi.hssf.usermodel.HSSFSheet;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.poifs.filesystem.POIFSFileSystem;
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.knime.core.data.DataTable;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.RowIterator;
@@ -84,9 +85,10 @@ class XLSTable implements DataTable {
      * @throws InvalidSettingsException if settings are invalid
      * @throws IOException
      * @throws FileNotFoundException
+     * @throws InvalidFormatException
      */
     XLSTable(final XLSUserSettings settings) throws InvalidSettingsException,
-            IOException, FileNotFoundException {
+            IOException, FileNotFoundException, InvalidFormatException {
         if (settings == null) {
             throw new IllegalArgumentException(
                     "Settings with valid filename must be provided.");
@@ -98,6 +100,7 @@ class XLSTable implements DataTable {
 
     /**
      * Settings will be taken over. Not cloned.
+     *
      * @param tableSettings
      */
     public XLSTable(final XLSTableSettings tableSettings) {
@@ -122,7 +125,7 @@ class XLSTable implements DataTable {
             for (WeakReference<XLSIterator> w : m_iterators) {
                 XLSIterator i = w.get();
                 if (i != null) {
-                    i.dispose();
+                    i.close();
                 }
             }
             m_iterators.clear();
@@ -150,6 +153,8 @@ class XLSTable implements DataTable {
             throw new IllegalArgumentException(e);
         } catch (InvalidSettingsException e) {
             throw new IllegalArgumentException(e);
+        } catch (InvalidFormatException e) {
+            throw new IllegalArgumentException(e);
         }
     }
 
@@ -159,7 +164,7 @@ class XLSTable implements DataTable {
      * @param sheet the sheet to examine
      * @return the number of rows in the sheet minus one.
      */
-    public static int getLastRowIdx(final HSSFSheet sheet) {
+    public static int getLastRowIdx(final Sheet sheet) {
         int rowMaxIdx = sheet.getLastRowNum();
         if (rowMaxIdx == 0) {
             if (sheet.getPhysicalNumberOfRows() == 0) {
@@ -176,13 +181,14 @@ class XLSTable implements DataTable {
      * @return an array with sheet names
      * @throws FileNotFoundException if the file is not there
      * @throws IOException if an I/O error occurred
+     * @throws InvalidFormatException
      */
     public static String[] getSheetNames(final String xlsFilename)
-            throws FileNotFoundException, IOException {
+            throws FileNotFoundException, IOException, InvalidFormatException {
 
         FileInputStream fs = new FileInputStream(xlsFilename);
         BufferedInputStream inp = new BufferedInputStream(fs);
-        HSSFWorkbook wb = new HSSFWorkbook(new POIFSFileSystem(inp));
+        Workbook wb = WorkbookFactory.create(inp);
         ArrayList<String> names = new ArrayList<String>();
         for (int sIdx = 0; sIdx < wb.getNumberOfSheets(); sIdx++) {
             names.add(wb.getSheetName(sIdx));

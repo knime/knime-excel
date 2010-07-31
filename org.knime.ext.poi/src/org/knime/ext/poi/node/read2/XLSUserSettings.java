@@ -243,21 +243,15 @@ public class XLSUserSettings {
             if (m_firstColumn < 0) {
                 return "'First column' index must be greater than zero";
             }
-            if (m_lastColumn < 0) {
-                return "'Last column' index must be greater than zero";
-            }
             if (m_firstRow < 0) {
                 return "'First row' index must be greater than zero";
             }
-            if (m_lastRow < 0) {
-                return "'Last row' index must be greater than zero";
-            }
-            if (m_lastColumn < m_firstColumn) {
+            if (m_lastColumn >= 0 && m_lastColumn < m_firstColumn) {
                 return "Last column to read can't be "
-                        + "smaller than the first one";
+                        + "smaller than the first column";
             }
-            if (m_lastRow < m_firstRow) {
-                return "Last Row to read can't be smaller than the first one";
+            if (m_lastRow >= 0 && m_lastRow < m_firstRow) {
+                return "Last Row to read can't be smaller than the first row";
             }
         }
         if (m_hasColHeaders && m_colHdrRow < 0) {
@@ -465,7 +459,7 @@ public class XLSUserSettings {
     /**
      * @param keepXLColNames the keepXLColNames to set
      */
-    public void setKeepXLColNames(final boolean keepXLColNames) {
+    public void setKeepXLNames(final boolean keepXLColNames) {
         m_keepXLColNames = keepXLColNames;
     }
 

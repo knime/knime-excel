@@ -61,11 +61,13 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.poi.hssf.usermodel.HSSFCell;
-import org.apache.poi.hssf.usermodel.HSSFRow;
-import org.apache.poi.hssf.usermodel.HSSFSheet;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.poifs.filesystem.POIFSFileSystem;
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.knime.core.data.DataCell;
 import org.knime.core.data.DataColumnSpec;
 import org.knime.core.data.DataColumnSpecCreator;
@@ -98,7 +100,8 @@ public class XLSTableSettings {
      *
      */
     public XLSTableSettings(final XLSUserSettings userSettings)
-            throws InvalidSettingsException, FileNotFoundException, IOException {
+            throws InvalidSettingsException, FileNotFoundException,
+            IOException, InvalidFormatException {
 
         String errMsg = userSettings.getStatus(false);
         if (errMsg != null) {
@@ -109,15 +112,26 @@ public class XLSTableSettings {
 
         // set the range of the rows and columns to read
         if (m_userSettings.getReadAllData()) {
+            // clear any possibly set first/last row/col
+            m_userSettings.setFirstColumn(-1);
+            m_userSettings.setLastColumn(-1);
+            m_userSettings.setFirstRow(-1);
+            m_userSettings.setLastRow(-1);
             m_userSettings.setReadAllData(false);
+        }
+        if (m_userSettings.getLastColumn() < 0 ||
+                m_userSettings.getLastRow() < 0) {
+            // if bounds are not user set - figure them out
             setMinMaxColumnAndRow(m_userSettings);
         }
 
         // this analyzes the types of the columns
         HashSet<Integer> skippedcols = new HashSet<Integer>();
         m_spec = createSpec(m_userSettings, skippedcols);
-        m_skippedCols = Collections.unmodifiableSet(skippedcols);
-
+        m_skippedCols = new HashSet<Integer>();
+        if (skippedcols != null) {
+            m_skippedCols.addAll(skippedcols);
+        }
     }
 
     /**
@@ -141,7 +155,10 @@ public class XLSTableSettings {
         m_userSettings = XLSUserSettings.clone(userSettings);
 
         // this analyzes the types of the columns
-        m_skippedCols = new HashSet<Integer>(skippedCols);
+        m_skippedCols = new HashSet<Integer>();
+        if (skippedCols != null) {
+            m_skippedCols.addAll(skippedCols);
+        }
         m_spec = tableSpec;
 
     }
@@ -157,17 +174,21 @@ public class XLSTableSettings {
     /**
      * Runs through the selected sheet and sets the minimum of all first cell
      * and the maximum of all last cell numbers of all rows. That is, it returns
-     * the columns containing data in the data sheet. It ignores all "skip"
-     * flags, i.e. count in empty and hidden columns.
+     * the columns containing data in the data sheet. (If the minimum is already
+     * set to a valid index, it doesn't change it - in order to support for open
+     * ranges.) It ignores all "skip" flags, i.e. count in empty and hidden
+     * columns.
      *
      * @param settings specifies the sheet to read. firstColumn and lastColumn
      *            in this object will be set by this method
      * @throws InvalidSettingsException
      * @throws IOException
      * @throws FileNotFoundException
+     * @throws InvalidFormatException
      */
     private static void setMinMaxColumnAndRow(final XLSUserSettings settings)
-            throws InvalidSettingsException, IOException, FileNotFoundException {
+            throws InvalidSettingsException, IOException,
+            FileNotFoundException, InvalidFormatException {
         if (settings == null) {
             throw new NullPointerException("Settings can't be null");
         }
@@ -184,9 +205,9 @@ public class XLSTableSettings {
         BufferedInputStream inp = new BufferedInputStream(fs);
 
         inp = new BufferedInputStream(fs);
-        HSSFWorkbook wb = new HSSFWorkbook(new POIFSFileSystem(inp));
+        Workbook wb = WorkbookFactory.create(inp);
 
-        HSSFSheet sheet = wb.getSheet(settings.getSheetName());
+        Sheet sheet = wb.getSheet(settings.getSheetName());
         if (sheet == null) {
             throw new InvalidSettingsException("Sheet '"
                     + settings.getSheetName() + "' not available");
@@ -199,7 +220,7 @@ public class XLSTableSettings {
         int minRowIdx = sheet.getFirstRowNum();
 
         for (int row = minRowIdx; row <= maxRowIdx; row++) {
-            HSSFRow r = sheet.getRow(row);
+            Row r = sheet.getRow(row);
             if (r == null) {
                 continue;
             }
@@ -218,14 +239,39 @@ public class XLSTableSettings {
         lastColNum--; // now it's the index
 
         if (firstColIdx < 0 || lastColNum < 0 || lastColNum < firstColIdx) {
-            settings.setFirstColumn(0);
-            settings.setLastColumn(0);
+            // if first col is set, don't change it
+            if (settings.getFirstColumn() < 0) {
+                settings.setFirstColumn(0);
+                settings.setLastColumn(0);
+            } else {
+                settings.setLastColumn(settings.getFirstColumn());
+            }
         } else {
-            settings.setFirstColumn(firstColIdx);
-            settings.setLastColumn(lastColNum);
+            // if first col is set, don't change it
+            if (settings.getFirstColumn() < 0) {
+                settings.setFirstColumn(firstColIdx);
+                settings.setLastColumn(lastColNum);
+            } else {
+                int last = lastColNum;
+                if (last < settings.getFirstColumn()) {
+                    settings.setLastColumn(settings.getFirstColumn());
+                } else {
+                    settings.setLastColumn(last);
+                }
+            }
         }
-        settings.setFirstRow(minRowIdx);
-        settings.setLastRow(maxRowIdx);
+
+        if (settings.getFirstRow() < 0) {
+            settings.setFirstRow(minRowIdx);
+            settings.setLastRow(maxRowIdx);
+        } else {
+            int last = maxRowIdx;
+            if (last < settings.getLastRow()) {
+                settings.setLastRow(settings.getFirstRow());
+            } else {
+                settings.setLastRow(last);
+            }
+        }
 
         fs.close();
     }
@@ -235,10 +281,11 @@ public class XLSTableSettings {
      *
      * @return a new table spec from the current settings
      * @throws InvalidSettingsException if settings are invalid.
+     * @throws InvalidFormatException
      */
     private static DataTableSpec createSpec(final XLSUserSettings settings,
             final Set<Integer> skippedCols) throws InvalidSettingsException,
-            IOException {
+            IOException, InvalidFormatException {
 
         ArrayList<DataType> columnTypes =
                 analyzeColumnTypes(settings, skippedCols);
@@ -320,10 +367,12 @@ public class XLSTableSettings {
      * @return the result settings
      * @throws IOException if the specified file couldn't be read.
      * @throws InvalidSettingsException if settings are invalid
+     * @throws InvalidFormatException
      */
     private static ArrayList<DataType> analyzeColumnTypes(
             final XLSUserSettings settings, final Set<Integer> skippedCols)
-            throws IOException, InvalidSettingsException {
+            throws IOException, InvalidSettingsException,
+            InvalidFormatException {
 
         if (settings == null) {
             throw new NullPointerException("Settings can't be null");
@@ -337,7 +386,7 @@ public class XLSTableSettings {
 
         try {
             inp = new BufferedInputStream(fs);
-            HSSFWorkbook wb = new HSSFWorkbook(new POIFSFileSystem(inp));
+            Workbook wb = WorkbookFactory.create(inp);
             return setColumnTypes(wb, settings, skippedCols);
 
         } finally {
@@ -358,7 +407,7 @@ public class XLSTableSettings {
      * @param skipHiddenCols
      * @throws IOException
      */
-    private static ArrayList<DataType> setColumnTypes(final HSSFWorkbook wb,
+    private static ArrayList<DataType> setColumnTypes(final Workbook wb,
             final XLSUserSettings settings, final Set<Integer> skippedCols)
             throws IOException {
 
@@ -369,7 +418,7 @@ public class XLSTableSettings {
         skippedCols.clear();
 
         String dbgMsg = "";
-        HSSFSheet sh = wb.getSheet(settings.getSheetName());
+        Sheet sh = wb.getSheet(settings.getSheetName());
         if (sh != null) {
             int maxRowIdx = XLSTable.getLastRowIdx(sh);
             int minRowIdx = sh.getFirstRowNum();
@@ -380,7 +429,7 @@ public class XLSTableSettings {
                 minRowIdx = settings.getFirstRow();
             }
             for (int row = minRowIdx; row <= maxRowIdx; row++) {
-                HSSFRow r = sh.getRow(row);
+                Row r = sh.getRow(row);
                 if (r == null) {
                     continue;
                 }
@@ -404,7 +453,7 @@ public class XLSTableSettings {
                         skippedCols.add(xlCol);
                         continue;
                     }
-                    HSSFCell cell = r.getCell(xlCol);
+                    Cell cell = r.getCell(xlCol);
                     dbgMsg =
                             "Cell ("
                                     + xlCol
@@ -420,20 +469,20 @@ public class XLSTableSettings {
                     if (cell != null) {
                         // determine the type
                         switch (cell.getCellType()) {
-                        case HSSFCell.CELL_TYPE_BLANK:
+                        case Cell.CELL_TYPE_BLANK:
                             // missing cell - doesn't change any type
                             dbgMsg += " <missing>";
                             break;
-                        case HSSFCell.CELL_TYPE_BOOLEAN:
+                        case Cell.CELL_TYPE_BOOLEAN:
                             // KNIME has no boolean - use String
                             colTypes.set(knimeColIdx, StringCell.TYPE);
                             dbgMsg += " KNIME type: String";
                             break;
-                        case HSSFCell.CELL_TYPE_ERROR:
+                        case Cell.CELL_TYPE_ERROR:
                             // treated as missing cell
                             dbgMsg += " <missing>";
                             break;
-                        case HSSFCell.CELL_TYPE_FORMULA:
+                        case Cell.CELL_TYPE_FORMULA:
                             DataType currType = colTypes.get(knimeColIdx);
                             if (currType == null
                                     || IntCell.TYPE.equals(currType)) {
@@ -443,10 +492,21 @@ public class XLSTableSettings {
                                 dbgMsg += " KNIME type - unchanged";
                             }
                             break;
-                        case HSSFCell.CELL_TYPE_NUMERIC:
-                            if ((colTypes.get(knimeColIdx) == DoubleCell.TYPE)
-                                    || (colTypes.get(knimeColIdx) == StringCell.TYPE)) {
+                        case Cell.CELL_TYPE_NUMERIC:
+                            // numeric could be double, int or date
+                            if (colTypes.get(knimeColIdx) == StringCell.TYPE) {
+                                // string takes all
                                 dbgMsg += " KNIME type - unchanged";
+                                break;
+                            }
+                            if (DateUtil.isCellDateFormatted(cell)) {
+                                // we use StringCells for date format
+                                // (using a DataAndTime cell leads to UTC time.
+                                // With string, we get the entered time (as
+                                // string) and it can be translated in date/time
+                                // with an additional node)
+                                colTypes.set(knimeColIdx, StringCell.TYPE);
+                                dbgMsg += " KNIME type: String (for date/time)";
                                 break;
                             }
                             Double num = cell.getNumericCellValue();
@@ -456,14 +516,19 @@ public class XLSTableSettings {
                             }
                             if (new Double(num.intValue()).equals(num)) {
                                 // could be represented as int
-                                colTypes.set(knimeColIdx, IntCell.TYPE);
-                                dbgMsg += " KNIME type: Int";
+                                if (colTypes.get(knimeColIdx) == null) {
+                                    colTypes.set(knimeColIdx, IntCell.TYPE);
+                                    dbgMsg += " KNIME type: Int";
+                                } else {
+                                    // it should be double - which is fine.
+                                    dbgMsg += " KNIME type - unchanged";
+                                }
                             } else {
                                 colTypes.set(knimeColIdx, DoubleCell.TYPE);
                                 dbgMsg += " KNIME type: Double";
                             }
                             break;
-                        case HSSFCell.CELL_TYPE_STRING:
+                        case Cell.CELL_TYPE_STRING:
                             colTypes.set(knimeColIdx, StringCell.TYPE);
                             dbgMsg += " KNIME type: String";
                             break;
@@ -488,7 +553,8 @@ public class XLSTableSettings {
             int xlCol = c + settings.getFirstColumn();
             DataType type = colTypes.get(c);
             if (skippedCols.contains(xlCol)) {
-                if (settings.getHasRowHeaders() && xlCol == settings.getRowHdrCol()) {
+                if (settings.getHasRowHeaders()
+                        && xlCol == settings.getRowHdrCol()) {
                     dbgMsg += "Col" + c + ": <rowHdrCol:removed> ";
                 } else {
                     dbgMsg += "Col" + c + ": <hidden:removed> ";
@@ -527,17 +593,17 @@ public class XLSTableSettings {
 
     private static String getPoiTypeName(final int poiType) {
         switch (poiType) {
-        case HSSFCell.CELL_TYPE_BLANK:
+        case Cell.CELL_TYPE_BLANK:
             return "blank";
-        case HSSFCell.CELL_TYPE_STRING:
+        case Cell.CELL_TYPE_STRING:
             return "string";
-        case HSSFCell.CELL_TYPE_BOOLEAN:
+        case Cell.CELL_TYPE_BOOLEAN:
             return "boolean";
-        case HSSFCell.CELL_TYPE_ERROR:
+        case Cell.CELL_TYPE_ERROR:
             return "error";
-        case HSSFCell.CELL_TYPE_NUMERIC:
+        case Cell.CELL_TYPE_NUMERIC:
             return "numeric";
-        case HSSFCell.CELL_TYPE_FORMULA:
+        case Cell.CELL_TYPE_FORMULA:
             return "formula";
         }
         return "unknown[" + poiType + "]";
@@ -575,7 +641,7 @@ public class XLSTableSettings {
             XLSUserSettings colHdrSettings = XLSUserSettings.clone(settings);
 
             // this avoids endless recursion
-            colHdrSettings.setKeepXLColNames(true);
+            colHdrSettings.setKeepXLNames(true);
 
             // analyze the file and set the table spec
             XLSTableSettings tableSettings =
