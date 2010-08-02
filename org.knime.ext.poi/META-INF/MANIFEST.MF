@@ -14,7 +14,13 @@ Bundle-ClassPath: knime-poi-patches.jar,
  lib/poi-scratchpad-3.6-20091214.jar,
  lib/poi-contrib-3.6-20091214.jar,
  lib/poi-ooxml-3.6-20091214.jar,
- lib/poi-ooxml-schemas-3.6-20091214.jar
+ lib/poi-ooxml-schemas-3.6-20091214.jar,
+ lib/poi-examples-3.6-20091214.jar,
+ lib/ooxml-schemas-1.0.jar,
+ lib/commons-logging-1.1.jar,
+ lib/dom4j-1.6.1.jar,
+ lib/geronimo-stax-api_1.0_spec-1.0.jar,
+ lib/xmlbeans-2.3.0.jar
 Export-Package: org.knime.ext.poi.node.read2,
  org.knime.ext.poi.node.write
 Bundle-Vendor: KNIME GmbH, Konstanz, Germany

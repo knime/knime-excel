@@ -73,6 +73,9 @@ public class POIActivator extends Plugin {
      */
     @Override
     public void start(final BundleContext context) throws Exception {
+        // disable logging of POI. To speed it up.
+        System.setProperty("org.apache.poi.util.POILogger",
+                "org.apache.poi.util.NullLogger");
         super.start(context);
     }
 

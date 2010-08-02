@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
+	<classpathentry exported="true" kind="lib" path="lib/commons-logging-1.1.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/dom4j-1.6.1.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/geronimo-stax-api_1.0_spec-1.0.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/xmlbeans-2.3.0.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/ooxml-schemas-1.0.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/poi-examples-3.6-20091214.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/poi-contrib-3.6-20091214.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/poi-ooxml-3.6-20091214.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/poi-ooxml-schemas-3.6-20091214.jar"/>
