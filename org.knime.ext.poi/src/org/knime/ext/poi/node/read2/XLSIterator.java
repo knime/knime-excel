@@ -51,7 +51,6 @@
 package org.knime.ext.poi.node.read2;
 
 import java.io.BufferedInputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.text.Format;
 import java.util.Date;
@@ -137,8 +136,7 @@ class XLSIterator extends CloseableRowIterator {
 
         m_spec = m_settings.getDataTableSpec();
 
-        FileInputStream fs = new FileInputStream(m_settings.getFileLocation());
-        m_fileStream = new BufferedInputStream(fs);
+        m_fileStream = settings.getBufferedInputStream();
         m_workBook = WorkbookFactory.create(m_fileStream);
         m_currentSheet = m_workBook.getSheet(m_settings.getSheetName());
 

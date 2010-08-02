@@ -51,7 +51,6 @@
 package org.knime.ext.poi.node.read2;
 
 import java.io.BufferedInputStream;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
@@ -186,8 +185,8 @@ class XLSTable implements DataTable {
     public static String[] getSheetNames(final String xlsFilename)
             throws FileNotFoundException, IOException, InvalidFormatException {
 
-        FileInputStream fs = new FileInputStream(xlsFilename);
-        BufferedInputStream inp = new BufferedInputStream(fs);
+        BufferedInputStream inp =
+                XLSUserSettings.getBufferedInputStream(xlsFilename);
         Workbook wb = WorkbookFactory.create(inp);
         ArrayList<String> names = new ArrayList<String>();
         for (int sIdx = 0; sIdx < wb.getNumberOfSheets(); sIdx++) {

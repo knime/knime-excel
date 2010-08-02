@@ -51,8 +51,6 @@
 package org.knime.ext.poi.node.read2;
 
 import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -119,8 +117,8 @@ public class XLSTableSettings {
             m_userSettings.setLastRow(-1);
             m_userSettings.setReadAllData(false);
         }
-        if (m_userSettings.getLastColumn() < 0 ||
-                m_userSettings.getLastRow() < 0) {
+        if (m_userSettings.getLastColumn() < 0
+                || m_userSettings.getLastRow() < 0) {
             // if bounds are not user set - figure them out
             setMinMaxColumnAndRow(m_userSettings);
         }
@@ -201,10 +199,8 @@ public class XLSTableSettings {
 
         }
 
-        FileInputStream fs = new FileInputStream(settings.getFileLocation());
-        BufferedInputStream inp = new BufferedInputStream(fs);
+        BufferedInputStream inp = settings.getBufferedInputStream();
 
-        inp = new BufferedInputStream(fs);
         Workbook wb = WorkbookFactory.create(inp);
 
         Sheet sheet = wb.getSheet(settings.getSheetName());
@@ -273,7 +269,7 @@ public class XLSTableSettings {
             }
         }
 
-        fs.close();
+        inp.close();
     }
 
     /**
@@ -305,8 +301,8 @@ public class XLSTableSettings {
 
         // create a name
         String tableName =
-                "XL table: " + new File(settings.getFileLocation()).getName()
-                        + "[" + settings.getSheetName() + "]";
+                "XL table: " + settings.getSimpleFilename() + "["
+                        + settings.getSheetName() + "]";
         return new DataTableSpec(tableName, colSpecs);
     }
 
@@ -381,18 +377,12 @@ public class XLSTableSettings {
             throw new NullPointerException("File location must be set.");
         }
 
-        FileInputStream fs = new FileInputStream(settings.getFileLocation());
-        BufferedInputStream inp = new BufferedInputStream(fs);
-
+        BufferedInputStream inp = settings.getBufferedInputStream();
         try {
-            inp = new BufferedInputStream(fs);
             Workbook wb = WorkbookFactory.create(inp);
             return setColumnTypes(wb, settings, skippedCols);
-
         } finally {
-            if (fs != null) {
-                fs.close();
-            }
+            inp.close();
         }
 
     }
@@ -728,6 +718,15 @@ public class XLSTableSettings {
      */
     public String getFileLocation() {
         return m_userSettings.getFileLocation();
+    }
+
+    public BufferedInputStream getBufferedInputStream() throws IOException {
+        return m_userSettings.getBufferedInputStream();
+    }
+
+    public static BufferedInputStream getBufferedInputStream(
+            final String location) throws IOException {
+        return XLSUserSettings.getBufferedInputStream(location);
     }
 
     /**

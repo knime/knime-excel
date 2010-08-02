@@ -52,6 +52,8 @@ package org.knime.ext.poi.node.read2;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.BufferedDataTable;
@@ -97,6 +99,13 @@ public class XLSReaderNodeModel extends NodeModel {
             return;
         }
 
+        try {
+            new URL(fName);
+            // don't check URLs - don't open a stream.
+            return;
+        } catch (MalformedURLException mue) {
+            // continue on a file
+        }
         File location = new File(fName);
 
         if (!location.canRead() || location.isDirectory()) {
