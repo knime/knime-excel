@@ -301,8 +301,8 @@ public class XLSTableSettings {
 
         // create a name
         String tableName =
-                "XL table: " + settings.getSimpleFilename() + "["
-                        + settings.getSheetName() + "]";
+                settings.getSimpleFilename() + "[" + settings.getSheetName()
+                        + "]";
         return new DataTableSpec(tableName, colSpecs);
     }
 
