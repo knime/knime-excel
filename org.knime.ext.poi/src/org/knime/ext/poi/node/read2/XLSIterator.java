@@ -51,27 +51,33 @@
 package org.knime.ext.poi.node.read2;
 
 import java.io.BufferedInputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.text.Format;
+import java.util.Date;
 import java.util.Hashtable;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.poi.hssf.usermodel.HSSFCell;
-import org.apache.poi.hssf.usermodel.HSSFRow;
-import org.apache.poi.hssf.usermodel.HSSFSheet;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.poifs.filesystem.POIFSFileSystem;
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.knime.core.data.DataCell;
 import org.knime.core.data.DataRow;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DataType;
 import org.knime.core.data.DoubleValue;
 import org.knime.core.data.IntValue;
-import org.knime.core.data.RowIterator;
 import org.knime.core.data.RowKey;
 import org.knime.core.data.StringValue;
+import org.knime.core.data.container.CloseableRowIterator;
+import org.knime.core.data.date.DateAndTimeCell;
+import org.knime.core.data.date.DateAndTimeValue;
 import org.knime.core.data.def.DefaultRow;
 import org.knime.core.data.def.DoubleCell;
 import org.knime.core.data.def.IntCell;
@@ -84,7 +90,7 @@ import org.knime.core.util.MutableInteger;
  *
  * @author Peter Ohl, KNIME.com, Zurich, Switzerland
  */
-class XLSIterator extends RowIterator {
+class XLSIterator extends CloseableRowIterator {
 
     private static final NodeLogger LOGGER =
             NodeLogger.getLogger(XLSIterator.class);
@@ -100,9 +106,9 @@ class XLSIterator extends RowIterator {
 
     private BufferedInputStream m_fileStream;
 
-    private final HSSFWorkbook m_workBook;
+    private final Workbook m_workBook;
 
-    private HSSFSheet m_currentSheet;
+    private Sheet m_currentSheet;
 
     private DataRow m_nextRow;
 
@@ -122,17 +128,16 @@ class XLSIterator extends RowIterator {
      * @throws IOException if the file specified in the settings is not
      *             accessible
      * @throws InvalidSettingsException if settings are invalid
+     * @throws InvalidFormatException
      */
     XLSIterator(final XLSTableSettings settings) throws IOException,
-            InvalidSettingsException {
-
+            InvalidSettingsException, InvalidFormatException {
         m_settings = settings;
 
         m_spec = m_settings.getDataTableSpec();
 
-        FileInputStream fs = new FileInputStream(m_settings.getFileLocation());
-        m_fileStream = new BufferedInputStream(fs);
-        m_workBook = new HSSFWorkbook(new POIFSFileSystem(m_fileStream));
+        m_fileStream = settings.getBufferedInputStream();
+        m_workBook = WorkbookFactory.create(m_fileStream);
         m_currentSheet = m_workBook.getSheet(m_settings.getSheetName());
 
         m_nextRowIdx = -1;
@@ -148,7 +153,8 @@ class XLSIterator extends RowIterator {
      * handle is not released until the garbage collector cleans up. A call to
      * {@link #next()} after disposing of the iterator has undefined behavior.
      */
-    public void dispose() {
+    @Override
+    public void close() {
         closeStream();
     }
 
@@ -178,7 +184,7 @@ class XLSIterator extends RowIterator {
     private void setNextRow() {
         m_nextRow = null;
         m_exception.set(null);
-        HSSFRow nextXLrow = null;
+        Row nextXLrow = null;
 
         if (m_currentSheet == null) {
             closeStream();
@@ -213,7 +219,6 @@ class XLSIterator extends RowIterator {
                 break;
             }
         }
-
         return;
     }
 
@@ -253,7 +258,7 @@ class XLSIterator extends RowIterator {
 
     }
 
-    private void createDataRow(final HSSFRow xlRow) {
+    private void createDataRow(final Row xlRow) {
 
         if (m_settings.getSkipEmptyRows()) {
             if (xlRow == null || xlRow.getFirstCellNum() == -1) {
@@ -272,7 +277,7 @@ class XLSIterator extends RowIterator {
                 xlOffset++;
             }
 
-            HSSFCell cell = null;
+            Cell cell = null;
             if (xlRow != null) {
                 // (could be null, if we don't skip empty rows)
                 cell = xlRow.getCell(xlOffset);
@@ -290,7 +295,7 @@ class XLSIterator extends RowIterator {
         RowKey key = RowKey.createRowKey(m_rowCount);
         if (m_settings.getKeepXLColNames()) {
             // XL row IDs are just the row numbers (1-based)
-            key = new RowKey("" + (m_rowCount + 1));
+            key = new RowKey("" + (m_nextRowIdx + 1));
         } else if (m_settings.getHasRowHeaders()) {
             String xlHdr = getXLRowHdr(xlRow);
             if (xlHdr != null && !xlHdr.isEmpty()) {
@@ -324,7 +329,7 @@ class XLSIterator extends RowIterator {
      *
      * @return the row ID to the nextRow, of null, if it can't
      */
-    private String getXLRowHdr(final HSSFRow xlRow) {
+    private String getXLRowHdr(final Row xlRow) {
         if (!m_settings.getHasRowHeaders() || m_settings.getRowHdrCol() < 0) {
             return null;
         }
@@ -334,23 +339,30 @@ class XLSIterator extends RowIterator {
         if (xlRow.getFirstCellNum() < 0) {
             return null;
         }
-        HSSFCell rowID = xlRow.getCell(m_settings.getRowHdrCol());
+        Cell rowID = xlRow.getCell(m_settings.getRowHdrCol());
         if (rowID == null) {
             return null;
         }
-        return rowID.toString();
+        DataCell idCell =
+                createDataCellfromXLCell(rowID, StringCell.TYPE, m_settings
+                        .getRowHdrCol());
+        if (idCell instanceof StringValue) {
+            return ((StringValue)idCell).getStringValue();
+        } else {
+            return idCell.toString();
+        }
     }
 
-    private DataCell createDataCellfromXLCell(final HSSFCell cell,
+    private DataCell createDataCellfromXLCell(final Cell cell,
             final DataType expectedType, final int colIdx) {
         if (cell == null) {
             return DataType.getMissingCell();
         }
         // determine the type
         switch (cell.getCellType()) {
-        case HSSFCell.CELL_TYPE_BLANK:
+        case Cell.CELL_TYPE_BLANK:
             return DataType.getMissingCell();
-        case HSSFCell.CELL_TYPE_BOOLEAN:
+        case Cell.CELL_TYPE_BOOLEAN:
             boolean b = cell.getBooleanCellValue();
             if (expectedType.isCompatible(StringValue.class)) {
                 return new StringCell(Boolean.toString(b));
@@ -360,17 +372,28 @@ class XLSIterator extends RowIterator {
                                 + ", sheet '" + m_settings.getSheetName()
                                 + "', row " + cell.getRowIndex());
             }
-        case HSSFCell.CELL_TYPE_ERROR:
+        case Cell.CELL_TYPE_ERROR:
             LOGGER.warn("Error cell type treated as "
                     + "missing cell in column idx " + colIdx + ", sheet '"
                     + m_settings.getSheetName() + "', row "
                     + cell.getRowIndex());
             return DataType.getMissingCell();
-        case HSSFCell.CELL_TYPE_FORMULA:
-        case HSSFCell.CELL_TYPE_NUMERIC:
-
-            Double num = cell.getNumericCellValue();
-            if (expectedType.isCompatible(IntValue.class)) {
+        case Cell.CELL_TYPE_FORMULA:
+        case Cell.CELL_TYPE_NUMERIC:
+            if (expectedType.isCompatible(DateAndTimeValue.class)) {
+                if (DateUtil.isCellDateFormatted(cell)) {
+                    Date date = cell.getDateCellValue();
+                    return new DateAndTimeCell(date.getTime(), true, true,
+                            false);
+                } else {
+                    throw new IllegalStateException(
+                            "Invalid cell type in column idx " + colIdx
+                                    + " (expected Date), sheet '"
+                                    + m_settings.getSheetName() + "', row "
+                                    + cell.getRowIndex());
+                }
+            } else if (expectedType.isCompatible(IntValue.class)) {
+                Double num = cell.getNumericCellValue();
                 if (new Double(num.intValue()).equals(num)) {
                     return new IntCell(num.intValue());
                 } else {
@@ -381,8 +404,15 @@ class XLSIterator extends RowIterator {
                                     + cell.getRowIndex());
                 }
             } else if (expectedType.isCompatible(DoubleValue.class)) {
-                return new DoubleCell(num);
+                return new DoubleCell(cell.getNumericCellValue());
             } else if (expectedType.isCompatible(StringValue.class)) {
+                if (DateUtil.isCellDateFormatted(cell)) {
+                    Date d = cell.getDateCellValue();
+                    DataFormatter formatter = new DataFormatter();
+                    Format cellFormat = formatter.createFormat(cell);
+                    return new StringCell(cellFormat.format(d));
+                }
+                Double num = cell.getNumericCellValue();
                 return new StringCell(num.toString());
             } else {
                 throw new IllegalStateException(
@@ -390,7 +420,7 @@ class XLSIterator extends RowIterator {
                                 + ", sheet '" + m_settings.getSheetName()
                                 + "', row " + cell.getRowIndex());
             }
-        case HSSFCell.CELL_TYPE_STRING:
+        case Cell.CELL_TYPE_STRING:
             if (expectedType.isCompatible(StringValue.class)) {
                 String s = cell.getRichStringCellValue().getString();
                 if (s == null || s.equals(m_settings.getMissValuePattern())) {

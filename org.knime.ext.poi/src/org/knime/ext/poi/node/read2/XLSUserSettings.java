@@ -50,7 +50,13 @@
  */
 package org.knime.ext.poi.node.read2;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettings;
@@ -221,18 +227,29 @@ public class XLSUserSettings {
             return "No file location specified";
         }
         if (checkFileExistence) {
-            File f = new File(m_fileLocation);
-            if (!f.exists()) {
-                return "Specified file doesn't exist (" + f.getAbsolutePath()
-                        + ")";
-            }
-            if (!f.canRead()) {
-                return "Specified file is not readable (" + f.getAbsolutePath()
-                        + ")";
-            }
-            if (!f.isFile()) {
-                return "Specified location is not a file ("
-                        + f.getAbsolutePath() + ")";
+            try {
+                URL url = new URL(m_fileLocation);
+                try {
+                    url.openStream();
+                } catch (IOException ioe) {
+                    return "Can't open specified location (" + m_fileLocation
+                            + ")";
+                }
+            } catch (MalformedURLException mue) {
+                // then try a file
+                File f = new File(m_fileLocation);
+                if (!f.exists()) {
+                    return "Specified file doesn't exist ("
+                            + f.getAbsolutePath() + ")";
+                }
+                if (!f.canRead()) {
+                    return "Specified file is not readable ("
+                            + f.getAbsolutePath() + ")";
+                }
+                if (!f.isFile()) {
+                    return "Specified location is not a file ("
+                            + f.getAbsolutePath() + ")";
+                }
             }
         }
 
@@ -243,21 +260,15 @@ public class XLSUserSettings {
             if (m_firstColumn < 0) {
                 return "'First column' index must be greater than zero";
             }
-            if (m_lastColumn < 0) {
-                return "'Last column' index must be greater than zero";
-            }
             if (m_firstRow < 0) {
                 return "'First row' index must be greater than zero";
             }
-            if (m_lastRow < 0) {
-                return "'Last row' index must be greater than zero";
-            }
-            if (m_lastColumn < m_firstColumn) {
+            if (m_lastColumn >= 0 && m_lastColumn < m_firstColumn) {
                 return "Last column to read can't be "
-                        + "smaller than the first one";
+                        + "smaller than the first column";
             }
-            if (m_lastRow < m_firstRow) {
-                return "Last Row to read can't be smaller than the first one";
+            if (m_lastRow >= 0 && m_lastRow < m_firstRow) {
+                return "Last Row to read can't be smaller than the first row";
             }
         }
         if (m_hasColHeaders && m_colHdrRow < 0) {
@@ -285,6 +296,58 @@ public class XLSUserSettings {
      */
     public String getFileLocation() {
         return m_fileLocation;
+    }
+
+    /**
+     * Opens and returns a new buffered input stream on the xls location.
+     *
+     * @return a new buffered input stream on the xls location.
+     * @throws IOException
+     */
+    public BufferedInputStream getBufferedInputStream() throws IOException {
+        return getBufferedInputStream(m_fileLocation);
+    }
+
+    /**
+     * Opens and returns a new buffered input stream on the passed location. The
+     * location could either be a filename or a URL.
+     *
+     * @param location a filename or a URL
+     * @return a new opened buffered input stream.
+     * @throws IOException
+     */
+    public static BufferedInputStream getBufferedInputStream(
+            final String location) throws IOException {
+        InputStream in;
+        try {
+            URL url = new URL(location);
+            in = url.openStream();
+        } catch (MalformedURLException mue) {
+            // then try a file
+            in = new FileInputStream(location);
+        }
+        return new BufferedInputStream(in);
+
+    }
+
+    /**
+     * @return the simple name of the file
+     */
+    public String getSimpleFilename() {
+        try {
+            URL url = new URL(m_fileLocation);
+            String path = url.getPath();
+            int idx = path.lastIndexOf('/');
+            if (idx < 0 || idx >= path.length() - 2) {
+                return path;
+            } else {
+                return path.substring(idx + 1);
+            }
+        } catch (MalformedURLException mue) {
+            // then try a file
+            File f = new File(m_fileLocation);
+            return f.getName();
+        }
     }
 
     /**
@@ -465,7 +528,7 @@ public class XLSUserSettings {
     /**
      * @param keepXLColNames the keepXLColNames to set
      */
-    public void setKeepXLColNames(final boolean keepXLColNames) {
+    public void setKeepXLNames(final boolean keepXLColNames) {
         m_keepXLColNames = keepXLColNames;
     }
 
@@ -510,7 +573,5 @@ public class XLSUserSettings {
     public void setUniquifyRowIDs(final boolean uniquifyRowIDs) {
         m_uniquifyRowIDs = uniquifyRowIDs;
     }
-
-
 
 }

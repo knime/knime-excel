@@ -12,14 +12,17 @@
 			This node reads a spread sheet and provides it at its output port.<br />
 			It reads only data from one sheet at the moment.<br />
 			It can read only numeric data (or strings) but, of course, no diagrams, pictures, or other items.<br />
-			Currently supported KNIME types are String, Double, and Int.<br />
+			Currently supported KNIME types are String, Double, and Int. (Time or date in the
+			spread sheet is represented as String and can be translated into the appropriate
+			TimeAndDateCells with the corresponding nodes)<br />
 			It reads in the data from the sheet and sets a type for all columns that
 			are compatible with the data in that column (in the worst case &quot;String&quot; covers all).			
 		</intro>
 		<option name="File to read">
 			Enter a valid file name. You can also choose a previously
 			selected file from the drop-down list, or select a file from
-			the &quot;Browse...&quot; dialog.
+			the &quot;Browse...&quot; dialog. Supported are xls and xlsx file 
+			formats. (Note: reading xlsx files is veeery slow.)
 		</option>
 		<option name="Sheet to Read">
             After selecting a file, you can select the sheet from the
@@ -37,7 +40,7 @@
             If you want to use row IDs from the spread sheet, check 
             &quot;Table contains row IDs&quot; and provide the column that
             contains the row ids. Enter the label of the column (&quot;A&quot;,
-            &quot;B&quot;, etc.) or the index (zero based) of the column.<br />
+            &quot;B&quot;, etc.) or the number (starting at one) of the column.<br />
             The rowIDs in the sheet must be unique, otherwise the execution fails.
             If you check &quot;Make row IDs unique&quot;, the node will append
             a suffix to duplicates, ensuring row ID uniqueness.
@@ -50,7 +53,9 @@
             borders, coloring, etc. are placed and could create quite some empty
             rows or columns (see skip empty rows and columns options below). <br />
             If you want to read in a fixed area, remove the check mark and enter
-            the first and last column, and first and last row to read. For columns
+            the first and last column, and first and last row to read. (Last 
+            row and column is optional, causing it to read to the last row or 
+            column provided by the sheet). For columns
             you need to enter the label (&quot;A&quot;, &quot;B&quot;, etc.),
             for rows enter the number (one-based).
         </option>
@@ -66,7 +71,8 @@
         <option name="File Content">
             The &quot;File Content&quot; table shows you the content of the
             currently selected sheet. It shows the entire content (no settings
-            are applied there).
+            are applied there). The column names and row numbers here are the ones 
+            that need to be specified in the corresponding setting fields.
         </option>
 	</fullDescription>
 
