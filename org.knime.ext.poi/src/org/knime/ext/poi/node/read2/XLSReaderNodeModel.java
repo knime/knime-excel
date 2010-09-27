@@ -51,6 +51,7 @@
 package org.knime.ext.poi.node.read2;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -171,7 +172,7 @@ public class XLSReaderNodeModel extends NodeModel {
             throw new InvalidSettingsException("Node not configured.");
         }
 
-        String errMsg = m_settings.getStatus(true);
+        String errMsg = m_settings.getStatus(false);
         if (errMsg != null) {
             throw new InvalidSettingsException(errMsg);
         }
@@ -179,13 +180,16 @@ public class XLSReaderNodeModel extends NodeModel {
         XLSTableSettings s;
         try {
             s = new XLSTableSettings(m_settings);
+        } catch (FileNotFoundException fnf) {
+            // ignored. In case reader is configured to read from a flow
+            // variable, its value may change before execution.
+            return new DataTableSpec[]{null};
         } catch (Exception e) {
-            if (e.getMessage() != null) {
-                errMsg = e.getMessage();
-            } else {
-                errMsg = e.getClass().getSimpleName();
+            String execMsg = e.getMessage();
+            if (execMsg == null) {
+                execMsg = e.getClass().getSimpleName();
             }
-            throw new InvalidSettingsException(errMsg);
+            throw new InvalidSettingsException(execMsg);
         }
 
         return new DataTableSpec[]{s.getDataTableSpec()};
