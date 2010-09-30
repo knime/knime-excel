@@ -180,12 +180,11 @@ public class XLSReaderNodeModel extends NodeModel {
         try {
             s = new XLSTableSettings(m_settings);
         } catch (Exception e) {
-            if (e.getMessage() != null) {
-                errMsg = e.getMessage();
-            } else {
-                errMsg = e.getClass().getSimpleName();
+            String execMsg = e.getMessage();
+            if (execMsg == null) {
+                execMsg = e.getClass().getSimpleName();
             }
-            throw new InvalidSettingsException(errMsg);
+            throw new InvalidSettingsException(execMsg);
         }
 
         return new DataTableSpec[]{s.getDataTableSpec()};

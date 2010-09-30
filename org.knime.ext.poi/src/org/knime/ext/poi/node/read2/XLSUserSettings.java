@@ -230,7 +230,8 @@ public class XLSUserSettings {
             try {
                 URL url = new URL(m_fileLocation);
                 try {
-                    url.openStream();
+                    InputStream is = url.openStream();
+                    is.close();
                 } catch (IOException ioe) {
                     return "Can't open specified location (" + m_fileLocation
                             + ")";

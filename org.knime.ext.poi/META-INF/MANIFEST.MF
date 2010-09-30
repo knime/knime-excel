@@ -1,27 +1,19 @@
 Manifest-Version: 1.0
-Bundle-ManifestVersion: 2
-Bundle-Name: KNIME POI Plug-in
-Bundle-SymbolicName: org.knime.ext.poi;singleton:=true
-Bundle-Version: 2.2.0.0026408
-Bundle-Activator: org.knime.ext.poi.POIActivator
-Require-Bundle: org.eclipse.core.runtime,
- org.knime.core,
- org.knime.workbench.repository,
- org.knime.base
-Bundle-ClassPath: knime-poi-patches.jar,
- knime-poi.jar,
- lib/poi-3.6-20091214.jar,
- lib/poi-scratchpad-3.6-20091214.jar,
- lib/poi-contrib-3.6-20091214.jar,
- lib/poi-ooxml-3.6-20091214.jar,
- lib/poi-ooxml-schemas-3.6-20091214.jar,
- lib/poi-examples-3.6-20091214.jar,
- lib/ooxml-schemas-1.0.jar,
- lib/commons-logging-1.1.jar,
- lib/dom4j-1.6.1.jar,
- lib/geronimo-stax-api_1.0_spec-1.0.jar,
- lib/xmlbeans-2.3.0.jar
-Export-Package: org.knime.ext.poi.node.read2,
- org.knime.ext.poi.node.write
+Export-Package: org.knime.ext.poi.node.read2,org.knime.ext.poi.node.wr
+ ite
+Require-Bundle: org.eclipse.core.runtime,org.knime.core,org.knime.work
+ bench.repository,org.knime.base
 Bundle-Vendor: KNIME GmbH, Konstanz, Germany
 Bundle-ActivationPolicy: lazy
+Bundle-ClassPath: knime-poi-patches.jar,knime-poi.jar,lib/poi-3.6-2009
+ 1214.jar,lib/poi-scratchpad-3.6-20091214.jar,lib/poi-contrib-3.6-2009
+ 1214.jar,lib/poi-ooxml-3.6-20091214.jar,lib/poi-ooxml-schemas-3.6-200
+ 91214.jar,lib/poi-examples-3.6-20091214.jar,lib/ooxml-schemas-1.0.jar
+ ,lib/commons-logging-1.1.jar,lib/dom4j-1.6.1.jar,lib/geronimo-stax-ap
+ i_1.0_spec-1.0.jar,lib/xmlbeans-2.3.0.jar
+Bundle-Version: 2.2.2.0026408
+Bundle-Name: KNIME POI Plug-in
+Bundle-Activator: org.knime.ext.poi.POIActivator
+Bundle-ManifestVersion: 2
+Bundle-SymbolicName: org.knime.ext.poi;singleton:=true
+
