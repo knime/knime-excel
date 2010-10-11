@@ -407,7 +407,6 @@ public class XLSTableSettings {
                 new ArrayList<DataType>(Arrays.asList(new DataType[colNum]));
         skippedCols.clear();
 
-        String dbgMsg = "";
         Sheet sh = wb.getSheet(settings.getSheetName());
         if (sh != null) {
             int maxRowIdx = XLSTable.getLastRowIdx(sh);
@@ -444,49 +443,30 @@ public class XLSTableSettings {
                         continue;
                     }
                     Cell cell = r.getCell(xlCol);
-                    dbgMsg =
-                            "Cell ("
-                                    + xlCol
-                                    + ","
-                                    + row
-                                    + ")"
-                                    + " KNIME Col"
-                                    + knimeColIdx
-                                    + ", POI type="
-                                    + (cell != null ? getPoiTypeName(cell
-                                            .getCellType()) : ": <null> ")
-                                    + ", ";
                     if (cell != null) {
                         // determine the type
                         switch (cell.getCellType()) {
                         case Cell.CELL_TYPE_BLANK:
                             // missing cell - doesn't change any type
-                            dbgMsg += " <missing>";
                             break;
                         case Cell.CELL_TYPE_BOOLEAN:
                             // KNIME has no boolean - use String
                             colTypes.set(knimeColIdx, StringCell.TYPE);
-                            dbgMsg += " KNIME type: String";
                             break;
                         case Cell.CELL_TYPE_ERROR:
                             // treated as missing cell
-                            dbgMsg += " <missing>";
                             break;
                         case Cell.CELL_TYPE_FORMULA:
                             DataType currType = colTypes.get(knimeColIdx);
                             if (currType == null
                                     || IntCell.TYPE.equals(currType)) {
                                 colTypes.set(knimeColIdx, DoubleCell.TYPE);
-                                dbgMsg += " KNIME type: Formula/Double";
-                            } else {
-                                dbgMsg += " KNIME type - unchanged";
                             }
                             break;
                         case Cell.CELL_TYPE_NUMERIC:
                             // numeric could be double, int or date
                             if (colTypes.get(knimeColIdx) == StringCell.TYPE) {
                                 // string takes all
-                                dbgMsg += " KNIME type - unchanged";
                                 break;
                             }
                             if (DateUtil.isCellDateFormatted(cell)) {
@@ -496,7 +476,6 @@ public class XLSTableSettings {
                                 // string) and it can be translated in date/time
                                 // with an additional node)
                                 colTypes.set(knimeColIdx, StringCell.TYPE);
-                                dbgMsg += " KNIME type: String (for date/time)";
                                 break;
                             }
                             Double num = cell.getNumericCellValue();
@@ -508,29 +487,21 @@ public class XLSTableSettings {
                                 // could be represented as int
                                 if (colTypes.get(knimeColIdx) == null) {
                                     colTypes.set(knimeColIdx, IntCell.TYPE);
-                                    dbgMsg += " KNIME type: Int";
-                                } else {
-                                    // it should be double - which is fine.
-                                    dbgMsg += " KNIME type - unchanged";
                                 }
                             } else {
                                 colTypes.set(knimeColIdx, DoubleCell.TYPE);
-                                dbgMsg += " KNIME type: Double";
                             }
                             break;
                         case Cell.CELL_TYPE_STRING:
                             colTypes.set(knimeColIdx, StringCell.TYPE);
-                            dbgMsg += " KNIME type: String";
                             break;
                         default:
                             LOGGER.error("Unexpected cell type ("
                                     + cell.getCellType() + ")");
-                            dbgMsg += " KNIME type - unchanged";
                             break;
                         }
 
                     }
-                    LOGGER.debug(dbgMsg);
                 }
 
             }
@@ -538,34 +509,17 @@ public class XLSTableSettings {
 
         // null types represent empty columns (except skipped hidden cols)
 
-        dbgMsg = "";
         for (int c = 0; c < colTypes.size(); c++) {
             int xlCol = c + settings.getFirstColumn();
             DataType type = colTypes.get(c);
-            if (skippedCols.contains(xlCol)) {
-                if (settings.getHasRowHeaders()
-                        && xlCol == settings.getRowHdrCol()) {
-                    dbgMsg += "Col" + c + ": <rowHdrCol:removed> ";
-                } else {
-                    dbgMsg += "Col" + c + ": <hidden:removed> ";
-                }
-                continue;
-            } else if (type == null) {
+            if (!skippedCols.contains(xlCol) && type == null) {
                 if (settings.getSkipEmptyColumns()) {
-                    dbgMsg += "Col" + c + ": <empty:removed> ";
                     skippedCols.add(xlCol);
-                    continue;
                 } else {
-                    dbgMsg += "Col" + c + ": <empty:DataCell> ";
                     colTypes.set(c, DataType.getType(DataCell.class));
-                    continue;
                 }
-            } else {
-                dbgMsg += "Col" + c + ": " + type.toString() + "  ";
-                continue;
             }
         }
-        LOGGER.debug(dbgMsg);
         // remove skipped cols from type list
         if (skippedCols.size() > 0) {
             ArrayList<DataType> result = new ArrayList<DataType>();
