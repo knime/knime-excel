@@ -54,6 +54,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.awt.event.ItemEvent;
@@ -64,6 +65,7 @@ import java.io.IOException;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -71,6 +73,7 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import javax.swing.border.Border;
@@ -139,6 +142,12 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
 
     private final JCheckBox m_uniquifyRowIDs = new JCheckBox();
 
+    private final JRadioButton m_formulaMissCell = new JRadioButton();
+
+    private final JRadioButton m_formulaStringCell = new JRadioButton();
+
+    private final JTextField m_formulaErrPattern = new JTextField();
+
     private static final int LEFT_INDENT = 25;
 
     /**
@@ -162,6 +171,7 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         settingsBox.add(getColHdrBox());
         settingsBox.add(getRowIDBox());
         settingsBox.add(getAreaBox());
+        settingsBox.add(getXLErrBox());
         settingsBox.add(getOptionsBox());
         dlgTab.add(settingsBox);
         dlgTab.add(Box.createVerticalGlue());
@@ -191,8 +201,8 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         sheetBox.add(Box.createHorizontalGlue());
         sheetBox.add(new JLabel("Select the sheet to read:"));
         sheetBox.add(Box.createHorizontalStrut(5));
-        m_sheetName.setPreferredSize(new Dimension(120, 25));
-        m_sheetName.setMaximumSize(new Dimension(120, 25));
+        m_sheetName.setPreferredSize(new Dimension(170, 25));
+        m_sheetName.setMaximumSize(new Dimension(170, 25));
         m_sheetName.addItemListener(new ItemListener() {
             public void itemStateChanged(final ItemEvent e) {
                 if (e.getStateChange() == ItemEvent.SELECTED) {
@@ -375,6 +385,18 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
 
     private JComponent getOptionsBox() {
 
+        JComponent skipBox = getSkipEmptyThingsBox();
+
+        Box optionsBox = Box.createHorizontalBox();
+        optionsBox.setBorder(BorderFactory.createTitledBorder(BorderFactory
+                .createEtchedBorder(), "More Options:"));
+        optionsBox.add(skipBox);
+        optionsBox.add(Box.createHorizontalGlue());
+        return optionsBox;
+
+    }
+
+    private JComponent getSkipEmptyThingsBox() {
         Box skipColsBox = Box.createHorizontalBox();
         m_skipEmptyCols.setText("Skip empty columns");
         m_skipEmptyCols.setToolTipText("If checked, columns that contain "
@@ -403,13 +425,52 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         skipRowsBox.add(m_skipEmptyRows);
         skipRowsBox.add(Box.createHorizontalGlue());
 
-        Box optionsBox = Box.createVerticalBox();
-        optionsBox.setBorder(BorderFactory.createTitledBorder(BorderFactory
-                .createEtchedBorder(), "More Options:"));
-        optionsBox.add(skipColsBox);
-        optionsBox.add(skipRowsBox);
-        return optionsBox;
+        Box skipBox = Box.createVerticalBox();
+        skipBox.add(skipColsBox);
+        skipBox.add(skipRowsBox);
+        skipBox.add(Box.createVerticalGlue());
+        return skipBox;
+    }
 
+    private JComponent getXLErrBox() {
+        m_formulaMissCell.setText("Insert a missing cell");
+        m_formulaMissCell.setToolTipText("A missing cell doesn't change the "
+                + "column's type, but might be hard to spot");
+        m_formulaStringCell.setText("Insert an error pattern:");
+        m_formulaStringCell.setToolTipText("When the evaluation fails the "
+                + "column becomes a string column");
+        ButtonGroup bg = new ButtonGroup();
+        bg.add(m_formulaMissCell);
+        bg.add(m_formulaStringCell);
+        m_formulaStringCell.setSelected(true);
+        m_formulaErrPattern.setColumns(15);
+        m_formulaErrPattern.setText(XLSUserSettings.DEFAULT_ERR_PATTERN);
+        addFocusLostListener(m_formulaErrPattern);
+        m_formulaStringCell.addItemListener(new ItemListener() {
+            public void itemStateChanged(final ItemEvent e) {
+                m_formulaErrPattern
+                        .setEnabled(m_formulaStringCell.isSelected());
+                updatePreviewTable();
+            }
+        });
+
+        JPanel missingBox = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        missingBox.add(Box.createHorizontalStrut(LEFT_INDENT));
+        missingBox.add(m_formulaMissCell);
+
+        JPanel stringBox = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        stringBox.add(Box.createHorizontalStrut(LEFT_INDENT));
+        stringBox.add(m_formulaStringCell);
+        stringBox.add(Box.createHorizontalStrut(3));
+        stringBox.add(m_formulaErrPattern);
+
+        Box formulaErrBox = Box.createVerticalBox();
+        formulaErrBox.setBorder(BorderFactory.createTitledBorder(BorderFactory
+                .createEtchedBorder(), "On evaluation error:"));
+        formulaErrBox.add(stringBox);
+        formulaErrBox.add(missingBox);
+        formulaErrBox.add(Box.createVerticalGlue());
+        return formulaErrBox;
     }
 
     private void fileNameChanged() {
@@ -656,6 +717,10 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
             s.setLastRow(-1);
         }
 
+        // formula eval err handling
+        s.setUseErrorPattern(m_formulaStringCell.isSelected());
+        s.setErrorPattern(m_formulaErrPattern.getText());
+
         return s;
     }
 
@@ -759,6 +824,11 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         } else {
             m_lastRow.setText("");
         }
+        // formula error handling
+        m_formulaStringCell.setSelected(s.getUseErrorPattern());
+        m_formulaMissCell.setSelected(!s.getUseErrorPattern());
+        m_formulaErrPattern.setText(s.getErrorPattern());
+        m_formulaErrPattern.setEnabled(s.getUseErrorPattern());
 
         // clear sheet names
         m_sheetName.setModel(new DefaultComboBoxModel());

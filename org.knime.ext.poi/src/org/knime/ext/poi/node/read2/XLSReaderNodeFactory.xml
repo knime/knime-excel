@@ -63,16 +63,29 @@
             If empty rows or columns should be removed from the result Data Table,
             check the appropriate option. 
         </option>
+        <option name="Evaluation Error Handling">
+            Specify the data that is inserted in a cell with an error. Not all 
+            formulas supported by all spreadsheet applications are supported by
+            the XLS Reader Node. If an error occurs during formula evaluation 
+            (or if the spreadsheet contains an error cell), the selected data is
+            inserted. You can either choose to insert a cell representing a 
+            missing value, or to insert a certain string pattern. A pattern 
+            causes the entire column to become a string column in case an 
+            error occurs. A missing value is type innocent, but also unobtrusive.
+        </option>
         <option name="Preview">
             The &quot;Preview&quot; tab shows you the output table with the current
             settings in the dialog. If the settings are invalid an
-            error message will be displayed in this tab.
+            error message will be displayed in this tab. The table updates each 
+            time settings change, or if the cursor is moved from a text edit field.
         </option>
         <option name="File Content">
             The &quot;File Content&quot; table shows you the content of the
             currently selected sheet. It shows the entire content (no settings
             are applied there). The column names and row numbers here are the ones 
-            that need to be specified in the corresponding setting fields.
+            that need to be specified in the corresponding setting fields. The 
+            table updates each time settings change, or if the cursor is moved 
+            from a text edit field.
         </option>
 	</fullDescription>
 

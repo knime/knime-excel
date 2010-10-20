@@ -61,8 +61,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellValue;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -95,6 +97,8 @@ class XLSIterator extends CloseableRowIterator {
     private static final NodeLogger LOGGER =
             NodeLogger.getLogger(XLSIterator.class);
 
+    private int m_printedEvalError = 0;
+
     private final static Integer NOSUFFIX = new Integer(0);
 
     private final Hashtable<String, Number> m_rowIDhash =
@@ -106,11 +110,13 @@ class XLSIterator extends CloseableRowIterator {
 
     private BufferedInputStream m_fileStream;
 
-    private final Workbook m_workBook;
+    private Workbook m_workBook;
 
     private Sheet m_currentSheet;
 
     private DataRow m_nextRow;
+
+    private FormulaEvaluator m_evaluator;
 
     private final AtomicReference<RuntimeException> m_exception =
             new AtomicReference<RuntimeException>(null);
@@ -139,6 +145,7 @@ class XLSIterator extends CloseableRowIterator {
         m_fileStream = settings.getBufferedInputStream();
         m_workBook = WorkbookFactory.create(m_fileStream);
         m_currentSheet = m_workBook.getSheet(m_settings.getSheetName());
+        m_evaluator = m_workBook.getCreationHelper().createFormulaEvaluator();
 
         m_nextRowIdx = -1;
         setNextRow();
@@ -174,6 +181,11 @@ class XLSIterator extends CloseableRowIterator {
             } catch (IOException e) {
                 // then don't close it
             }
+            // we don't read from the sheet anymore
+            m_workBook = null;
+            m_currentSheet = null;
+            m_evaluator = null;
+            m_fileStream = null;
         }
     }
 
@@ -373,12 +385,143 @@ class XLSIterator extends CloseableRowIterator {
                                 + "', row " + cell.getRowIndex());
             }
         case Cell.CELL_TYPE_ERROR:
-            LOGGER.warn("Error cell type treated as "
-                    + "missing cell in column idx " + colIdx + ", sheet '"
-                    + m_settings.getSheetName() + "', row "
-                    + cell.getRowIndex());
-            return DataType.getMissingCell();
+            if (m_settings.getUseErrorPattern()) {
+                if (expectedType.isCompatible(StringValue.class)) {
+                    return new StringCell(m_settings.getErrorPattern());
+                } else {
+                    throw new IllegalStateException(
+                            "Invalid cell type for error cell in column idx "
+                                    + colIdx + ", sheet '"
+                                    + m_settings.getSheetName() + "', row "
+                                    + cell.getRowIndex());
+                }
+            } else {
+                return DataType.getMissingCell();
+            }
         case Cell.CELL_TYPE_FORMULA:
+            CellValue cellValue = null;
+            try {
+                cellValue = m_evaluator.evaluate(cell);
+            } catch (Exception e) {
+                // when we analyze the file an exception creates a string column
+                DataCell errCell = null;
+                String insMsg = "";
+                if (m_settings.getUseErrorPattern()) {
+                    errCell = new StringCell(m_settings.getErrorPattern());
+                    insMsg =
+                            "error pattern '" + m_settings.getErrorPattern()
+                                    + "'";
+                } else {
+                    errCell = DataType.getMissingCell();
+                    insMsg = "missing cell";
+                }
+                if (m_printedEvalError < 3) {
+                    LOGGER.error("Unable to evaluate formula! Inserting "
+                            + insMsg + ". (In sheet '"
+                            + m_settings.getSheetName() + "', row "
+                            + cell.getRowIndex() + ", column " + colIdx + ".)",
+                            e);
+                    m_printedEvalError++;
+                    if (m_printedEvalError == 3) {
+                        LOGGER.error("(Last error message of this kind.)");
+                    }
+                }
+                if (!expectedType.isASuperTypeOf(errCell.getType())) {
+                    throw new IllegalStateException(
+                            "Invalid cell type in column idx " + colIdx
+                                    + ", sheet '" + m_settings.getSheetName()
+                                    + "', row " + cell.getRowIndex());
+                }
+                return errCell;
+            }
+            switch (cellValue.getCellType()) {
+            case Cell.CELL_TYPE_BOOLEAN:
+                boolean bvalue = cell.getBooleanCellValue();
+                if (expectedType.isCompatible(StringValue.class)) {
+                    return new StringCell(Boolean.toString(bvalue));
+                } else {
+                    throw new IllegalStateException(
+                            "Invalid cell type in column idx " + colIdx
+                                    + ", sheet '" + m_settings.getSheetName()
+                                    + "', row " + cell.getRowIndex());
+                }
+            case Cell.CELL_TYPE_NUMERIC:
+                if (expectedType.isCompatible(DateAndTimeValue.class)) {
+                    if (DateUtil.isCellDateFormatted(cell)) {
+                        Date date = cell.getDateCellValue();
+                        return new DateAndTimeCell(date.getTime(), true, true,
+                                false);
+                    } else {
+                        throw new IllegalStateException(
+                                "Invalid cell type in column idx " + colIdx
+                                        + " (expected Date), sheet '"
+                                        + m_settings.getSheetName() + "', row "
+                                        + cell.getRowIndex());
+                    }
+                } else if (expectedType.isCompatible(IntValue.class)) {
+                    Double num = cell.getNumericCellValue();
+                    if (new Double(num.intValue()).equals(num)) {
+                        return new IntCell(num.intValue());
+                    } else {
+                        throw new IllegalStateException(
+                                "Invalid cell type in column idx " + colIdx
+                                        + " (is Double, expected Int), sheet '"
+                                        + m_settings.getSheetName() + "', row "
+                                        + cell.getRowIndex());
+                    }
+                } else if (expectedType.isCompatible(DoubleValue.class)) {
+                    return new DoubleCell(cell.getNumericCellValue());
+                } else if (expectedType.isCompatible(StringValue.class)) {
+                    if (DateUtil.isCellDateFormatted(cell)) {
+                        Date d = cell.getDateCellValue();
+                        DataFormatter formatter = new DataFormatter();
+                        Format cellFormat = formatter.createFormat(cell);
+                        return new StringCell(cellFormat.format(d));
+                    }
+                    Double num = cell.getNumericCellValue();
+                    return new StringCell(num.toString());
+                } else {
+                    throw new IllegalStateException(
+                            "Invalid cell type in column idx " + colIdx
+                                    + ", sheet '" + m_settings.getSheetName()
+                                    + "', row " + cell.getRowIndex());
+                }
+            case Cell.CELL_TYPE_STRING:
+                if (expectedType.isCompatible(StringValue.class)) {
+                    String s = cell.getRichStringCellValue().getString();
+                    if (s == null || s.equals(m_settings.getMissValuePattern())) {
+                        return DataType.getMissingCell();
+                    } else {
+                        return new StringCell(s);
+                    }
+                } else {
+                    throw new IllegalStateException(
+                            "Invalid cell type in column idx " + colIdx
+                                    + ", sheet '" + m_settings.getSheetName()
+                                    + "', row " + cell.getRowIndex());
+                }
+            case Cell.CELL_TYPE_BLANK:
+                return DataType.getMissingCell();
+            case Cell.CELL_TYPE_ERROR:
+                if (m_settings.getUseErrorPattern()) {
+                    if (expectedType.isCompatible(StringValue.class)) {
+                        return new StringCell(m_settings.getErrorPattern());
+                    } else {
+                        throw new IllegalStateException(
+                                "Invalid type for error cell in column idx "
+                                        + colIdx + ", sheet '"
+                                        + m_settings.getSheetName() + "', row "
+                                        + cell.getRowIndex());
+                    }
+                } else {
+                    return DataType.getMissingCell();
+                }
+            case Cell.CELL_TYPE_FORMULA:
+                throw new IllegalStateException(
+                        "Invalid formula result type in column idx " + colIdx
+                                + ", sheet '" + m_settings.getSheetName()
+                                + "', row " + cell.getRowIndex());
+            }
         case Cell.CELL_TYPE_NUMERIC:
             if (expectedType.isCompatible(DateAndTimeValue.class)) {
                 if (DateUtil.isCellDateFormatted(cell)) {
