@@ -103,6 +103,13 @@ public class XLSUserSettings {
 
     private boolean m_uniquifyRowIDs;
 
+    private String m_errorPattern;
+
+    private boolean m_useErrorPattern;
+
+    /** Default pattern for formula evaluation error StringCells */
+    static final String DEFAULT_ERR_PATTERN = "#XL_EVAL_ERROR#";
+
     /**
      * Constructs a new settings object. All values are uninitialized.
      */
@@ -130,6 +137,9 @@ public class XLSUserSettings {
 
         m_keepXLColNames = false;
         m_uniquifyRowIDs = false;
+
+        m_useErrorPattern = true;
+        m_errorPattern = DEFAULT_ERR_PATTERN;
     }
 
     /**
@@ -160,6 +170,9 @@ public class XLSUserSettings {
 
         settings.addBoolean("KEEP_XL_HDR", m_keepXLColNames);
         settings.addBoolean("UNIQUIFY_ROWID", m_uniquifyRowIDs);
+
+        settings.addBoolean("FORMULA_ERR_USE_PATTERN", m_useErrorPattern);
+        settings.addString("FORMULA_ERR_PATTERN", m_errorPattern);
     }
 
     /**
@@ -195,6 +208,12 @@ public class XLSUserSettings {
 
         result.m_keepXLColNames = settings.getBoolean("KEEP_XL_HDR");
         result.m_uniquifyRowIDs = settings.getBoolean("UNIQUIFY_ROWID");
+
+        // added in V2.2.3
+        result.m_useErrorPattern =
+                settings.getBoolean("FORMULA_ERR_USE_PATTERN", true);
+        result.m_errorPattern =
+                settings.getString("FORMULA_ERR_PATTERN", DEFAULT_ERR_PATTERN);
 
         return result;
     }
@@ -573,6 +592,49 @@ public class XLSUserSettings {
      */
     public void setUniquifyRowIDs(final boolean uniquifyRowIDs) {
         m_uniquifyRowIDs = uniquifyRowIDs;
+    }
+
+    /**
+     *@see #setUseErrorPattern(boolean)
+     * @param errorPattern the errorPattern that is inserted if a formula
+     *            evaluation fails (only if the corresponding boolean flag is
+     *            true).
+     */
+    public void setErrorPattern(final String errorPattern) {
+        if (errorPattern == null) {
+            m_errorPattern = "";
+        } else {
+            m_errorPattern = errorPattern;
+        }
+    }
+
+    /**
+     *@see #getUseErrorPattern()
+     * @return the errorPattern. A StringCell with the pattern is inserted for
+     *         the formula value in case the formula eval fails - and the
+     *         corresponding flag is set true.
+     */
+    public String getErrorPattern() {
+        return m_errorPattern;
+    }
+
+    /**
+     * @see #setErrorPattern(String)
+     * @param useErrorPattern if true the error pattern set is inserted (in a
+     *            StringCell) if formula evaluations fail (causing the entire
+     *            column to become a string column).
+     */
+    public void setUseErrorPattern(final boolean useErrorPattern) {
+        m_useErrorPattern = useErrorPattern;
+    }
+
+    /**
+     * @see XLSUserSettings#getErrorPattern()
+     * @return true, if a StringCell is inserted when formula evaluation fails.
+     *         Or false, if a missing cell is inserted instead.
+     */
+    public boolean getUseErrorPattern() {
+        return m_useErrorPattern;
     }
 
 }

@@ -61,7 +61,9 @@ import java.util.Set;
 
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellValue;
 import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -235,37 +237,45 @@ public class XLSTableSettings {
         lastColNum--; // now it's the index
 
         if (firstColIdx < 0 || lastColNum < 0 || lastColNum < firstColIdx) {
-            // if first col is set, don't change it
             if (settings.getFirstColumn() < 0) {
+                // only change first column if not set
                 settings.setFirstColumn(0);
                 settings.setLastColumn(0);
             } else {
                 settings.setLastColumn(settings.getFirstColumn());
             }
         } else {
-            // if first col is set, don't change it
             if (settings.getFirstColumn() < 0) {
+                // only change first column if not set
                 settings.setFirstColumn(firstColIdx);
                 settings.setLastColumn(lastColNum);
             } else {
-                int last = lastColNum;
-                if (last < settings.getFirstColumn()) {
-                    settings.setLastColumn(settings.getFirstColumn());
-                } else {
-                    settings.setLastColumn(last);
+                // preserve user set range
+                if (settings.getLastColumn() < 0) {
+                    int last = lastColNum;
+                    if (last < settings.getFirstColumn()) {
+                        // avoid invalid settings
+                        settings.setLastColumn(settings.getFirstColumn());
+                    } else {
+                        settings.setLastColumn(last);
+                    }
                 }
             }
         }
 
         if (settings.getFirstRow() < 0) {
+            // change only if not user set
             settings.setFirstRow(minRowIdx);
             settings.setLastRow(maxRowIdx);
         } else {
-            int last = maxRowIdx;
-            if (last < settings.getLastRow()) {
-                settings.setLastRow(settings.getFirstRow());
-            } else {
-                settings.setLastRow(last);
+            if (settings.getLastRow() < 0) {
+                // change only if not user set
+                int last = maxRowIdx;
+                if (last < settings.getFirstRow()) {
+                    settings.setLastRow(settings.getFirstRow());
+                } else {
+                    settings.setLastRow(last);
+                }
             }
         }
 
@@ -409,6 +419,8 @@ public class XLSTableSettings {
 
         Sheet sh = wb.getSheet(settings.getSheetName());
         if (sh != null) {
+            FormulaEvaluator evaluator =
+                    wb.getCreationHelper().createFormulaEvaluator();
             int maxRowIdx = XLSTable.getLastRowIdx(sh);
             int minRowIdx = sh.getFirstRowNum();
             if (settings.getLastRow() < maxRowIdx) {
@@ -454,13 +466,98 @@ public class XLSTableSettings {
                             colTypes.set(knimeColIdx, StringCell.TYPE);
                             break;
                         case Cell.CELL_TYPE_ERROR:
-                            // treated as missing cell
+                            if (settings.getUseErrorPattern()) {
+                                // error patterns are of type string
+                                colTypes.set(knimeColIdx, StringCell.TYPE);
+                            } else {
+                                // a missing cell will be included
+                                if (colTypes.get(knimeColIdx) == null) {
+                                    // don't leave it null, or its skipped
+                                    colTypes.set(knimeColIdx, DataType
+                                            .getType(DataCell.class));
+                                }
+                            }
                             break;
                         case Cell.CELL_TYPE_FORMULA:
-                            DataType currType = colTypes.get(knimeColIdx);
-                            if (currType == null
-                                    || IntCell.TYPE.equals(currType)) {
-                                colTypes.set(knimeColIdx, DoubleCell.TYPE);
+                            CellValue cellValue = null;
+                            try {
+                                cellValue = evaluator.evaluate(cell);
+                            } catch (Exception e) {
+                                if (settings.getUseErrorPattern()) {
+                                    // assuming it also fails when iterating
+                                    colTypes.set(knimeColIdx, StringCell.TYPE);
+                                } else {
+                                    // a missing cell will be included
+                                    if (colTypes.get(knimeColIdx) == null) {
+                                        // don't leave it null, otherwise its
+                                        // skipped
+                                        colTypes.set(knimeColIdx, DataType
+                                                .getType(DataCell.class));
+                                    }
+                                }
+                                break;
+                            }
+                            switch (cellValue.getCellType()) {
+                            case Cell.CELL_TYPE_BOOLEAN:
+                                colTypes.set(knimeColIdx, StringCell.TYPE);
+                                break;
+                            case Cell.CELL_TYPE_NUMERIC:
+                                // numeric could be double, int or date
+                                if (colTypes.get(knimeColIdx) == StringCell.TYPE) {
+                                    // string takes all
+                                    break;
+                                }
+                                if (DateUtil.isCellDateFormatted(cell)) {
+                                    // we use StringCells for date format
+                                    // (using a DataAndTime cell leads to UTC
+                                    // time. With string, we get the entered
+                                    // time (as string) and it can be translated
+                                    // in date/time with an additional node)
+                                    colTypes.set(knimeColIdx, StringCell.TYPE);
+                                    break;
+                                }
+                                Double num = cellValue.getNumberValue();
+                                if (num.isInfinite() || num.isNaN()) {
+                                    // only Double supports NaN
+                                    colTypes.set(knimeColIdx, DoubleCell.TYPE);
+                                    break;
+                                }
+                                if (new Double(num.intValue()).equals(num)) {
+                                    // could be represented as int
+                                    DataType currType =
+                                            colTypes.get(knimeColIdx);
+                                    if (currType == null
+                                            || currType == DataType
+                                                    .getType(DataCell.class)) {
+                                        colTypes.set(knimeColIdx, IntCell.TYPE);
+                                    }
+                                } else {
+                                    colTypes.set(knimeColIdx, DoubleCell.TYPE);
+                                }
+                                break;
+                            case Cell.CELL_TYPE_STRING:
+                                colTypes.set(knimeColIdx, StringCell.TYPE);
+                                break;
+                            case Cell.CELL_TYPE_BLANK:
+                                // gets a missing cell - doesn't change type
+                                break;
+                            case Cell.CELL_TYPE_ERROR:
+                                if (settings.getUseErrorPattern()) {
+                                    // error patterns are of type string
+                                    colTypes.set(knimeColIdx, StringCell.TYPE);
+                                } else {
+                                    // a missing cell will be included
+                                    if (colTypes.get(knimeColIdx) == null) {
+                                        // don't leave it null, otherwise its
+                                        // skipped
+                                        colTypes.set(knimeColIdx, DataType
+                                                .getType(DataCell.class));
+                                    }
+                                }
+                                break;
+                            case Cell.CELL_TYPE_FORMULA:
+                                // will never happen after evaluation
+                                break;
                             }
                             break;
                         case Cell.CELL_TYPE_NUMERIC:
@@ -480,12 +577,15 @@ public class XLSTableSettings {
                             }
                             Double num = cell.getNumericCellValue();
                             if (num.isInfinite() || num.isNaN()) {
-                                // kind of a missing value
+                                // only Double supports NaN
+                                colTypes.set(knimeColIdx, DoubleCell.TYPE);
                                 break;
                             }
                             if (new Double(num.intValue()).equals(num)) {
                                 // could be represented as int
-                                if (colTypes.get(knimeColIdx) == null) {
+                                if (colTypes.get(knimeColIdx) == null
+                                        || colTypes.get(knimeColIdx) == DataType
+                                                .getType(DataCell.class)) {
                                     colTypes.set(knimeColIdx, IntCell.TYPE);
                                 }
                             } else {
@@ -786,4 +886,38 @@ public class XLSTableSettings {
         return m_userSettings.getUniquifyRowIDs();
     }
 
+    /**
+     * @see org.knime.ext.poi.node.read2.XLSUserSettings#getUseErrorPattern()
+     * @return
+     */
+    public boolean getUseErrorPattern() {
+        return m_userSettings.getUseErrorPattern();
+    }
+
+    /**
+     * @see org.knime.ext.poi.node.read2.XLSUserSettings#setUseErrorPattern(boolean)
+     * @param useit
+     */
+    public void setUseErrorPattern(final boolean useit) {
+        m_userSettings.setUseErrorPattern(useit);
+    }
+
+    /**
+     *
+     * @return
+     * @see org.knime.ext.poi.node.read2.XLSUserSettings#getErrorPattern()
+     * @see org.knime.ext.poi.node.read2.XLSUserSettings#getErrorPattern()
+     */
+    public String getErrorPattern() {
+        return m_userSettings.getErrorPattern();
+    }
+
+    /**
+     *
+     * @param pattern
+     * @see org.knime.ext.poi.node.read2.XLSUserSettings#setErrorPattern(String)
+     */
+    public void setErrorPattern(final String pattern) {
+        m_userSettings.setErrorPattern(pattern);
+    }
 }
