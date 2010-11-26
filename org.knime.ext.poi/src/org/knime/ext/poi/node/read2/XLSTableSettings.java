@@ -87,8 +87,8 @@ import org.knime.core.node.NodeLogger;
  */
 public class XLSTableSettings {
 
-    private static final NodeLogger LOGGER =
-            NodeLogger.getLogger(XLSTableSettings.class);
+    private static final NodeLogger LOGGER = NodeLogger
+            .getLogger(XLSTableSettings.class);
 
     private final XLSUserSettings m_userSettings;
 
@@ -96,12 +96,18 @@ public class XLSTableSettings {
 
     private final Set<Integer> m_skippedCols;
 
-    /**
-     *
-     */
     public XLSTableSettings(final XLSUserSettings userSettings)
             throws InvalidSettingsException, FileNotFoundException,
             IOException, InvalidFormatException {
+        this(userSettings, null);
+    }
+
+    /**
+     *
+     */
+    public XLSTableSettings(final XLSUserSettings userSettings,
+            final DataTableSpec tableSpec) throws InvalidSettingsException,
+            FileNotFoundException, IOException, InvalidFormatException {
 
         String errMsg = userSettings.getStatus(false);
         if (errMsg != null) {
@@ -127,7 +133,11 @@ public class XLSTableSettings {
 
         // this analyzes the types of the columns
         HashSet<Integer> skippedcols = new HashSet<Integer>();
-        m_spec = createSpec(m_userSettings, skippedcols);
+        if (tableSpec == null) {
+            m_spec = createSpec(m_userSettings, skippedcols);
+        } else {
+            m_spec = tableSpec;
+        }
         m_skippedCols = new HashSet<Integer>();
         if (skippedcols != null) {
             m_skippedCols.addAll(skippedcols);
@@ -305,8 +315,8 @@ public class XLSTableSettings {
         for (int col = 0; col < numOfCols; col++) {
             assert (col < columnTypes.size() && columnTypes.get(col) != null);
             colSpecs[col] =
-                    new DataColumnSpecCreator(colHdrs[col], columnTypes
-                            .get(col)).createSpec();
+                    new DataColumnSpecCreator(colHdrs[col],
+                            columnTypes.get(col)).createSpec();
         }
 
         // create a name
@@ -473,8 +483,8 @@ public class XLSTableSettings {
                                 // a missing cell will be included
                                 if (colTypes.get(knimeColIdx) == null) {
                                     // don't leave it null, or its skipped
-                                    colTypes.set(knimeColIdx, DataType
-                                            .getType(DataCell.class));
+                                    colTypes.set(knimeColIdx,
+                                            DataType.getType(DataCell.class));
                                 }
                             }
                             break;

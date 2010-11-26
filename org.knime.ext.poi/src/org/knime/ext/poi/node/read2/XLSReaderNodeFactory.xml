@@ -10,19 +10,22 @@
 	<fullDescription>
 		<intro>
 			This node reads a spread sheet and provides it at its output port.<br />
-			It reads only data from one sheet at the moment.<br />
-			It can read only numeric data (or strings) but, of course, no diagrams, pictures, or other items.<br />
+			It reads only data from one sheet at the moment. It can read only 
+			numeric data (or strings) but, of course, no diagrams, pictures, or other items.<br />
 			Currently supported KNIME types are String, Double, and Int. (Time or date in the
 			spread sheet is represented as String and can be translated into the appropriate
-			TimeAndDateCells with the corresponding nodes)<br />
+			TimeAndDateCells with the corresponding nodes.)<br />
 			It reads in the data from the sheet and sets a type for all columns that
-			are compatible with the data in that column (in the worst case &quot;String&quot; covers all).			
+			is compatible with the data in that column (in the worst case &quot;String&quot; covers all).<br />
+			The performance of the reader node is limited (due to the underlying library
+			of the Apache POI project). Reading large files takes a very long time and uses a
+			lot of memory (especially files in xlsx format).   		
 		</intro>
 		<option name="File to read">
 			Enter a valid file name. You can also choose a previously
 			selected file from the drop-down list, or select a file from
 			the &quot;Browse...&quot; dialog. Supported are xls and xlsx file 
-			formats. (Note: reading xlsx files is veeery slow.)
+			formats. (Note: reading large xlsx files is very slow and memory consuming.)
 		</option>
 		<option name="Sheet to Read">
             After selecting a file, you can select the sheet from the
@@ -76,16 +79,15 @@
         <option name="Preview">
             The &quot;Preview&quot; tab shows you the output table with the current
             settings in the dialog. If the settings are invalid an
-            error message will be displayed in this tab. The table updates each 
-            time settings change, or if the cursor is moved from a text edit field.
+            error message will be displayed in this tab. The table updates only
+            when the &quot;refresh&quot; button is clicked. A warning is shown,
+            if the table content is out of sync with the current settings.
         </option>
         <option name="File Content">
             The &quot;File Content&quot; table shows you the content of the
             currently selected sheet. It shows the entire content (no settings
             are applied there). The column names and row numbers here are the ones 
-            that need to be specified in the corresponding setting fields. The 
-            table updates each time settings change, or if the cursor is moved 
-            from a text edit field.
+            that need to be specified in the corresponding setting fields.
         </option>
 	</fullDescription>
 

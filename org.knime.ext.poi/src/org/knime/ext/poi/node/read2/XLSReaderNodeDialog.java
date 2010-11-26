@@ -55,18 +55,24 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.DefaultComboBoxModel;
+import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
@@ -76,6 +82,7 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
+import javax.swing.SwingWorker;
 import javax.swing.border.Border;
 import javax.swing.border.TitledBorder;
 import javax.swing.event.ChangeEvent;
@@ -83,6 +90,7 @@ import javax.swing.event.ChangeListener;
 import javax.swing.plaf.basic.BasicComboBoxRenderer;
 
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.knime.core.data.DataTable;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeDialogPane;
@@ -90,6 +98,7 @@ import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NotConfigurableException;
+import org.knime.core.node.config.Config;
 import org.knime.core.node.tableview.TableView;
 import org.knime.core.node.util.FilesHistoryPanel;
 import org.knime.core.node.util.ViewUtils;
@@ -101,8 +110,8 @@ import org.knime.core.node.util.ViewUtils;
  */
 public class XLSReaderNodeDialog extends NodeDialogPane {
 
-    private final FilesHistoryPanel m_fileName =
-            new FilesHistoryPanel("XLSReader", ".xls", ".xlsx");
+    private final FilesHistoryPanel m_fileName = new FilesHistoryPanel(
+            "XLSReader", ".xls", ".xlsx");
 
     private final JComboBox m_sheetName = new JComboBox();
 
@@ -134,7 +143,9 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
 
     private XLSTable m_previewDataTable = null;
 
-    private final JLabel m_errorLabel = new JLabel();
+    private final JLabel m_previewMsg = new JLabel();
+
+    private final JButton m_previewUpdate = new JButton();
 
     private final JCheckBox m_skipEmptyCols = new JCheckBox();
 
@@ -150,6 +161,14 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
 
     private static final int LEFT_INDENT = 25;
 
+    /* flag to temporarily disable listeners during loading of settings */
+    private final AtomicBoolean m_loading = new AtomicBoolean(false);
+
+    private static final String NO_SHEET = "/* scanning... */";
+
+    /** config key used to store data table spec. */
+    static final String XLS_CFG_TABLESPEC = "XLS_DataTableSpec";
+
     /**
      *
      */
@@ -159,14 +178,14 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         dlgTab.setLayout(new BoxLayout(dlgTab, BoxLayout.Y_AXIS));
 
         JComponent fileBox = getFileBox();
-        fileBox.setBorder(BorderFactory.createTitledBorder(BorderFactory
-                .createEtchedBorder(), "Select file to read:"));
+        fileBox.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createEtchedBorder(), "Select file to read:"));
         dlgTab.add(fileBox);
 
         JPanel settingsBox = new JPanel();
         settingsBox.setLayout(new BoxLayout(settingsBox, BoxLayout.Y_AXIS));
-        settingsBox.setBorder(BorderFactory.createTitledBorder(BorderFactory
-                .createEtchedBorder(), "Adjust Settings:"));
+        settingsBox.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createEtchedBorder(), "Adjust Settings:"));
         settingsBox.add(getSheetBox());
         settingsBox.add(getColHdrBox());
         settingsBox.add(getRowIDBox());
@@ -186,6 +205,7 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         Box fBox = Box.createHorizontalBox();
         fBox.add(Box.createHorizontalGlue());
         m_fileName.addChangeListener(new ChangeListener() {
+            @Override
             public void stateChanged(final ChangeEvent e) {
                 fileNameChanged();
             }
@@ -204,6 +224,7 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         m_sheetName.setPreferredSize(new Dimension(170, 25));
         m_sheetName.setMaximumSize(new Dimension(170, 25));
         m_sheetName.addItemListener(new ItemListener() {
+            @Override
             public void itemStateChanged(final ItemEvent e) {
                 if (e.getStateChange() == ItemEvent.SELECTED) {
                     sheetNameChanged();
@@ -234,18 +255,22 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
 
     private void sheetNameChanged() {
         m_sheetName.setToolTipText((String)m_sheetName.getSelectedItem());
+        if (m_loading.get()) {
+            return;
+        }
         updateFileTable();
         updatePreviewTable();
     }
 
     private JComponent getColHdrBox() {
         Box colHdrBox = Box.createHorizontalBox();
-        colHdrBox.setBorder(BorderFactory.createTitledBorder(BorderFactory
-                .createEtchedBorder(), "Column Names:"));
+        colHdrBox.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createEtchedBorder(), "Column Names:"));
 
         m_hasColHdr.setText("Table contains column names in row number:");
         m_hasColHdr.setToolTipText("Enter a number. First row has number 1.");
         m_hasColHdr.addItemListener(new ItemListener() {
+            @Override
             public void itemStateChanged(final ItemEvent e) {
                 checkBoxChanged();
             }
@@ -270,7 +295,7 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         m_lastCol.setEnabled(!m_readAllData.isSelected());
         m_firstRow.setEnabled(!m_readAllData.isSelected());
         m_lastRow.setEnabled(!m_readAllData.isSelected());
-        updatePreviewTable();
+        invalidatePreviewTable();
     }
 
     private JComponent getRowIDBox() {
@@ -279,6 +304,7 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         m_hasRowIDs.setText("Table contains row IDs in column:");
         m_hasRowIDs.setToolTipText("Enter A, B, C, .... or a number 1 ...");
         m_hasRowIDs.addItemListener(new ItemListener() {
+            @Override
             public void itemStateChanged(final ItemEvent e) {
                 checkBoxChanged();
             }
@@ -300,8 +326,9 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
                 + "problems with very large data sets).");
         m_uniquifyRowIDs.setSelected(false);
         m_uniquifyRowIDs.addItemListener(new ItemListener() {
+            @Override
             public void itemStateChanged(final ItemEvent e) {
-                updatePreviewTable();
+                invalidatePreviewTable();
             }
         });
         uniquifyRowIDBox.add(Box.createHorizontalStrut(LEFT_INDENT));
@@ -309,8 +336,8 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         uniquifyRowIDBox.add(Box.createHorizontalGlue());
 
         Box rowIDBox = Box.createVerticalBox();
-        rowIDBox.setBorder(BorderFactory.createTitledBorder(BorderFactory
-                .createEtchedBorder(), "Row IDs:"));
+        rowIDBox.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createEtchedBorder(), "Row IDs:"));
         rowIDBox.add(rowBox);
         rowIDBox.add(uniquifyRowIDBox);
         return rowIDBox;
@@ -356,6 +383,7 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         m_readAllData.setToolTipText("If checked, cells that contain "
                 + "something (data, format, color, etc.) are read in");
         m_readAllData.addItemListener(new ItemListener() {
+            @Override
             public void itemStateChanged(final ItemEvent e) {
                 checkBoxChanged();
             }
@@ -373,8 +401,9 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         fromToVBox.add(rowsBox);
 
         Box areaBox = Box.createHorizontalBox();
-        areaBox.setBorder(BorderFactory.createTitledBorder(BorderFactory
-                .createEtchedBorder(), "Select the columns and rows to read:"));
+        areaBox.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createEtchedBorder(),
+                "Select the columns and rows to read:"));
         areaBox.add(Box.createHorizontalStrut(LEFT_INDENT));
         areaBox.add(allVBox);
         areaBox.add(Box.createHorizontalStrut(10));
@@ -388,8 +417,8 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         JComponent skipBox = getSkipEmptyThingsBox();
 
         Box optionsBox = Box.createHorizontalBox();
-        optionsBox.setBorder(BorderFactory.createTitledBorder(BorderFactory
-                .createEtchedBorder(), "More Options:"));
+        optionsBox.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createEtchedBorder(), "More Options:"));
         optionsBox.add(skipBox);
         optionsBox.add(Box.createHorizontalGlue());
         return optionsBox;
@@ -403,8 +432,9 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
                 + "only missing values are not part of the output table");
         m_skipEmptyCols.setSelected(true);
         m_skipEmptyCols.addItemListener(new ItemListener() {
+            @Override
             public void itemStateChanged(final ItemEvent e) {
-                updatePreviewTable();
+                invalidatePreviewTable();
             }
         });
         skipColsBox.add(Box.createHorizontalStrut(LEFT_INDENT));
@@ -417,8 +447,9 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
                 + "only missing values are not part of the output table");
         m_skipEmptyRows.setSelected(true);
         m_skipEmptyRows.addItemListener(new ItemListener() {
+            @Override
             public void itemStateChanged(final ItemEvent e) {
-                updatePreviewTable();
+                invalidatePreviewTable();
             }
         });
         skipRowsBox.add(Box.createHorizontalStrut(LEFT_INDENT));
@@ -447,10 +478,11 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         m_formulaErrPattern.setText(XLSUserSettings.DEFAULT_ERR_PATTERN);
         addFocusLostListener(m_formulaErrPattern);
         m_formulaStringCell.addItemListener(new ItemListener() {
+            @Override
             public void itemStateChanged(final ItemEvent e) {
-                m_formulaErrPattern
-                        .setEnabled(m_formulaStringCell.isSelected());
-                updatePreviewTable();
+                m_formulaErrPattern.setEnabled(
+                        m_formulaStringCell.isSelected());
+                invalidatePreviewTable();
             }
         });
 
@@ -461,12 +493,11 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         JPanel stringBox = new JPanel(new FlowLayout(FlowLayout.LEFT));
         stringBox.add(Box.createHorizontalStrut(LEFT_INDENT));
         stringBox.add(m_formulaStringCell);
-        stringBox.add(Box.createHorizontalStrut(3));
         stringBox.add(m_formulaErrPattern);
 
         Box formulaErrBox = Box.createVerticalBox();
-        formulaErrBox.setBorder(BorderFactory.createTitledBorder(BorderFactory
-                .createEtchedBorder(), "On evaluation error:"));
+        formulaErrBox.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createEtchedBorder(), "On evaluation error:"));
         formulaErrBox.add(stringBox);
         formulaErrBox.add(missingBox);
         formulaErrBox.add(Box.createVerticalGlue());
@@ -475,23 +506,69 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
 
     private void fileNameChanged() {
 
-        String[] names = new String[]{};
+        if (m_loading.get()) {
+            return;
+        }
+        m_previewUpdate.setEnabled(false);
+        m_previewMsg.setText("Scanning input file...");
+        clearTableViews();
+        updateSheetListAndSelect(null);
 
-        if (m_fileName.getSelectedFile() != null
-                && !m_fileName.getSelectedFile().isEmpty()) {
-            try {
-                names = XLSTable.getSheetNames(m_fileName.getSelectedFile());
-            } catch (Exception fnf) {
-                // list stays empty
+    }
+
+    /**
+     * Reads from the currently selected file the list of worksheets (in a
+     * background thread) and selects the provided sheet (if not null -
+     * otherwise selects the first name). Calls {@link #sheetNameChanged()}
+     * after the update.
+     *
+     * @param sheetName
+     */
+    private void updateSheetListAndSelect(final String sheetName) {
+        m_sheetName.setModel(new DefaultComboBoxModel(new Object[]{NO_SHEET}));
+        SwingWorker<String[], Object> sw = new SwingWorker<String[], Object>() {
+
+            @Override
+            protected String[] doInBackground() throws Exception {
+                String file = m_fileName.getSelectedFile();
+                if (file != null && !file.isEmpty()) {
+                    try {
+                        return XLSTable.getSheetNames(m_fileName
+                                .getSelectedFile());
+                    } catch (Exception fnf) {
+                        // return empty list then
+                    }
+                }
+                return new String[]{};
             }
-        }
-        m_sheetName.setModel(new DefaultComboBoxModel(names));
-        if (names.length > 0) {
-            m_sheetName.setSelectedIndex(0);
-        } else {
-            m_sheetName.setSelectedIndex(-1);
-        }
-        sheetNameChanged();
+
+            /**
+             * {@inheritDoc}
+             */
+            @Override
+            protected void done() {
+                String[] names = new String[]{};
+                try {
+                    names = get();
+                } catch (InterruptedException e) {
+                    // ignore
+                } catch (ExecutionException e) {
+                    // ignore
+                }
+                m_sheetName.setModel(new DefaultComboBoxModel(names));
+                if (names.length > 0) {
+                    if (sheetName != null) {
+                        m_sheetName.setSelectedItem(sheetName);
+                    } else {
+                        m_sheetName.setSelectedIndex(0);
+                    }
+                } else {
+                    m_sheetName.setSelectedIndex(-1);
+                }
+                sheetNameChanged();
+            }
+        };
+        sw.execute();
     }
 
     private JComponent getTablesBox() {
@@ -505,13 +582,24 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         m_fileTable.getHeaderTable().setColumnName("Row No.");
         JPanel previewBox = new JPanel();
         previewBox.setLayout(new BorderLayout());
-        previewBox.setBorder(BorderFactory.createTitledBorder(BorderFactory
-                .createEtchedBorder(), "Preview with current settings:"));
+        previewBox.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createEtchedBorder(),
+                "Preview with current settings:"));
         previewBox.add(m_previewTable, BorderLayout.CENTER);
-        m_errorLabel.setForeground(Color.RED);
-        m_errorLabel.setText("");
+        m_previewUpdate.setText("refresh");
+        m_previewUpdate.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(final ActionEvent e) {
+                m_previewUpdate.setEnabled(false);
+                updatePreviewTable();
+            }
+        });
+        m_previewMsg.setForeground(Color.RED);
+        m_previewMsg.setText("");
         Box errBox = Box.createHorizontalBox();
-        errBox.add(m_errorLabel);
+        errBox.add(m_previewUpdate);
+        errBox.add(Box.createHorizontalStrut(5));
+        errBox.add(m_previewMsg);
         errBox.add(Box.createHorizontalGlue());
         errBox.add(Box.createVerticalStrut(30));
         previewBox.add(errBox, BorderLayout.NORTH);
@@ -528,6 +616,7 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
 
     private synchronized void clearPreview() {
         ViewUtils.runOrInvokeLaterInEDT(new Runnable() {
+            @Override
             public void run() {
                 m_previewTable.setDataTable(null);
                 if (m_previewDataTable != null) {
@@ -540,6 +629,7 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
 
     private synchronized void clearFileview() {
         ViewUtils.runOrInvokeLaterInEDT(new Runnable() {
+            @Override
             public void run() {
                 m_fileTable.setDataTable(null);
                 if (m_fileDataTable != null) {
@@ -555,43 +645,70 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
      */
     private synchronized void updateFileTable() {
 
-        String file = m_fileName.getSelectedFile();
+        final String file = m_fileName.getSelectedFile();
         if (file == null || file.isEmpty()) {
             setFileTablePanelBorderTitle("<no file set>");
             clearTableViews();
             return;
         }
-        String sheet = (String)m_sheetName.getSelectedItem();
+        final String sheet = (String)m_sheetName.getSelectedItem();
         if (sheet == null || sheet.isEmpty()) {
             setFileTablePanelBorderTitle("<error while accessing file>");
             clearTableViews();
             return;
         }
-
-        XLSUserSettings s;
-        final XLSTable dt;
-        try {
-            s = createFileviewSettings(file, sheet);
-            dt = new XLSTable(s);
-            setFileTablePanelBorderTitle("Content of XL sheet: " + sheet);
-        } catch (Throwable t) {
-            NodeLogger.getLogger(XLSReaderNodeDialog.class).debug(
-                    "Unable to create setttings for file content view", t);
-            setFileTablePanelBorderTitle("<unable to create view>");
+        if (sheet == NO_SHEET) {
+            setFileTablePanelBorderTitle("still scanning input file...");
             clearTableViews();
             return;
         }
+        if (m_loading.get()) {
+            // do not read from the file while loading settings.
+            return;
+        }
+        final AtomicReference<XLSTable> dt =
+                new AtomicReference<XLSTable>(null);
+        SwingWorker<String, Object> sw = new SwingWorker<String, Object>() {
+            @Override
+            protected String doInBackground() throws Exception {
+                XLSUserSettings s;
+                try {
+                    s = createFileviewSettings(file, sheet);
+                    dt.set(new XLSTable(s));
+                    return "Content of XL sheet: " + sheet;
+                } catch (Throwable t) {
+                    NodeLogger.getLogger(XLSReaderNodeDialog.class).debug(
+                            "Unable to create setttings for file content view",
+                            t);
+                    clearTableViews();
+                    return "<unable to create view>";
+                }
+            }
 
-        ViewUtils.runOrInvokeLaterInEDT(new Runnable() {
-            public void run() {
-                m_fileTable.setDataTable(dt);
+            /**
+             * {@inheritDoc}
+             */
+            @Override
+            protected void done() {
+                String msg;
+                try {
+                    msg = get();
+                } catch (InterruptedException e) {
+                    msg = "<unable to create view>";
+                } catch (ExecutionException e) {
+                    msg = "<unable to create view>";
+                }
+                setFileTablePanelBorderTitle(msg);
+                m_fileTable.setDataTable(dt.get());
                 if (m_fileDataTable != null) {
                     m_fileDataTable.dispose();
                 }
-                m_fileDataTable = dt;
+                m_fileDataTable = dt.get();
             }
-        });
-
+        };
+        clearFileview();
+        setFileTablePanelBorderTitle("Updating file content view...");
+        sw.execute();
     }
 
     private void setFileTablePanelBorderTitle(final String title) {
@@ -602,55 +719,104 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         }
     }
 
+    private synchronized void invalidatePreviewTable() {
+        m_previewMsg.setText("Preview table is out of sync with current "
+                + "settings. Please refresh.");
+    }
+
     /**
-     * reads the current filename and sheetname and fills the preview.
+     * Call in EDT.
      */
     private synchronized void updatePreviewTable() {
-
-        m_errorLabel.setText("");
+        // make sure user doesn't trigger it again
+        m_previewUpdate.setEnabled(false);
 
         String file = m_fileName.getSelectedFile();
         if (file == null || file.isEmpty()) {
-            m_errorLabel.setText("Set a filename.");
+            m_previewMsg.setText("Set a filename.");
             clearTableViews();
+            // enable the refresh button again
+            m_previewUpdate.setEnabled(true);
             return;
         }
         String sheet = (String)m_sheetName.getSelectedItem();
         if (sheet == null || sheet.isEmpty()) {
-            m_errorLabel.setText("Error while accessing file.");
+            m_previewMsg.setText("Error while accessing file.");
             clearTableViews();
+            // enable the refresh button again
+            m_previewUpdate.setEnabled(true);
+            return;
+        }
+        if (sheet == NO_SHEET) {
+            clearTableViews();
+            // enable the refresh button again
+            m_previewUpdate.setEnabled(true);
             return;
         }
 
-        XLSUserSettings s;
-        final XLSTable dt;
-        try {
-            s = createSettingsFromComponents();
-            dt = new XLSTable(s);
-        } catch (Throwable t) {
-            String msg = t.getMessage();
-            if (msg == null || msg.isEmpty()) {
-                msg = "no details, sorry.";
-            }
-            m_errorLabel.setText("Invalid settings: " + msg);
-            clearPreview();
+        if (m_loading.get()) {
+            // do nothing while loading settings.
             return;
         }
+        m_previewMsg.setText("Refreshing preview table....");
 
-        ViewUtils.runOrInvokeLaterInEDT(new Runnable() {
-            public void run() {
+        final AtomicReference<XLSTable> dt =
+                new AtomicReference<XLSTable>(null);
+
+        SwingWorker<String, Object> sw = new SwingWorker<String, Object>() {
+            @Override
+            protected String doInBackground() throws Exception {
+                XLSUserSettings s;
                 try {
-                    m_previewTable.setDataTable(dt);
-                    if (m_previewDataTable != null) {
-                        m_previewDataTable.dispose();
-                    }
-                    m_previewDataTable = dt;
+                    s = createSettingsFromComponents();
+                    dt.set(new XLSTable(s));
                 } catch (Throwable t) {
-                    m_errorLabel.setText(t.getMessage());
+                    String msg = t.getMessage();
+                    if (msg == null || msg.isEmpty()) {
+                        msg = "no details, sorry.";
+                    }
+                    return msg;
+                }
+                return null;
+            }
+
+            /**
+             * {@inheritDoc}
+             */
+            @Override
+            protected void done() {
+                try {
+                    String err = null;
+                    try {
+                        err = get();
+                    } catch (InterruptedException e) {
+                        err = e.getMessage();
+                    } catch (ExecutionException e) {
+                        err = e.getMessage();
+                    }
+                    if (err != null) {
+                        m_previewMsg.setText(err);
+                        clearPreview();
+                        return;
+                    }
+
+                    m_previewMsg.setText("");
+                    try {
+                        m_previewTable.setDataTable(dt.get());
+                        if (m_previewDataTable != null) {
+                            m_previewDataTable.dispose();
+                        }
+                        m_previewDataTable = dt.get();
+                    } catch (Throwable t) {
+                        m_previewMsg.setText(t.getMessage());
+                    }
+                } finally {
+                    // enable the refresh button again
+                    m_previewUpdate.setEnabled(true);
                 }
             }
-        });
-
+        };
+        sw.execute();
     }
 
     private XLSUserSettings createSettingsFromComponents()
@@ -833,11 +999,8 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         // clear sheet names
         m_sheetName.setModel(new DefaultComboBoxModel());
         // set new sheet names
-        fileNameChanged();
-        // select the one
-        m_sheetName.setSelectedItem(s.getSheetName());
-        sheetNameChanged();
-
+        updateSheetListAndSelect(s.getSheetName());
+        // set the en/disable state
         checkBoxChanged();
 
     }
@@ -848,12 +1011,36 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
     @Override
     protected void saveSettingsTo(final NodeSettingsWO settings)
             throws InvalidSettingsException {
+        // we need at least a filename and sheet name
+        String file = m_fileName.getSelectedFile();
+        if (file == null || file.isEmpty()) {
+            throw new InvalidSettingsException(
+                    "Please select a file to read from.");
+        }
+        String sheet = (String)m_sheetName.getSelectedItem();
+        if (sheet == NO_SHEET) {
+            throw new InvalidSettingsException(
+                    "Please wait until the file scanning "
+                            + "finishes and select a worksheet.");
+        }
+        if (sheet == null || sheet.isEmpty()) {
+            throw new InvalidSettingsException("Please select a worksheet.");
+        }
         XLSUserSettings s = createSettingsFromComponents();
         String errMsg = s.getStatus(true);
         if (errMsg != null) {
             throw new InvalidSettingsException(errMsg);
         }
         s.save(settings);
+        DataTable preview = m_previewDataTable;
+        if (preview != null) {
+            // if we have a preview table, store the DTS with the settings.
+            // This is a hack around to avoid long configure times.
+            // Causes the node's execute method to issue a bad warning, if the
+            // file content changes between closing the dialog and execute()
+            Config subConf = settings.addConfig(XLS_CFG_TABLESPEC);
+            preview.getDataTableSpec().save(subConf);
+        }
     }
 
     /**
@@ -862,13 +1049,22 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
     @Override
     protected void loadSettingsFrom(final NodeSettingsRO settings,
             final DataTableSpec[] specs) throws NotConfigurableException {
-        XLSUserSettings s;
+        m_loading.set(true);
+        clearTableViews();
         try {
-            s = XLSUserSettings.load(settings);
-        } catch (InvalidSettingsException e) {
-            s = new XLSUserSettings();
+            XLSUserSettings s;
+            try {
+                s = XLSUserSettings.load(settings);
+            } catch (InvalidSettingsException e) {
+                s = new XLSUserSettings();
+            }
+            transferSettingsIntoComponents(s);
+        } finally {
+            m_loading.set(false);
         }
-        transferSettingsIntoComponents(s);
+        // now refresh preview tables
+        updateFileTable();
+        updatePreviewTable();
     }
 
     /**
@@ -921,9 +1117,7 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
                 result.setFirstColumn(0);
             } else {
                 incr -= incr / 2;
-                result
-                        .setFirstColumn(tableSettings.getFirstColumn() - incr
-                                / 2);
+                result.setFirstColumn(tableSettings.getFirstColumn() - incr / 2);
             }
             result.setLastColumn(tableSettings.getLastColumn() + incr);
             result.setFirstRow(tableSettings.getFirstRow());
@@ -934,10 +1128,12 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
 
     private void addFocusLostListener(final JTextField field) {
         field.addFocusListener(new FocusListener() {
+            @Override
             public void focusLost(final FocusEvent e) {
-                updatePreviewTable();
+                invalidatePreviewTable();
             }
 
+            @Override
             public void focusGained(final FocusEvent e) {
                 // TODO Auto-generated method stub
 

@@ -61,6 +61,7 @@ import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
@@ -71,7 +72,12 @@ import org.knime.core.node.NodeSettingsWO;
  */
 public class XLSReaderNodeModel extends NodeModel {
 
+    private static final NodeLogger LOGGER = NodeLogger
+            .getLogger(XLSReaderNodeModel.class);
+
     private XLSUserSettings m_settings = new XLSUserSettings();
+
+    private DataTableSpec m_dts = null;
 
     /**
      *
@@ -121,6 +127,15 @@ public class XLSReaderNodeModel extends NodeModel {
     protected void loadValidatedSettingsFrom(final NodeSettingsRO settings)
             throws InvalidSettingsException {
         m_settings = XLSUserSettings.load(settings);
+        try {
+            NodeSettingsRO dtsConfig = settings.getNodeSettings(
+                    XLSReaderNodeDialog.XLS_CFG_TABLESPEC);
+            m_dts = DataTableSpec.load(dtsConfig);
+        } catch (InvalidSettingsException ise) {
+            LOGGER.debug("No DTS saved in settings");
+            // it's optional - if it's not saved we create it later
+            m_dts = null;
+        }
     }
 
     /**
@@ -148,7 +163,12 @@ public class XLSReaderNodeModel extends NodeModel {
     protected void saveSettingsTo(final NodeSettingsWO settings) {
         if (m_settings != null) {
             m_settings.save(settings);
+            if (m_dts != null) {
+                m_dts.save(settings
+                        .addConfig(XLSReaderNodeDialog.XLS_CFG_TABLESPEC));
+            }
         }
+
     }
 
     /**
@@ -176,18 +196,25 @@ public class XLSReaderNodeModel extends NodeModel {
             throw new InvalidSettingsException(errMsg);
         }
 
-        XLSTableSettings s;
-        try {
-            s = new XLSTableSettings(m_settings);
-        } catch (Exception e) {
-            String execMsg = e.getMessage();
-            if (execMsg == null) {
-                execMsg = e.getClass().getSimpleName();
+        DataTableSpec outSpec;
+        if (m_dts != null) {
+            outSpec = m_dts;
+        } else {
+            // this could take a while.
+            LOGGER.debug("Building DTS during configure...");
+            XLSTableSettings s;
+            try {
+                s = new XLSTableSettings(m_settings);
+            } catch (Exception e) {
+                String execMsg = e.getMessage();
+                if (execMsg == null) {
+                    execMsg = e.getClass().getSimpleName();
+                }
+                throw new InvalidSettingsException(execMsg);
             }
-            throw new InvalidSettingsException(execMsg);
+            outSpec = s.getDataTableSpec();
         }
-
-        return new DataTableSpec[]{s.getDataTableSpec()};
+        return new DataTableSpec[]{outSpec};
     }
 
     /**
