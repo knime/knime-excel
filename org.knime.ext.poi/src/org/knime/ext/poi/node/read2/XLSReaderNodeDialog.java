@@ -169,6 +169,8 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
     /** config key used to store data table spec. */
     static final String XLS_CFG_TABLESPEC = "XLS_DataTableSpec";
 
+    private String m_fileAccessError = null;
+
     /**
      *
      */
@@ -532,12 +534,14 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
             protected String[] doInBackground() throws Exception {
                 String file = m_fileName.getSelectedFile();
                 if (file != null && !file.isEmpty()) {
+                    m_fileAccessError = null;
                     try {
                         return XLSTable.getSheetNames(m_fileName
                                 .getSelectedFile());
                     } catch (Exception fnf) {
-                        NodeLogger.getLogger(XLSReaderNodeDialog.class).debug(
+                        NodeLogger.getLogger(XLSReaderNodeDialog.class).error(
                                 fnf.getMessage(), fnf);
+                        m_fileAccessError = fnf.getMessage();
                         // return empty list then
                     }
                 }
@@ -655,7 +659,11 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         }
         final String sheet = (String)m_sheetName.getSelectedItem();
         if (sheet == null || sheet.isEmpty()) {
-            setFileTablePanelBorderTitle("<error while accessing file>");
+            String msg = "Error while accessing file";
+            if (m_fileAccessError != null) {
+                msg += ": " + m_fileAccessError;
+            }
+            setFileTablePanelBorderTitle(msg);
             clearTableViews();
             return;
         }
@@ -743,7 +751,12 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         }
         String sheet = (String)m_sheetName.getSelectedItem();
         if (sheet == null || sheet.isEmpty()) {
-            m_previewMsg.setText("Error while accessing file.");
+            String msg = "Error while accessing file";
+            if (m_fileAccessError != null) {
+                msg += ": " + m_fileAccessError;
+            }
+            m_previewMsg.setText(msg);
+            m_previewMsg.setToolTipText(msg);
             clearTableViews();
             // enable the refresh button again
             m_previewUpdate.setEnabled(true);
