@@ -61,6 +61,7 @@ import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeCreationContext;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
@@ -84,6 +85,11 @@ public class XLSReaderNodeModel extends NodeModel {
      */
     public XLSReaderNodeModel() {
         super(0, 1);
+    }
+
+    XLSReaderNodeModel(final NodeCreationContext context) {
+        this();
+        m_settings.setFileLocation(context.getUrl().toString());
     }
 
     /**

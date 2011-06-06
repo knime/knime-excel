@@ -14,4 +14,13 @@
             id="org.knime.ext.poi.node.read.XLSReaderNodeFactory">
       </node>
    </extension>
+     <extension
+           point="org.knime.workbench.editor.editor_filedrop">
+        <FileExtensionMapping
+              NodeFactory="org.knime.ext.poi.node.read2.XLSReaderNodeFactory">
+           <FileExtension
+                 extension=".xls">
+           </FileExtension>
+        </FileExtensionMapping>
+    </extension>   
 </plugin>

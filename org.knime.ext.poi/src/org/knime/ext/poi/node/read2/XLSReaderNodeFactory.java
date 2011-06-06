@@ -50,15 +50,16 @@
  */
 package org.knime.ext.poi.node.read2;
 
+import org.knime.core.node.ContextAwareNodeFactory;
+import org.knime.core.node.NodeCreationContext;
 import org.knime.core.node.NodeDialogPane;
-import org.knime.core.node.NodeFactory;
 import org.knime.core.node.NodeView;
 
 /**
  *
  * @author Peter Ohl, KNIME.com, Zurich, Switzerland
  */
-public class XLSReaderNodeFactory extends NodeFactory<XLSReaderNodeModel> {
+public class XLSReaderNodeFactory extends ContextAwareNodeFactory<XLSReaderNodeModel> {
 
     /**
      * {@inheritDoc}
@@ -101,4 +102,11 @@ public class XLSReaderNodeFactory extends NodeFactory<XLSReaderNodeModel> {
         return true;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public XLSReaderNodeModel createNodeModel(final NodeCreationContext context) {
+        return new XLSReaderNodeModel(context);
+    }
 }
