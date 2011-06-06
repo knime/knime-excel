@@ -536,6 +536,8 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
                         return XLSTable.getSheetNames(m_fileName
                                 .getSelectedFile());
                     } catch (Exception fnf) {
+                        NodeLogger.getLogger(XLSReaderNodeDialog.class).debug(
+                                fnf.getMessage(), fnf);
                         // return empty list then
                     }
                 }
