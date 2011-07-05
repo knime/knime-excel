@@ -175,6 +175,46 @@ public class XLSUserSettings {
         settings.addString("FORMULA_ERR_PATTERN", m_errorPattern);
     }
 
+    public String getID() {
+        StringBuilder id = new StringBuilder("SettingsID:");
+        id.append(getID(m_fileLocation));
+        id.append(getID(m_sheetName));
+        id.append(getID(m_readAllData));
+        id.append(getID(m_firstRow));
+        id.append(getID(m_lastRow));
+        id.append(getID(m_firstColumn));
+        id.append(getID(m_lastColumn));
+        id.append(getID(m_hasColHeaders));
+        id.append(getID(m_colHdrRow));
+        id.append(getID(m_hasRowHeaders));
+        id.append(getID(m_rowHdrCol));
+        id.append(getID(m_missValuePattern));
+        id.append(getID(m_skipEmptyColumns));
+        id.append(getID(m_skipEmptyRows));
+        id.append(getID(m_skipHiddenColumns));
+        id.append(getID(m_keepXLColNames));
+        id.append(getID(m_uniquifyRowIDs));
+        id.append(getID(m_useErrorPattern));
+        id.append(getID(m_errorPattern));
+        return id.toString();
+    }
+
+    protected String getID(final String value) {
+        if (value == null) {
+            return "-";
+        }
+        if (value.isEmpty()) {
+            return ".";
+        }
+        return value;
+    }
+    protected String getID(final boolean value) {
+        return value ? "1" : "0";
+    }
+    protected String getID(final int value) {
+        return "" + value;
+    }
+
     /**
      * Creates a new settings object with values from the settings passed.
      *

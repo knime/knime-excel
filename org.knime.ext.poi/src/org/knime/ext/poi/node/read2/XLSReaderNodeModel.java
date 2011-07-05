@@ -80,6 +80,8 @@ public class XLSReaderNodeModel extends NodeModel {
 
     private DataTableSpec m_dts = null;
 
+    private String m_dtsSettingsID = null;
+
     /**
      *
      */
@@ -134,13 +136,20 @@ public class XLSReaderNodeModel extends NodeModel {
             throws InvalidSettingsException {
         m_settings = XLSUserSettings.load(settings);
         try {
-            NodeSettingsRO dtsConfig = settings.getNodeSettings(
-                    XLSReaderNodeDialog.XLS_CFG_TABLESPEC);
+            String settingsID = settings.getString(
+                    XLSReaderNodeDialog.XLS_CFG_ID_FOR_TABLESPEC);
+            if (!m_settings.getID().equals(settingsID)) {
+                throw new InvalidSettingsException("IDs don't match");
+            }
+            NodeSettingsRO dtsConfig =
+                    settings.getNodeSettings(XLSReaderNodeDialog.XLS_CFG_TABLESPEC);
             m_dts = DataTableSpec.load(dtsConfig);
+            m_dtsSettingsID = settingsID;
         } catch (InvalidSettingsException ise) {
             LOGGER.debug("No DTS saved in settings");
             // it's optional - if it's not saved we create it later
             m_dts = null;
+            m_dtsSettingsID = null;
         }
     }
 
@@ -170,11 +179,12 @@ public class XLSReaderNodeModel extends NodeModel {
         if (m_settings != null) {
             m_settings.save(settings);
             if (m_dts != null) {
+                settings.addString(XLSReaderNodeDialog.XLS_CFG_ID_FOR_TABLESPEC,
+                        m_dtsSettingsID);
                 m_dts.save(settings
                         .addConfig(XLSReaderNodeDialog.XLS_CFG_TABLESPEC));
             }
         }
-
     }
 
     /**
@@ -202,10 +212,11 @@ public class XLSReaderNodeModel extends NodeModel {
             throw new InvalidSettingsException(errMsg);
         }
 
-        DataTableSpec outSpec;
-        if (m_dts != null) {
-            outSpec = m_dts;
-        } else {
+        // make sure the DTS still fits the settings
+        if (!m_settings.getID().equals(m_dtsSettingsID)) {
+            m_dts = null;
+        }
+        if (m_dts == null) {
             // this could take a while.
             LOGGER.debug("Building DTS during configure...");
             XLSTableSettings s;
@@ -218,9 +229,10 @@ public class XLSReaderNodeModel extends NodeModel {
                 }
                 throw new InvalidSettingsException(execMsg);
             }
-            outSpec = s.getDataTableSpec();
+            m_dts = s.getDataTableSpec();
+            m_dtsSettingsID = m_settings.getID();
         }
-        return new DataTableSpec[]{outSpec};
+        return new DataTableSpec[]{m_dts};
     }
 
     /**

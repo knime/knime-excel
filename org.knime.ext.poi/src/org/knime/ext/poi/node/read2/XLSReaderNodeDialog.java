@@ -174,6 +174,9 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
     /** config key used to store data table spec. */
     static final String XLS_CFG_TABLESPEC = "XLS_DataTableSpec";
 
+    /** config key used to store id of settings used to create table spec. */
+    static final String XLS_CFG_ID_FOR_TABLESPEC = "XLS_SettingsForSpecID";
+
     private String m_fileAccessError = null;
 
     private static final String PREVIEWBORDER_MSG =
@@ -1083,6 +1086,9 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         if (errMsg != null) {
             throw new InvalidSettingsException(errMsg);
         }
+        if (!m_previewMsg.getText().isEmpty()) {
+            throw new InvalidSettingsException(m_previewMsg.getText());
+        }
         s.save(settings);
         DataTable preview = m_previewDataTable;
         if (preview != null) {
@@ -1090,6 +1096,7 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
             // This is a hack around to avoid long configure times.
             // Causes the node's execute method to issue a bad warning, if the
             // file content changes between closing the dialog and execute()
+            settings.addString(XLS_CFG_ID_FOR_TABLESPEC, s.getID());
             Config subConf = settings.addConfig(XLS_CFG_TABLESPEC);
             preview.getDataTableSpec().save(subConf);
         }
