@@ -274,7 +274,8 @@ public class XLSUserSettings {
         }
 
         if (m_sheetName == null || m_sheetName.isEmpty()) {
-            return "Sheet to read is not specified";
+            // since 4.0 accept null or empty sheet names using the first sheet then
+//            return "Sheet to read is not specified";
         }
         if (!m_readAllData) {
             if (m_firstColumn < 0) {

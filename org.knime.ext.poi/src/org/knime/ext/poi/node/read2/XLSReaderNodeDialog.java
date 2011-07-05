@@ -63,6 +63,7 @@ import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -139,6 +140,8 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
 
     private final JPanel m_fileTablePanel = new JPanel();
 
+    private final JPanel m_previewTablePanel = new JPanel();
+
     private final TableView m_previewTable = new TableView();
 
     private XLSTable m_previewDataTable = null;
@@ -164,12 +167,17 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
     /* flag to temporarily disable listeners during loading of settings */
     private final AtomicBoolean m_loading = new AtomicBoolean(false);
 
-    private static final String NO_SHEET = "/* scanning... */";
+    private static final String SCANNING = "/* scanning... */";
+
+    private static final String FIRST_SHEET = "<first sheet with data>";
 
     /** config key used to store data table spec. */
     static final String XLS_CFG_TABLESPEC = "XLS_DataTableSpec";
 
     private String m_fileAccessError = null;
+
+    private static final String PREVIEWBORDER_MSG =
+            "Preview with current settings";
 
     /**
      *
@@ -527,7 +535,7 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
      * @param sheetName
      */
     private void updateSheetListAndSelect(final String sheetName) {
-        m_sheetName.setModel(new DefaultComboBoxModel(new Object[]{NO_SHEET}));
+        m_sheetName.setModel(new DefaultComboBoxModel(new Object[]{SCANNING}));
         SwingWorker<String[], Object> sw = new SwingWorker<String[], Object>() {
 
             @Override
@@ -536,8 +544,10 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
                 if (file != null && !file.isEmpty()) {
                     m_fileAccessError = null;
                     try {
-                        return XLSTable.getSheetNames(m_fileName
+                        ArrayList<String> sheetNames = XLSTable.getSheetNames(m_fileName
                                 .getSelectedFile());
+                        sheetNames.add(0, FIRST_SHEET);
+                        return sheetNames.toArray(new String[sheetNames.size()]);
                     } catch (Exception fnf) {
                         NodeLogger.getLogger(XLSReaderNodeDialog.class).error(
                                 fnf.getMessage(), fnf);
@@ -545,7 +555,7 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
                         // return empty list then
                     }
                 }
-                return new String[]{};
+                return new String[] {};
             }
 
             /**
@@ -586,12 +596,10 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
                 BorderFactory.createEtchedBorder(), "XL Sheet Content:"));
         m_fileTablePanel.add(m_fileTable, BorderLayout.CENTER);
         m_fileTable.getHeaderTable().setColumnName("Row No.");
-        JPanel previewBox = new JPanel();
-        previewBox.setLayout(new BorderLayout());
-        previewBox.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createEtchedBorder(),
-                "Preview with current settings:"));
-        previewBox.add(m_previewTable, BorderLayout.CENTER);
+        m_previewTablePanel.setLayout(new BorderLayout());
+        m_previewTablePanel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createEtchedBorder(), PREVIEWBORDER_MSG));
+        m_previewTablePanel.add(m_previewTable, BorderLayout.CENTER);
         m_previewUpdate.setText("refresh");
         m_previewUpdate.addActionListener(new ActionListener() {
             @Override
@@ -608,8 +616,8 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         errBox.add(m_previewMsg);
         errBox.add(Box.createHorizontalGlue());
         errBox.add(Box.createVerticalStrut(30));
-        previewBox.add(errBox, BorderLayout.NORTH);
-        viewTabs.addTab("Preview", previewBox);
+        m_previewTablePanel.add(errBox, BorderLayout.NORTH);
+        viewTabs.addTab("Preview", m_previewTablePanel);
         viewTabs.addTab("File Content", m_fileTablePanel);
 
         return viewTabs;
@@ -667,7 +675,7 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
             clearTableViews();
             return;
         }
-        if (sheet == NO_SHEET) {
+        if (sheet == SCANNING) {
             setFileTablePanelBorderTitle("still scanning input file...");
             clearTableViews();
             return;
@@ -722,11 +730,31 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
     }
 
     private void setFileTablePanelBorderTitle(final String title) {
-        Border b = m_fileTablePanel.getBorder();
-        if (b instanceof TitledBorder) {
-            TitledBorder tb = (TitledBorder)b;
-            tb.setTitle(title);
-        }
+        ViewUtils.invokeAndWaitInEDT(new Runnable() {
+            @Override
+            public void run() {
+                Border b = m_fileTablePanel.getBorder();
+                if (b instanceof TitledBorder) {
+                    TitledBorder tb = (TitledBorder)b;
+                    tb.setTitle(title);
+                    m_fileTablePanel.repaint();
+                }
+            }
+        });
+    }
+
+    private void setPreviewTablePanelBorderTitle(final String title) {
+        ViewUtils.invokeAndWaitInEDT(new Runnable() {
+            @Override
+            public void run() {
+                Border b = m_previewTablePanel.getBorder();
+                if (b instanceof TitledBorder) {
+                    TitledBorder tb = (TitledBorder)b;
+                    tb.setTitle(title);
+                    m_previewTablePanel.repaint();
+                }
+            }
+        });
     }
 
     private synchronized void invalidatePreviewTable() {
@@ -762,7 +790,7 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
             m_previewUpdate.setEnabled(true);
             return;
         }
-        if (sheet == NO_SHEET) {
+        if (sheet == SCANNING) {
             clearTableViews();
             // enable the refresh button again
             m_previewUpdate.setEnabled(true);
@@ -801,6 +829,7 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
             @Override
             protected void done() {
                 try {
+                    setPreviewTablePanelBorderTitle(PREVIEWBORDER_MSG);
                     String err = null;
                     try {
                         err = get();
@@ -817,6 +846,10 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
 
                     m_previewMsg.setText("");
                     try {
+                        String previewTxt =
+                                PREVIEWBORDER_MSG + ": "
+                                        + dt.get().getDataTableSpec().getName();
+                        setPreviewTablePanelBorderTitle(previewTxt);
                         m_previewTable.setDataTable(dt.get());
                         if (m_previewDataTable != null) {
                             m_previewDataTable.dispose();
@@ -840,7 +873,11 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
 
         s.setFileLocation(m_fileName.getSelectedFile());
 
-        s.setSheetName((String)m_sheetName.getSelectedItem());
+        String sheetName = (String)m_sheetName.getSelectedItem();
+        if (sheetName == FIRST_SHEET) {
+            sheetName = null;
+        }
+        s.setSheetName(sheetName);
 
         s.setSkipEmptyColumns(m_skipEmptyCols.isSelected());
         s.setSkipEmptyRows(m_skipEmptyRows.isSelected());
@@ -1033,7 +1070,7 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
                     "Please select a file to read from.");
         }
         String sheet = (String)m_sheetName.getSelectedItem();
-        if (sheet == NO_SHEET) {
+        if (sheet == SCANNING) {
             throw new InvalidSettingsException(
                     "Please wait until the file scanning "
                             + "finishes and select a worksheet.");

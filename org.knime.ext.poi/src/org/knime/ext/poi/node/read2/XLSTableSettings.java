@@ -96,6 +96,8 @@ public class XLSTableSettings {
 
     private final Set<Integer> m_skippedCols;
 
+    private String m_firstSheetName;
+
     public XLSTableSettings(final XLSUserSettings userSettings)
             throws InvalidSettingsException, FileNotFoundException,
             IOException, InvalidFormatException {
@@ -205,20 +207,19 @@ public class XLSTableSettings {
         if (settings.getFileLocation() == null) {
             throw new NullPointerException("File location must be set.");
         }
-        if (settings.getSheetName() == null
-                || settings.getSheetName().isEmpty()) {
-            throw new InvalidSettingsException("Sheet name must be set.");
-
-        }
 
         BufferedInputStream inp = settings.getBufferedInputStream();
 
         Workbook wb = WorkbookFactory.create(inp);
+        String sheetName = settings.getSheetName();
+        if (sheetName == null || sheetName.isEmpty()) {
+            sheetName = XLSTable.getFirstSheetNameWithData(wb);
+        }
 
-        Sheet sheet = wb.getSheet(settings.getSheetName());
+        Sheet sheet = wb.getSheet(sheetName);
         if (sheet == null) {
             throw new InvalidSettingsException("Sheet '"
-                    + settings.getSheetName() + "' not available");
+                    + sheetName + "' not available");
         }
 
         short firstColIdx = -1; // stores the cell index
@@ -320,9 +321,13 @@ public class XLSTableSettings {
         }
 
         // create a name
+        String sheetName = settings.getSheetName();
+        if (sheetName == null || sheetName.isEmpty()) {
+            sheetName = XLSTable.getFirstSheetNameWithData(
+                    settings.getFileLocation());
+        }
         String tableName =
-                settings.getSimpleFilename() + "[" + settings.getSheetName()
-                        + "]";
+                settings.getSimpleFilename() + " [" + sheetName + "]";
         return new DataTableSpec(tableName, colSpecs);
     }
 
@@ -427,7 +432,15 @@ public class XLSTableSettings {
                 new ArrayList<DataType>(Arrays.asList(new DataType[colNum]));
         skippedCols.clear();
 
-        Sheet sh = wb.getSheet(settings.getSheetName());
+        String sheetName = settings.getSheetName();
+        if (sheetName == null || sheetName.isEmpty()) {
+            try {
+                sheetName = XLSTable.getFirstSheetNameWithData(wb);
+            } catch (InvalidFormatException e) {
+                throw new IOException(e.getMessage(), e);
+            }
+        }
+        Sheet sh = wb.getSheet(sheetName);
         if (sh != null) {
             FormulaEvaluator evaluator =
                     wb.getCreationHelper().createFormulaEvaluator();
@@ -797,7 +810,20 @@ public class XLSTableSettings {
      * @return the index of the sheet to read
      */
     public String getSheetName() {
-        return m_userSettings.getSheetName();
+        String sheetName = m_userSettings.getSheetName();
+        if (sheetName == null || sheetName.isEmpty()) {
+            if (m_firstSheetName == null) {
+                try {
+                    m_firstSheetName =
+                            XLSTable.getFirstSheetNameWithData(m_userSettings
+                                    .getFileLocation());
+                } catch (Exception e) {
+                    m_firstSheetName = "<error>";
+                }
+            }
+            sheetName = m_firstSheetName;
+        }
+        return sheetName;
     }
 
     /**

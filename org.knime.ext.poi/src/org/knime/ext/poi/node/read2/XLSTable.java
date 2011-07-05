@@ -182,18 +182,76 @@ class XLSTable implements DataTable {
      * @throws IOException if an I/O error occurred
      * @throws InvalidFormatException
      */
-    public static String[] getSheetNames(final String xlsFilename)
+    public static ArrayList<String> getSheetNames(final String xlsFilename)
             throws FileNotFoundException, IOException, InvalidFormatException {
 
         BufferedInputStream inp =
                 XLSUserSettings.getBufferedInputStream(xlsFilename);
-        Workbook wb = WorkbookFactory.create(inp);
         ArrayList<String> names = new ArrayList<String>();
-        for (int sIdx = 0; sIdx < wb.getNumberOfSheets(); sIdx++) {
-            names.add(wb.getSheetName(sIdx));
+        try {
+            Workbook wb = WorkbookFactory.create(inp);
+            for (int sIdx = 0; sIdx < wb.getNumberOfSheets(); sIdx++) {
+                names.add(wb.getSheetName(sIdx));
+            }
+        } finally {
+            inp.close();
         }
-        inp.close();
-        return names.toArray(new String[names.size()]);
+        return names;
+    }
+
+    /**
+     * Returns the name of the first sheet in the file that contains data. If
+     * all sheets are empty, the name of the first sheet is returned. Returns
+     * null if not sheets are contained in the file.
+     *
+     * @param xlsFilename XLS file to examine
+     * @return the name of the first sheet containing data, or the name of the
+     * first sheet (if all sheets are empty), or null if no sheets are contained
+     * in the file.
+     * @throws FileNotFoundException
+     * @throws IOException
+     * @throws InvalidFormatException
+     */
+    public static String getFirstSheetNameWithData(final String xlsFilename)
+            throws FileNotFoundException, IOException, InvalidFormatException {
+        BufferedInputStream inp =
+                XLSUserSettings.getBufferedInputStream(xlsFilename);
+        String result = null;
+        try {
+            Workbook wb = WorkbookFactory.create(inp);
+            result = getFirstSheetNameWithData(wb);
+        } finally {
+            inp.close();
+        }
+        return result;
+    }
+    /**
+     * Same as {@link #getFirstSheetNameWithData(String)} just for Workbooks.
+     *
+     * @param wBook the workbook to examine.
+     * @return the same as {@link #getFirstSheetNameWithData(String)}
+     * @throws FileNotFoundException
+     * @throws IOException
+     * @throws InvalidFormatException
+     */
+    public static String getFirstSheetNameWithData(final Workbook wBook)
+        throws FileNotFoundException, IOException, InvalidFormatException {
+        String result = null;
+        for (int sIdx = 0; sIdx < wBook.getNumberOfSheets(); sIdx++) {
+            String sheetName = wBook.getSheetName(sIdx);
+            if (sIdx == 0) {
+                // return the first sheet, in case there is no data in the book
+                result = sheetName;
+            }
+            Sheet sheet = wBook.getSheet(sheetName);
+            int maxRowIdx = XLSTable.getLastRowIdx(sheet);
+            int minRowIdx = sheet.getFirstRowNum();
+            if (minRowIdx >= 0 && maxRowIdx >= 0 && minRowIdx <= maxRowIdx) {
+                return sheetName;
+            }
+        }
+        return result;
+
     }
 
     /**
