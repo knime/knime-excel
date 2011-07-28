@@ -304,19 +304,19 @@ class XLSIterator extends CloseableRowIterator {
             xlOffset++;
         }
 
-        RowKey key = RowKey.createRowKey(m_rowCount);
+        String key = RowKey.createRowKey(m_rowCount).getString();
         if (m_settings.getKeepXLColNames()) {
             // XL row IDs are just the row numbers (1-based)
-            key = new RowKey("" + (m_nextRowIdx + 1));
+            key = "" + (m_nextRowIdx + 1);
         } else if (m_settings.getHasRowHeaders()) {
             String xlHdr = getXLRowHdr(xlRow);
+            // if row id it empty keep the default KNIME row id style
             if (xlHdr != null && !xlHdr.isEmpty()) {
-                String rowID = xlHdr;
-                if (m_settings.getUniquifyRowIDs()) {
-                    rowID = uniquifyRowHeader(rowID);
-                }
-                key = new RowKey(rowID);
-            } // if row id it empty keep the default KNIME row id style
+                key = xlHdr;
+            }
+            if (m_settings.getUniquifyRowIDs()) {
+                key = uniquifyRowHeader(key);
+            }
         }
 
         if (m_settings.getSkipEmptyRows()) {
