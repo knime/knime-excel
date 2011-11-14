@@ -147,6 +147,8 @@ public class XLSWriterNodeModel extends NodeModel {
 
         xlsWriter.write(inData[0], exec);
 
+        outStream.close();
+
         return new BufferedDataTable[]{};
 
     }
