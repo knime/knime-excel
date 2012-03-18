@@ -62,6 +62,7 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettings;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
+import org.knime.core.util.FileUtil;
 
 /**
  *
@@ -289,8 +290,7 @@ public class XLSUserSettings {
             try {
                 URL url = new URL(m_fileLocation);
                 try {
-                    InputStream is = url.openStream();
-                    is.close();
+                    FileUtil.openStreamWithTimeout(url).close();
                 } catch (IOException ioe) {
                     return "Can't open specified location (" + m_fileLocation
                             + ")";
@@ -382,7 +382,7 @@ public class XLSUserSettings {
         InputStream in;
         try {
             URL url = new URL(location);
-            in = url.openStream();
+            in = FileUtil.openStreamWithTimeout(url);
         } catch (MalformedURLException mue) {
             // then try a file
             in = new FileInputStream(location);
