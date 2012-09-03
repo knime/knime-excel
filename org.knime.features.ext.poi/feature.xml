@@ -2,7 +2,7 @@
 <feature
       id="org.knime.features.ext.poi"
       label="KNIME XLS Support"
-      version="2.6.0.qualifier"
+      version="2.6.1.qualifier"
       provider-name="KNIME GmbH, Konstanz, Germany"
       plugin="org.knime.ext.poi">
 
@@ -740,6 +740,13 @@ propagated with or for interoperation with KNIME.
 
    <plugin
          id="org.knime.ext.poi"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.apache.poi"
          download-size="0"
          install-size="0"
          version="0.0.0"/>
