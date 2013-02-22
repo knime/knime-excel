@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE knimeNode PUBLIC "-//UNIKN//DTD KNIME Node 2.0//EN" "http://www.knime.org/Node.dtd">
-<knimeNode type="Sink" icon="./xlswriter.png" deprecated="true">
+<knimeNode type="Sink" icon="./xlswriter.png">
 	<name>XLS Writer</name>
 
 	<shortDescription>
@@ -23,16 +23,14 @@
 			selected file from the drop-down list, or select a file from
 			the &quot;Browse...&quot; dialog.
 		</option>
-		<option name="Overwrite existing file">
-			If checked, the output file will be overridden if it exists. 
-			If unchecked, the node will fail during execution in order to 
-			retain the original file and to avoid unintentional overwrite.  
-		</option>
-		<option name="Output file location">
-			Enter a valid file name. You can also choose a previously
-			selected file from the drop-down list, or select a file from
-			the &quot;Browse...&quot; dialog.
-		</option>
+        <option name="Overwrite existing file"> If checked, the output 
+            file will be overridden if it exists. If unchecked, the node will fail during 
+            execution in order to retain the original file and to avoid unintentional 
+            overwrite. </option>
+        <option name="Sheetname">
+            Name of the sheet that will be created. If left empty, the name of
+            the input table will be used.
+        </option>
 		<option name="Write column header">
 			If checked, the column names are written out in the first
 			row of the spreadsheet.
@@ -46,6 +44,16 @@
 			specified, the corresponding datacell of the spreadsheet
 			stays empty.
 		</option>
+        <option name="Open file after execution">
+            Opens the file after it has been successfully written. The file will
+            be opened in the default application of the system. This might not
+            be supported by every system.
+        </option>
+        <option name="Exclude/Include columns">
+            Select the columns that will be written in the XLS file. If the
+            columns in the input table should change, they will automatically be
+            excluded.
+        </option>
 	</fullDescription>
 
 	<ports>

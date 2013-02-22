@@ -1,0 +1,399 @@
+/*
+ * ------------------------------------------------------------------------
+ *
+ *  Copyright (C) 2003 - 2013
+ *  University of Konstanz, Germany and
+ *  KNIME GmbH, Konstanz, Germany
+ *  Website: http://www.knime.org; Email: contact@knime.org
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License, Version 3, as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, see <http://www.gnu.org/licenses>.
+ *
+ *  Additional permission under GNU GPL version 3 section 7:
+ *
+ *  KNIME interoperates with ECLIPSE solely via ECLIPSE's plug-in APIs.
+ *  Hence, KNIME and ECLIPSE are both independent programs and are not
+ *  derived from each other. Should, however, the interpretation of the
+ *  GNU GPL Version 3 ("License") under any applicable laws result in
+ *  KNIME and ECLIPSE being a combined program, KNIME GMBH herewith grants
+ *  you the additional permission to use and propagate KNIME together with
+ *  ECLIPSE with only the license terms in place for ECLIPSE applying to
+ *  ECLIPSE and the GNU GPL Version 3 applying for KNIME, provided the
+ *  license terms of ECLIPSE themselves allow for the respective use and
+ *  propagation of ECLIPSE together with KNIME.
+ *
+ *  Additional permission relating to nodes for KNIME that extend the Node
+ *  Extension (and in particular that are based on subclasses of NodeModel,
+ *  NodeDialog, and NodeView) and that only interoperate with KNIME through
+ *  standard APIs ("Nodes"):
+ *  Nodes are deemed to be separate and independent programs and to not be
+ *  covered works.  Notwithstanding anything to the contrary in the
+ *  License, the License does not apply to Nodes, you are not required to
+ *  license Nodes under the License, and you are granted a license to
+ *  prepare and propagate Nodes, in each case even if such Nodes are
+ *  propagated with or for interoperation with KNIME.  The owner of a Node
+ *  may freely choose the license terms applicable to such Node, including
+ *  when such Node is propagated with or for interoperation with KNIME.
+ * -------------------------------------------------------------------
+ *
+ * History
+ *   Mar 15, 2007 (ohl): created
+ */
+package org.knime.ext.poi.node.write2;
+
+import java.awt.Desktop;
+import java.awt.Dimension;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.ClientAnchor;
+import org.apache.poi.ss.usermodel.CreationHelper;
+import org.apache.poi.ss.usermodel.Drawing;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.xssf.usermodel.XSSFClientAnchor;
+import org.apache.poi.xssf.usermodel.XSSFShape;
+import org.knime.core.data.DataCell;
+import org.knime.core.data.DataRow;
+import org.knime.core.data.DataTable;
+import org.knime.core.data.DataTableSpec;
+import org.knime.core.data.DoubleValue;
+import org.knime.core.data.StringValue;
+import org.knime.core.data.image.png.PNGImageContent;
+import org.knime.core.data.image.png.PNGImageValue;
+import org.knime.core.node.BufferedDataTable;
+import org.knime.core.node.CanceledExecutionException;
+import org.knime.core.node.ExecutionMonitor;
+import org.knime.core.node.NodeLogger;
+
+/**
+ * 
+ * @author ohl, University of Konstanz
+ */
+public class XLSWriter {
+
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(XLSWriter.class);
+
+    /**
+     * Excel (Ver. 2003) can handle datasheets up to 64k x 256 cells!
+     */
+    private static final int MAX_NUM_OF_ROWS = 65536;
+
+    private static final int MAX_NUM_OF_COLS = 256;
+
+    /**
+     * Estimated value for pixel to value conversion.
+     */
+    private static final double PIXELS_TO_POINTS = 0.76;
+
+    /**
+     * 256 is one full character, one character has 7 pixels.
+     */
+    private static final double PIXELS_TO_CHARACTERS = 256 / 7;
+
+    private final XLSWriterSettings m_settings;
+
+    private final File m_file;
+
+    /**
+     * Creates a new writer with the specified settings.
+     * 
+     * @param file the created workbook will be written to.
+     * @param settings the settings.
+     */
+    public XLSWriter(final File file, final XLSWriterSettings settings) {
+        if (settings == null) {
+            throw new NullPointerException("Can't operate with null settings!");
+        }
+        m_file = file;
+        m_settings = settings;
+    }
+
+    /**
+     * Writes <code>table</code> with current settings.
+     * 
+     * @param table the table to write to the file
+     * @param exec an execution monitor where to check for canceled status and report progress to. (In case of
+     *            cancellation, the file will be deleted.)
+     * @throws IOException if any related I/O error occurs
+     * @throws CanceledExecutionException if execution in <code>exec</code> has been canceled
+     * @throws InvalidFormatException if the existing file is not of the correct format
+     * @throws NullPointerException if table is <code>null</code>
+     */
+    public void write(final DataTable table, final ExecutionMonitor exec) throws IOException,
+            CanceledExecutionException, InvalidFormatException {
+
+        Workbook wb;
+        if (m_file.exists()) {
+            FileInputStream inStream = new FileInputStream(m_file);
+            wb = WorkbookFactory.create(inStream);
+            inStream.close();
+        } else {
+            wb = new HSSFWorkbook();
+        }
+
+        int sheetIdx = 0; // in case the table doesn't fit in one sheet
+        String sheetName = m_settings.getSheetname();
+        if ((sheetName == null) || (sheetName.trim().length() == 0)) {
+            sheetName = table.getDataTableSpec().getName();
+        }
+        // max sheetname length is 32 incl. added running index. We cut it to 25
+        if (sheetName.length() > 25) {
+            sheetName = sheetName.substring(0, 22) + "...";
+        }
+        // replace characters like \ / * ? [ ] etc.
+        sheetName = replaceInvalidChars(sheetName);
+
+        if (!m_settings.getDoNotOverwriteSheet()) {
+            Sheet oldSheet = wb.getSheet(sheetName);
+            if (oldSheet != null) {
+                wb.removeSheetAt(wb.getSheetIndex(oldSheet));
+            }
+        }
+
+        Sheet sheet = wb.createSheet(sheetName);
+        Drawing drawing = sheet.createDrawingPatriarch();
+        CreationHelper helper = wb.getCreationHelper();
+
+        DataTableSpec inSpec = table.getDataTableSpec();
+        int numOfCols = inSpec.getNumColumns();
+        int rowHdrIncr = m_settings.writeRowID() ? 1 : 0;
+
+        if (numOfCols + rowHdrIncr > MAX_NUM_OF_COLS) {
+            LOGGER.warn("The table to write has too many columns! Can't put" + " more than " + MAX_NUM_OF_COLS
+                    + " columns in one sheet." + " Truncating columns " + (MAX_NUM_OF_COLS + 1) + " to " + numOfCols);
+            numOfCols = MAX_NUM_OF_COLS - rowHdrIncr;
+        }
+        int numOfRows = -1;
+        if (table instanceof BufferedDataTable) {
+            numOfRows = ((BufferedDataTable)table).getRowCount();
+        }
+
+        int rowIdx = 0; // the index of the row in the XLsheet
+        short colIdx = 0; // the index of the cell in the XLsheet
+
+        // write column names
+        if (m_settings.writeColHeader()) {
+
+            // Create a new row in the sheet
+            Row hdrRow = sheet.createRow(rowIdx++);
+
+            if (m_settings.writeRowID()) {
+                hdrRow.createCell(colIdx++).setCellValue("row ID");
+            }
+            for (int c = 0; c < numOfCols; c++) {
+                String cName = inSpec.getColumnSpec(c).getName();
+                hdrRow.createCell(colIdx++).setCellValue(cName);
+            }
+
+        } // end of if write column names
+
+        // Guess 80% of the job is generating the sheet, 20% is writing it out
+        ExecutionMonitor e = exec.createSubProgress(0.8);
+
+        // Get the maximum sizes of rows and columns containing images
+        Map<Integer, Integer> columnWidth = new HashMap<Integer, Integer>();
+        Map<Integer, Integer> rowHeight = new HashMap<Integer, Integer>();
+        int colHdrIncr = m_settings.writeColHeader() ? 1 : 0;
+        if (table.getDataTableSpec().containsCompatibleType(PNGImageValue.class)) {
+            int i = 0;
+            for (DataRow row : table) {
+                for (int j = 0; j < numOfCols; j++) {
+                    DataCell cell = row.getCell(j);
+                    if (!cell.isMissing() && cell.getType().isCompatible(PNGImageValue.class)) {
+                        Dimension dimension = ((PNGImageValue)cell).getImageContent().getPreferredSize();
+                        Integer currentHeight = rowHeight.get(i + colHdrIncr);
+                        Integer currentWidth = columnWidth.get(j + rowHdrIncr);
+                        if (currentHeight == null || currentHeight < dimension.height) {
+                            rowHeight.put(i + colHdrIncr, dimension.height);
+                        }
+                        if (currentWidth == null || currentWidth < dimension.width) {
+                            columnWidth.put(j + rowHdrIncr, dimension.width);
+                        }
+                    }
+                }
+                i++;
+            }
+        }
+
+        // write each row of the data
+        int rowCnt = 0;
+        for (DataRow tableRow : table) {
+
+            colIdx = 0;
+
+            // create a new sheet if the old one is full
+            if (rowIdx >= MAX_NUM_OF_ROWS) {
+                sheetIdx++;
+                sheet = wb.createSheet(sheetName + "(" + sheetIdx + ")");
+                rowIdx = 0;
+                LOGGER.info("Creating additional sheet to store entire table." + "Additional sheet name: " + sheetName
+                        + "(" + sheetIdx + ")");
+            }
+
+            // set the progress
+            String rowID = tableRow.getKey().getString();
+            String msg;
+            if (numOfRows <= 0) {
+                msg = "Writing row " + (rowCnt + 1) + " (\"" + rowID + "\")";
+            } else {
+                msg = "Writing row " + (rowCnt + 1) + " (\"" + rowID + "\") of " + numOfRows;
+                e.setProgress(rowCnt / (double)numOfRows, msg);
+            }
+            // Check if execution was canceled !
+            exec.checkCanceled();
+
+            // Create a new row in the sheet
+            Row sheetRow = sheet.createRow(rowIdx++);
+
+            // add the row id
+            if (m_settings.writeRowID()) {
+                sheetRow.createCell(colIdx++).setCellValue(rowID);
+            }
+            // now add all data cells
+            for (int c = 0; c < numOfCols; c++) {
+
+                DataCell colValue = tableRow.getCell(c);
+
+                if (colValue.isMissing()) {
+                    String miss = m_settings.getMissingPattern();
+                    if (miss != null) {
+                        sheetRow.createCell(colIdx).setCellValue(miss);
+                    }
+                } else {
+                    Cell sheetCell = sheetRow.createCell(colIdx);
+
+                    if (colValue.getType().isCompatible(DoubleValue.class)) {
+                        double val = ((DoubleValue)colValue).getDoubleValue();
+                        sheetCell.setCellValue(val);
+                    } else if (colValue.getType().isCompatible(StringValue.class)) {
+                        String val = ((StringValue)colValue).getStringValue();
+                        sheetCell.setCellValue(val);
+                    } else if (colValue.getType().isCompatible(PNGImageValue.class)) {
+                        PNGImageContent image = ((PNGImageValue)colValue).getImageContent();
+                        Dimension dimension = image.getPreferredSize();
+                        byte[] bytes = image.getByteArray();
+                        int pictureIdx = wb.addPicture(bytes, Workbook.PICTURE_TYPE_PNG);
+                        double rowRatio = (double)dimension.height / rowHeight.get(new Integer(sheetRow.getRowNum()));
+                        double columnRatio = (double)dimension.width / columnWidth.get(new Integer(colIdx));
+                        ClientAnchor anchor = createAnchor(sheetRow.getRowNum(), colIdx, rowRatio, columnRatio, helper);
+                        drawing.createPicture(anchor, pictureIdx);
+                    } else {
+                        String val = colValue.toString();
+                        sheetCell.setCellValue(val);
+                    }
+                }
+
+                colIdx++;
+            }
+            if (rowHeight.containsKey(sheetRow.getRowNum())) {
+                sheetRow.setHeightInPoints(pixelsToPoints(rowHeight.get(sheetRow.getRowNum())));
+            }
+
+            rowCnt++;
+        } // end of for all rows in table
+        for (Integer columnNumber : columnWidth.keySet()) {
+            sheet.setColumnWidth(columnNumber, pixelsToCharacters(columnWidth.get(columnNumber)));
+        }
+
+        // Write the output to a file
+        FileOutputStream outStream = new FileOutputStream(m_file);
+        wb.write(outStream);
+        outStream.close();
+        if (m_settings.getOpenFile()) {
+            if (Desktop.isDesktopSupported()) {
+                Desktop.getDesktop().open(m_file);
+            } else {
+                LOGGER.warn("Automatic opening of the file not supported");
+            }
+        }
+
+    }
+
+    private static int pixelsToCharacters(final int pixels) {
+        // added 2 margin pixels per side and 1 for the gridline
+        return (int)((pixels + 5) * PIXELS_TO_CHARACTERS);
+    }
+
+    private static int pixelsToPoints(final int pixels) {
+        return (int)(pixels * PIXELS_TO_POINTS);
+    }
+
+    /**
+     * Creates an anchor that fits to a certain cell.
+     * 
+     * 
+     * @param row Row number of the cell
+     * @param column Column number of the cell
+     * @param helper Helper that creates the anchor object
+     * @return Initialized anchor object
+     */
+    private ClientAnchor createAnchor(final int row, final int column, final double rowRatio, final double columnRatio,
+                                      final CreationHelper helper) {
+        ClientAnchor anchor = helper.createClientAnchor();
+        anchor.setAnchorType(ClientAnchor.MOVE_AND_RESIZE);
+        anchor.setCol1(column);
+        anchor.setRow1(row);
+        anchor.setCol2(column);
+        anchor.setRow2(row);
+        // need to make the image smaller than the cell so it is sortable
+        // create a margin of 1 on each side
+        if (anchor instanceof XSSFClientAnchor) {
+            // format is XSSF
+            // full cell size is 1023 width and 255 height
+            // each multiplied by XSSFShape.EMU_PER_PIXEL
+            anchor.setDx1(1);
+            anchor.setDy1(1);
+            anchor.setDx2((int)(1023 * XSSFShape.EMU_PER_PIXEL * columnRatio) - 1);
+            anchor.setDy2((int)(255 * XSSFShape.EMU_PER_PIXEL * rowRatio) - 1);
+        } else {
+            // format is HSSF
+            // full cell size is 1023 width and 255 height
+            anchor.setDx1(1);
+            anchor.setDy1(1);
+            anchor.setDx2((int)(1022 * columnRatio));
+            anchor.setDy2((int)(254 * rowRatio));
+        }
+        return anchor;
+    }
+
+    /**
+     * Replaces characters that are illegal in sheet names. These are \/:*?"<>|[].
+     * 
+     * @param name the name to clean
+     * @return returns the name with all of the above characters replaced by an underscore.
+     */
+    private String replaceInvalidChars(final String name) {
+        StringBuilder result = new StringBuilder();
+        int l = name.length();
+        for (int i = 0; i < l; i++) {
+            char c = name.charAt(i);
+            if ((c == '\\') || (c == '/') || (c == ':') || (c == '*') || (c == '?') || (c == '"') || (c == '<')
+                    || (c == '>') || (c == '|') || (c == '[') || (c == ']')) {
+                result.append('_');
+            } else {
+                result.append(c);
+            }
+        }
+        return result.toString();
+    }
+
+}

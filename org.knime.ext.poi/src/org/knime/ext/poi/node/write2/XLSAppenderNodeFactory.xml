@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE knimeNode PUBLIC "-//UNIKN//DTD KNIME Node 2.0//EN" "http://www.knime.org/Node.dtd">
+<knimeNode type="Sink" icon="./xlsappender.png">
+	<name>XLS Appender</name>
+
+	<shortDescription>
+		Saves a datatable into a spreadsheet.
+	</shortDescription>
+
+	<fullDescription>
+		<intro>
+			This node writes out the datatable coming through its input
+			port into a spreadsheet and appends it to an existing workbook.
+            If no workbook is present a new one will be created. The files can
+            be read then with other applications like Microsoft Excel, for
+			example. The maximum number of columns held by a spreadsheet
+			is 256 (all additional columns in the datatable are
+			truncated). If the input datatable has more than 65536 rows
+			it is split into multiple spreadsheets (all stored in the
+			created workbook).
+		</intro>
+		<option name="Output file location">
+			Enter a valid file name. You can also choose a previously
+			selected file from the drop-down list, or select a file from
+			the &quot;Browse...&quot; dialog.
+		</option>
+        <option name="Abort if file does not exist">
+            Abort the execution if the XLS file does not exist. If this option
+            is not selected a new file will be created.
+        </option>
+        <option name="Abort if sheet already exists">
+            If a sheet with the same name does already exist, then the execution
+            will fail. If this option is not selected the old sheet will be
+            replaced by the new one.
+        </option>
+        <option name="Sheetname">
+            Name of the sheet that will be created. If left empty, the name of
+            the input table will be used.
+        </option>
+		<option name="Write column header">
+			If checked, the column names are written out in the first
+			row of the spreadsheet.
+		</option>
+		<option name="Write row ID">
+			If checked, the row IDs are added to the output, in the
+			first column of the spreadsheet.
+		</option>
+		<option name="Missing Value Pattern">
+			Enter a pattern that is set for missing data values. If not
+			specified, the corresponding datacell of the spreadsheet
+			stays empty.
+		</option>
+        <option name="Open file after execution">
+            Opens the file after it has been successfully written. The file will
+            be opened in the default application of the system. This might not
+            be supported by every system.
+        </option>
+        <option name="Exclude/Include columns">
+            Select the columns that will be written in the XLS file. If the
+            columns in the input table should change, they will automatically be
+            excluded.
+        </option>
+	</fullDescription>
+
+	<ports>
+		<inPort index="0" name="Input table">
+			The Datatable to write out.
+		</inPort>
+	</ports>
+</knimeNode>
+
+

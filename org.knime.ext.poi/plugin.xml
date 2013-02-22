@@ -5,8 +5,12 @@
          point="org.knime.workbench.repository.nodes">
       <node
             category-path="/io/write"
-            factory-class="org.knime.ext.poi.node.write.XLSWriterNodeFactory"
-            id="org.knime.ext.poi.node.write.XLSWriterNodeFactory"/>
+            factory-class="org.knime.ext.poi.node.write2.XLSWriterNodeFactory"
+            id="org.knime.ext.poi.node.write2.XLSWriterNodeFactory"/>
+      <node
+            category-path="/io/write"
+            factory-class="org.knime.ext.poi.node.write2.XLSAppenderNodeFactory"
+            id="org.knime.ext.poi.node.write2.XLSAppenderNodeFactory"/>
       <node
             category-path="/io/read"
             expert-flag="false"
