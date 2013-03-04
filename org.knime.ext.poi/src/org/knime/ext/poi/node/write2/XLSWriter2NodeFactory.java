@@ -59,14 +59,14 @@ import org.knime.core.node.NodeView;
  * 
  * @author ohl, University of Konstanz
  */
-public class XLSWriterNodeFactory extends NodeFactory {
+public class XLSWriter2NodeFactory extends NodeFactory {
 
     /**
      * {@inheritDoc}
      */
     @Override
     protected NodeDialogPane createNodeDialogPane() {
-        return new XLSWriterNodeDialogPane(XLSNodeType.WRITER);
+        return new XLSWriter2NodeDialogPane(XLSNodeType.WRITER);
     }
 
     /**
@@ -74,7 +74,7 @@ public class XLSWriterNodeFactory extends NodeFactory {
      */
     @Override
     public NodeModel createNodeModel() {
-        return new XLSWriterNodeModel(XLSNodeType.WRITER);
+        return new XLSWriter2NodeModel(XLSNodeType.WRITER);
     }
 
     /**

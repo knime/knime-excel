@@ -27,7 +27,7 @@
             file will be overridden if it exists. If unchecked, the node will fail during 
             execution in order to retain the original file and to avoid unintentional 
             overwrite. </option>
-        <option name="Sheetname">
+        <option name="Sheet name">
             Name of the sheet that will be created. If left empty, the name of
             the input table will be used.
         </option>

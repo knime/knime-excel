@@ -66,7 +66,15 @@ import javax.swing.border.TitledBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.knime.core.data.BooleanValue;
 import org.knime.core.data.DataTableSpec;
+import org.knime.core.data.DataValue;
+import org.knime.core.data.DoubleValue;
+import org.knime.core.data.IntValue;
+import org.knime.core.data.LongValue;
+import org.knime.core.data.StringValue;
+import org.knime.core.data.date.DateAndTimeValue;
+import org.knime.core.data.image.png.PNGImageValue;
 import org.knime.core.node.FlowVariableModelButton;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeDialogPane;
@@ -78,13 +86,18 @@ import org.knime.core.node.defaultnodesettings.DialogComponentFileChooser;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.core.node.util.filter.column.DataColumnSpecFilterConfiguration;
 import org.knime.core.node.util.filter.column.DataColumnSpecFilterPanel;
+import org.knime.core.node.util.filter.column.DataTypeColumnFilter;
 import org.knime.core.node.workflow.FlowVariable;
 
 /**
  *
  * @author ohl, University of Konstanz
  */
-class XLSWriterNodeDialogPane extends NodeDialogPane {
+class XLSWriter2NodeDialogPane extends NodeDialogPane {
+
+    @SuppressWarnings("unchecked")
+    private static final Class<? extends DataValue>[] ACCEPTED_TYPES = new Class[]{StringValue.class, IntValue.class,
+            LongValue.class, DoubleValue.class, PNGImageValue.class, BooleanValue.class, DateAndTimeValue.class};
 
     private XLSNodeType m_type;
 
@@ -113,7 +126,6 @@ class XLSWriterNodeDialogPane extends NodeDialogPane {
     private final FlowVariableModelButton m_sheetnameFVM = new FlowVariableModelButton(
             createFlowVariableModel("sheetname", FlowVariable.Type.STRING));
 
-    @SuppressWarnings("unchecked")
     private final DataColumnSpecFilterPanel m_filter = new DataColumnSpecFilterPanel();
 
     /**
@@ -122,7 +134,7 @@ class XLSWriterNodeDialogPane extends NodeDialogPane {
      *
      * @param type Of what type is this node?
      */
-    public XLSWriterNodeDialogPane(final XLSNodeType type) {
+    public XLSWriter2NodeDialogPane(final XLSNodeType type) {
         m_type = type;
         JPanel tab = new JPanel();
         tab.setLayout(new BoxLayout(tab, BoxLayout.Y_AXIS));
@@ -185,7 +197,7 @@ class XLSWriterNodeDialogPane extends NodeDialogPane {
 
     private JComponent createSheetnameBox() {
         Box sheetnameBox = Box.createHorizontalBox();
-        sheetnameBox.setBorder(new TitledBorder(new EtchedBorder(), "Sheetname"));
+        sheetnameBox.setBorder(new TitledBorder(new EtchedBorder(), "Sheet name"));
         m_sheetnameFVM.getFlowVariableModel().addChangeListener(new ChangeListener() {
             @Override
             public void stateChanged(final ChangeEvent arg0) {
@@ -257,12 +269,12 @@ class XLSWriterNodeDialogPane extends NodeDialogPane {
     @Override
     protected void loadSettingsFrom(final NodeSettingsRO settings, final DataTableSpec[] specs)
             throws NotConfigurableException {
-        XLSWriterSettings newVals;
+        XLSWriter2Settings newVals;
         try {
-            newVals = new XLSWriterSettings(settings);
+            newVals = new XLSWriter2Settings(settings);
         } catch (InvalidSettingsException ise) {
             // keep the defaults.
-            newVals = new XLSWriterSettings();
+            newVals = new XLSWriter2Settings(specs[0]);
         }
         m_filename.setStringValue(newVals.getFilename());
         m_missValue.setText(newVals.getMissingPattern());
@@ -295,7 +307,7 @@ class XLSWriterNodeDialogPane extends NodeDialogPane {
             throw new InvalidSettingsException("Please specify an output" + " filename.");
         }
 
-        XLSWriterSettings vals = new XLSWriterSettings();
+        XLSWriter2Settings vals = new XLSWriter2Settings();
         vals.setFilename(m_filename.getStringValue());
         vals.setMissingPattern(m_missValue.getText());
         vals.setWriteColHeader(m_writeColHdr.isSelected());
@@ -315,7 +327,7 @@ class XLSWriterNodeDialogPane extends NodeDialogPane {
      * @return creates and returns configuration instance for column filter panel.
      */
     static DataColumnSpecFilterConfiguration createColFilterConf() {
-        return new DataColumnSpecFilterConfiguration("xlswriter2");
+        return new DataColumnSpecFilterConfiguration("xlswriter2", new DataTypeColumnFilter(ACCEPTED_TYPES));
     }
 
 }

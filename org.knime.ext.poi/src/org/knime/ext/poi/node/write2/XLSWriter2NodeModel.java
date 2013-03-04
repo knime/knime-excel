@@ -71,11 +71,11 @@ import org.knime.core.node.util.filter.column.DataColumnSpecFilterConfiguration;
  *
  * @author ohl, University of Konstanz
  */
-public class XLSWriterNodeModel extends NodeModel {
+public class XLSWriter2NodeModel extends NodeModel {
 
     private XLSNodeType m_type;
 
-    private XLSWriterSettings m_settings = null;
+    private XLSWriter2Settings m_settings = null;
 
     private DataColumnSpecFilterConfiguration m_filterConfig = null;
 
@@ -83,7 +83,7 @@ public class XLSWriterNodeModel extends NodeModel {
      * @param type Of what type is this node?
      *
      */
-    public XLSWriterNodeModel(final XLSNodeType type) {
+    public XLSWriter2NodeModel(final XLSNodeType type) {
         super(1, 0); // one input, no output
         m_type = type;
     }
@@ -94,7 +94,7 @@ public class XLSWriterNodeModel extends NodeModel {
     @Override
     protected DataTableSpec[] configure(final DataTableSpec[] inSpecs) throws InvalidSettingsException {
         if (m_settings == null) {
-            m_settings = new XLSWriterSettings();
+            m_settings = new XLSWriter2Settings();
         }
         // throws an Exception if things are not okay and sets a warning
         // message if file gets overridden.
@@ -141,7 +141,7 @@ public class XLSWriterNodeModel extends NodeModel {
     protected BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec)
             throws Exception {
         if (m_filterConfig == null) {
-            m_filterConfig = XLSWriterNodeDialogPane.createColFilterConf();
+            m_filterConfig = XLSWriter2NodeDialogPane.createColFilterConf();
         }
         File file = new File(m_settings.getFilename()).getCanonicalFile();
 
@@ -161,11 +161,11 @@ public class XLSWriterNodeModel extends NodeModel {
 
             DataTable table = inData[0];
             ColumnRearranger rearranger = new ColumnRearranger(inData[0].getDataTableSpec());
-            FilterResult filter = m_filterConfig.applyTo(table.getDataTableSpec());
-            rearranger.remove(filter.getExcludes());
+            FilterResult filter = m_filterConfig.applyTo(inData[0].getDataTableSpec());
+            rearranger.keepOnly(filter.getIncludes());
             table = exec.createColumnRearrangeTable(inData[0], rearranger, exec);
 
-            XLSWriter xlsWriter = new XLSWriter(file, m_settings);
+            XLSWriter2 xlsWriter = new XLSWriter2(file, m_settings);
 
             xlsWriter.write(table, exec);
 
@@ -191,8 +191,8 @@ public class XLSWriterNodeModel extends NodeModel {
      */
     @Override
     protected void loadValidatedSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
-        m_settings = new XLSWriterSettings(settings);
-        DataColumnSpecFilterConfiguration filterConfig = XLSWriterNodeDialogPane.createColFilterConf();
+        m_settings = new XLSWriter2Settings(settings);
+        DataColumnSpecFilterConfiguration filterConfig = XLSWriter2NodeDialogPane.createColFilterConf();
         filterConfig.loadConfigurationInModel(settings);
         m_filterConfig = filterConfig;
     }
@@ -223,7 +223,7 @@ public class XLSWriterNodeModel extends NodeModel {
             m_settings.saveSettingsTo(settings);
         }
         if (m_filterConfig == null) {
-            m_filterConfig = XLSWriterNodeDialogPane.createColFilterConf();
+            m_filterConfig = XLSWriter2NodeDialogPane.createColFilterConf();
         }
         m_filterConfig.saveConfiguration(settings);
     }
@@ -233,11 +233,11 @@ public class XLSWriterNodeModel extends NodeModel {
      */
     @Override
     protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
-        String filename = new XLSWriterSettings(settings).getFilename();
+        String filename = new XLSWriter2Settings(settings).getFilename();
         if ((filename == null) || (filename.length() == 0)) {
             throw new InvalidSettingsException("No output" + " filename specified.");
         }
-        DataColumnSpecFilterConfiguration filterConfig = XLSWriterNodeDialogPane.createColFilterConf();
+        DataColumnSpecFilterConfiguration filterConfig = XLSWriter2NodeDialogPane.createColFilterConf();
         filterConfig.loadConfigurationInModel(settings);
     }
 

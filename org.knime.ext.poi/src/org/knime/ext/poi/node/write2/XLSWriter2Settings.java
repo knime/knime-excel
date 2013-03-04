@@ -50,16 +50,17 @@
  */
 package org.knime.ext.poi.node.write2;
 
+import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 
 /**
  * Holds the settings for the XLSWriter.
- *
+ * 
  * @author ohl, University of Konstanz
  */
-public class XLSWriterSettings {
+public class XLSWriter2Settings {
 
     private static final String CFGKEY_XCELLOFFSET = "xCellOffset";
 
@@ -108,7 +109,7 @@ public class XLSWriterSettings {
     /**
      * Creates a new settings object with default settings but no filename.
      */
-    public XLSWriterSettings() {
+    public XLSWriter2Settings() {
         m_xCellOffset = 0;
         m_yCellOffset = 0;
         m_writeColHeader = false;
@@ -123,18 +124,31 @@ public class XLSWriterSettings {
     }
 
     /**
+     * Creates a new settings object with default settings but no filename.
+     * 
+     * @param spec Specification containing the input tables name
+     */
+    public XLSWriter2Settings(final DataTableSpec spec) {
+        this();
+        m_sheetname = spec.getName();
+    }
+
+    /**
      * Creates a new object with the setting values read from the specified settings object.
-     *
+     * 
      * @param settings containing the values for the writer's settings.
      * @throws InvalidSettingsException if the specified settings object contains incorrect settings.
      */
-    public XLSWriterSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
+    public XLSWriter2Settings(final NodeSettingsRO settings) throws InvalidSettingsException {
         m_xCellOffset = settings.getInt(CFGKEY_XCELLOFFSET);
         m_yCellOffset = settings.getInt(CFGKEY_YCELLOFFSET);
         m_writeColHeader = settings.getBoolean(CFGKEY_WRITECOLHDR);
         m_writeRowID = settings.getBoolean(CFGKEY_WRITEROWHDR);
         m_filename = settings.getString(CFGKEY_FILENAME);
         m_sheetname = settings.getString(CFGKEY_SHEETNAME);
+        if (m_sheetname == null || m_sheetname.length() == 0) {
+            throw new InvalidSettingsException("Please specify a sheet name.");
+        }
         m_missingPattern = settings.getString(CFGKEY_MISSINGPATTERN);
         // option added for KNIME 2.0, we use "true" as default in cases
         // where this option is not present (old KNIME 1.x flows) in order
@@ -147,7 +161,7 @@ public class XLSWriterSettings {
 
     /**
      * Saves the current values into the specified object.
-     *
+     * 
      * @param settings to write the values to.
      */
     public void saveSettingsTo(final NodeSettingsWO settings) {
@@ -264,7 +278,7 @@ public class XLSWriterSettings {
 
     /**
      * Set the overwrite ok property.
-     *
+     * 
      * @param overwriteOK The property.
      */
     public void setOverwriteOK(final boolean overwriteOK) {

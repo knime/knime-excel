@@ -33,7 +33,7 @@
             will fail. If this option is not selected the old sheet will be
             replaced by the new one.
         </option>
-        <option name="Sheetname">
+        <option name="Sheet name">
             Name of the sheet that will be created. If left empty, the name of
             the input table will be used.
         </option>

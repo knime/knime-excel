@@ -56,12 +56,14 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.ClientAnchor;
 import org.apache.poi.ss.usermodel.CreationHelper;
 import org.apache.poi.ss.usermodel.Drawing;
@@ -71,12 +73,14 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.xssf.usermodel.XSSFClientAnchor;
 import org.apache.poi.xssf.usermodel.XSSFShape;
+import org.knime.core.data.BooleanValue;
 import org.knime.core.data.DataCell;
 import org.knime.core.data.DataRow;
 import org.knime.core.data.DataTable;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DoubleValue;
 import org.knime.core.data.StringValue;
+import org.knime.core.data.date.DateAndTimeValue;
 import org.knime.core.data.image.png.PNGImageContent;
 import org.knime.core.data.image.png.PNGImageValue;
 import org.knime.core.node.BufferedDataTable;
@@ -85,12 +89,12 @@ import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeLogger;
 
 /**
- * 
+ *
  * @author ohl, University of Konstanz
  */
-public class XLSWriter {
+public class XLSWriter2 {
 
-    private static final NodeLogger LOGGER = NodeLogger.getLogger(XLSWriter.class);
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(XLSWriter2.class);
 
     /**
      * Excel (Ver. 2003) can handle datasheets up to 64k x 256 cells!
@@ -109,17 +113,17 @@ public class XLSWriter {
      */
     private static final double PIXELS_TO_CHARACTERS = 256 / 7;
 
-    private final XLSWriterSettings m_settings;
+    private final XLSWriter2Settings m_settings;
 
     private final File m_file;
 
     /**
      * Creates a new writer with the specified settings.
-     * 
+     *
      * @param file the created workbook will be written to.
      * @param settings the settings.
      */
-    public XLSWriter(final File file, final XLSWriterSettings settings) {
+    public XLSWriter2(final File file, final XLSWriter2Settings settings) {
         if (settings == null) {
             throw new NullPointerException("Can't operate with null settings!");
         }
@@ -129,7 +133,7 @@ public class XLSWriter {
 
     /**
      * Writes <code>table</code> with current settings.
-     * 
+     *
      * @param table the table to write to the file
      * @param exec an execution monitor where to check for canceled status and report progress to. (In case of
      *            cancellation, the file will be deleted.)
@@ -172,6 +176,7 @@ public class XLSWriter {
         Sheet sheet = wb.createSheet(sheetName);
         Drawing drawing = sheet.createDrawingPatriarch();
         CreationHelper helper = wb.getCreationHelper();
+        CellStyle dateStyle = wb.createCellStyle();
 
         DataTableSpec inSpec = table.getDataTableSpec();
         int numOfCols = inSpec.getNumColumns();
@@ -280,13 +285,34 @@ public class XLSWriter {
                     }
                 } else {
                     Cell sheetCell = sheetRow.createCell(colIdx);
-
                     if (colValue.getType().isCompatible(DoubleValue.class)) {
                         double val = ((DoubleValue)colValue).getDoubleValue();
                         sheetCell.setCellValue(val);
-                    } else if (colValue.getType().isCompatible(StringValue.class)) {
-                        String val = ((StringValue)colValue).getStringValue();
+                    } else if (colValue.getType().isCompatible(BooleanValue.class)) {
+                        boolean val = ((BooleanValue)colValue).getBooleanValue();
                         sheetCell.setCellValue(val);
+                    } else if (colValue.getType().isCompatible(DateAndTimeValue.class)) {
+                        DateAndTimeValue dateAndTime = (DateAndTimeValue)colValue;
+                        Calendar val = dateAndTime.getUTCCalendarClone();
+                        sheetCell.setCellValue(val);
+                        String format = "";
+                        if (dateAndTime.hasDate()) {
+                            format += "yyyy-mm-dd";
+                        }
+                        if (dateAndTime.hasDate() && dateAndTime.hasTime()) {
+                            format += "T";
+                        }
+                        if (dateAndTime.hasTime()) {
+                            format += "hh:mm:ss";
+                        }
+                        if (dateAndTime.hasTime() && dateAndTime.hasMillis()) {
+                            format += ".";
+                        }
+                        if (dateAndTime.hasMillis()) {
+                            format += "000";
+                        }
+                        dateStyle.setDataFormat(helper.createDataFormat().getFormat(format));
+                        sheetCell.setCellStyle(dateStyle);
                     } else if (colValue.getType().isCompatible(PNGImageValue.class)) {
                         PNGImageContent image = ((PNGImageValue)colValue).getImageContent();
                         Dimension dimension = image.getPreferredSize();
@@ -296,6 +322,9 @@ public class XLSWriter {
                         double columnRatio = (double)dimension.width / columnWidth.get(new Integer(colIdx));
                         ClientAnchor anchor = createAnchor(sheetRow.getRowNum(), colIdx, rowRatio, columnRatio, helper);
                         drawing.createPicture(anchor, pictureIdx);
+                    } else if (colValue.getType().isCompatible(StringValue.class)) {
+                        String val = ((StringValue)colValue).getStringValue();
+                        sheetCell.setCellValue(val);
                     } else {
                         String val = colValue.toString();
                         sheetCell.setCellValue(val);
@@ -339,8 +368,8 @@ public class XLSWriter {
 
     /**
      * Creates an anchor that fits to a certain cell.
-     * 
-     * 
+     *
+     *
      * @param row Row number of the cell
      * @param column Column number of the cell
      * @param helper Helper that creates the anchor object
@@ -377,7 +406,7 @@ public class XLSWriter {
 
     /**
      * Replaces characters that are illegal in sheet names. These are \/:*?"<>|[].
-     * 
+     *
      * @param name the name to clean
      * @return returns the name with all of the above characters replaced by an underscore.
      */

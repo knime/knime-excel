@@ -66,7 +66,7 @@ public class XLSAppenderNodeFactory extends NodeFactory {
      */
     @Override
     protected NodeDialogPane createNodeDialogPane() {
-        return new XLSWriterNodeDialogPane(XLSNodeType.APPENDER);
+        return new XLSWriter2NodeDialogPane(XLSNodeType.APPENDER);
     }
 
     /**
@@ -74,7 +74,7 @@ public class XLSAppenderNodeFactory extends NodeFactory {
      */
     @Override
     public NodeModel createNodeModel() {
-        return new XLSWriterNodeModel(XLSNodeType.APPENDER);
+        return new XLSWriter2NodeModel(XLSNodeType.APPENDER);
     }
 
     /**
