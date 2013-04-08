@@ -50,8 +50,6 @@
  */
 package org.knime.ext.poi.node.read2;
 
-import java.io.BufferedInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -60,7 +58,6 @@ import java.util.LinkedList;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.knime.core.data.DataTable;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.RowIterator;
@@ -77,23 +74,26 @@ class XLSTable implements DataTable {
     // list of all iterators to close the source, when the table is disposed of
     private final LinkedList<WeakReference<XLSIterator>> m_iterators;
 
+    private Workbook m_workbook;
+
     /**
      * Settings must contain a file name and must be run through analyze.
      *
      * @param settings settings to use for reading the XLS file.
+     * @param wb The workbook
      * @throws InvalidSettingsException if settings are invalid
-     * @throws IOException
-     * @throws FileNotFoundException
-     * @throws InvalidFormatException
+     * @throws IOException If table settings could not be instantiated
+     * @throws InvalidFormatException If table settings could not be instaniated
      */
-    XLSTable(final XLSUserSettings settings) throws InvalidSettingsException,
-            IOException, FileNotFoundException, InvalidFormatException {
+    XLSTable(final XLSUserSettings settings, final Workbook wb) throws InvalidSettingsException,
+            IOException, InvalidFormatException {
+        m_workbook = wb;
         if (settings == null) {
             throw new IllegalArgumentException(
                     "Settings with valid filename must be provided.");
         }
         m_iterators = new LinkedList<WeakReference<XLSIterator>>();
-        m_settings = new XLSTableSettings(settings);
+        m_settings = new XLSTableSettings(settings, wb);
 
     }
 
@@ -102,7 +102,8 @@ class XLSTable implements DataTable {
      *
      * @param tableSettings
      */
-    public XLSTable(final XLSTableSettings tableSettings) {
+    public XLSTable(final XLSTableSettings tableSettings, final Workbook wb) {
+        m_workbook = wb;
         if (tableSettings == null) {
             throw new IllegalArgumentException("Table settings can't be null");
         }
@@ -121,6 +122,7 @@ class XLSTable implements DataTable {
      */
     public void dispose() {
         synchronized (m_iterators) {
+            m_workbook = null;
             for (WeakReference<XLSIterator> w : m_iterators) {
                 XLSIterator i = w.get();
                 if (i != null) {
@@ -144,15 +146,13 @@ class XLSTable implements DataTable {
     public RowIterator iterator() {
         try {
             synchronized (m_iterators) {
-                XLSIterator i = new XLSIterator(m_settings);
+                XLSIterator i = new XLSIterator(m_settings, m_workbook);
                 m_iterators.add(new WeakReference<XLSIterator>(i));
                 return i;
             }
         } catch (IOException e) {
             throw new IllegalArgumentException(e);
         } catch (InvalidSettingsException e) {
-            throw new IllegalArgumentException(e);
-        } catch (InvalidFormatException e) {
             throw new IllegalArgumentException(e);
         }
     }
@@ -176,66 +176,25 @@ class XLSTable implements DataTable {
     /**
      * Returns the names of the sheets contained in the specified file.
      *
-     * @param xlsFilename the name of the file to examine
+     * @param wb The workbook
      * @return an array with sheet names
-     * @throws FileNotFoundException if the file is not there
-     * @throws IOException if an I/O error occurred
-     * @throws InvalidFormatException
      */
-    public static ArrayList<String> getSheetNames(final String xlsFilename)
-            throws FileNotFoundException, IOException, InvalidFormatException {
+    public static ArrayList<String> getSheetNames(final Workbook wb) {
 
-        BufferedInputStream inp =
-                XLSUserSettings.getBufferedInputStream(xlsFilename);
         ArrayList<String> names = new ArrayList<String>();
-        try {
-            Workbook wb = WorkbookFactory.create(inp);
-            for (int sIdx = 0; sIdx < wb.getNumberOfSheets(); sIdx++) {
-                names.add(wb.getSheetName(sIdx));
-            }
-        } finally {
-            inp.close();
+        for (int sIdx = 0; sIdx < wb.getNumberOfSheets(); sIdx++) {
+            names.add(wb.getSheetName(sIdx));
         }
         return names;
     }
 
     /**
-     * Returns the name of the first sheet in the file that contains data. If
-     * all sheets are empty, the name of the first sheet is returned. Returns
-     * null if not sheets are contained in the file.
-     *
-     * @param xlsFilename XLS file to examine
-     * @return the name of the first sheet containing data, or the name of the
-     * first sheet (if all sheets are empty), or null if no sheets are contained
-     * in the file.
-     * @throws FileNotFoundException
-     * @throws IOException
-     * @throws InvalidFormatException
-     */
-    public static String getFirstSheetNameWithData(final String xlsFilename)
-            throws FileNotFoundException, IOException, InvalidFormatException {
-        BufferedInputStream inp =
-                XLSUserSettings.getBufferedInputStream(xlsFilename);
-        String result = null;
-        try {
-            Workbook wb = WorkbookFactory.create(inp);
-            result = getFirstSheetNameWithData(wb);
-        } finally {
-            inp.close();
-        }
-        return result;
-    }
-    /**
-     * Same as {@link #getFirstSheetNameWithData(String)} just for Workbooks.
+     * Finds out the name of the first sheet in the workbook.
      *
      * @param wBook the workbook to examine.
-     * @return the same as {@link #getFirstSheetNameWithData(String)}
-     * @throws FileNotFoundException
-     * @throws IOException
-     * @throws InvalidFormatException
+     * @return the name of the first sheet
      */
-    public static String getFirstSheetNameWithData(final Workbook wBook)
-        throws FileNotFoundException, IOException, InvalidFormatException {
+    public static String getFirstSheetNameWithData(final Workbook wBook) {
         String result = null;
         for (int sIdx = 0; sIdx < wBook.getNumberOfSheets(); sIdx++) {
             String sheetName = wBook.getSheetName(sIdx);

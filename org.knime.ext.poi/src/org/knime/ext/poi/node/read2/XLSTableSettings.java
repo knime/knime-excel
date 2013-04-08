@@ -53,6 +53,7 @@ package org.knime.ext.poi.node.read2;
 import java.io.BufferedInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -98,19 +99,34 @@ public class XLSTableSettings {
 
     private String m_firstSheetName;
 
-    public XLSTableSettings(final XLSUserSettings userSettings)
+    /**
+     *
+     * @param userSettings The user settings
+     * @param wb The workbook
+     * @throws InvalidSettingsException If an exception occurs
+     * @throws FileNotFoundException If an exception occurs
+     * @throws IOException If an exception occurs
+     * @throws InvalidFormatException If an exception occurs
+     */
+    public XLSTableSettings(final XLSUserSettings userSettings, final Workbook wb)
             throws InvalidSettingsException, FileNotFoundException,
             IOException, InvalidFormatException {
-        this(userSettings, null);
+        this(userSettings, null, wb);
     }
 
     /**
      *
+     * @param userSettings The user settings
+     * @param tableSpec Specs of the table
+     * @param wb The workbook
+     * @throws InvalidSettingsException If an exception occurs
+     * @throws FileNotFoundException If an exception occurs
+     * @throws IOException If an exception occurs
+     * @throws InvalidFormatException If an exception occurs
      */
     public XLSTableSettings(final XLSUserSettings userSettings,
-            final DataTableSpec tableSpec) throws InvalidSettingsException,
+            final DataTableSpec tableSpec, final Workbook wb) throws InvalidSettingsException,
             FileNotFoundException, IOException, InvalidFormatException {
-
         String errMsg = userSettings.getStatus(false);
         if (errMsg != null) {
             throw new IllegalArgumentException(errMsg);
@@ -130,20 +146,18 @@ public class XLSTableSettings {
         if (m_userSettings.getLastColumn() < 0
                 || m_userSettings.getLastRow() < 0) {
             // if bounds are not user set - figure them out
-            setMinMaxColumnAndRow(m_userSettings);
+            setMinMaxColumnAndRow(m_userSettings, wb);
         }
 
         // this analyzes the types of the columns
         HashSet<Integer> skippedcols = new HashSet<Integer>();
         if (tableSpec == null) {
-            m_spec = createSpec(m_userSettings, skippedcols);
+            m_spec = createSpec(m_userSettings, skippedcols, wb);
         } else {
             m_spec = tableSpec;
         }
         m_skippedCols = new HashSet<Integer>();
-        if (skippedcols != null) {
-            m_skippedCols.addAll(skippedcols);
-        }
+        m_skippedCols.addAll(skippedcols);
     }
 
     /**
@@ -198,7 +212,8 @@ public class XLSTableSettings {
      * @throws FileNotFoundException
      * @throws InvalidFormatException
      */
-    private static void setMinMaxColumnAndRow(final XLSUserSettings settings)
+    private static void setMinMaxColumnAndRow(final XLSUserSettings settings,
+                                              final Workbook wb)
             throws InvalidSettingsException, IOException,
             FileNotFoundException, InvalidFormatException {
         if (settings == null) {
@@ -208,9 +223,6 @@ public class XLSTableSettings {
             throw new NullPointerException("File location must be set.");
         }
 
-        BufferedInputStream inp = settings.getBufferedInputStream();
-
-        Workbook wb = WorkbookFactory.create(inp);
         String sheetName = settings.getSheetName();
         if (sheetName == null || sheetName.isEmpty()) {
             sheetName = XLSTable.getFirstSheetNameWithData(wb);
@@ -289,8 +301,6 @@ public class XLSTableSettings {
                 }
             }
         }
-
-        inp.close();
     }
 
     /**
@@ -301,14 +311,14 @@ public class XLSTableSettings {
      * @throws InvalidFormatException
      */
     private static DataTableSpec createSpec(final XLSUserSettings settings,
-            final Set<Integer> skippedCols) throws InvalidSettingsException,
+            final Set<Integer> skippedCols, final Workbook wb) throws InvalidSettingsException,
             IOException, InvalidFormatException {
 
         ArrayList<DataType> columnTypes =
-                analyzeColumnTypes(settings, skippedCols);
+                analyzeColumnTypes(settings, skippedCols, wb);
 
         int numOfCols = columnTypes.size();
-        String[] colHdrs = createColHeaders(settings, numOfCols, skippedCols);
+        String[] colHdrs = createColHeaders(settings, numOfCols, skippedCols, wb);
         assert colHdrs.length == numOfCols;
 
         DataColumnSpec[] colSpecs = new DataColumnSpec[numOfCols];
@@ -323,8 +333,7 @@ public class XLSTableSettings {
         // create a name
         String sheetName = settings.getSheetName();
         if (sheetName == null || sheetName.isEmpty()) {
-            sheetName = XLSTable.getFirstSheetNameWithData(
-                    settings.getFileLocation());
+            sheetName = XLSTable.getFirstSheetNameWithData(wb);
         }
         String tableName =
                 settings.getSimpleFilename() + " [" + sheetName + "]";
@@ -335,12 +344,12 @@ public class XLSTableSettings {
      * Either reads the column names from the sheet, of generates new ones.
      */
     private static String[] createColHeaders(final XLSUserSettings settings,
-            final int numOfCols, final Set<Integer> skippedCols)
+            final int numOfCols, final Set<Integer> skippedCols, final Workbook wb)
             throws InvalidSettingsException {
 
         String[] result = null;
         if (settings.getHasColHeaders() && !settings.getKeepXLColNames()) {
-            result = readColumnHeaders(settings, numOfCols, skippedCols);
+            result = readColumnHeaders(settings, numOfCols, skippedCols, wb);
         }
         if (result == null) {
             result = new String[numOfCols];
@@ -391,7 +400,8 @@ public class XLSTableSettings {
      * @throws InvalidFormatException
      */
     private static ArrayList<DataType> analyzeColumnTypes(
-            final XLSUserSettings settings, final Set<Integer> skippedCols)
+            final XLSUserSettings settings, final Set<Integer> skippedCols,
+            final Workbook wb)
             throws IOException, InvalidSettingsException,
             InvalidFormatException {
 
@@ -402,13 +412,7 @@ public class XLSTableSettings {
             throw new NullPointerException("File location must be set.");
         }
 
-        BufferedInputStream inp = settings.getBufferedInputStream();
-        try {
-            Workbook wb = WorkbookFactory.create(inp);
             return setColumnTypes(wb, settings, skippedCols);
-        } finally {
-            inp.close();
-        }
 
     }
 
@@ -416,11 +420,10 @@ public class XLSTableSettings {
      * Traverses the specified sheet in the file and detects the type for all
      * columns in the sheets.
      *
-     * @param settings
-     * @param resultSettings
-     * @param skipEmtpyCols
-     * @param skipHiddenCols
-     * @throws IOException
+     * @param wb The workbook
+     * @param settings The user settings
+     * @param skippedCols The skipped columns
+     * @throws IOException If an exception occurs
      */
     private static ArrayList<DataType> setColumnTypes(final Workbook wb,
             final XLSUserSettings settings, final Set<Integer> skippedCols)
@@ -434,11 +437,7 @@ public class XLSTableSettings {
 
         String sheetName = settings.getSheetName();
         if (sheetName == null || sheetName.isEmpty()) {
-            try {
-                sheetName = XLSTable.getFirstSheetNameWithData(wb);
-            } catch (InvalidFormatException e) {
-                throw new IOException(e.getMessage(), e);
-            }
+            sheetName = XLSTable.getFirstSheetNameWithData(wb);
         }
         Sheet sh = wb.getSheet(sheetName);
         if (sh != null) {
@@ -694,7 +693,7 @@ public class XLSTableSettings {
      * @throws InvalidSettingsException if settings are invalid
      */
     private static String[] readColumnHeaders(final XLSUserSettings settings,
-            final int numOfCols, final Set<Integer> skippedCols)
+            final int numOfCols, final Set<Integer> skippedCols, final Workbook wb)
             throws InvalidSettingsException {
 
         String[] result = new String[numOfCols];
@@ -712,7 +711,7 @@ public class XLSTableSettings {
 
             // analyze the file and set the table spec
             XLSTableSettings tableSettings =
-                    new XLSTableSettings(colHdrSettings);
+                    new XLSTableSettings(colHdrSettings, wb);
 
             // now use the settings to read the header row
             colHdrSettings.setHasColHeaders(false);
@@ -738,7 +737,7 @@ public class XLSTableSettings {
             XLSTableSettings tableS =
                     new XLSTableSettings(colHdrSettings, new DataTableSpec(
                             colSpecs), tableSettings.m_skippedCols);
-            XLSTable table = new XLSTable(tableS);
+            XLSTable table = new XLSTable(tableS, wb);
             RowIterator iterator = table.iterator();
             DataRow row = null;
             if (iterator.hasNext()) {
@@ -807,16 +806,43 @@ public class XLSTableSettings {
     }
 
     /**
+     * Loads a workbook from the file system.
+     *
+     * @param path Path to the workbook
+     * @return The workbook or null if it could not be loaded
+     */
+    public static Workbook getWorkbook(final String path) {
+        Workbook workbook = null;
+        InputStream in = null;
+        try {
+            in = XLSTableSettings.getBufferedInputStream(path);
+            // This should be the only place in the code where a workbook gets loaded
+            workbook = WorkbookFactory.create(in);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        } finally {
+            if (in != null) {
+                try {
+                    in.close();
+                } catch (IOException e2) {
+                    // ignore
+                }
+            }
+        }
+        return workbook;
+    }
+
+    /**
+     * @param wb The workbook
      * @return the index of the sheet to read
      */
-    public String getSheetName() {
+    public String getSheetName(final Workbook wb) {
         String sheetName = m_userSettings.getSheetName();
         if (sheetName == null || sheetName.isEmpty()) {
             if (m_firstSheetName == null) {
                 try {
                     m_firstSheetName =
-                            XLSTable.getFirstSheetNameWithData(m_userSettings
-                                    .getFileLocation());
+                            XLSTable.getFirstSheetNameWithData(wb);
                 } catch (Exception e) {
                     m_firstSheetName = "<error>";
                 }

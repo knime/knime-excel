@@ -91,6 +91,7 @@ import javax.swing.event.ChangeListener;
 import javax.swing.plaf.basic.BasicComboBoxRenderer;
 
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.knime.core.data.DataTable;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.InvalidSettingsException;
@@ -161,6 +162,10 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
     private final JRadioButton m_formulaStringCell = new JRadioButton();
 
     private final JTextField m_formulaErrPattern = new JTextField();
+
+    private Workbook m_workbook = null;
+
+    private String m_workbookPath = null;
 
     private static final int LEFT_INDENT = 25;
 
@@ -518,7 +523,8 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
     }
 
     private void fileNameChanged() {
-
+        // Refresh the workbook when the selected file changed
+        refreshWorkbook(m_fileName.getSelectedFile());
         if (m_loading.get()) {
             return;
         }
@@ -547,8 +553,7 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
                 if (file != null && !file.isEmpty()) {
                     m_fileAccessError = null;
                     try {
-                        ArrayList<String> sheetNames = XLSTable.getSheetNames(m_fileName
-                                .getSelectedFile());
+                        ArrayList<String> sheetNames = XLSTable.getSheetNames(m_workbook);
                         sheetNames.add(0, FIRST_SHEET);
                         return sheetNames.toArray(new String[sheetNames.size()]);
                     } catch (Exception fnf) {
@@ -694,8 +699,8 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
             protected String doInBackground() throws Exception {
                 XLSUserSettings s;
                 try {
-                    s = createFileviewSettings(file, sheet);
-                    dt.set(new XLSTable(s));
+                    s = createFileviewSettings(file, sheet, m_workbook);
+                    dt.set(new XLSTable(s, m_workbook));
                     return "Content of XL sheet: " + sheet;
                 } catch (Throwable t) {
                     NodeLogger.getLogger(XLSReaderNodeDialog.class).debug(
@@ -815,7 +820,7 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
                 XLSUserSettings s;
                 try {
                     s = createSettingsFromComponents();
-                    dt.set(new XLSTable(s));
+                    dt.set(new XLSTable(s, m_workbook));
                 } catch (Throwable t) {
                     String msg = t.getMessage();
                     if (msg == null || msg.isEmpty()) {
@@ -1117,6 +1122,8 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
             } catch (InvalidSettingsException e) {
                 s = new XLSUserSettings();
             }
+            // Get the workbook when dialog is opened
+            refreshWorkbook(s.getFileLocation());
             transferSettingsIntoComponents(s);
         } finally {
             m_loading.set(false);
@@ -1140,7 +1147,7 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
      * @throws InvalidFormatException
      */
     private static XLSUserSettings createFileviewSettings(
-            final String fileName, final String sheetName)
+            final String fileName, final String sheetName, final Workbook wb)
             throws InvalidSettingsException, FileNotFoundException,
             IOException, InvalidFormatException {
         if (fileName == null || fileName.isEmpty()) {
@@ -1162,7 +1169,7 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         result.setKeepXLNames(true);
         result.setReadAllData(true);
 
-        XLSTableSettings tableSettings = new XLSTableSettings(result);
+        XLSTableSettings tableSettings = new XLSTableSettings(result, wb);
 
         // lets display at least 10 columns
         int colNum =
@@ -1198,6 +1205,27 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
 
             }
         });
+    }
+
+    private void refreshWorkbook(final String path) {
+        if (!path.equals(m_workbookPath)) {
+            m_workbook = XLSTableSettings.getWorkbook(path);
+            m_workbookPath = path;
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void onClose() {
+        // Remove references to XLSTable, that holds a reference to the workbook
+        clearTableViews();
+        // Remove own reference to the workbook
+        m_workbook = null;
+        m_workbookPath = null;
+        // Now the garbage collector should be able to collect the workbook object
+        super.onClose();
     }
 
 }

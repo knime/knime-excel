@@ -55,6 +55,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+import org.apache.poi.ss.usermodel.Workbook;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
@@ -221,7 +222,9 @@ public class XLSReaderNodeModel extends NodeModel {
             LOGGER.debug("Building DTS during configure...");
             XLSTableSettings s;
             try {
-                s = new XLSTableSettings(m_settings);
+                // Configure is an isolated call so do not keep the workbook in memory
+                Workbook wb = XLSTableSettings.getWorkbook(m_settings.getFileLocation());
+                s = new XLSTableSettings(m_settings, wb);
             } catch (Exception e) {
                 String execMsg = e.getMessage();
                 if (execMsg == null) {
@@ -241,8 +244,9 @@ public class XLSReaderNodeModel extends NodeModel {
     @Override
     protected BufferedDataTable[] execute(final BufferedDataTable[] inData,
             final ExecutionContext exec) throws Exception {
-
-        XLSTable table = new XLSTable(m_settings);
+        // Execute is an isolated call so do not keep the workbook in memory
+        Workbook wb = XLSTableSettings.getWorkbook(m_settings.getFileLocation());
+        XLSTable table = new XLSTable(m_settings, wb);
         return new BufferedDataTable[]{exec
                 .createBufferedDataTable(table, exec)};
 

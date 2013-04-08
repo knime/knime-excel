@@ -50,7 +50,6 @@
  */
 package org.knime.ext.poi.node.read2;
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.text.Format;
 import java.util.Date;
@@ -59,7 +58,6 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellValue;
 import org.apache.poi.ss.usermodel.DataFormatter;
@@ -68,7 +66,6 @@ import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.knime.core.data.DataCell;
 import org.knime.core.data.DataRow;
 import org.knime.core.data.DataTableSpec;
@@ -108,8 +105,6 @@ class XLSIterator extends CloseableRowIterator {
 
     private final DataTableSpec m_spec;
 
-    private BufferedInputStream m_fileStream;
-
     private Workbook m_workBook;
 
     private Sheet m_currentSheet;
@@ -131,20 +126,19 @@ class XLSIterator extends CloseableRowIterator {
      * Iterator for XLS reader table.
      *
      * @param settings with the settings from the analyzer
+     * @param wb The workbook
      * @throws IOException if the file specified in the settings is not
      *             accessible
      * @throws InvalidSettingsException if settings are invalid
-     * @throws InvalidFormatException
      */
-    XLSIterator(final XLSTableSettings settings) throws IOException,
-            InvalidSettingsException, InvalidFormatException {
+    XLSIterator(final XLSTableSettings settings, final Workbook wb)
+            throws IOException, InvalidSettingsException {
         m_settings = settings;
 
         m_spec = m_settings.getDataTableSpec();
 
-        m_fileStream = settings.getBufferedInputStream();
-        m_workBook = WorkbookFactory.create(m_fileStream);
-        m_currentSheet = m_workBook.getSheet(m_settings.getSheetName());
+        m_workBook = wb;
+        m_currentSheet = m_workBook.getSheet(m_settings.getSheetName(wb));
         m_evaluator = m_workBook.getCreationHelper().createFormulaEvaluator();
 
         m_nextRowIdx = -1;
@@ -162,7 +156,10 @@ class XLSIterator extends CloseableRowIterator {
      */
     @Override
     public void close() {
-        closeStream();
+        // we don't read from the sheet anymore
+        m_workBook = null;
+        m_currentSheet = null;
+        m_evaluator = null;
     }
 
     /**
@@ -170,23 +167,8 @@ class XLSIterator extends CloseableRowIterator {
      */
     @Override
     protected void finalize() throws Throwable {
-        closeStream();
+        close();
         super.finalize();
-    }
-
-    private void closeStream() {
-        if (m_fileStream != null) {
-            try {
-                m_fileStream.close();
-            } catch (IOException e) {
-                // then don't close it
-            }
-            // we don't read from the sheet anymore
-            m_workBook = null;
-            m_currentSheet = null;
-            m_evaluator = null;
-            m_fileStream = null;
-        }
     }
 
     /**
@@ -199,7 +181,7 @@ class XLSIterator extends CloseableRowIterator {
         Row nextXLrow = null;
 
         if (m_currentSheet == null) {
-            closeStream();
+            close();
             return;
         }
 
@@ -207,12 +189,12 @@ class XLSIterator extends CloseableRowIterator {
             m_nextRowIdx++;
             if (m_nextRowIdx > XLSTable.getLastRowIdx(m_currentSheet)) {
                 // end of data in the sheet
-                closeStream();
+                close();
                 return;
             }
             if (m_nextRowIdx > m_settings.getLastRow()) {
                 // beyond range selected by user
-                closeStream();
+                close();
                 return;
             }
             if (m_settings.getHasColHeaders()
@@ -258,7 +240,7 @@ class XLSIterator extends CloseableRowIterator {
             // no next row after an exception
             m_nextRow = null;
             m_exception.set(null);
-            closeStream();
+            close();
             throw t;
         }
 
@@ -381,7 +363,7 @@ class XLSIterator extends CloseableRowIterator {
             } else {
                 throw new IllegalStateException(
                         "Invalid cell type in column idx " + colIdx
-                                + ", sheet '" + m_settings.getSheetName()
+                                + ", sheet '" + m_settings.getSheetName(m_workBook)
                                 + "', row " + cell.getRowIndex());
             }
         case Cell.CELL_TYPE_ERROR:
@@ -392,7 +374,7 @@ class XLSIterator extends CloseableRowIterator {
                     throw new IllegalStateException(
                             "Invalid cell type for error cell in column idx "
                                     + colIdx + ", sheet '"
-                                    + m_settings.getSheetName() + "', row "
+                                    + m_settings.getSheetName(m_workBook) + "', row "
                                     + cell.getRowIndex());
                 }
             } else {
@@ -418,7 +400,7 @@ class XLSIterator extends CloseableRowIterator {
                 if (m_printedEvalError < 3) {
                     LOGGER.error("Unable to evaluate formula! Inserting "
                             + insMsg + ". (In sheet '"
-                            + m_settings.getSheetName() + "', row "
+                            + m_settings.getSheetName(m_workBook) + "', row "
                             + cell.getRowIndex() + ", column " + colIdx + ".)",
                             e);
                     m_printedEvalError++;
@@ -429,7 +411,7 @@ class XLSIterator extends CloseableRowIterator {
                 if (!expectedType.isASuperTypeOf(errCell.getType())) {
                     throw new IllegalStateException(
                             "Invalid cell type in column idx " + colIdx
-                                    + ", sheet '" + m_settings.getSheetName()
+                                    + ", sheet '" + m_settings.getSheetName(m_workBook)
                                     + "', row " + cell.getRowIndex());
                 }
                 return errCell;
@@ -442,7 +424,7 @@ class XLSIterator extends CloseableRowIterator {
                 } else {
                     throw new IllegalStateException(
                             "Invalid cell type in column idx " + colIdx
-                                    + ", sheet '" + m_settings.getSheetName()
+                                    + ", sheet '" + m_settings.getSheetName(m_workBook)
                                     + "', row " + cell.getRowIndex());
                 }
             case Cell.CELL_TYPE_NUMERIC:
@@ -455,7 +437,7 @@ class XLSIterator extends CloseableRowIterator {
                         throw new IllegalStateException(
                                 "Invalid cell type in column idx " + colIdx
                                         + " (expected Date), sheet '"
-                                        + m_settings.getSheetName() + "', row "
+                                        + m_settings.getSheetName(m_workBook) + "', row "
                                         + cell.getRowIndex());
                     }
                 } else if (expectedType.isCompatible(IntValue.class)) {
@@ -466,7 +448,7 @@ class XLSIterator extends CloseableRowIterator {
                         throw new IllegalStateException(
                                 "Invalid cell type in column idx " + colIdx
                                         + " (is Double, expected Int), sheet '"
-                                        + m_settings.getSheetName() + "', row "
+                                        + m_settings.getSheetName(m_workBook) + "', row "
                                         + cell.getRowIndex());
                     }
                 } else if (expectedType.isCompatible(DoubleValue.class)) {
@@ -483,7 +465,7 @@ class XLSIterator extends CloseableRowIterator {
                 } else {
                     throw new IllegalStateException(
                             "Invalid cell type in column idx " + colIdx
-                                    + ", sheet '" + m_settings.getSheetName()
+                                    + ", sheet '" + m_settings.getSheetName(m_workBook)
                                     + "', row " + cell.getRowIndex());
                 }
             case Cell.CELL_TYPE_STRING:
@@ -497,7 +479,7 @@ class XLSIterator extends CloseableRowIterator {
                 } else {
                     throw new IllegalStateException(
                             "Invalid cell type in column idx " + colIdx
-                                    + ", sheet '" + m_settings.getSheetName()
+                                    + ", sheet '" + m_settings.getSheetName(m_workBook)
                                     + "', row " + cell.getRowIndex());
                 }
             case Cell.CELL_TYPE_BLANK:
@@ -510,7 +492,7 @@ class XLSIterator extends CloseableRowIterator {
                         throw new IllegalStateException(
                                 "Invalid type for error cell in column idx "
                                         + colIdx + ", sheet '"
-                                        + m_settings.getSheetName() + "', row "
+                                        + m_settings.getSheetName(m_workBook) + "', row "
                                         + cell.getRowIndex());
                     }
                 } else {
@@ -519,7 +501,7 @@ class XLSIterator extends CloseableRowIterator {
             case Cell.CELL_TYPE_FORMULA:
                 throw new IllegalStateException(
                         "Invalid formula result type in column idx " + colIdx
-                                + ", sheet '" + m_settings.getSheetName()
+                                + ", sheet '" + m_settings.getSheetName(m_workBook)
                                 + "', row " + cell.getRowIndex());
             }
         case Cell.CELL_TYPE_NUMERIC:
@@ -532,7 +514,7 @@ class XLSIterator extends CloseableRowIterator {
                     throw new IllegalStateException(
                             "Invalid cell type in column idx " + colIdx
                                     + " (expected Date), sheet '"
-                                    + m_settings.getSheetName() + "', row "
+                                    + m_settings.getSheetName(m_workBook) + "', row "
                                     + cell.getRowIndex());
                 }
             } else if (expectedType.isCompatible(IntValue.class)) {
@@ -543,7 +525,7 @@ class XLSIterator extends CloseableRowIterator {
                     throw new IllegalStateException(
                             "Invalid cell type in column idx " + colIdx
                                     + " (is Double, expected Int), sheet '"
-                                    + m_settings.getSheetName() + "', row "
+                                    + m_settings.getSheetName(m_workBook) + "', row "
                                     + cell.getRowIndex());
                 }
             } else if (expectedType.isCompatible(DoubleValue.class)) {
@@ -560,7 +542,7 @@ class XLSIterator extends CloseableRowIterator {
             } else {
                 throw new IllegalStateException(
                         "Invalid cell type in column idx " + colIdx
-                                + ", sheet '" + m_settings.getSheetName()
+                                + ", sheet '" + m_settings.getSheetName(m_workBook)
                                 + "', row " + cell.getRowIndex());
             }
         case Cell.CELL_TYPE_STRING:
@@ -574,12 +556,12 @@ class XLSIterator extends CloseableRowIterator {
             } else {
                 throw new IllegalStateException(
                         "Invalid cell type in column idx " + colIdx
-                                + ", sheet '" + m_settings.getSheetName()
+                                + ", sheet '" + m_settings.getSheetName(m_workBook)
                                 + "', row " + cell.getRowIndex());
             }
         default:
             throw new IllegalStateException("Invalid cell type in column idx "
-                    + colIdx + ", sheet '" + m_settings.getSheetName()
+                    + colIdx + ", sheet '" + m_settings.getSheetName(m_workBook)
                     + "', row " + cell.getRowIndex());
         }
 
