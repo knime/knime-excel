@@ -17,6 +17,11 @@
             factory-class="org.knime.ext.poi.node.read2.XLSReaderNodeFactory"
             id="org.knime.ext.poi.node.read.XLSReaderNodeFactory">
       </node>
+      <node
+            category-path="/io/read"
+            factory-class="org.knime.ext.poi.node.readsheets.XLSSheetReaderNodeFactory"
+            id="org.knime.ext.poi.node.readsheets.XLSSheetReaderNodeFactory">
+      </node>
    </extension>
      <extension
            point="org.knime.workbench.repository.registeredFileExtensions">
