@@ -47,6 +47,9 @@
  */
 package org.knime.ext.poi;
 
+import java.io.File;
+
+import org.apache.poi.util.TempFile;
 import org.eclipse.core.runtime.Plugin;
 import org.osgi.framework.BundleContext;
 
@@ -93,6 +96,18 @@ public class POIActivator extends Plugin {
      */
     public static POIActivator getDefault() {
         return plugin;
+    }
+
+    /**
+     * This method currently creates the temp dir for POI and sets the write permissions to everyone, so that multiple
+     * users can use POI at the same time.
+     */
+    public static void mkTmpDirRW_Bug3301() {
+        // Create
+        File tmpFile = TempFile.createTempFile("erase", "me");
+        tmpFile.delete();
+        File tmpDir = tmpFile.getParentFile();
+        tmpDir.setWritable(true, false);
     }
 
 }
