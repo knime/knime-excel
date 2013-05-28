@@ -54,19 +54,11 @@ import org.knime.core.node.ContextAwareNodeFactory;
 import org.knime.core.node.NodeCreationContext;
 import org.knime.core.node.NodeDialogPane;
 import org.knime.core.node.NodeView;
-import org.knime.ext.poi.POIActivator;
 
 /**
  * @author Patrick Winter, KNIME.com, Zurich, Switzerland
  */
 public class XLSSheetReaderNodeFactory extends ContextAwareNodeFactory<XLSSheetReaderNodeModel> {
-
-    /**
-     * Initialize the POI library.
-     */
-    public XLSSheetReaderNodeFactory() {
-        POIActivator.mkTmpDirRW_Bug3301();
-    }
 
     /**
      * {@inheritDoc}

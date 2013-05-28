@@ -54,20 +54,12 @@ import org.knime.core.node.NodeDialogPane;
 import org.knime.core.node.NodeFactory;
 import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeView;
-import org.knime.ext.poi.POIActivator;
 
 /**
  *
  * @author ohl, University of Konstanz
  */
 public class XLSAppenderNodeFactory extends NodeFactory {
-
-    /**
-     * Initialize the POI library.
-     */
-    public XLSAppenderNodeFactory() {
-        POIActivator.mkTmpDirRW_Bug3301();
-    }
 
     /**
      * {@inheritDoc}

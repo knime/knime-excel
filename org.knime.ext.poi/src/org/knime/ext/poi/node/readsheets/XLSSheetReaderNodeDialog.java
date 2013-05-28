@@ -63,6 +63,7 @@ import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.util.FilesHistoryPanel;
+import org.knime.ext.poi.POIActivator;
 
 /**
  * The dialog to the XLS sheet reader.
@@ -77,6 +78,7 @@ public class XLSSheetReaderNodeDialog extends NodeDialogPane {
      * Creates the dialog with its components.
      */
     public XLSSheetReaderNodeDialog() {
+        POIActivator.mkTmpDirRW_Bug3301();
         JPanel dlgTab = new JPanel();
         dlgTab.setLayout(new BoxLayout(dlgTab, BoxLayout.Y_AXIS));
         JComponent fileBox = getFileBox();

@@ -104,6 +104,7 @@ import org.knime.core.node.config.Config;
 import org.knime.core.node.tableview.TableView;
 import org.knime.core.node.util.FilesHistoryPanel;
 import org.knime.core.node.util.ViewUtils;
+import org.knime.ext.poi.POIActivator;
 
 /**
  * The dialog to the XLS reader.
@@ -191,6 +192,7 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
      *
      */
     public XLSReaderNodeDialog() {
+        POIActivator.mkTmpDirRW_Bug3301();
 
         JPanel dlgTab = new JPanel();
         dlgTab.setLayout(new BoxLayout(dlgTab, BoxLayout.Y_AXIS));

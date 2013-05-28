@@ -67,6 +67,7 @@ import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
+import org.knime.ext.poi.POIActivator;
 
 /**
  *
@@ -88,6 +89,7 @@ public class XLSReaderNodeModel extends NodeModel {
      */
     public XLSReaderNodeModel() {
         super(0, 1);
+        POIActivator.mkTmpDirRW_Bug3301();
     }
 
     XLSReaderNodeModel(final NodeCreationContext context) {
