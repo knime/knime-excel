@@ -104,6 +104,7 @@ import org.knime.core.node.config.Config;
 import org.knime.core.node.tableview.TableView;
 import org.knime.core.node.util.FilesHistoryPanel;
 import org.knime.core.node.util.ViewUtils;
+import org.knime.core.util.SwingWorkerWithContext;
 import org.knime.ext.poi.POIActivator;
 
 /**
@@ -547,10 +548,10 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
      */
     private void updateSheetListAndSelect(final String sheetName) {
         m_sheetName.setModel(new DefaultComboBoxModel(new Object[]{SCANNING}));
-        SwingWorker<String[], Object> sw = new SwingWorker<String[], Object>() {
+        SwingWorker<String[], Object> sw = new SwingWorkerWithContext<String[], Object>() {
 
             @Override
-            protected String[] doInBackground() throws Exception {
+            protected String[] doInBackgroundWithContext() throws Exception {
                 String file = m_fileName.getSelectedFile();
                 if (file != null && !file.isEmpty()) {
                     m_fileAccessError = null;
@@ -572,7 +573,7 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
              * {@inheritDoc}
              */
             @Override
-            protected void done() {
+            protected void doneWithContext() {
                 String[] names = new String[]{};
                 try {
                     names = get();
@@ -696,9 +697,9 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         }
         final AtomicReference<XLSTable> dt =
                 new AtomicReference<XLSTable>(null);
-        SwingWorker<String, Object> sw = new SwingWorker<String, Object>() {
+        SwingWorker<String, Object> sw = new SwingWorkerWithContext<String, Object>() {
             @Override
-            protected String doInBackground() throws Exception {
+            protected String doInBackgroundWithContext() throws Exception {
                 XLSUserSettings s;
                 try {
                     s = createFileviewSettings(file, sheet, m_workbook);
@@ -717,7 +718,7 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
              * {@inheritDoc}
              */
             @Override
-            protected void done() {
+            protected void doneWithContext() {
                 String msg;
                 try {
                     msg = get();
@@ -816,9 +817,9 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         final AtomicReference<XLSTable> dt =
                 new AtomicReference<XLSTable>(null);
 
-        SwingWorker<String, Object> sw = new SwingWorker<String, Object>() {
+        SwingWorker<String, Object> sw = new SwingWorkerWithContext<String, Object>() {
             @Override
-            protected String doInBackground() throws Exception {
+            protected String doInBackgroundWithContext() throws Exception {
                 XLSUserSettings s;
                 try {
                     s = createSettingsFromComponents();
@@ -837,7 +838,7 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
              * {@inheritDoc}
              */
             @Override
-            protected void done() {
+            protected void doneWithContext() {
                 try {
                     setPreviewTablePanelBorderTitle(PREVIEWBORDER_MSG);
                     String err = null;
