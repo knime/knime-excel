@@ -81,6 +81,7 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
+import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import javax.swing.SwingWorker;
@@ -102,6 +103,7 @@ import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.config.Config;
 import org.knime.core.node.tableview.TableView;
+import org.knime.core.node.util.ConvenienceMethods;
 import org.knime.core.node.util.FilesHistoryPanel;
 import org.knime.core.node.util.ViewUtils;
 import org.knime.core.util.SwingWorkerWithContext;
@@ -218,7 +220,7 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         dlgTab.add(Box.createVerticalGlue());
         dlgTab.add(getTablesBox());
 
-        addTab("XLS Reader Settings", dlgTab);
+        addTab("XLS Reader Settings", new JScrollPane(dlgTab));
 
     }
 
@@ -1211,7 +1213,10 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
     }
 
     private void refreshWorkbook(final String path) {
-        if (!path.equals(m_workbookPath)) {
+        if (path == null) {
+            m_workbook = null;
+            m_workbookPath = null;
+        } else if (!path.equals(m_workbookPath)) {
             m_workbook = XLSTableSettings.getWorkbook(path);
             m_workbookPath = path;
         }
