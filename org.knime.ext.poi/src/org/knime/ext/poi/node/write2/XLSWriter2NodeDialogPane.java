@@ -84,6 +84,7 @@ import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.defaultnodesettings.DialogComponentFileChooser;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
+import org.knime.core.node.util.filter.NameFilterConfiguration;
 import org.knime.core.node.util.filter.column.DataColumnSpecFilterConfiguration;
 import org.knime.core.node.util.filter.column.DataColumnSpecFilterPanel;
 import org.knime.core.node.util.filter.column.DataTypeColumnFilter;
@@ -329,10 +330,9 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
      * @return creates and returns configuration instance for column filter panel.
      */
     static DataColumnSpecFilterConfiguration createColFilterConf() {
-        DataColumnSpecFilterConfiguration result =
-                new DataColumnSpecFilterConfiguration("xlswriter2", new DataTypeColumnFilter(ACCEPTED_TYPES));
-        result.setTypeFilterEnabled(true);
-        return result;
+        return new DataColumnSpecFilterConfiguration("xlswriter2",
+            new DataTypeColumnFilter(ACCEPTED_TYPES),
+            NameFilterConfiguration.FILTER_BY_NAMEPATTERN | DataColumnSpecFilterConfiguration.FILTER_BY_DATATYPE);
     }
 
 }
