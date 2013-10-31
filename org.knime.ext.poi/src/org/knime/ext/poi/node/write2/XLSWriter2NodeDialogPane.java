@@ -329,7 +329,10 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
      * @return creates and returns configuration instance for column filter panel.
      */
     static DataColumnSpecFilterConfiguration createColFilterConf() {
-        return new DataColumnSpecFilterConfiguration("xlswriter2", new DataTypeColumnFilter(ACCEPTED_TYPES));
+        DataColumnSpecFilterConfiguration result =
+                new DataColumnSpecFilterConfiguration("xlswriter2", new DataTypeColumnFilter(ACCEPTED_TYPES));
+        result.setTypeFilterEnabled(true);
+        return result;
     }
 
 }
