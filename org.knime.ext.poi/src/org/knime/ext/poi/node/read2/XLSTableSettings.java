@@ -760,7 +760,7 @@ public class XLSTableSettings {
                     break;
                 }
                 if (!row.getCell(i).isMissing()) {
-                    result[i] = getUniqueName(row.getCell(i).toString(), names);
+                    result[i] = getUniqueName(row.getCell(i).toString().trim(), names);
                     names.add(result[i]);
                 }
             }
