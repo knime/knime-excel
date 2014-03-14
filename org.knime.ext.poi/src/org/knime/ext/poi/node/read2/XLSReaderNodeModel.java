@@ -232,7 +232,7 @@ public class XLSReaderNodeModel extends NodeModel {
                 if (execMsg == null) {
                     execMsg = e.getClass().getSimpleName();
                 }
-                throw new InvalidSettingsException(execMsg);
+                throw new InvalidSettingsException(execMsg, e);
             }
             m_dts = s.getDataTableSpec();
             m_dtsSettingsID = m_settings.getID();
