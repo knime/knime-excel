@@ -171,6 +171,8 @@ public class XLSWriter2 {
         }
 
         Sheet sheet = wb.createSheet(sheetName);
+        sheet.getPrintSetup().setLandscape(m_settings.getLandscape());
+        sheet.getPrintSetup().setPaperSize(m_settings.getPaperSize());
         Drawing drawing = sheet.createDrawingPatriarch();
         CreationHelper helper = wb.getCreationHelper();
         CellStyle dateStyle = wb.createCellStyle();
@@ -338,6 +340,12 @@ public class XLSWriter2 {
         } // end of for all rows in table
         for (Integer columnNumber : columnWidth.keySet()) {
             sheet.setColumnWidth(columnNumber, pixelsToCharacters(columnWidth.get(columnNumber)));
+        }
+
+        if (m_settings.getAutosize()) {
+            for (int i = 0; i < numOfCols; i++) {
+                sheet.autoSizeColumn(i);
+            }
         }
 
         // Write the output to a file

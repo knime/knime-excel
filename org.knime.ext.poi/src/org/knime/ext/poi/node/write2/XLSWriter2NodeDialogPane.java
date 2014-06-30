@@ -48,21 +48,28 @@
 package org.knime.ext.poi.node.write2;
 
 import java.awt.Dimension;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 import javax.swing.JTextField;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.apache.poi.ss.usermodel.PrintSetup;
 import org.knime.core.data.BooleanValue;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DataValue;
@@ -120,7 +127,17 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
 
     private final JCheckBox m_openFile = new JCheckBox("Open file after execution");
 
+    private final JCheckBox m_autosize = new JCheckBox("Autosize columns");
+
     private final JTextField m_sheetname = new JTextField();
+
+    private final ButtonGroup m_pageFormat = new ButtonGroup();
+
+    private final JRadioButton m_portrait = new JRadioButton("Portrait");
+
+    private final JRadioButton m_landscape = new JRadioButton("Landscape");
+
+    private final JComboBox m_paperSize = new JComboBox(PaperSize.getNames());
 
     private final FlowVariableModelButton m_sheetnameFVM = new FlowVariableModelButton(
             createFlowVariableModel("sheetname", FlowVariable.Type.STRING));
@@ -152,6 +169,7 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
         tab.add(Box.createVerticalStrut(5));
         tab.add(createHeadersBox());
         tab.add(createMissingBox());
+        tab.add(createLayoutBox());
         tab.add(Box.createVerticalGlue());
         tab.add(Box.createVerticalGlue());
         tab.add(m_filter);
@@ -263,6 +281,28 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
 
     }
 
+    private JPanel createLayoutBox() {
+        m_portrait.setActionCommand(m_portrait.getText());
+        m_landscape.setActionCommand(m_landscape.getText());
+        m_pageFormat.add(m_portrait);
+        m_pageFormat.add(m_landscape);
+        Box formatBox = Box.createHorizontalBox();
+        formatBox.add(m_portrait);
+        formatBox.add(m_landscape);
+        Box sizeBox = Box.createHorizontalBox();
+        sizeBox.add(m_autosize);
+        sizeBox.add(Box.createHorizontalStrut(m_autosize.getSize().width / 2));
+        m_portrait.setSelected(true);
+        Box layoutBox = Box.createVerticalBox();
+        layoutBox.add(sizeBox);
+        layoutBox.add(formatBox);
+        layoutBox.add(m_paperSize);
+        JPanel result = new JPanel();
+        result.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Layout"));
+        result.add(layoutBox);
+        return result;
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -286,6 +326,13 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
         m_sheetname.setEnabled(!m_sheetnameFVM.getFlowVariableModel().isVariableReplacementEnabled());
         m_fileMustExist.setSelected(newVals.getFileMustExist());
         m_doNotOverwriteSheet.setSelected(newVals.getDoNotOverwriteSheet());
+        m_autosize.setSelected(newVals.getAutosize());
+        if (newVals.getLandscape()) {
+            m_landscape.setSelected(true);
+        } else {
+            m_portrait.setSelected(true);
+        }
+        m_paperSize.setSelectedItem(PaperSize.getName(newVals.getPaperSize()));
         DataColumnSpecFilterConfiguration config = createColFilterConf();
         config.loadConfigurationInDialog(settings, specs[0]);
         m_filter.loadConfiguration(config, specs[0]);
@@ -317,6 +364,9 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
         vals.setSheetname(m_sheetname.getText());
         vals.setFileMustExist(m_fileMustExist.isSelected());
         vals.setDoNotOverwriteSheet(m_doNotOverwriteSheet.isSelected());
+        vals.setAutosize(m_autosize.isSelected());
+        vals.setLandscape(m_landscape.isSelected());
+        vals.setPaperSize(PaperSize.getValue((String)m_paperSize.getSelectedItem()));
         vals.saveSettingsTo(settings);
         DataColumnSpecFilterConfiguration config = createColFilterConf();
         m_filter.saveConfiguration(config);
@@ -330,6 +380,41 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
         return new DataColumnSpecFilterConfiguration("xlswriter2",
             new DataTypeColumnFilter(ACCEPTED_TYPES),
             NameFilterConfiguration.FILTER_BY_NAMEPATTERN | DataColumnSpecFilterConfiguration.FILTER_BY_DATATYPE);
+    }
+
+    private static class PaperSize {
+
+        private static final Map<String, Short> SIZES = new HashMap<String, Short>();
+
+        static {
+            SIZES.put("A4 - 210x297 mm", PrintSetup.A4_PAPERSIZE);
+            SIZES.put("A5 - 148x210 mm", PrintSetup.A5_PAPERSIZE);
+            SIZES.put("US Envelope #10 4 1/8 x 9 1/2", PrintSetup.ENVELOPE_10_PAPERSIZE);
+            SIZES.put("Envelope C5 162x229 mm", PrintSetup.ENVELOPE_CS_PAPERSIZE);
+            SIZES.put("Envelope DL 110x220 mm", PrintSetup.ENVELOPE_DL_PAPERSIZE);
+            SIZES.put("Envelope Monarch 98.4×190.5 mm", PrintSetup.ENVELOPE_MONARCH_PAPERSIZE);
+            SIZES.put("US Executive 7 1/4 x 10 1/2 in", PrintSetup.EXECUTIVE_PAPERSIZE);
+            SIZES.put("US Legal 8 1/2 x 14 in", PrintSetup.LEGAL_PAPERSIZE);
+            SIZES.put("US Letter 8 1/2 x 11 in", PrintSetup.LETTER_PAPERSIZE);
+        }
+
+        public static String[] getNames() {
+            return SIZES.keySet().toArray(new String[SIZES.size()]);
+        }
+
+        public static short getValue(final String name) {
+            return SIZES.get(name).shortValue();
+        }
+
+        public static String getName(final short value) {
+            for (Entry<String, Short> entry : SIZES.entrySet()) {
+                if (entry.getValue().shortValue() == value) {
+                    return entry.getKey();
+                }
+            }
+            return null;
+        }
+
     }
 
 }

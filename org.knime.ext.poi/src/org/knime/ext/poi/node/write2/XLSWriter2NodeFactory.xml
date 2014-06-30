@@ -27,6 +27,11 @@
             file will be overridden if it exists. If unchecked, the node will fail during 
             execution in order to retain the original file and to avoid unintentional 
             overwrite. </option>
+        <option name="Open file after execution">
+            Opens the file after it has been successfully written. The file will
+            be opened in the default application of the system. This might not
+            be supported by every system.
+        </option>
         <option name="Sheet name">
             Name of the sheet that will be created. If left empty, the name of
             the input table will be used.
@@ -44,11 +49,15 @@
 			specified, the corresponding datacell of the spreadsheet
 			stays empty.
 		</option>
-        <option name="Open file after execution">
-            Opens the file after it has been successfully written. The file will
-            be opened in the default application of the system. This might not
-            be supported by every system.
-        </option>
+		<option name="Autosize columns">
+			Fits the columns width to the content.
+		</option>
+		<option name="Portrait/Landscape">
+			Sets the print format to portrait or landscape.
+		</option>
+		<option name="Paper size">
+			Sets the paper size in the print setup.
+		</option>
         <option name="Exclude/Include columns">
             Select the columns that will be written in the XLS file. If the
             columns in the input table should change, they will automatically be

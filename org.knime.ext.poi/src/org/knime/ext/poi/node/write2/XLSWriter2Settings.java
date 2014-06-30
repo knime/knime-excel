@@ -47,6 +47,7 @@
  */
 package org.knime.ext.poi.node.write2;
 
+import org.apache.poi.ss.usermodel.PrintSetup;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
@@ -54,7 +55,7 @@ import org.knime.core.node.NodeSettingsWO;
 
 /**
  * Holds the settings for the XLSWriter.
- * 
+ *
  * @author ohl, University of Konstanz
  */
 public class XLSWriter2Settings {
@@ -81,6 +82,12 @@ public class XLSWriter2Settings {
 
     private static final String CFG_DO_NOT_OVERWRITE_SHEET = "do_not_overwrite_sheet";
 
+    private static final String CFG_LANDSCAPE = "landscape";
+
+    private static final String CFG_AUTOSIZE = "autosize";
+
+    private static final String CFG_PAPER_SIZE = "paper_size";
+
     private int m_xCellOffset;
 
     private int m_yCellOffset;
@@ -103,6 +110,12 @@ public class XLSWriter2Settings {
 
     private boolean m_doNotOverwriteSheet;
 
+    private boolean m_landscape;
+
+    private boolean m_autosize;
+
+    private short m_paperSize;
+
     /**
      * Creates a new settings object with default settings but no filename.
      */
@@ -118,11 +131,13 @@ public class XLSWriter2Settings {
         m_openFile = false;
         m_fileMustExist = false;
         m_doNotOverwriteSheet = false;
+        m_landscape = false;
+        m_paperSize = PrintSetup.LETTER_PAPERSIZE;
     }
 
     /**
      * Creates a new settings object with default settings but no filename.
-     * 
+     *
      * @param spec Specification containing the input tables name
      */
     public XLSWriter2Settings(final DataTableSpec spec) {
@@ -132,7 +147,7 @@ public class XLSWriter2Settings {
 
     /**
      * Creates a new object with the setting values read from the specified settings object.
-     * 
+     *
      * @param settings containing the values for the writer's settings.
      * @throws InvalidSettingsException if the specified settings object contains incorrect settings.
      */
@@ -154,11 +169,14 @@ public class XLSWriter2Settings {
         m_openFile = settings.getBoolean(CFG_OPEN_FILE, false);
         m_fileMustExist = settings.getBoolean(CFG_FILE_MUST_EXIST, false);
         m_doNotOverwriteSheet = settings.getBoolean(CFG_DO_NOT_OVERWRITE_SHEET, false);
+        m_landscape = settings.getBoolean(CFG_LANDSCAPE, false);
+        m_autosize = settings.getBoolean(CFG_AUTOSIZE, false);
+        m_paperSize = settings.getShort(CFG_PAPER_SIZE, PrintSetup.LETTER_PAPERSIZE);
     }
 
     /**
      * Saves the current values into the specified object.
-     * 
+     *
      * @param settings to write the values to.
      */
     public void saveSettingsTo(final NodeSettingsWO settings) {
@@ -173,6 +191,9 @@ public class XLSWriter2Settings {
         settings.addBoolean(CFG_OPEN_FILE, m_openFile);
         settings.addBoolean(CFG_FILE_MUST_EXIST, m_fileMustExist);
         settings.addBoolean(CFG_DO_NOT_OVERWRITE_SHEET, m_doNotOverwriteSheet);
+        settings.addBoolean(CFG_LANDSCAPE, m_landscape);
+        settings.addBoolean(CFG_AUTOSIZE, m_autosize);
+        settings.addShort(CFG_PAPER_SIZE, m_paperSize);
     }
 
     /**
@@ -275,7 +296,7 @@ public class XLSWriter2Settings {
 
     /**
      * Set the overwrite ok property.
-     * 
+     *
      * @param overwriteOK The property.
      */
     public void setOverwriteOK(final boolean overwriteOK) {
@@ -327,6 +348,48 @@ public class XLSWriter2Settings {
      */
     public boolean getDoNotOverwriteSheet() {
         return m_doNotOverwriteSheet;
+    }
+
+    /**
+     * @param landscape the landscape to set
+     */
+    public void setLandscape(final boolean landscape) {
+        m_landscape = landscape;
+    }
+
+    /**
+     * @return the landscape
+     */
+    public boolean getLandscape() {
+        return m_landscape;
+    }
+
+    /**
+     * @param autosize the autosize to set
+     */
+    public void setAutosize(final boolean autosize) {
+        m_autosize = autosize;
+    }
+
+    /**
+     * @return the autosize
+     */
+    public boolean getAutosize() {
+        return m_autosize;
+    }
+
+    /**
+     * @param paperSize the paperSize to set
+     */
+    public void setPaperSize(final short paperSize) {
+        m_paperSize = paperSize;
+    }
+
+    /**
+     * @return the paperSize
+     */
+    public short getPaperSize() {
+        return m_paperSize;
     }
 
 }
