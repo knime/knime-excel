@@ -1034,8 +1034,8 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         } else {
             m_firstCol.setText("A");
         }
-        val = s.getLastColumn() + 1;
-        if (val >= 1) {
+        val = s.getLastColumn();
+        if (val >= 0) {
             m_lastCol.setText(XLSTable.getColLabel(val));
         } else {
             m_lastCol.setText("");
