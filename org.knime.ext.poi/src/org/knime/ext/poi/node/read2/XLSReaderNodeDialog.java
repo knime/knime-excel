@@ -100,7 +100,6 @@ import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.config.Config;
 import org.knime.core.node.tableview.TableView;
-import org.knime.core.node.util.ConvenienceMethods;
 import org.knime.core.node.util.FilesHistoryPanel;
 import org.knime.core.node.util.ViewUtils;
 import org.knime.core.util.SwingWorkerWithContext;
@@ -112,6 +111,9 @@ import org.knime.ext.poi.POIActivator;
  * @author Peter Ohl, KNIME.com, Zurich, Switzerland
  */
 public class XLSReaderNodeDialog extends NodeDialogPane {
+
+    private static final NodeLogger LOGGER = NodeLogger
+            .getLogger(XLSReaderNodeDialog.class);
 
     private final FilesHistoryPanel m_fileName = new FilesHistoryPanel(
             "XLSReader", ".xls", ".xlsx");
@@ -554,15 +556,17 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
                 String file = m_fileName.getSelectedFile();
                 if (file != null && !file.isEmpty()) {
                     m_fileAccessError = null;
-                    try {
-                        ArrayList<String> sheetNames = XLSTable.getSheetNames(m_workbook);
-                        sheetNames.add(0, FIRST_SHEET);
-                        return sheetNames.toArray(new String[sheetNames.size()]);
-                    } catch (Exception fnf) {
-                        NodeLogger.getLogger(XLSReaderNodeDialog.class).error(
-                                fnf.getMessage(), fnf);
-                        m_fileAccessError = fnf.getMessage();
-                        // return empty list then
+                    if (m_workbook != null) {
+                        try {
+                            ArrayList<String> sheetNames = XLSTable.getSheetNames(m_workbook);
+                            sheetNames.add(0, FIRST_SHEET);
+                            return sheetNames.toArray(new String[sheetNames.size()]);
+                        } catch (Exception fnf) {
+                            NodeLogger.getLogger(XLSReaderNodeDialog.class).error(
+                                    fnf.getMessage(), fnf);
+                            m_fileAccessError = fnf.getMessage();
+                            // return empty list then
+                        }
                     }
                 }
                 return new String[] {};
@@ -1009,7 +1013,16 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
 
     private void transferSettingsIntoComponents(final XLSUserSettings s) {
 
-        m_fileName.setSelectedFile(s.getFileLocation());
+        try {
+            m_fileName.setSelectedFile(s.getFileLocation());
+        } catch (RuntimeException e) {
+            // Bug 5538 - Catch FileNotFoundException and continue transferring settings
+            if (e.getCause() instanceof FileNotFoundException) {
+                LOGGER.debug(e.getCause().getMessage(), e.getCause());
+            } else {
+                LOGGER.error(e.getMessage(), e);
+            }
+        }
 
         m_skipEmptyCols.setSelected(s.getSkipEmptyColumns());
         m_skipEmptyRows.setSelected(s.getSkipEmptyRows());
@@ -1125,7 +1138,16 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
                 s = new XLSUserSettings();
             }
             // Get the workbook when dialog is opened
-            refreshWorkbook(s.getFileLocation());
+            try {
+                refreshWorkbook(s.getFileLocation());
+            } catch (RuntimeException e) {
+                // Bug 5538 - Catch FileNotFoundException and continue transferring settings
+                if (e.getCause() instanceof FileNotFoundException) {
+                    LOGGER.debug(e.getCause().getMessage(), e.getCause());
+                } else {
+                    LOGGER.error(e.getMessage(), e);
+                }
+            }
             transferSettingsIntoComponents(s);
         } finally {
             m_loading.set(false);
