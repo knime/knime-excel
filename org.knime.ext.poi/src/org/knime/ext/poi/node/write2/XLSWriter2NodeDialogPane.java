@@ -48,6 +48,9 @@
 package org.knime.ext.poi.node.write2;
 
 import java.awt.Dimension;
+import java.io.IOException;
+import java.net.URL;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -93,6 +96,7 @@ import org.knime.core.node.util.filter.column.DataColumnSpecFilterConfiguration;
 import org.knime.core.node.util.filter.column.DataColumnSpecFilterPanel;
 import org.knime.core.node.util.filter.column.DataTypeColumnFilter;
 import org.knime.core.node.workflow.FlowVariable;
+import org.knime.core.util.FileUtil;
 import org.knime.ext.poi.POIActivator;
 
 /**
@@ -178,6 +182,22 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
     }
 
     private JPanel createFileBox() {
+        m_fileComponent.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(final ChangeEvent e) {
+                String selFile = m_filename.getStringValue();
+                if ((selFile != null) && !selFile.isEmpty()) {
+                    try {
+                        URL newUrl = FileUtil.toURL(selFile);
+                        Path path = FileUtil.resolveToPath(newUrl);
+                        m_overwriteOK.setEnabled(path != null);
+                        m_openFile.setEnabled(path != null);
+                    } catch (IOException ex) {
+                        // ignore
+                    }
+                }
+            }
+        });
         return m_fileComponent.getComponentPanel();
     }
 

@@ -49,10 +49,12 @@ package org.knime.ext.poi.node.write2;
 
 import java.awt.Desktop;
 import java.awt.Dimension;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
@@ -84,6 +86,7 @@ import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeLogger;
+import org.knime.core.util.FileUtil;
 
 /**
  *
@@ -112,19 +115,19 @@ public class XLSWriter2 {
 
     private final XLSWriter2Settings m_settings;
 
-    private final File m_file;
+    private final URL m_destination;
 
     /**
      * Creates a new writer with the specified settings.
      *
-     * @param file the created workbook will be written to.
+     * @param destination the destination to which the workbook will be written
      * @param settings the settings.
      */
-    public XLSWriter2(final File file, final XLSWriter2Settings settings) {
+    public XLSWriter2(final URL destination, final XLSWriter2Settings settings) {
         if (settings == null) {
-            throw new NullPointerException("Can't operate with null settings!");
+            throw new IllegalArgumentException("Can't operate with null settings!");
         }
-        m_file = file;
+        m_destination = destination;
         m_settings = settings;
     }
 
@@ -143,12 +146,23 @@ public class XLSWriter2 {
             CanceledExecutionException, InvalidFormatException {
 
         Workbook wb;
-        if (m_file.exists()) {
-            FileInputStream inStream = new FileInputStream(m_file);
-            wb = WorkbookFactory.create(inStream);
-            inStream.close();
+        Path localPath = FileUtil.resolveToPath(m_destination);
+        if (localPath != null) {
+            if (Files.isRegularFile(localPath)) {
+                try (InputStream inStream = Files.newInputStream(localPath)) {
+                    wb = WorkbookFactory.create(inStream);
+                }
+            } else {
+                wb = new HSSFWorkbook();
+            }
         } else {
-            wb = new HSSFWorkbook();
+            try (InputStream is = m_destination.openStream()) {
+                wb = WorkbookFactory.create(is);
+            } catch (IOException ex) {
+                // seems it does not exist, so be it and we create a new workbook
+                LOGGER.debug("Could not read XLS file at " + m_destination + ": " + ex.getMessage(), ex);
+                wb = new HSSFWorkbook();
+            }
         }
 
         int sheetIdx = 0; // in case the table doesn't fit in one sheet
@@ -349,17 +363,25 @@ public class XLSWriter2 {
         }
 
         // Write the output to a file
-        FileOutputStream outStream = new FileOutputStream(m_file);
-        wb.write(outStream);
-        outStream.close();
-        if (m_settings.getOpenFile()) {
+        try (OutputStream os = openOutputStream(m_destination)) {
+            wb.write(os);
+        }
+        if ((localPath != null) && m_settings.getOpenFile()) {
             if (Desktop.isDesktopSupported()) {
-                Desktop.getDesktop().open(m_file);
+                Desktop.getDesktop().open(localPath.toFile());
             } else {
                 LOGGER.warn("Automatic opening of the file not supported");
             }
         }
+    }
 
+    private static OutputStream openOutputStream(final URL destination) throws IOException {
+        Path localPath = FileUtil.resolveToPath(destination);
+        if (localPath != null) {
+            return Files.newOutputStream(localPath);
+        } else {
+            return FileUtil.openOutputConnection(destination, "PUT").getOutputStream();
+        }
     }
 
     private static int pixelsToCharacters(final int pixels) {

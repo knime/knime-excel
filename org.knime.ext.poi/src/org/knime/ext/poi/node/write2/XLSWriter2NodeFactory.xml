@@ -4,33 +4,36 @@
 	<name>XLS Writer</name>
 
 	<shortDescription>
-		Saves a datatable into a spreadsheet.
+		Saves a data table into a spreadsheet.
 	</shortDescription>
 
 	<fullDescription>
 		<intro>
-			This node writes out the datatable coming through its input
-			port into a spreadsheet of a workbook. The files can be read
+			This node writes the input data table into a spreadsheet of a workbook. The files can be read
 			then with other applications like Microsoft Excel, for
 			example. The maximum number of columns held by a spreadsheet
-			is 256 (all additional columns in the datatable are
-			truncated). If the input datatable has more than 65536 rows
+			is 256 (all additional columns in the data table are
+			truncated). If the input data table has more than 65536 rows
 			it is split into multiple spreadsheets (all stored in the
 			created workbook).
+            <br />
+         Note that if the destination location is a remote URL not all options are available because in general it's
+         not possible to determine whether the remote location exists. In this case it will always be overwritten.
 		</intro>
-		<option name="Output file location">
-			Enter a valid file name. You can also choose a previously
-			selected file from the drop-down list, or select a file from
+		<option name="Output location">
+			Enter a valid file name or URL. You can also choose a previously
+			selected local from the drop-down list, or select a file from
 			the &quot;Browse...&quot; dialog.
 		</option>
         <option name="Overwrite existing file"> If checked, the output 
             file will be overridden if it exists. If unchecked, the node will fail during 
             execution in order to retain the original file and to avoid unintentional 
-            overwrite. </option>
+            overwrite. Remote location will always be overwritten.
+        </option>
         <option name="Open file after execution">
             Opens the file after it has been successfully written. The file will
             be opened in the default application of the system. This might not
-            be supported by every system.
+            be supported by every system and is not available for remote locations.
         </option>
         <option name="Sheet name">
             Name of the sheet that will be created. If left empty, the name of
@@ -46,7 +49,7 @@
 		</option>
 		<option name="Missing Value Pattern">
 			Enter a pattern that is set for missing data values. If not
-			specified, the corresponding datacell of the spreadsheet
+			specified, the corresponding data cell of the spreadsheet
 			stays empty.
 		</option>
 		<option name="Autosize columns">
@@ -67,7 +70,7 @@
 
 	<ports>
 		<inPort index="0" name="Input table">
-			The Datatable to write out.
+			The data table to write out.
 		</inPort>
 	</ports>
 </knimeNode>

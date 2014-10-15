@@ -49,6 +49,9 @@ package org.knime.ext.poi.node.write2;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.knime.core.data.DataTable;
 import org.knime.core.data.DataTableSpec;
@@ -63,6 +66,7 @@ import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.util.filter.NameFilterConfiguration.FilterResult;
 import org.knime.core.node.util.filter.column.DataColumnSpecFilterConfiguration;
+import org.knime.core.util.FileUtil;
 import org.knime.ext.poi.POIActivator;
 
 /**
@@ -108,28 +112,34 @@ public class XLSWriter2NodeModel extends NodeModel {
      * @throws InvalidSettingsException if that fails
      */
     private void checkFileAccess(final String fileName) throws InvalidSettingsException {
-        if ((fileName == null) || (fileName.length() == 0)) {
+        if ((fileName == null) || fileName.isEmpty()) {
             throw new InvalidSettingsException("No output file specified.");
         }
-        File file = new File(fileName);
-
-        if (file.isDirectory()) {
-            throw new InvalidSettingsException("\"" + file.getAbsolutePath() + "\" is a directory.");
-        }
-        if (m_type == XLSNodeType.WRITER && file.exists() && !m_settings.getOverwriteOK()) {
-            String throwString = "File '" + file.toString() + "' exists, cannot overwrite";
-            throw new InvalidSettingsException(throwString);
-        }
-        if (!file.exists()) {
-            // dunno how to check the write access to the directory. If we can't
-            // create the file the execute of the node will fail. Well, too bad.
-            return;
-        }
-        if (!file.canWrite()) {
-            throw new InvalidSettingsException("Cannot write to file \"" + file.getAbsolutePath() + "\".");
-        }
-        if (m_type == XLSNodeType.WRITER) {
-            setWarningMessage("Selected output file exists and will be " + "overwritten!");
+        try {
+            URL url = FileUtil.toURL(fileName);
+            Path localPath = FileUtil.resolveToPath(url);
+            if (localPath != null) {
+                if (Files.isDirectory(localPath)) {
+                    throw new InvalidSettingsException("'" + localPath + "' is a directory.");
+                }
+                if ((m_type == XLSNodeType.WRITER) && Files.exists(localPath) && !m_settings.getOverwriteOK()) {
+                    String throwString = "File '" + localPath + "' exists, cannot overwrite";
+                    throw new InvalidSettingsException(throwString);
+                }
+                if (!Files.exists(localPath)) {
+                    // dunno how to check the write access to the directory. If we can't
+                    // create the file the execute of the node will fail. Well, too bad.
+                    return;
+                }
+                if (!Files.isWritable(localPath)) {
+                    throw new InvalidSettingsException("Cannot write to file \"" + localPath + "\".");
+                }
+                if (m_type == XLSNodeType.WRITER) {
+                    setWarningMessage("Selected output file exists and will be " + "overwritten!");
+                }
+            }
+        } catch (IOException ex) {
+            throw new InvalidSettingsException("Error while checking file access: " + ex.getMessage(), ex);
         }
     }
 
@@ -142,20 +152,27 @@ public class XLSWriter2NodeModel extends NodeModel {
         if (m_filterConfig == null) {
             m_filterConfig = XLSWriter2NodeDialogPane.createColFilterConf();
         }
-        File file = new File(m_settings.getFilename()).getCanonicalFile();
+        URL url = FileUtil.toURL(m_settings.getFilename());
+        Path localPath = FileUtil.resolveToPath(url);
 
-        KeyLocker.lock(file);
+        if (localPath != null) {
+            KeyLocker.lock(localPath);
+        }
+
         try {
-
-            if (m_type == XLSNodeType.WRITER && file.exists()) {
-                if (!m_settings.getOverwriteOK()) {
-                    String throwString = "File '" + file.toString() + "' exists, cannot overwrite";
+            if (localPath != null) {
+                if ((m_type == XLSNodeType.WRITER) && Files.exists(localPath)) {
+                    if (!m_settings.getOverwriteOK()) {
+                        String throwString = "File '" + localPath + "' exists, cannot overwrite";
+                        throw new InvalidSettingsException(throwString);
+                    } else {
+                        Files.delete(localPath);
+                    }
+                } else if ((m_type == XLSNodeType.APPENDER) && !Files.exists(localPath)
+                    && m_settings.getFileMustExist()) {
+                    String throwString = "File '" + localPath + "' does not exist, cannot append";
                     throw new InvalidSettingsException(throwString);
                 }
-                file.delete();
-            } else if (m_type == XLSNodeType.APPENDER && !file.exists() && m_settings.getFileMustExist()) {
-                String throwString = "File '" + file.toString() + "' does not exist, cannot append";
-                throw new InvalidSettingsException(throwString);
             }
 
             DataTable table = inData[0];
@@ -164,16 +181,15 @@ public class XLSWriter2NodeModel extends NodeModel {
             rearranger.keepOnly(filter.getIncludes());
             table = exec.createColumnRearrangeTable(inData[0], rearranger, exec);
 
-            XLSWriter2 xlsWriter = new XLSWriter2(file, m_settings);
-
+            XLSWriter2 xlsWriter = new XLSWriter2(url, m_settings);
             xlsWriter.write(table, exec);
-
         } finally {
-            KeyLocker.unlock(file);
+            if (localPath != null) {
+                KeyLocker.unlock(localPath);
+            }
         }
 
         return new BufferedDataTable[]{};
-
     }
 
     /**
@@ -233,7 +249,7 @@ public class XLSWriter2NodeModel extends NodeModel {
     @Override
     protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
         String filename = new XLSWriter2Settings(settings).getFilename();
-        if ((filename == null) || (filename.length() == 0)) {
+        if ((filename == null) || filename.isEmpty()) {
             throw new InvalidSettingsException("No output" + " filename specified.");
         }
         DataColumnSpecFilterConfiguration filterConfig = XLSWriter2NodeDialogPane.createColFilterConf();
