@@ -52,6 +52,7 @@ import java.awt.Dimension;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -140,10 +141,11 @@ public class XLSWriter2 {
      * @throws IOException if any related I/O error occurs
      * @throws CanceledExecutionException if execution in <code>exec</code> has been canceled
      * @throws InvalidFormatException if the existing file is not of the correct format
+     * @throws URISyntaxException if the destination URL is invalid
      * @throws NullPointerException if table is <code>null</code>
      */
     public void write(final DataTable table, final ExecutionMonitor exec) throws IOException,
-            CanceledExecutionException, InvalidFormatException {
+            CanceledExecutionException, InvalidFormatException, URISyntaxException {
 
         Workbook wb;
         Path localPath = FileUtil.resolveToPath(m_destination);
@@ -375,7 +377,7 @@ public class XLSWriter2 {
         }
     }
 
-    private static OutputStream openOutputStream(final URL destination) throws IOException {
+    private static OutputStream openOutputStream(final URL destination) throws IOException, URISyntaxException {
         Path localPath = FileUtil.resolveToPath(destination);
         if (localPath != null) {
             return Files.newOutputStream(localPath);

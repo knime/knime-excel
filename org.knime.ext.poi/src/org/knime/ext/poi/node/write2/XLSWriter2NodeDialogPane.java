@@ -49,6 +49,7 @@ package org.knime.ext.poi.node.write2;
 
 import java.awt.Dimension;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -192,7 +193,7 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
                         Path path = FileUtil.resolveToPath(newUrl);
                         m_overwriteOK.setEnabled(path != null);
                         m_openFile.setEnabled(path != null);
-                    } catch (IOException ex) {
+                    } catch (IOException | URISyntaxException ex) {
                         // ignore
                     }
                 }

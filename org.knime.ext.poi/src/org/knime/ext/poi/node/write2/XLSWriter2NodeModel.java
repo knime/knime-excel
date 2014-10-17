@@ -49,6 +49,7 @@ package org.knime.ext.poi.node.write2;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -138,7 +139,7 @@ public class XLSWriter2NodeModel extends NodeModel {
                     setWarningMessage("Selected output file exists and will be " + "overwritten!");
                 }
             }
-        } catch (IOException ex) {
+        } catch (IOException | URISyntaxException ex) {
             throw new InvalidSettingsException("Error while checking file access: " + ex.getMessage(), ex);
         }
     }
