@@ -49,6 +49,7 @@ package org.knime.ext.poi.node.write2;
 
 import java.awt.Desktop;
 import java.awt.Dimension;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -380,9 +381,9 @@ public class XLSWriter2 {
     private static OutputStream openOutputStream(final URL destination) throws IOException, URISyntaxException {
         Path localPath = FileUtil.resolveToPath(destination);
         if (localPath != null) {
-            return Files.newOutputStream(localPath);
+            return new BufferedOutputStream(Files.newOutputStream(localPath));
         } else {
-            return FileUtil.openOutputConnection(destination, "PUT").getOutputStream();
+            return new BufferedOutputStream(FileUtil.openOutputConnection(destination, "PUT").getOutputStream());
         }
     }
 
