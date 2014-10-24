@@ -49,7 +49,6 @@ package org.knime.ext.poi.node.write2;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -65,6 +64,7 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
+import org.knime.core.node.util.CheckUtils;
 import org.knime.core.node.util.filter.NameFilterConfiguration.FilterResult;
 import org.knime.core.node.util.filter.column.DataColumnSpecFilterConfiguration;
 import org.knime.core.util.FileUtil;
@@ -100,48 +100,15 @@ public class XLSWriter2NodeModel extends NodeModel {
         if (m_settings == null) {
             m_settings = new XLSWriter2Settings();
         }
-        // throws an Exception if things are not okay and sets a warning
-        // message if file gets overridden.
-        checkFileAccess(m_settings.getFilename());
-        return new DataTableSpec[]{};
-    }
 
-    /**
-     * Helper that checks some properties for the file argument.
-     *
-     * @param fileName the file to check
-     * @throws InvalidSettingsException if that fails
-     */
-    private void checkFileAccess(final String fileName) throws InvalidSettingsException {
-        if ((fileName == null) || fileName.isEmpty()) {
-            throw new InvalidSettingsException("No output file specified.");
+        String warning =
+            CheckUtils.checkDestinationFile(m_settings.getFilename(), m_settings.getOverwriteOK(),
+                m_settings.getFileMustExist());
+        if (warning != null) {
+            setWarningMessage(warning);
         }
-        try {
-            URL url = FileUtil.toURL(fileName);
-            Path localPath = FileUtil.resolveToPath(url);
-            if (localPath != null) {
-                if (Files.isDirectory(localPath)) {
-                    throw new InvalidSettingsException("'" + localPath + "' is a directory.");
-                }
-                if ((m_type == XLSNodeType.WRITER) && Files.exists(localPath) && !m_settings.getOverwriteOK()) {
-                    String throwString = "File '" + localPath + "' exists, cannot overwrite";
-                    throw new InvalidSettingsException(throwString);
-                }
-                if (!Files.exists(localPath)) {
-                    // dunno how to check the write access to the directory. If we can't
-                    // create the file the execute of the node will fail. Well, too bad.
-                    return;
-                }
-                if (!Files.isWritable(localPath)) {
-                    throw new InvalidSettingsException("Cannot write to file \"" + localPath + "\".");
-                }
-                if (m_type == XLSNodeType.WRITER) {
-                    setWarningMessage("Selected output file exists and will be " + "overwritten!");
-                }
-            }
-        } catch (IOException | URISyntaxException ex) {
-            throw new InvalidSettingsException("Error while checking file access: " + ex.getMessage(), ex);
-        }
+
+        return new DataTableSpec[]{};
     }
 
     /**
@@ -153,6 +120,9 @@ public class XLSWriter2NodeModel extends NodeModel {
         if (m_filterConfig == null) {
             m_filterConfig = XLSWriter2NodeDialogPane.createColFilterConf();
         }
+        CheckUtils.checkDestinationFile(m_settings.getFilename(), m_settings.getOverwriteOK(),
+            m_settings.getFileMustExist());
+
         URL url = FileUtil.toURL(m_settings.getFilename());
         Path localPath = FileUtil.resolveToPath(url);
 
@@ -161,19 +131,8 @@ public class XLSWriter2NodeModel extends NodeModel {
         }
 
         try {
-            if (localPath != null) {
-                if ((m_type == XLSNodeType.WRITER) && Files.exists(localPath)) {
-                    if (!m_settings.getOverwriteOK()) {
-                        String throwString = "File '" + localPath + "' exists, cannot overwrite";
-                        throw new InvalidSettingsException(throwString);
-                    } else {
-                        Files.delete(localPath);
-                    }
-                } else if ((m_type == XLSNodeType.APPENDER) && !Files.exists(localPath)
-                    && m_settings.getFileMustExist()) {
-                    String throwString = "File '" + localPath + "' does not exist, cannot append";
-                    throw new InvalidSettingsException(throwString);
-                }
+            if ((localPath != null) && (m_type == XLSNodeType.WRITER) && m_settings.getOverwriteOK()) {
+                Files.deleteIfExists(localPath);
             }
 
             DataTable table = inData[0];
