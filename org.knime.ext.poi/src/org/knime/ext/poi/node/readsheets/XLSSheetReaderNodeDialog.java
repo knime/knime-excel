@@ -122,6 +122,7 @@ public class XLSSheetReaderNodeDialog extends NodeDialogPane {
             throw new InvalidSettingsException(errMsg);
         }
         s.save(settings);
+        m_fileName.addToHistory();
     }
 
     /**

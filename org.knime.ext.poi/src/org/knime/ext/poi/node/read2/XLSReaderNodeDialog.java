@@ -1120,6 +1120,7 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
             Config subConf = settings.addConfig(XLS_CFG_TABLESPEC);
             preview.getDataTableSpec().save(subConf);
         }
+        m_fileName.addToHistory();
     }
 
     /**
