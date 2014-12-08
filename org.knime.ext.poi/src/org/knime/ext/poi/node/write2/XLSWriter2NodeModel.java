@@ -102,8 +102,8 @@ public class XLSWriter2NodeModel extends NodeModel {
         }
 
         String warning =
-            CheckUtils.checkDestinationFile(m_settings.getFilename(), m_settings.getOverwriteOK(),
-                m_settings.getFileMustExist());
+            CheckUtils.checkDestinationFile(m_settings.getFilename(), (m_type == XLSNodeType.APPENDER)
+                || m_settings.getOverwriteOK(), m_settings.getFileMustExist());
         if (warning != null) {
             setWarningMessage(warning);
         }
@@ -120,7 +120,8 @@ public class XLSWriter2NodeModel extends NodeModel {
         if (m_filterConfig == null) {
             m_filterConfig = XLSWriter2NodeDialogPane.createColFilterConf();
         }
-        CheckUtils.checkDestinationFile(m_settings.getFilename(), m_settings.getOverwriteOK(),
+        CheckUtils.checkDestinationFile(m_settings.getFilename(), (m_type == XLSNodeType.APPENDER)
+            || m_settings.getOverwriteOK(),
             m_settings.getFileMustExist());
 
         URL url = FileUtil.toURL(m_settings.getFilename());
