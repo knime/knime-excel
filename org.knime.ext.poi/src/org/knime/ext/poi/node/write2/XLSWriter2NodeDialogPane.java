@@ -51,6 +51,7 @@ import java.awt.Dimension;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -193,7 +194,7 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
                         Path path = FileUtil.resolveToPath(newUrl);
                         m_overwriteOK.setEnabled(path != null);
                         m_openFile.setEnabled(path != null);
-                    } catch (IOException | URISyntaxException ex) {
+                    } catch (IOException | URISyntaxException | InvalidPathException ex) {
                         // ignore
                     }
                 }
