@@ -401,6 +401,7 @@ public class XLSWriter2Settings {
 
     /**
      * @param writeMissingValues the writeMissingValues to set
+     * @since 2.11
      */
     public void setWriteMissingValues(final boolean writeMissingValues) {
         m_writeMissingValues = writeMissingValues;
@@ -408,6 +409,7 @@ public class XLSWriter2Settings {
 
     /**
      * @return the writeMissingValues
+     * @since 2.11
      */
     public boolean getWriteMissingValues() {
         return m_writeMissingValues;
