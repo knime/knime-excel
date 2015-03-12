@@ -295,9 +295,8 @@ public class XLSWriter2 {
                 DataCell colValue = tableRow.getCell(c);
 
                 if (colValue.isMissing()) {
-                    String miss = m_settings.getMissingPattern();
-                    if (miss != null) {
-                        sheetRow.createCell(colIdx).setCellValue(miss);
+                    if (m_settings.getWriteMissingValues()) {
+                        sheetRow.createCell(colIdx).setCellValue(m_settings.getMissingPattern());
                     }
                 } else {
                     Cell sheetCell = sheetRow.createCell(colIdx);

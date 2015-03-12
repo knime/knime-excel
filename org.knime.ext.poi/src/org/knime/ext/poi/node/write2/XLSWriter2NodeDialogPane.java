@@ -150,6 +150,8 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
 
     private final DataColumnSpecFilterPanel m_filter = new DataColumnSpecFilterPanel();
 
+    private final JCheckBox m_writeMissingValue = new JCheckBox("For missing values write:");
+
     /**
      * Creates a new dialog for the XLS writer node.
      *
@@ -181,6 +183,13 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
         tab.add(m_filter);
 
         addTab("writer options", tab);
+
+        m_writeMissingValue.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(final ChangeEvent e) {
+                m_missValue.setEnabled(m_writeMissingValue.isSelected());
+            }
+        });
     }
 
     private JPanel createFileBox() {
@@ -290,7 +299,7 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
         m_missValue.setMaximumSize(new Dimension(400, 25));
         Box missBox = Box.createHorizontalBox();
         missBox.add(Box.createHorizontalStrut(70));
-        missBox.add(new JLabel("For missing values write:"));
+        missBox.add(m_writeMissingValue);
         missBox.add(Box.createHorizontalStrut(5));
         missBox.add(m_missValue);
         missBox.add(Box.createHorizontalGlue());
@@ -355,6 +364,8 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
             m_portrait.setSelected(true);
         }
         m_paperSize.setSelectedItem(PaperSize.getName(newVals.getPaperSize()));
+        m_writeMissingValue.setSelected(newVals.getWriteMissingValues());
+        m_missValue.setEnabled(newVals.getWriteMissingValues());
         DataColumnSpecFilterConfiguration config = createColFilterConf();
         config.loadConfigurationInDialog(settings, specs[0]);
         m_filter.loadConfiguration(config, specs[0]);
@@ -389,6 +400,7 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
         vals.setAutosize(m_autosize.isSelected());
         vals.setLandscape(m_landscape.isSelected());
         vals.setPaperSize(PaperSize.getValue((String)m_paperSize.getSelectedItem()));
+        vals.setWriteMissingValues(m_writeMissingValue.isSelected());
         vals.saveSettingsTo(settings);
         DataColumnSpecFilterConfiguration config = createColFilterConf();
         m_filter.saveConfiguration(config);
