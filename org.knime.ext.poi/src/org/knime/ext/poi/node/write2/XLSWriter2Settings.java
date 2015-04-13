@@ -88,6 +88,8 @@ public class XLSWriter2Settings {
 
     private static final String CFG_PAPER_SIZE = "paper_size";
 
+    private static final String CFG_WRITE_MISSING_VALUES = "write_missing_values";
+
     private int m_xCellOffset;
 
     private int m_yCellOffset;
@@ -116,6 +118,8 @@ public class XLSWriter2Settings {
 
     private short m_paperSize;
 
+    private boolean m_writeMissingValues;
+
     /**
      * Creates a new settings object with default settings but no filename.
      */
@@ -133,6 +137,7 @@ public class XLSWriter2Settings {
         m_doNotOverwriteSheet = false;
         m_landscape = false;
         m_paperSize = PrintSetup.LETTER_PAPERSIZE;
+        m_writeMissingValues = false;
     }
 
     /**
@@ -172,6 +177,7 @@ public class XLSWriter2Settings {
         m_landscape = settings.getBoolean(CFG_LANDSCAPE, false);
         m_autosize = settings.getBoolean(CFG_AUTOSIZE, false);
         m_paperSize = settings.getShort(CFG_PAPER_SIZE, PrintSetup.LETTER_PAPERSIZE);
+        m_writeMissingValues = settings.getBoolean(CFG_WRITE_MISSING_VALUES, true);
     }
 
     /**
@@ -194,6 +200,7 @@ public class XLSWriter2Settings {
         settings.addBoolean(CFG_LANDSCAPE, m_landscape);
         settings.addBoolean(CFG_AUTOSIZE, m_autosize);
         settings.addShort(CFG_PAPER_SIZE, m_paperSize);
+        settings.addBoolean(CFG_WRITE_MISSING_VALUES, m_writeMissingValues);
     }
 
     /**
@@ -390,6 +397,22 @@ public class XLSWriter2Settings {
      */
     public short getPaperSize() {
         return m_paperSize;
+    }
+
+    /**
+     * @param writeMissingValues the writeMissingValues to set
+     * @since 2.11
+     */
+    public void setWriteMissingValues(final boolean writeMissingValues) {
+        m_writeMissingValues = writeMissingValues;
+    }
+
+    /**
+     * @return the writeMissingValues
+     * @since 2.11
+     */
+    public boolean getWriteMissingValues() {
+        return m_writeMissingValues;
     }
 
 }
