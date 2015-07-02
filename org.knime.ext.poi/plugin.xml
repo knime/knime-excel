@@ -30,6 +30,9 @@
            <FileExtension
                  extension=".xls">
            </FileExtension>
+           <FileExtension
+                 extension=".xlsx">
+           </FileExtension>
         </FileExtensionMapping>
     </extension>   
 </plugin>
