@@ -74,6 +74,7 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.xssf.usermodel.XSSFClientAnchor;
 import org.apache.poi.xssf.usermodel.XSSFShape;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.knime.core.data.BooleanValue;
 import org.knime.core.data.DataCell;
 import org.knime.core.data.DataRow;
@@ -150,13 +151,14 @@ public class XLSWriter2 {
 
         Workbook wb;
         Path localPath = FileUtil.resolveToPath(m_destination);
+        boolean isXLSX = m_destination.getPath().toLowerCase().endsWith("xlsx");
         if (localPath != null) {
             if (Files.isRegularFile(localPath)) {
                 try (InputStream inStream = Files.newInputStream(localPath)) {
                     wb = WorkbookFactory.create(inStream);
                 }
             } else {
-                wb = new HSSFWorkbook();
+                wb = isXLSX ? new XSSFWorkbook() : new HSSFWorkbook();
             }
         } else {
             try (InputStream is = m_destination.openStream()) {
@@ -164,7 +166,7 @@ public class XLSWriter2 {
             } catch (IOException ex) {
                 // seems it does not exist, so be it and we create a new workbook
                 LOGGER.debug("Could not read XLS file at " + m_destination + ": " + ex.getMessage(), ex);
-                wb = new HSSFWorkbook();
+                wb = isXLSX ? new XSSFWorkbook() : new HSSFWorkbook();
             }
         }
 
@@ -198,9 +200,9 @@ public class XLSWriter2 {
         int numOfCols = inSpec.getNumColumns();
         int rowHdrIncr = m_settings.writeRowID() ? 1 : 0;
 
-        if (numOfCols + rowHdrIncr > MAX_NUM_OF_COLS) {
-            LOGGER.warn("The table to write has too many columns! Can't put" + " more than " + MAX_NUM_OF_COLS
-                    + " columns in one sheet." + " Truncating columns " + (MAX_NUM_OF_COLS + 1) + " to " + numOfCols);
+        if (!isXLSX && numOfCols + rowHdrIncr > MAX_NUM_OF_COLS) {
+            LOGGER.warn("The table to write has too many columns! Can't put more than " + MAX_NUM_OF_COLS
+                    + " columns in one sheet. Truncating columns " + (MAX_NUM_OF_COLS + 1) + " to " + numOfCols);
             numOfCols = MAX_NUM_OF_COLS - rowHdrIncr;
         }
         int numOfRows = -1;
@@ -262,11 +264,11 @@ public class XLSWriter2 {
             colIdx = 0;
 
             // create a new sheet if the old one is full
-            if (rowIdx >= MAX_NUM_OF_ROWS) {
+            if (!isXLSX && rowIdx >= MAX_NUM_OF_ROWS) {
                 sheetIdx++;
                 sheet = wb.createSheet(sheetName + "(" + sheetIdx + ")");
                 rowIdx = 0;
-                LOGGER.info("Creating additional sheet to store entire table." + "Additional sheet name: " + sheetName
+                LOGGER.info("Creating additional sheet to store entire table. Additional sheet name: " + sheetName
                         + "(" + sheetIdx + ")");
             }
 
