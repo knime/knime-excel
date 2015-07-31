@@ -12,11 +12,8 @@
 			This node writes the input data table into a spreadsheet and appends it to an existing workbook.
             If no workbook is present a new one will be created. The files can
             be read then with other applications like Microsoft Excel, for
-			example. The maximum number of columns held by a spreadsheet
-			is 256 (all additional columns in the data table are
-			truncated). If the input data table has more than 65536 rows
-			it is split into multiple spreadsheets (all stored in the
-			created workbook). <br />
+			example. The writer supports both the old 'xls' format as well as 'xlsx', whereby the same limitations
+			apply as described in the documentation to the XLS Writer node (max 65536x256 for 'xls'). <br />
          Note that if the destination location is a remote URL not all options are available because in general it's
          not possible to determine whether the remote location exists. In this case it will always be overwritten.            
 		</intro>
