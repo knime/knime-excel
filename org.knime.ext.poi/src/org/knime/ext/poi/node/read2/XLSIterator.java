@@ -379,6 +379,12 @@ class XLSIterator extends CloseableRowIterator {
             }
         case Cell.CELL_TYPE_FORMULA:
             CellValue cellValue = null;
+            // Check if the formula is the replacement formula for infinity (see XLSWriter2.write())
+            if (cell.getCellFormula().equals("1/0")) {
+                return new DoubleCell(Double.POSITIVE_INFINITY);
+            } else if (cell.getCellFormula().equals("-1/0")) {
+                return new DoubleCell(Double.NEGATIVE_INFINITY);
+            }
             try {
                 cellValue = m_evaluator.evaluate(cell);
             } catch (Exception e) {
