@@ -116,7 +116,7 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
             .getLogger(XLSReaderNodeDialog.class);
 
     private final FilesHistoryPanel m_fileName = new FilesHistoryPanel(
-            "XLSReader", ".xls", ".xlsx");
+            "XLSReader", ".xls|.xlsx");
 
     private final JComboBox m_sheetName = new JComboBox();
 
