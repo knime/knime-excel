@@ -499,6 +499,11 @@ public class XLSTableSettings {
                             break;
                         case Cell.CELL_TYPE_FORMULA:
                             CellValue cellValue = null;
+                            // Check if the formula is the replacement formula for infinity (see XLSWriter2.write())
+                            if (cell.getCellFormula().equals("1/0") || cell.getCellFormula().equals("-1/0")) {
+                                colTypes.set(knimeColIdx, DoubleCell.TYPE);
+                                continue;
+                            }
                             try {
                                 cellValue = evaluator.evaluate(cell);
                             } catch (Exception e) {

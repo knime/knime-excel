@@ -1,9 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<knimeNode type="Sink" icon="./xlswriter.png" xmlns="http://knime.org/node/v2.12" 
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-  xsi:schemaLocation="http://knime.org/node/v2.12 http://knime.org/node/v2.12.xsd">
-    <name>XLS Writer</name>
-    
+<?xml version="1.0" encoding="utf-8"?>
+<knimeNode icon="./xlswriter.png" type="Sink"
+	xmlns="http://knime.org/node/v2.12" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://knime.org/node/v2.12 http://knime.org/node/v2.12.xsd">
+    <name>XLS Writer</name>    
     <shortDescription> Saves a data table into a spreadsheet. 
     </shortDescription>
     <fullDescription>

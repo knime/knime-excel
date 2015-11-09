@@ -304,6 +304,14 @@ public class XLSWriter2 {
                     Cell sheetCell = sheetRow.createCell(colIdx);
                     if (colValue.getType().isCompatible(DoubleValue.class)) {
                         double val = ((DoubleValue)colValue).getDoubleValue();
+                        // Bug 6252 infinity is not supported by POI >= 3.9, we write a replacement formula instead
+                        if (Double.isInfinite(val)) {
+                            if (val>0) {
+                                sheetCell.setCellFormula("1/0");
+                            } else {
+                                sheetCell.setCellFormula("-1/0");
+                            }
+                        }
                         sheetCell.setCellValue(val);
                     } else if (colValue.getType().isCompatible(BooleanValue.class)) {
                         boolean val = ((BooleanValue)colValue).getBooleanValue();

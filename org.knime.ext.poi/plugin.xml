@@ -13,7 +13,6 @@
             id="org.knime.ext.poi.node.write2.XLSAppenderNodeFactory"/>
       <node
             category-path="/io/read"
-            expert-flag="false"
             factory-class="org.knime.ext.poi.node.read2.XLSReaderNodeFactory"
             id="org.knime.ext.poi.node.read.XLSReaderNodeFactory">
       </node>
