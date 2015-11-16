@@ -117,7 +117,7 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
 
     private final DialogComponentFileChooser m_fileComponent = new DialogComponentFileChooser(m_filename, "XLSWRITER",
             JFileChooser.SAVE_DIALOG, false, createFlowVariableModel("filename", FlowVariable.Type.STRING),
-            new String[]{".xls"});
+            new String[]{".xls|.xlsx"});
 
     private final JCheckBox m_writeColHdr = new JCheckBox();
 

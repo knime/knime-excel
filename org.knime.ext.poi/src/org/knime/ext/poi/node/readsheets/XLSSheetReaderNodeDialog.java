@@ -69,7 +69,7 @@ import org.knime.ext.poi.POIActivator;
  */
 public class XLSSheetReaderNodeDialog extends NodeDialogPane {
 
-    private final FilesHistoryPanel m_fileName = new FilesHistoryPanel("XLSSheetReader", ".xls", ".xlsx");
+    private final FilesHistoryPanel m_fileName = new FilesHistoryPanel("XLSSheetReader", ".xls|.xlsx");
 
     /**
      * Creates the dialog with its components.
