@@ -127,6 +127,8 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
 
     private final JCheckBox m_overwriteOK = new JCheckBox("Overwrite existing file");
 
+    private final JCheckBox m_evaluateFormula = new JCheckBox("Evaluate Formulas on write");
+
     private final JCheckBox m_fileMustExist = new JCheckBox("Abort if file does not exist");
 
     private final JCheckBox m_doNotOverwriteSheet = new JCheckBox("Abort if sheet already exists");
@@ -176,6 +178,9 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
         tab.add(createSheetnameBox());
         tab.add(Box.createVerticalStrut(5));
         tab.add(createHeadersBox());
+        if (m_type == XLSNodeType.APPENDER) {
+            tab.add(createFormulaBox());
+        }
         tab.add(createMissingBox());
         tab.add(createLayoutBox());
         tab.add(Box.createVerticalGlue());
@@ -218,6 +223,20 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
         overwiteBox.add(m_overwriteOK);
         overwiteBox.add(Box.createHorizontalGlue());
         return overwiteBox;
+    }
+
+    private JComponent createFormulaBox() {
+        Box formulaBox = Box.createHorizontalBox();
+        formulaBox.add(Box.createHorizontalStrut(70));
+        formulaBox.add(m_evaluateFormula);
+        formulaBox.add(Box.createHorizontalGlue());
+
+        JPanel result = new JPanel();
+        result.setLayout(new BoxLayout(result, BoxLayout.Y_AXIS));
+        result.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Formulas"));
+        result.add(formulaBox);
+
+        return result;
     }
 
     private JComponent createFileMustExistBox() {
@@ -351,6 +370,7 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
         m_missValue.setText(newVals.getMissingPattern());
         m_writeColHdr.setSelected(newVals.writeColHeader());
         m_writeRowHdr.setSelected(newVals.writeRowID());
+        m_evaluateFormula.setSelected(newVals.evaluateFormula());
         m_overwriteOK.setSelected(newVals.getOverwriteOK());
         m_openFile.setSelected(newVals.getOpenFile());
         m_sheetname.setText(newVals.getSheetname());
@@ -401,6 +421,7 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
         vals.setLandscape(m_landscape.isSelected());
         vals.setPaperSize(PaperSize.getValue((String)m_paperSize.getSelectedItem()));
         vals.setWriteMissingValues(m_writeMissingValue.isSelected());
+        vals.setEvaluateFormula(m_evaluateFormula.isSelected());
         vals.saveSettingsTo(settings);
         DataColumnSpecFilterConfiguration config = createColFilterConf();
         m_filter.saveConfiguration(config);

@@ -68,6 +68,7 @@ import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.ClientAnchor;
 import org.apache.poi.ss.usermodel.CreationHelper;
 import org.apache.poi.ss.usermodel.Drawing;
+import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -372,6 +373,11 @@ public class XLSWriter2 {
             for (int i = 0; i < numOfCols; i++) {
                 sheet.autoSizeColumn(i);
             }
+        }
+
+        if (m_settings.evaluateFormula()){
+            FormulaEvaluator evaluator = wb.getCreationHelper().createFormulaEvaluator();
+            evaluator.evaluateAll();
         }
 
         // Write the output to a file

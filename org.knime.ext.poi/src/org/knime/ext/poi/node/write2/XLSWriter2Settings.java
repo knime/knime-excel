@@ -90,6 +90,8 @@ public class XLSWriter2Settings {
 
     private static final String CFG_WRITE_MISSING_VALUES = "write_missing_values";
 
+    private static final String CFG_EVALUATE_FORMULA = "evaluate_formula";
+
     private int m_xCellOffset;
 
     private int m_yCellOffset;
@@ -120,6 +122,8 @@ public class XLSWriter2Settings {
 
     private boolean m_writeMissingValues;
 
+    private boolean m_evaluateFormula;
+
     /**
      * Creates a new settings object with default settings but no filename.
      */
@@ -138,6 +142,7 @@ public class XLSWriter2Settings {
         m_landscape = false;
         m_paperSize = PrintSetup.LETTER_PAPERSIZE;
         m_writeMissingValues = false;
+        m_evaluateFormula = false;
     }
 
     /**
@@ -178,6 +183,7 @@ public class XLSWriter2Settings {
         m_autosize = settings.getBoolean(CFG_AUTOSIZE, false);
         m_paperSize = settings.getShort(CFG_PAPER_SIZE, PrintSetup.LETTER_PAPERSIZE);
         m_writeMissingValues = settings.getBoolean(CFG_WRITE_MISSING_VALUES, true);
+        m_evaluateFormula = settings.getBoolean(CFG_EVALUATE_FORMULA, false);
     }
 
     /**
@@ -201,6 +207,7 @@ public class XLSWriter2Settings {
         settings.addBoolean(CFG_AUTOSIZE, m_autosize);
         settings.addShort(CFG_PAPER_SIZE, m_paperSize);
         settings.addBoolean(CFG_WRITE_MISSING_VALUES, m_writeMissingValues);
+        settings.addBoolean(CFG_EVALUATE_FORMULA, m_evaluateFormula);
     }
 
     /**
@@ -414,5 +421,22 @@ public class XLSWriter2Settings {
     public boolean getWriteMissingValues() {
         return m_writeMissingValues;
     }
+
+    /**
+     * @return the writeMissingValues
+     * @since 3.1.1
+     */
+    public boolean evaluateFormula() {
+        return m_evaluateFormula;
+    }
+
+    /**
+     * @param evaluateFormula
+     * @since 3.1.1
+     */
+    public void setEvaluateFormula(final boolean evaluateFormula) {
+        m_evaluateFormula = evaluateFormula;
+    }
+
 
 }
