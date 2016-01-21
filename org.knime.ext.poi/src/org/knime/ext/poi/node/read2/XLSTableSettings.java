@@ -221,7 +221,7 @@ public class XLSTableSettings {
         }
 
         String sheetName = settings.getSheetName();
-        if (sheetName == null || sheetName.isEmpty()) {
+        if (sheetName == null || sheetName.isEmpty() || sheetName.equals(XLSReaderNodeDialog.FIRST_SHEET)) {
             sheetName = XLSTable.getFirstSheetNameWithData(wb);
         }
 
