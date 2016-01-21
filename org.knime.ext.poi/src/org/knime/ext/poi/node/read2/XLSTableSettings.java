@@ -821,7 +821,8 @@ public class XLSTableSettings {
             // This should be the only place in the code where a workbook gets loaded
             workbook = WorkbookFactory.create(in);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            LOGGER.error(e.getMessage(), e);
+            return null;
         } finally {
             if (in != null) {
                 try {
