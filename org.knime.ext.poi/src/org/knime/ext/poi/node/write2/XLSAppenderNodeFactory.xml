@@ -48,6 +48,10 @@
 			If checked, the row IDs are added to the output, in the
 			first column of the spreadsheet.
 		</option>
+        <option name="Evaluate Formulas on write">
+            If checked, all formulas in the file will be evaluated after the sheet has been written. This is useful
+            if other sheets in the file refer to the data just written and their content needs updating. 
+        </option>
 		<option name="Missing Value Pattern">
 			Enter a pattern that is set for missing data values. If not
 			specified, the corresponding data cell of the spreadsheet

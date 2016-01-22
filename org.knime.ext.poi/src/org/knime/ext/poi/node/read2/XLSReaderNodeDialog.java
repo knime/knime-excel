@@ -177,7 +177,8 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
 
     private static final String SCANNING = "/* scanning... */";
 
-    private static final String FIRST_SHEET = "<first sheet with data>";
+    /** Select the first sheet with data **/
+    static final String FIRST_SHEET = "<first sheet with data>";
 
     /** config key used to store data table spec. */
     static final String XLS_CFG_TABLESPEC = "XLS_DataTableSpec";
