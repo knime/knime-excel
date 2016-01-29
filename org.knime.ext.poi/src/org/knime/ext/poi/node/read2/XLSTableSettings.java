@@ -812,17 +812,17 @@ public class XLSTableSettings {
      *
      * @param path Path to the workbook
      * @return The workbook or null if it could not be loaded
+     * @throws IOException
+     * @throws InvalidFormatException
+     * @throws RuntimeException the underlying POI library also throws other kind of exceptions
      */
-    public static Workbook getWorkbook(final String path) {
+    public static Workbook getWorkbook(final String path) throws IOException, InvalidFormatException {
         Workbook workbook = null;
         InputStream in = null;
         try {
             in = XLSTableSettings.getBufferedInputStream(path);
             // This should be the only place in the code where a workbook gets loaded
             workbook = WorkbookFactory.create(in);
-        } catch (Exception e) {
-            LOGGER.error(e.getMessage(), e);
-            return null;
         } finally {
             if (in != null) {
                 try {

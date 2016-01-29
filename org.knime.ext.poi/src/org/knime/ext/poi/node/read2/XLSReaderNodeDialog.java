@@ -529,7 +529,12 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
 
     private void fileNameChanged() {
         // Refresh the workbook when the selected file changed
-        refreshWorkbook(m_fileName.getSelectedFile());
+        try {
+            refreshWorkbook(m_fileName.getSelectedFile());
+        } catch (RuntimeException | InvalidFormatException | IOException e) {
+            // refresh workbook sets the workbook null in case of an error
+            m_fileAccessError = e.getMessage();
+        }
         if (m_loading.get()) {
             return;
         }
@@ -556,9 +561,9 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
             protected String[] doInBackgroundWithContext() throws Exception {
                 String file = m_fileName.getSelectedFile();
                 if (file != null && !file.isEmpty()) {
-                    m_fileAccessError = null;
                     if (m_workbook != null) {
                         try {
+                            m_fileAccessError = null;
                             ArrayList<String> sheetNames = XLSTable.getSheetNames(m_workbook);
                             sheetNames.add(0, FIRST_SHEET);
                             return sheetNames.toArray(new String[sheetNames.size()]);
@@ -1142,12 +1147,14 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
             // Get the workbook when dialog is opened
             try {
                 refreshWorkbook(s.getFileLocation());
-            } catch (RuntimeException e) {
+            } catch (RuntimeException | InvalidFormatException | IOException e) {
                 // Bug 5538 - Catch FileNotFoundException and continue transferring settings
                 if (e.getCause() instanceof FileNotFoundException) {
-                    LOGGER.debug(e.getCause().getMessage(), e.getCause());
+                    m_fileAccessError = e.getCause().getMessage();
+                    LOGGER.debug(m_fileAccessError, e.getCause());
                 } else {
-                    LOGGER.error(e.getMessage(), e);
+                    m_fileAccessError = e.getMessage();
+                    LOGGER.error(m_fileAccessError, e);
                 }
             }
             transferSettingsIntoComponents(s);
@@ -1233,13 +1240,14 @@ public class XLSReaderNodeDialog extends NodeDialogPane {
         });
     }
 
-    private void refreshWorkbook(final String path) {
+    private void refreshWorkbook(final String path) throws InvalidFormatException, IOException {
         if (path == null) {
             m_workbook = null;
             m_workbookPath = null;
         } else if (!path.equals(m_workbookPath)) {
-            m_workbook = XLSTableSettings.getWorkbook(path);
+            m_workbook = null;
             m_workbookPath = path;
+            m_workbook = XLSTableSettings.getWorkbook(path);
         }
     }
 
