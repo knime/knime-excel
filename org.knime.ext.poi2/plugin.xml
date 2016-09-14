@@ -5,27 +5,23 @@
          point="org.knime.workbench.repository.nodes">
       <node
             category-path="/io/write"
-            deprecated="true"
-            factory-class="org.knime.ext.poi.node.write2.XLSWriter2NodeFactory"/>
+            factory-class="org.knime.ext.poi2.node.write2.XLSWriter2NodeFactory"/>
       <node
             category-path="/io/write"
-            deprecated="true"
-            factory-class="org.knime.ext.poi.node.write2.XLSAppenderNodeFactory"/>
+            factory-class="org.knime.ext.poi2.node.write2.XLSAppenderNodeFactory"/>
       <node
             category-path="/io/read"
-            deprecated="true"
-            factory-class="org.knime.ext.poi.node.read2.XLSReaderNodeFactory">
+            factory-class="org.knime.ext.poi2.node.read2.XLSReaderNodeFactory">
       </node>
       <node
             category-path="/io/read"
-            deprecated="true"
-            factory-class="org.knime.ext.poi.node.readsheets.XLSSheetReaderNodeFactory">
+            factory-class="org.knime.ext.poi2.node.readsheets.XLSSheetReaderNodeFactory">
       </node>
    </extension>
      <extension
            point="org.knime.workbench.repository.registeredFileExtensions">
         <FileExtensionMapping
-              NodeFactory="org.knime.ext.poi.node.read2.XLSReaderNodeFactory">
+              NodeFactory="org.knime.ext.poi2.node.read2.XLSReaderNodeFactory">
            <FileExtension
                  extension=".xls">
            </FileExtension>
@@ -33,5 +29,5 @@
                  extension=".xlsx">
            </FileExtension>
         </FileExtensionMapping>
-    </extension>   
+    </extension>
 </plugin>

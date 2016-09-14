@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE knimeNode PUBLIC "-//UNIKN//DTD KNIME Node 2.0//EN" "http://www.knime.org/Node.dtd">
+<knimeNode type="Source" icon="./xlssheetreader.png">
+	<name>Read XLS Sheet Names</name>
+
+	<shortDescription>
+        Reads the sheet names contained in a workbook.
+	</shortDescription>
+
+	<fullDescription>
+		<intro>
+			This node reads a spread sheet and provides the contained sheet names at its output port.<br />
+			The performance of the reader node is limited (due to the underlying library
+			of the Apache POI project). Reading large files takes a very long time and uses a
+			lot of memory (especially files in xlsx format).   		
+		</intro>
+		<option name="File to read">
+			Enter a valid file name. You can also choose a previously
+			selected file from the drop-down list, or select a file from
+			the &quot;Browse...&quot; dialog. Supported are xls and xlsx file 
+			formats. (Note: reading large xlsx files is very slow and memory consuming.)
+		</option>
+	</fullDescription>
+
+	<ports>
+		<outPort index="0" name="Output table">
+			The sheet names contained in the workbook.
+		</outPort>
+	</ports>
+</knimeNode>
+
+
