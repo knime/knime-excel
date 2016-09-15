@@ -1293,7 +1293,7 @@ class CachedExcelTable {
         colHeader.keySet().stream().max(Comparator.naturalOrder()).ifPresent((max) -> {
             //Necessary to skip the same columns.
             int idx = 0;
-            for (int i = 0; i < max && idx < result.length; ++i) {
+            for (int i = 0; i <= max && idx < result.length; ++i) {
                 if (!skippedCols.contains(i)) {
                     if (colHeader.containsKey(i)) {
                         final Content content = colHeader.get(i);
