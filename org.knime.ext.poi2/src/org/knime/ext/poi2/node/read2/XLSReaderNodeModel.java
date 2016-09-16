@@ -238,9 +238,9 @@ public class XLSReaderNodeModel extends NodeModel {
                     CountingInputStream countingStream = new CountingInputStream(stream)) {
                 table = isXlsx() && !m_settings.isReevaluateFormulae()
                     ? CachedExcelTable.fillCacheFromXlsxStreaming(m_settings.getFileLocation(), countingStream,
-                        sheetName, Locale.ROOT, new ExecutionMonitor()).get()
-                    : CachedExcelTable.fillCacheFromDOM(m_settings.getFileLocation(), countingStream, sheetName, Locale.ROOT,
-                        m_settings.isReevaluateFormulae(), new ExecutionMonitor()).get();
+                        sheetName, Locale.ENGLISH, new ExecutionMonitor()).get()
+                    : CachedExcelTable.fillCacheFromDOM(m_settings.getFileLocation(), countingStream, sheetName,
+                        Locale.ENGLISH, m_settings.isReevaluateFormulae(), new ExecutionMonitor()).get();
                 table.createDataTable(settings, null).getDataTableSpec();
             } catch (InterruptedException | ExecutionException | RuntimeException | IOException e) {
                 throw new InvalidSettingsException(e);
@@ -277,9 +277,10 @@ public class XLSReaderNodeModel extends NodeModel {
                 InputStream stream = new BufferedInputStream(is);
                 CountingInputStream countingStream = new CountingInputStream(stream)) {
             CachedExcelTable table = isXlsx() && !settings.isReevaluateFormulae()
-                ? CachedExcelTable.fillCacheFromXlsxStreaming(loc, countingStream, sheetName, Locale.ROOT, exec.createSubExecutionContext(.9)).get()
-                : CachedExcelTable
-                    .fillCacheFromDOM(loc, countingStream, sheetName, Locale.ROOT, settings.isReevaluateFormulae(), exec.createSubExecutionContext(.9)).get();
+                ? CachedExcelTable.fillCacheFromXlsxStreaming(loc, countingStream, sheetName, Locale.ENGLISH,
+                    exec.createSubExecutionContext(.9)).get()
+                : CachedExcelTable.fillCacheFromDOM(loc, countingStream, sheetName, Locale.ENGLISH,
+                    settings.isReevaluateFormulae(), exec.createSubExecutionContext(.9)).get();
             return new BufferedDataTable[]{exec.createBufferedDataTable(table.createDataTable(settings, null), exec)};
         }
     }
@@ -300,9 +301,9 @@ public class XLSReaderNodeModel extends NodeModel {
         if (sheetName == null || XLSReaderNodeDialog.FIRST_SHEET.equals(sheetName)) {
             if (isXlsx()) {
                 try (final BufferedInputStream stream = POIUtils.getBufferedInputStream(loc);
-                final OPCPackage pack = OPCPackage.open(stream)) {
-                    sheetName = POIUtils.getFirstSheetNameWithData(new XSSFReader(pack),
-                        new ReadOnlySharedStringsTable(pack));
+                        final OPCPackage pack = OPCPackage.open(stream)) {
+                    sheetName =
+                        POIUtils.getFirstSheetNameWithData(new XSSFReader(pack), new ReadOnlySharedStringsTable(pack));
                 }
             } else {
                 sheetName = POIUtils.getFirstSheetNameWithData(POIUtils.getWorkbook(loc));

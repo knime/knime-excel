@@ -91,6 +91,7 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.ss.util.CellAddress;
 import org.apache.poi.ss.util.CellReference;
+import org.apache.poi.util.LocaleUtil;
 import org.apache.poi.util.SAXHelper;
 import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
 import org.apache.poi.xssf.eventusermodel.XSSFReader;
@@ -388,6 +389,7 @@ class CachedExcelTable {
         final String sheet, final Locale locale, final ExecutionMonitor exec) {
         //Probably could be improved to let visit the intermediate results while generating, but it is complicated.
         return CACHED_THREAD_POOL.submit(() -> {
+            LocaleUtil.setUserLocale(locale);
             final CachedExcelTable table = new CachedExcelTable();
             final KNIMEDataFormatter formatter = new KNIMEDataFormatter(locale);
             try (final OPCPackage opc = OPCPackage.open(stream)) {
@@ -438,6 +440,7 @@ class CachedExcelTable {
     static Future<CachedExcelTable> fillCacheFromDOM(final String path, final CountingInputStream stream,
         final String sheet, final Locale locale, final boolean reevaluate, final ExecutionMonitor exec) {
         return CACHED_THREAD_POOL.submit(() -> {
+            LocaleUtil.setUserLocale(locale);
             CachedExcelTable table = new CachedExcelTable();
             try (final CancellableReportingInputStream cancellableStream =
                 new CancellableReportingInputStream(stream, exec.createSubProgress(.2));
