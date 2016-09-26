@@ -48,6 +48,7 @@
 package org.knime.ext.poi2.node.write2;
 
 import java.awt.Dimension;
+import java.awt.Window;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -66,14 +67,17 @@ import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.poi.ss.usermodel.PrintSetup;
 import org.knime.core.data.BooleanValue;
 import org.knime.core.data.DataTableSpec;
@@ -366,6 +370,8 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
             // keep the defaults.
             newVals = new XLSWriter2Settings(specs[0]);
         }
+        //Necessary to update the file dialog component
+        m_filename.setStringValue(null);
         m_filename.setStringValue(newVals.getFilename());
         m_missValue.setText(newVals.getMissingPattern());
         m_writeColHdr.setSelected(newVals.writeColHeader());
@@ -400,12 +406,42 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
         // kind of a hack: the component only saves the history when
         // we allow it to save its value.
         NodeSettingsWO foo = new NodeSettings("foo");
-        m_fileComponent.saveSettingsTo(foo);
 
         String filename = m_filename.getStringValue();
         if ((filename == null) || (filename.length() == 0)) {
             throw new InvalidSettingsException("Please specify an output" + " filename.");
         }
+
+        switch (FilenameUtils.getExtension(filename).toLowerCase()) {
+            case "xls":
+                Window windowAncestor = SwingUtilities.getWindowAncestor(m_fileComponent.getComponentPanel());
+                int result = JOptionPane.showOptionDialog(windowAncestor, "<html>You chose the the old <i>xls</i> Excel"
+                    + "file format, which was used as default up until Excel 2003. This file format has "
+                    + "certain limitations. <br/>"
+                    + "Do you still want to write <i>xls</i> or use the newer <i>xlsx</i> format? "
+                    + "For details see the node description.", ".xls or .xlsx?</html>",
+                    JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,
+                    new Object[] {"Write 'XLSX'", "Write 'XLS'"}, "Write 'XLSX'");
+                switch (result) {
+                    case JOptionPane.YES_OPTION:
+                        m_filename.setStringValue(FilenameUtils.removeExtension(filename) + ".xlsx");
+                        break;
+                    case JOptionPane.NO_OPTION:
+                        default:
+                        //Nothing to do
+                        break;
+                }
+                break;
+            case "xlsx":
+                break;
+                default:
+                    if (FilenameUtils.getBaseName(filename).trim().isEmpty()) {
+                        //TODO warning? ignore?
+                    }
+                    m_filename.setStringValue(filename+ ".xlsx");
+                    break;
+        }
+        m_fileComponent.saveSettingsTo(foo);
 
         XLSWriter2Settings vals = new XLSWriter2Settings();
         vals.setFilename(m_filename.getStringValue());

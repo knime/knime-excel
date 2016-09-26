@@ -53,6 +53,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.apache.commons.io.FilenameUtils;
 import org.knime.core.data.DataTable;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.container.ColumnRearranger;
@@ -174,6 +175,15 @@ public class XLSWriter2NodeModel extends NodeModel {
     @Override
     protected void loadValidatedSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
         m_settings = new XLSWriter2Settings(settings);
+        //AP-6408
+        String filename = m_settings.getFilename();
+        if (FilenameUtils.getBaseName(filename).trim().isEmpty()) {
+            throw new InvalidSettingsException("No file name was specified: " + filename);
+        }
+        if ("".equals(FilenameUtils.getExtension(filename))) {
+            filename += ".xlsx";
+            m_settings.setFilename(filename);
+        }
         DataColumnSpecFilterConfiguration filterConfig = XLSWriter2NodeDialogPane.createColFilterConf();
         filterConfig.loadConfigurationInModel(settings);
         m_filterConfig = filterConfig;

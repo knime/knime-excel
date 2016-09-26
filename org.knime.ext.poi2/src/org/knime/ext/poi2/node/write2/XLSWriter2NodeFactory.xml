@@ -29,6 +29,9 @@
                 it's not possible to determine whether the remote location exists. In this case it will always be
                 overwritten.
             </p>
+         <p>
+         	When no extension is specified, it will be treated as an xlsx file.
+         </p>
         </intro>
         <option name="Output location"> Enter a valid file name or URL. You can also choose a previously selected local from the
             drop-down list, or select a file from the &quot;Browse...&quot; dialog. Note the file format ending as described above. 

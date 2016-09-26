@@ -15,7 +15,9 @@
 			example. The writer supports both the old 'xls' format as well as 'xlsx', whereby the same limitations
 			apply as described in the documentation to the XLS Writer node (max 65536x256 for 'xls'). <br />
          Note that if the destination location is a remote URL not all options are available because in general it's
-         not possible to determine whether the remote location exists. In this case it will always be overwritten.            
+         not possible to determine whether the remote location exists. In this case it will always be overwritten.
+         <br/>
+         When no extension is specified, it will be treated as an xlsx file.
 		</intro>
 		<option name="Output location">
 			Enter a valid file name or URL. You can also choose a previously
