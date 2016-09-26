@@ -106,6 +106,12 @@ public class XLSWriter2NodeModel extends NodeModel {
                 || m_settings.getOverwriteOK(), m_settings.getFileMustExist());
         if (warning != null) {
             setWarningMessage(warning);
+        } else if (m_type == XLSNodeType.APPENDER) {
+            try {
+                CheckUtils.checkDestinationFile(m_settings.getFilename(), true, true);
+            } catch (InvalidSettingsException ise) {
+                setWarningMessage(ise.getMessage());
+            }
         }
 
         return new DataTableSpec[]{};
