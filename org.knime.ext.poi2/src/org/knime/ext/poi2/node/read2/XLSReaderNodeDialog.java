@@ -377,7 +377,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
         Box uniquifyRowIDBox = Box.createHorizontalBox();
         m_uniquifyRowIDs.setText("Make row IDs unique");
         m_uniquifyRowIDs.setToolTipText("If checked, row IDs are uniquified "
-            + "by adding a suffix if necessary (could cause memory " + "problems with very large data sets).");
+            + "by adding a suffix if necessary (could cause memory problems with very large data sets).");
         m_uniquifyRowIDs.setSelected(false);
         m_uniquifyRowIDs.addItemListener(new ItemListener() {
             @Override
@@ -434,7 +434,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
 
         m_readAllData.setText("Read entire data sheet, or ...");
         m_readAllData
-            .setToolTipText("If checked, cells that contain " + "something (data, format, color, etc.) are read in");
+            .setToolTipText("If checked, cells that contain something (data, format, color, etc.) are read in");
         m_readAllData.addItemListener(new ItemListener() {
             @Override
             public void itemStateChanged(final ItemEvent e) {
@@ -452,15 +452,22 @@ class XLSReaderNodeDialog extends NodeDialogPane {
         fromToVBox.add(colsBox);
         fromToVBox.add(Box.createVerticalStrut(5));
         fromToVBox.add(rowsBox);
+        fromToVBox.add(Box.createVerticalStrut(5));
 
-        Box areaBox = Box.createHorizontalBox();
+        Box mainAreaBox = Box.createHorizontalBox();
+        mainAreaBox.add(Box.createHorizontalStrut(LEFT_INDENT));
+        mainAreaBox.add(allVBox);
+        mainAreaBox.add(Box.createHorizontalStrut(10));
+        mainAreaBox.add(fromToVBox);
+        mainAreaBox.add(Box.createHorizontalGlue());
+
+        Box areaBox = Box.createVerticalBox();
         areaBox.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(),
-            "Select the columns and rows to read:"));
-        areaBox.add(Box.createHorizontalStrut(LEFT_INDENT));
-        areaBox.add(allVBox);
-        areaBox.add(Box.createHorizontalStrut(10));
-        areaBox.add(fromToVBox);
-        areaBox.add(Box.createHorizontalGlue());
+                "Select the columns and rows to read:"));
+        areaBox.add(mainAreaBox);
+        areaBox.add(Box.createVerticalStrut(5));
+        areaBox.add(ViewUtils.getInFlowLayout(new JLabel(
+            "Tip: Mouse over the column and row headers in the \"File Content\" tab to identify cell coordinates")));
         return areaBox;
     }
 
@@ -485,7 +492,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
         Box skipColsBox = Box.createHorizontalBox();
         m_skipEmptyCols.setText("Skip empty columns");
         m_skipEmptyCols.setToolTipText(
-            "If checked, columns that contain " + "only missing values are not part of the output table");
+            "If checked, columns that contain only missing values are not part of the output table");
         m_skipEmptyCols.setSelected(true);
         m_skipEmptyCols.addItemListener(new ItemListener() {
             @Override
@@ -500,7 +507,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
         Box skipRowsBox = Box.createHorizontalBox();
         m_skipEmptyRows.setText("Skip empty rows");
         m_skipEmptyRows
-            .setToolTipText("If checked, rows that contain " + "only missing values are not part of the output table");
+            .setToolTipText("If checked, rows that contain only missing values are not part of the output table");
         m_skipEmptyRows.setSelected(true);
         m_skipEmptyRows.addItemListener(new ItemListener() {
             @Override
@@ -522,9 +529,9 @@ class XLSReaderNodeDialog extends NodeDialogPane {
     private JComponent getXLErrBox() {
         m_formulaMissCell.setText("Insert a missing cell");
         m_formulaMissCell
-            .setToolTipText("A missing cell doesn't change the " + "column's type, but might be hard to spot");
+            .setToolTipText("A missing cell doesn't change the column's type, but might be hard to spot");
         m_formulaStringCell.setText("Insert an error pattern:");
-        m_formulaStringCell.setToolTipText("When the evaluation fails the " + "column becomes a string column");
+        m_formulaStringCell.setToolTipText("When the evaluation fails the column becomes a string column");
         ButtonGroup bg = new ButtonGroup();
         bg.add(m_formulaMissCell);
         bg.add(m_formulaStringCell);
@@ -767,6 +774,8 @@ class XLSReaderNodeDialog extends NodeDialogPane {
                     settings.setLastColumn(0);
                     settings.setReevaluateFormulae(false);
                     settings.setSkipHiddenColumns(true);
+                    settings.setSkipEmptyRows(false);
+                    settings.setSkipHiddenColumns(false);
                     settings.setSheetName(localSheet);
                     dt.set(sheetTable.createDataTable(settings, null));
                     return "Content of xls(x) sheet: " + localSheet;
@@ -965,7 +974,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
     }
 
     private synchronized void invalidatePreviewTable() {
-        m_previewMsg.setText("Preview table is out of sync with current " + "settings. Please refresh.");
+        m_previewMsg.setText("Preview table is out of sync with current settings. Please refresh.");
     }
 
     /**
@@ -1274,7 +1283,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
         String sheet = (String)m_sheetName.getSelectedItem();
         if (sheet == SCANNING) {
             throw new InvalidSettingsException(
-                "Please wait until the file scanning " + "finishes and select a worksheet.");
+                "Please wait until the file scanning finishes and select a worksheet.");
         }
         if (sheet == null || sheet.isEmpty()) {
             throw new InvalidSettingsException("Please select a worksheet.");
