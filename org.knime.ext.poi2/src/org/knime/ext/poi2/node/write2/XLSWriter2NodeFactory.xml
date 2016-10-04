@@ -2,7 +2,7 @@
 <knimeNode icon="./xlswriter.png" type="Sink"
 	xmlns="http://knime.org/node/v2.12" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://knime.org/node/v2.12 http://knime.org/node/v2.12.xsd">
-    <name>XLS Writer</name>    
+    <name>Excel Writer</name>
     <shortDescription> Saves a data table into a spreadsheet. 
     </shortDescription>
     <fullDescription>
@@ -60,7 +60,7 @@
         </option>
         <option name="Paper size"> Sets the paper size in the print setup.
         </option>
-        <option name="Exclude/Include columns"> Select the columns that will be written in the XLS file. If the columns in the input table
+        <option name="Exclude/Include columns"> Select the columns that will be written in the XLS/XLSX file. If the columns in the input table
             should change, they will automatically be excluded.
         </option>
     </fullDescription>

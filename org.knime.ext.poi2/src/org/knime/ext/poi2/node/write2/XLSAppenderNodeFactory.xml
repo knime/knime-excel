@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE knimeNode PUBLIC "-//UNIKN//DTD KNIME Node 2.0//EN" "http://www.knime.org/Node.dtd">
 <knimeNode type="Sink" icon="./xlsappender.png">
-	<name>XLS Sheet Appender</name>
+	<name>Excel Sheet Appender</name>
 
 	<shortDescription>
 		Saves a data table into a spreadsheet.
@@ -13,7 +13,7 @@
             If no workbook is present a new one will be created. The files can
             be read then with other applications like Microsoft Excel, for
 			example. The writer supports both the old 'xls' format as well as 'xlsx', whereby the same limitations
-			apply as described in the documentation to the XLS Writer node (max 65536x256 for 'xls'). <br />
+			apply as described in the documentation to the Excel Writer node (max 65536x256 for 'xls'). <br />
          Note that if the destination location is a remote URL not all options are available because in general it's
          not possible to determine whether the remote location exists. In this case it will always be overwritten.
          <br/>
@@ -25,7 +25,7 @@
 			the &quot;Browse...&quot; dialog.
 		</option>
         <option name="Abort if file does not exist">
-            Abort the execution if the XLS file does not exist. If this option
+            Abort the execution if the XLS/XLSX file does not exist. If this option
             is not selected a new file will be created.
         </option>
         <option name="Abort if sheet already exists">
@@ -69,7 +69,7 @@
 			Sets the paper size in the print setup.
 		</option>
         <option name="Exclude/Include columns">
-            Select the columns that will be written in the XLS file. If the
+            Select the columns that will be written in the XLS/XLSX file. If the
             columns in the input table should change, they will automatically be
             excluded.
         </option>
