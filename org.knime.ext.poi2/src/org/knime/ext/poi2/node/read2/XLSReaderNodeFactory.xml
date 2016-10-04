@@ -26,6 +26,9 @@
 			formats. (Note: reading large xlsx files is very slow and memory consuming
 			when formula reevaluation is selected.)
 		</option>
+		<option name="Connection timeout">Timeout in milliseconds when reading remote files. <tt>0</tt> means no
+		timeout. In case it takes longer to connect to the host, the node fails to execute.
+		</option>
 		<option name="Sheet to Read">
             After selecting a file, you can select the sheet from the
             available sheets in the file.

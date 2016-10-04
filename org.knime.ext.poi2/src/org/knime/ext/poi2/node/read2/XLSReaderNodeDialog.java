@@ -91,9 +91,11 @@ import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
+import javax.swing.JSpinner;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import javax.swing.ListCellRenderer;
+import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingWorker;
 import javax.swing.border.Border;
 import javax.swing.border.TitledBorder;
@@ -143,6 +145,8 @@ class XLSReaderNodeDialog extends NodeDialogPane {
     private static final NodeLogger LOGGER = NodeLogger.getLogger(XLSReaderNodeDialog.class);
 
     private final FilesHistoryPanel m_fileName = new FilesHistoryPanel("XLSReader", ".xls|.xlsx");
+
+    private final JSpinner m_timeout = new JSpinner(new SpinnerNumberModel(XLSUserSettings.DEFAULT_TIMEOUT_IN_MILLISECONDS, 0, Integer.MAX_VALUE, 500));
 
     private final JComboBox<String> m_sheetName = new JComboBox<>();
 
@@ -246,6 +250,8 @@ class XLSReaderNodeDialog extends NodeDialogPane {
         settingsBox.add(getColHdrBox());
         settingsBox.add(getRowIDBox());
         settingsBox.add(getAreaBox());
+        settingsBox.add(new JLabel("Tip: Mouse over the row and column headers in the \"File Content\" tab identify "
+            + "the cell coordinates"));
         settingsBox.add(getXLErrBox());
         settingsBox.add(getOptionsBox());
         dlgTab.add(settingsBox);
@@ -267,6 +273,10 @@ class XLSReaderNodeDialog extends NodeDialogPane {
             }
         });
         fBox.add(m_fileName);
+        final JLabel timeoutLabel = new JLabel("Connection timeout: ");
+        timeoutLabel.setToolTipText("Timeout to connect to the server in milliseconds");
+        fBox.add(timeoutLabel);
+        fBox.add(m_timeout);
         fBox.add(Box.createHorizontalGlue());
         return fBox;
     }
@@ -1166,6 +1176,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
         s.setErrorPattern(m_formulaErrPattern.getText());
 
         s.setReevaluateFormulae(m_reevaluateFormulae.isSelected());
+        s.setTimeoutInMilliseconds(((Number)m_timeout.getValue()).intValue());
         return s;
     }
 
@@ -1260,6 +1271,8 @@ class XLSReaderNodeDialog extends NodeDialogPane {
         m_formulaErrPattern.setEnabled(s.getUseErrorPattern());
 
         m_reevaluateFormulae.setSelected(s.isReevaluateFormulae());
+
+        m_timeout.setValue(s.getTimeoutInMilliseconds());
 
         // clear sheet names
         m_sheetName.setModel(new DefaultComboBoxModel<>());

@@ -273,9 +273,8 @@ public class XLSReaderNodeModel extends NodeModel {
         String sheetName = settings.getSheetName();
         String loc = settings.getFileLocation();
         sheetName = settings(settings, sheetName, loc);
-        try (InputStream is = FileUtil.openInputStream(loc);
-                InputStream stream = new BufferedInputStream(is);
-                CountingInputStream countingStream = new CountingInputStream(stream)) {
+        try (InputStream is = FileUtil.openInputStream(loc, settings.getTimeoutInMilliseconds());
+                CountingInputStream countingStream = new CountingInputStream(is)) {
             CachedExcelTable table = isXlsx() && !settings.isReevaluateFormulae()
                 ? CachedExcelTable.fillCacheFromXlsxStreaming(loc, countingStream, sheetName, Locale.ENGLISH,
                     exec.createSubExecutionContext(.9)).get()

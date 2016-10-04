@@ -74,6 +74,11 @@ public class XLSUserSettings {
      */
     private static final String REEVALUATE_FORMULAE = "REEVALUATE_FORMULAE";
 
+    private static final String TIMEOUT_IN_MILLISECONDS = "TIMEOUT_IN_MILLISECONDS";
+
+    /** Default timeout in milliseconds. */
+    static final int DEFAULT_TIMEOUT_IN_MILLISECONDS = 1000;
+
     private String m_fileLocation;
 
     private boolean m_readAllData;
@@ -114,6 +119,8 @@ public class XLSUserSettings {
 
     /** When {@code true} it uses DOM reading instead of streaming and reevaluates formulae. */
     private boolean m_reevaluateFormulae;
+
+    private int m_timeoutInMilliseconds = DEFAULT_TIMEOUT_IN_MILLISECONDS;
 
     static final boolean DEFAULT_REEVALUATE_FORMULAE = false;
 
@@ -187,6 +194,7 @@ public class XLSUserSettings {
         settings.addString("FORMULA_ERR_PATTERN", m_errorPattern);
 
         settings.addBoolean(REEVALUATE_FORMULAE, m_reevaluateFormulae);
+        settings.addInt(TIMEOUT_IN_MILLISECONDS, m_timeoutInMilliseconds);
     }
 
     /**
@@ -214,6 +222,7 @@ public class XLSUserSettings {
         id.append(getID(m_useErrorPattern));
         id.append(getID(m_errorPattern));
         id.append(getID(m_reevaluateFormulae));
+        id.append(getID(m_timeoutInMilliseconds));
         return id.toString();
     }
 
@@ -286,6 +295,7 @@ public class XLSUserSettings {
                 settings.getString("FORMULA_ERR_PATTERN", DEFAULT_ERR_PATTERN);
 
         result.m_reevaluateFormulae = settings.getBoolean(REEVALUATE_FORMULAE, DEFAULT_REEVALUATE_FORMULAE);
+        result.m_timeoutInMilliseconds = settings.getInt(TIMEOUT_IN_MILLISECONDS, DEFAULT_TIMEOUT_IN_MILLISECONDS);
         return result;
     }
 
@@ -315,6 +325,9 @@ public class XLSUserSettings {
     public String getStatus(final boolean checkFileExistence) {
         if (m_fileLocation == null || m_fileLocation.isEmpty()) {
             return "No file location specified";
+        }
+        if (m_timeoutInMilliseconds < 0) {
+            return "Timeout should be non-negative! (0 means infinite)";
         }
         if (checkFileExistence) {
             try {
@@ -746,7 +759,7 @@ public class XLSUserSettings {
     }
 
     /**
-     *@see #setUseErrorPattern(boolean)
+     * @see #setUseErrorPattern(boolean)
      * @param errorPattern the errorPattern that is inserted if a formula
      *            evaluation fails (only if the corresponding boolean flag is
      *            true).
@@ -760,7 +773,7 @@ public class XLSUserSettings {
     }
 
     /**
-     *@see #getUseErrorPattern()
+     * @see #getUseErrorPattern()
      * @return the errorPattern. A StringCell with the pattern is inserted for
      *         the formula value in case the formula eval fails - and the
      *         corresponding flag is set true.
@@ -800,6 +813,20 @@ public class XLSUserSettings {
      */
     public void setReevaluateFormulae(final boolean reevaluateFormulae) {
         m_reevaluateFormulae = reevaluateFormulae;
+    }
+
+    /**
+     * @return the timeoutInMilliseconds
+     */
+    public int getTimeoutInMilliseconds() {
+        return m_timeoutInMilliseconds;
+    }
+
+    /**
+     * @param timeoutInMilliseconds the timeoutInMilliseconds to set
+     */
+    public  void setTimeoutInMilliseconds(final int timeoutInMilliseconds) {
+        m_timeoutInMilliseconds = timeoutInMilliseconds;
     }
 
     /**
