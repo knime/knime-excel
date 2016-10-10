@@ -184,7 +184,7 @@ class POIUtils {
                 "Cannot process a map with rows higher than the current " + lastKey + " >= " + rowIndex0);
             Pair<ActualDataType, Integer> lastValue = currentTypes.get(lastKey);
             CheckUtils.checkState(lastValue.getSecond() < rowIndex0,
-                "Cannot process a map with rows right interval higher than the current" + lastValue.getSecond() + " >= "
+                "Cannot process a map with rows right interval higher than the current " + lastValue.getSecond() + " >= "
                     + rowIndex0);
             if (lastValue.getSecond() + 1 == rowIndex0) {//No missing rows are in-between
                 Optional<ActualDataType> compatibility = compatibility(lastValue.getFirst(), canonical);

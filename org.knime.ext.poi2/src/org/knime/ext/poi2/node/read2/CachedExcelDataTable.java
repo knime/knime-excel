@@ -62,7 +62,6 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -127,8 +126,12 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.core.util.Pair;
 import org.knime.ext.poi2.node.read2.KNIMEXSSFSheetXMLHandler.KNIMESheetContentsHandler;
+import org.knime.ext.poi2.node.read2.POIUtils.StopProcessing;
 import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
+
+import com.google.common.collect.Interner;
+import com.google.common.collect.Interners;
 
 /**
  * Caches the read data and creates iterators based on that.
@@ -183,7 +186,8 @@ class CachedExcelTable {
 
     }
 
-    private final SortedMap<Integer, Map<Integer, Content>> m_originalValues = new TreeMap<>();
+    @SuppressWarnings("unchecked")
+    private final ArrayList<Content>[] m_contents = new ArrayList[16_384];
 
     private final Set<Integer> m_hiddenColumns = new HashSet<>();
 
@@ -196,6 +200,10 @@ class CachedExcelTable {
         m_dateFormat.setTimeZone(TimeZone.getTimeZone(ZoneOffset.UTC));
         m_dateAndTimeFormat.setTimeZone(TimeZone.getTimeZone(ZoneOffset.UTC));
     }
+
+    private int m_lastColumnIndex = Integer.MIN_VALUE, m_lastRowIndex = Integer.MIN_VALUE;
+
+    private final Map<Integer, Content> m_rowMap = new HashMap<>();
 
     //    private AtomicBoolean m_loadingStarted = new AtomicBoolean(false);
 
@@ -215,6 +223,8 @@ class CachedExcelTable {
         private Map<Integer, Content> m_currentRowMap = new HashMap<>();
 
         private ExecutionMonitor m_exec;
+
+        private final Interner<String> m_stringInterner = Interners.newWeakInterner();
 
         //private final ArrayBlockingQueue<Optional<DataRow>> m_readRows;
 
@@ -268,7 +278,17 @@ class CachedExcelTable {
         public void endRow(final int rowNum) {
             super.endRow(rowNum);
             checkCancelled();
-            m_originalValues.put(rowNum, new TreeMap<>(m_currentRowMap));
+            for (Entry<Integer, Content> entry : m_currentRowMap.entrySet()) {
+                int col = entry.getKey().intValue();
+                if (m_contents[col] == null) {
+                    m_contents[col] = new ArrayList<>(16);
+                }
+                ArrayList<Content> column = m_contents[col];
+                while (column.size() < rowNum) {
+                    column.add(null);
+                }
+                column.add(entry.getValue());
+            }
         }
 
         /**
@@ -356,9 +376,10 @@ class CachedExcelTable {
                     lastOriginalFormattedValue =
                         lastOriginalFormattedValue.substring(KNIMEDataFormatter.NUMBER_PREFIX.length());
                 }
-                m_currentRowMap.put(thisCol, new Content(valueAsString, lastOriginalFormattedValue, type));
+                m_currentRowMap.put(thisCol,
+                    new Content(m_stringInterner.intern(valueAsString), lastOriginalFormattedValue, type));
             } else {
-                m_currentRowMap.put(thisCol, new Content(valueAsString, type));
+                m_currentRowMap.put(thisCol, new Content(m_stringInterner.intern(valueAsString), type));
             }
         }
 
@@ -415,8 +436,9 @@ class CachedExcelTable {
                             throw e;
                         } catch (Exception e) {
                             throw new RuntimeException(e);
+                        } finally {
+                            table.m_hiddenColumns.addAll(handler.getHiddenColumns());
                         }
-                        table.m_hiddenColumns.addAll(handler.getHiddenColumns());
                         break;
                     }
                 }
@@ -450,24 +472,47 @@ class CachedExcelTable {
                 final FormulaEvaluator evaluator =
                     reevaluate ? workbook.getCreationHelper().createFormulaEvaluator() : null;
                 Thread currentThread = Thread.currentThread();
+                boolean date1904;
+                if (workbook instanceof XSSFWorkbook) {
+                    @SuppressWarnings("resource")
+                    final XSSFWorkbook xssfWorkbook = (XSSFWorkbook)workbook;
+                    date1904 = xssfWorkbook.isDate1904();
+                } else if (workbook instanceof HSSFWorkbook) {
+                    @SuppressWarnings("resource")
+                    final HSSFWorkbook hssfWorkbook = (HSSFWorkbook)workbook;
+                    date1904 = hssfWorkbook.getInternalWorkbook().isUsing1904DateWindowing();
+                } else {
+                    //Probably unsupported
+                    date1904 = false;
+                }
+
                 for (Row row : sheetXls) {
                     subExec.setProgress(((double)row.getRowNum()) / sheetXls.getLastRowNum(),
                         () -> "Row: " + row.getRowNum());
                     if (currentThread.isInterrupted()) {
                         currentThread.interrupt();
-                        throw new InterruptedException();
+                        throw new StopProcessing();
                     }
                     exec.checkCanceled();
                     Map<Integer, Content> rowMap = new HashMap<>();
                     for (Cell cell : row) {
-                        rowMap.put(cell.getColumnIndex(), table.createContentFromXLCell(cell, evaluator));
+                        rowMap.put(cell.getColumnIndex(), table.createContentFromXLCell(cell, evaluator, date1904));
                     }
                     if (!rowMap.values().stream().allMatch(c -> ActualDataType.isMissing(c.m_type))) {
-                        table.m_originalValues.put(row.getRowNum(), rowMap);
+                        for (Entry<Integer, Content> entry : rowMap.entrySet()) {
+                            int col = entry.getKey().intValue();
+                            if (table.m_contents[col] == null) {
+                                table.m_contents[col] = new ArrayList<>(16);
+                            }
+                            ArrayList<Content> column = table.m_contents[col];
+                            while (column.size() < row.getRowNum()) {
+                                column.add(null);
+                            }
+                            column.add(entry.getValue());
+                        }
                     }
                 }
-                int lastCol = table.m_originalValues.values().stream()
-                    .mapToInt(m -> m.keySet().stream().max(Comparator.naturalOrder()).orElse(-1)).max().orElse(-1);
+                int lastCol = lastNonNull(table.m_contents);
                 for (int i = 1; i <= lastCol + 1; ++i) {
                     if (sheetXls.isColumnHidden(i - 1)) {
                         table.m_hiddenColumns.add(i);
@@ -479,17 +524,32 @@ class CachedExcelTable {
     }
 
     /**
+     * @param contents
+     * @return
+     */
+    private static int lastNonNull(final Object[] contents) {
+        int lastNonNull = -1;
+        for (int i = 0; i < contents.length; i++) {
+            if (contents[i] != null) {
+                lastNonNull = i;
+            }
+        }
+        return lastNonNull;
+    }
+
+    /**
      * Used for DOM-based reading. Converts {@code cell} to {@link Content}.
      *
      * @param cell A {@link Cell}.
      * @param evaluator The evaluator.
+     * @param use1904windowing
      */
-    private Content createContentFromXLCell(final Cell cell, final FormulaEvaluator evaluator) {
+    private Content createContentFromXLCell(final Cell cell, final FormulaEvaluator evaluator, final boolean use1904windowing) {
         if (cell == null) {
             return new Content(null, ActualDataType.MISSING);
         }
         // determine the type
-        return createContentFromXLCell(cell, evaluator, cell.getCellType());
+        return createContentFromXLCell(cell, evaluator, cell.getCellType(), use1904windowing);
 
     }
 
@@ -500,8 +560,9 @@ class CachedExcelTable {
      * @param evaluator The evaluator.
      * @param cellType The type of {@code cell} (in case it is not the same as {@code cell}'s {@link Cell#getCellType()}
      *            ).
+     * @param use1904windowing
      */
-    private Content createContentFromXLCell(final Cell cell, final FormulaEvaluator evaluator, final int cellType) {
+    private Content createContentFromXLCell(final Cell cell, final FormulaEvaluator evaluator, final int cellType, final boolean use1904windowing) {
         final int colIdx = cell.getColumnIndex();
         DataFormatter formatter = new DataFormatter();
         Format cellFormat;
@@ -534,7 +595,7 @@ class CachedExcelTable {
                     CheckUtils.checkState(cell.getCachedFormulaResultType() != Cell.CELL_TYPE_FORMULA,
                         "Formula cannot create another formula");
                     //Use cached value.
-                    return createContentFromXLCell(cell, evaluator, cell.getCachedFormulaResultType());
+                    return createContentFromXLCell(cell, evaluator, cell.getCachedFormulaResultType(), use1904windowing);
                 }
                 try {
                     cellValue = evaluator.evaluate(cell);
@@ -550,17 +611,16 @@ class CachedExcelTable {
                     case Cell.CELL_TYPE_NUMERIC:
                         //Checking for data, based on  DateUtil#isCellDateFormatted(Cell)
                         double d = cellValue.getNumberValue();
-                        cell.setCellType(Cell.CELL_TYPE_NUMERIC);
-                        cell.setCellValue(d);
-                        if (DateUtil.isCellDateFormatted(cell)) {
-                            Date date = cell.getDateCellValue();
-                            Date dateUTC = DateUtil.getJavaDate(d, false, TimeZone.getTimeZone(ZoneOffset.UTC), true);
+                        if (DateUtil.isADateFormat(cell.getCellStyle().getDataFormat(), cell.getCellStyle().getDataFormatString())) {
+                            //Date date = cell.getDateCellValue();
+                            Date date = DateUtil.getJavaDate(cellValue.getNumberValue(), use1904windowing);
+                            Date dateUTC = DateUtil.getJavaDate(d, use1904windowing, TimeZone.getTimeZone(ZoneOffset.UTC), true);
                             return new Content(
                                 d == (long)d ? m_dateFormat.format(dateUTC) : m_dateAndTimeFormat.format(dateUTC),
                                 cellFormat == null ? m_dateFormat.format(date) : cellFormat.format(date),
                                 ActualDataType.DATE_FORMULA);
                         } else {
-                            double value = cell.getNumericCellValue();
+                            double value = cellValue.getNumberValue();
                             if (POIUtils.isInteger(Double.toString(value))) {
                                 return new Content(Integer.toString((int)value),
                                     cellFormat == null ? Integer.toString((int)value) : cellFormat.format(value),
@@ -586,19 +646,7 @@ class CachedExcelTable {
                 if (DateUtil.isCellDateFormatted(cell)) {
                     final Date date = cell.getDateCellValue();
                     final double d = cell.getNumericCellValue();
-                    Workbook workbook = cell.getSheet().getWorkbook();
-                    boolean date1904;
-                    if (workbook instanceof XSSFWorkbook) {
-                        final XSSFWorkbook xssfWorkbook = (XSSFWorkbook)workbook;
-                        date1904 = xssfWorkbook.isDate1904();
-                    } else if (workbook instanceof HSSFWorkbook) {
-                        final HSSFWorkbook hssfWorkbook = (HSSFWorkbook)workbook;
-                        date1904 = hssfWorkbook.getInternalWorkbook().isUsing1904DateWindowing();
-                    } else {
-                        //Probably unsupported
-                        date1904 = false;
-                    }
-                    Date dateUTC = DateUtil.getJavaDate(d, date1904, TimeZone.getTimeZone(ZoneOffset.UTC), true);
+                    Date dateUTC = DateUtil.getJavaDate(d, use1904windowing, TimeZone.getTimeZone(ZoneOffset.UTC), true);
                     return new Content(
                         d == (long)d ? m_dateFormat.format(dateUTC) : m_dateAndTimeFormat.format(dateUTC),
                         cellFormat == null ? m_dateAndTimeFormat.format(date) : cellFormat.format(date),
@@ -658,18 +706,7 @@ class CachedExcelTable {
             @Override
             public RowIterator iterator() {
                 return new RowIterator() {
-                    private final Iterator<Entry<Integer, Map<Integer, Content>>> m_it;
-
-                    {
-                        if (settings.getReadAllData()) {
-                            m_it = m_originalValues.entrySet().iterator();
-                        } else if (settings.getLastRow0() >= 0) {
-                            m_it = m_originalValues.headMap(settings.getLastRow0() + 1).tailMap(settings.getFirstRow0())
-                                .entrySet().iterator();
-                        } else {
-                            m_it = m_originalValues.tailMap(settings.getFirstRow0()).entrySet().iterator();
-                        }
-                    }
+                    private int m_rowNumber = Math.max(0, settings.getFirstRow0());
 
                     private Entry<Integer, Map<Integer, Content>> m_nextRow;
 
@@ -889,12 +926,10 @@ class CachedExcelTable {
                             }
                             if (type.isCompatible(DateAndTimeValue.class)) {
                                 try {
-                                    //                                    m_dateAndTimeFormat.setTimeZone(TimeZone.getTimeZone(ZoneOffset.UTC));
                                     return new DateAndTimeCell(m_dateAndTimeFormat.parse(valueAsString).getTime(), true,
                                         true, false);
                                 } catch (ParseException e) {
                                     try {
-                                        //                                        m_dateFormat.setTimeZone(TimeZone.getTimeZone(ZoneOffset.UTC));
                                         return new DateAndTimeCell(m_dateFormat.parse(valueAsString).getTime(), true,
                                             false, false);
                                     } catch (ParseException e1) {
@@ -921,11 +956,10 @@ class CachedExcelTable {
                     }
 
                     private Entry<Integer, Map<Integer, Content>> nextEntry() {
-                        if (m_it.hasNext()) {
-                            return m_it.next();
-                        } else {
-                            return null;
+                        if (m_rowNumber <= lastRow()) {
+                            return new AbstractMap.SimpleImmutableEntry<>(m_rowNumber, constructRow(m_rowNumber++));
                         }
+                        return null;
                     }
 
                     @Override
@@ -1048,17 +1082,18 @@ class CachedExcelTable {
      */
     private SortedMap<Integer, SortedMap<Integer, Pair<ActualDataType, Integer>>> dataTypes() {
         SortedMap<Integer, SortedMap<Integer, Pair<ActualDataType, Integer>>> ret = new TreeMap<>();
-        for (final Entry<Integer, Map<Integer, Content>> entry : m_originalValues.entrySet()) {
-            for (final Entry<Integer, Content> value : entry.getValue().entrySet()) {
-                SortedMap<Integer, Pair<ActualDataType, Integer>> map = ret.get(value.getKey());
-                if (map == null) {
-                    map = new TreeMap<>();
-                    map.put(entry.getKey(), Pair.create(value.getValue().m_type, entry.getKey()));
-                    ret.put(value.getKey(), map);
-                } else {
-                    ret.put(value.getKey(), POIUtils.CombinationStrategies.KeepEverythingAsIsCombineOnlyIdentical
-                        .combine(map, entry.getKey(), value.getValue().m_type));
+        for (int i = 0; i < m_contents.length; i++) {
+            ArrayList<Content> arrayList = m_contents[i];
+            if (arrayList != null) {
+                SortedMap<Integer, Pair<ActualDataType, Integer>> map = new TreeMap<>();
+                Content firstContent = arrayList.size() > 0 ? arrayList.get(0) : null;
+                map.put(0, Pair.create(firstContent == null ? ActualDataType.MISSING : firstContent.m_type, 0));
+                for (int j = 1; j < arrayList.size(); j++) {
+                    Content content = arrayList.get(j);
+                    map = POIUtils.CombinationStrategies.KeepEverythingAsIsCombineOnlyIdentical.combine(map, j,
+                        content == null ? ActualDataType.MISSING : content.m_type);
                 }
+                ret.put(i, map);
             }
         }
         return ret;
@@ -1068,8 +1103,40 @@ class CachedExcelTable {
      * @return The last column index within the cache.
      */
     private int lastColumnIndex() {
-        return m_originalValues.values().stream().map(m -> m.keySet().stream().max(Comparator.naturalOrder()))
-            .filter(o -> o.isPresent()).map(o -> o.get()).max(Comparator.naturalOrder()).orElse(Integer.MIN_VALUE);
+        return m_lastColumnIndex > Integer.MIN_VALUE ? m_lastColumnIndex
+            : (m_lastColumnIndex = lastNonNull(m_contents));
+    }
+
+    private int lastRow() {
+        return m_lastRowIndex > Integer.MIN_VALUE ? m_lastRowIndex : (m_lastRowIndex = lastRow(m_contents));
+    }
+
+    /**
+     * @param contents
+     * @return
+     */
+    private int lastRow(final ArrayList<Content>[] contents) {
+        int max = -1;
+        for (ArrayList<Content> arrayList : contents) {
+            max = Math.max(realSize(arrayList), max);
+        }
+        return max;
+    }
+
+    /**
+     * @param arrayList
+     * @return The last cell containing value.
+     */
+    private int realSize(final ArrayList<Content> arrayList) {
+        if (arrayList == null) {
+            return -1;
+        }
+        for (int size = arrayList.size(); size-- > 0;) {
+            if (arrayList.get(size) != null) {
+                return size;
+            }
+        }
+        return -1;
     }
 
     /**
@@ -1281,8 +1348,7 @@ class CachedExcelTable {
         if (!settings.getHasColHeaders()) {
             return result;
         }
-        final Map<Integer, Content> colHeader =
-            m_originalValues.getOrDefault(settings.getColHdrRow0(), Collections.emptyMap());
+        final Map<Integer, Content> colHeader = constructRow(settings.getColHdrRow0());
         //        if (colHeader == null) {
         //            // table had too few rows
         //            LOGGER.warn("Specified column header row not contained " + "in sheet");
@@ -1312,4 +1378,26 @@ class CachedExcelTable {
         return result;
     }
 
+    /**
+     *
+     *
+     * @param rowIndex0
+     * @return
+     */
+    private Map<Integer, Content> constructRow(final int rowIndex0) {
+        m_rowMap.clear();
+        if (rowIndex0 < 0) {
+            return m_rowMap;
+        }
+        for (int i = 0; i <= lastColumnIndex(); i++) {
+            ArrayList<Content> list = m_contents[i];
+            if (list != null) {
+                Content content = list.size() > rowIndex0 ? list.get(rowIndex0) : null;
+                if (content != null) {
+                    m_rowMap.put(i, content);
+                }
+            }
+        }
+        return m_rowMap;
+    }
 }

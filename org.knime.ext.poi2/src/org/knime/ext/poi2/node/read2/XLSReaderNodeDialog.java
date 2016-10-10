@@ -773,7 +773,8 @@ class XLSReaderNodeDialog extends NodeDialogPane {
                         }
                     }
                     final XLSUserSettings settings = createSettingsFromComponents();
-                    final CachedExcelTable sheetTable = getSheetTable(file, localSheet, settings);
+                    final CachedExcelTable table =
+                        getSheetTable(file, localSheet, settings.isReevaluateFormulae());
                     settings.setHasColHeaders(false);
                     settings.setHasRowHeaders(false);
                     settings.setKeepXLNames(true);
@@ -787,7 +788,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
                     settings.setSkipEmptyRows(false);
                     settings.setSkipHiddenColumns(false);
                     settings.setSheetName(localSheet);
-                    dt.set(sheetTable.createDataTable(settings, null));
+                    dt.set(table.createDataTable(settings, null));
                     return "Content of xls(x) sheet: " + localSheet;
                 } catch (Throwable t) {
                     NodeLogger.getLogger(XLSReaderNodeDialog.class)
@@ -844,27 +845,28 @@ class XLSReaderNodeDialog extends NodeDialogPane {
      *
      * @param file File name.
      * @param sheet Sheet name.
-     * @param settings User settings.
+     * @param reevaluateFormulae Reevaluate formulae or not?
      * @return The {@link CachedExcelTable}.
      * @throws InterruptedException In case it was interrupted.
      * @throws ExecutionException Its execution was cancelled.
      */
     private synchronized CachedExcelTable getSheetTable(final String file, final String sheet,
-        final XLSUserSettings settings) throws InterruptedException, ExecutionException {
+        final boolean reevaluateFormulae) throws InterruptedException, ExecutionException {
         CachedExcelTable sheetTable;
-        final Pair<String, Boolean> key = Pair.create(sheet, settings.isReevaluateFormulae());
+        final Pair<String, Boolean> key = Pair.create(sheet, reevaluateFormulae);
         if (!m_sheets.containsKey(key) || (sheetTable = m_sheets.get(key).get()) == null) {
             LOGGER.debug("Loading sheet " + sheet + "  of " + file);
             try (InputStream is = FileUtil.openInputStream(file);
                     InputStream stream = new BufferedInputStream(is);
                     CountingInputStream countingStream = new CountingInputStream(stream)) {
                 checkPreviousFuture();
+                ExecutionMonitor monitor = new ExecutionMonitor();
                 final Future<CachedExcelTable> tableFuture =
-                    XLSReaderNodeModel.isXlsx(file) && !settings.isReevaluateFormulae()
+                    XLSReaderNodeModel.isXlsx(file) && !reevaluateFormulae
                         ? CachedExcelTable.fillCacheFromXlsxStreaming(file, countingStream, sheet, Locale.ROOT,
-                            new ExecutionMonitor())
+                            monitor)
                         : CachedExcelTable.fillCacheFromDOM(file, countingStream, sheet, Locale.ROOT,
-                            settings.isReevaluateFormulae(), new ExecutionMonitor());
+                            reevaluateFormulae, monitor);
                 checkPreviousFutureAndCancel(m_currentlyRunningFuture.getAndSet(tableFuture));
                 sheetTable = tableFuture.get();
                 if (!m_currentlyRunningFuture.compareAndSet(tableFuture, null)) {
@@ -1037,7 +1039,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
                 try {
                     s = createSettingsFromComponents();
                     s.setSheetName(finalSheet);
-                    CachedExcelTable sheetTable = getSheetTable(file, finalSheet, s);
+                    CachedExcelTable sheetTable = getSheetTable(file, finalSheet, s.isReevaluateFormulae());
                     m_mapFromKNIMEColumnsToExcel.clear();
                     dt.set(sheetTable.createDataTable(s, m_mapFromKNIMEColumnsToExcel));
                 } catch (Throwable t) {

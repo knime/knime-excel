@@ -241,7 +241,7 @@ public class XLSReaderNodeModel extends NodeModel {
                         sheetName, Locale.ENGLISH, new ExecutionMonitor()).get()
                     : CachedExcelTable.fillCacheFromDOM(m_settings.getFileLocation(), countingStream, sheetName,
                         Locale.ENGLISH, m_settings.isReevaluateFormulae(), new ExecutionMonitor()).get();
-                table.createDataTable(settings, null).getDataTableSpec();
+                m_dts = table.createDataTable(settings, null).getDataTableSpec();
             } catch (InterruptedException | ExecutionException | RuntimeException | IOException e) {
                 throw new InvalidSettingsException(e);
             }

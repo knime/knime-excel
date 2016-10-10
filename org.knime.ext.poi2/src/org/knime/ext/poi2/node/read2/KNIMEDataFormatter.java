@@ -49,7 +49,9 @@
 package org.knime.ext.poi2.node.read2;
 
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.Locale;
 
 import org.apache.poi.ss.usermodel.DataFormatter;
@@ -72,6 +74,8 @@ class KNIMEDataFormatter extends DataFormatter {
     private static final String TRUE = Boolean.toString(true).toUpperCase(),
             FALSE = Boolean.toString(false).toUpperCase();
 
+    private static final int MILLISEC_PER_DAY = 24*3600;
+
     /**
      * The date format to be produced.
      */
@@ -88,6 +92,8 @@ class KNIMEDataFormatter extends DataFormatter {
 
     private String m_lastOriginalFormattedValue;
 
+    private final DateFormatCache m_dateFormatCache = new DateFormatCache();
+
     /**
      * Consructs a data formatter with standardized date formatting and with default Locale.
      */
@@ -97,6 +103,7 @@ class KNIMEDataFormatter extends DataFormatter {
 
     /**
      * Creates a {@link KNIMEDataFormatter} with possibly non-standardizing {@link DateFormat}.
+     *
      * @param df A custom {@link DateFormat}.
      */
     KNIMEDataFormatter(final DateFormat df) {
@@ -125,14 +132,15 @@ class KNIMEDataFormatter extends DataFormatter {
      * {@inheritDoc}
      */
     @Override
-    public String formatRawCellContents(final double value, final int formatIndex, final String formatString, final boolean use1904Windowing) {
+    public String formatRawCellContents(final double value, final int formatIndex, final String formatString,
+        final boolean use1904Windowing) {
         String orig = super.formatRawCellContents(value, formatIndex, formatString, use1904Windowing);
-        if (DateUtil.isADateFormat(formatIndex,formatString)) {
+        if (m_dateFormatCache.isDateFormat(formatIndex, formatString)) {
             if (DateUtil.isValidExcelDate(value)) {
                 m_lastOriginalFormattedValue = DATE_PREFIX + orig;
                 switch (m_standardizeDate) {
                     case Standardized:
-                        Date date = DateUtil.getJavaDate(value, use1904Windowing);
+                        Date date = getRoundedDate(value, use1904Windowing);
                         if ((long)value == value) {
                             return DATE_PREFIX + m_dateFormat.format(date);
                         }
@@ -149,6 +157,17 @@ class KNIMEDataFormatter extends DataFormatter {
         m_lastOriginalFormattedValue = NUMBER_PREFIX + orig;
         return NUMBER_PREFIX + value;
     }
+
+    private static Date getRoundedDate(final double date, final boolean use1904Windowing) {
+        int wholeDays = (int)Math.floor(date);
+        double ms = date - wholeDays;
+        int millisecondsInDay = (int)Math.round(MILLISEC_PER_DAY * ms) * 1000;
+
+        Calendar calendar = new GregorianCalendar();
+        DateUtil.setCalendar(calendar, wholeDays, millisecondsInDay, use1904Windowing, false);
+        return calendar.getTime();
+    }
+
     /**
      * @return the last value with the original formatting with the type prefix.
      */
