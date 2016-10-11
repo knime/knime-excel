@@ -49,9 +49,11 @@ package org.knime.ext.poi2.node.write2;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.apache.commons.io.FilenameUtils;
 import org.knime.core.data.DataTable;
@@ -105,6 +107,10 @@ public class XLSWriter2NodeModel extends NodeModel {
         String warning =
             CheckUtils.checkDestinationFile(m_settings.getFilename(), (m_type == XLSNodeType.APPENDER)
                 || m_settings.getOverwriteOK(), m_settings.getFileMustExist());
+        if (isRelative(m_settings.getFilename())) {
+            throw new InvalidSettingsException("Relative paths are not allowed ('" + m_settings.getFilename()
+                + "', please enter an absolute path or a URL");
+        }
         if (warning != null) {
             setWarningMessage(warning);
         } else if (m_type == XLSNodeType.APPENDER) {
@@ -116,6 +122,20 @@ public class XLSWriter2NodeModel extends NodeModel {
         }
 
         return new DataTableSpec[]{};
+    }
+
+    /**
+     * @param filename A URL or file path.
+     * @return {@code true} iff it is a relative file path and not a URL.
+     */
+    private boolean isRelative(final String filename) {
+        try {
+            new URL(filename);
+            return false;
+        } catch (MalformedURLException e) {
+            //Not a URL
+            return ! Paths.get(filename).isAbsolute();
+        }
     }
 
     /**

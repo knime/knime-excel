@@ -434,12 +434,12 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
                 break;
             case "xlsx":
                 break;
-                default:
-                    if (FilenameUtils.getBaseName(filename).trim().isEmpty()) {
-                        //TODO warning? ignore?
-                    }
-                    m_filename.setStringValue(filename+ ".xlsx");
-                    break;
+            default:
+                if (FilenameUtils.getBaseName(filename).trim().isEmpty()) {
+                    //TODO warning? ignore?
+                }
+                m_filename.setStringValue(filename+ ".xlsx");
+                break;
         }
         m_fileComponent.saveSettingsTo(foo);
 
