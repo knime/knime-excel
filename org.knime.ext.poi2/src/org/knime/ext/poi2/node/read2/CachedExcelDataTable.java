@@ -71,9 +71,11 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TimeZone;
 import java.util.TreeMap;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.input.CountingInputStream;
@@ -200,6 +202,8 @@ class CachedExcelTable {
         m_dateFormat.setTimeZone(TimeZone.getTimeZone(ZoneOffset.UTC));
         m_dateAndTimeFormat.setTimeZone(TimeZone.getTimeZone(ZoneOffset.UTC));
     }
+
+    private volatile boolean m_incomplete = true;
 
     private int m_lastColumnIndex = Integer.MIN_VALUE, m_lastRowIndex = Integer.MIN_VALUE;
 
@@ -404,10 +408,11 @@ class CachedExcelTable {
      * @param locale The {@link Locale} to use.
      * @param reevaluate Should we reevaluate the formulae?
      * @param exec The {@link ExecutionMonitor} to use.
+     * @param incompleteResult The container for the incomplete result, can be {@code null}.
      * @return The {@link Future} representing the computation of {@link CachedExcelTable}.
      */
     static Future<CachedExcelTable> fillCacheFromXlsxStreaming(final String path, final CountingInputStream stream,
-        final String sheet, final Locale locale, final ExecutionMonitor exec) {
+        final String sheet, final Locale locale, final ExecutionMonitor exec, final AtomicReference<CachedExcelTable> incompleteResult) {
         //Probably could be improved to let visit the intermediate results while generating, but it is complicated.
         return CACHED_THREAD_POOL.submit(() -> {
             LocaleUtil.setUserLocale(locale);
@@ -432,6 +437,7 @@ class CachedExcelTable {
                             if (exec != null) {
                                 exec.setProgress(.99, () -> "Reading finished, generating table");
                             }
+                            table.m_incomplete = false;
                         } catch (RuntimeException e) {//Includes StopProcessing
                             throw e;
                         } catch (Exception e) {
@@ -442,6 +448,11 @@ class CachedExcelTable {
                         break;
                     }
                 }
+            } catch (StopProcessing e) {
+                if (incompleteResult != null) {
+                    incompleteResult.set(table);
+                }
+                throw e;
             }
             return table;
         });
@@ -457,10 +468,11 @@ class CachedExcelTable {
      * @param locale The {@link Locale} to use.
      * @param reevaluate Should we reevaluate the formulae?
      * @param exec The {@link ExecutionMonitor} to use.
+     * @param incompleteResult The container for the incomplete result, can be {@code null}.
      * @return The {@link Future} representing the computation of {@link CachedExcelTable}.
      */
     static Future<CachedExcelTable> fillCacheFromDOM(final String path, final CountingInputStream stream,
-        final String sheet, final Locale locale, final boolean reevaluate, final ExecutionMonitor exec) {
+        final String sheet, final Locale locale, final boolean reevaluate, final ExecutionMonitor exec, final AtomicReference<CachedExcelTable> incompleteResult) {
         return CACHED_THREAD_POOL.submit(() -> {
             LocaleUtil.setUserLocale(locale);
             CachedExcelTable table = new CachedExcelTable();
@@ -518,6 +530,12 @@ class CachedExcelTable {
                         table.m_hiddenColumns.add(i);
                     }
                 }
+                table.m_incomplete = false;
+            } catch (StopProcessing | CancellationException e) {
+                if (incompleteResult != null) {
+                    incompleteResult.set(table);
+                }
+                throw e;
             }
             return table;
         });
@@ -956,7 +974,7 @@ class CachedExcelTable {
                     }
 
                     private Entry<Integer, Map<Integer, Content>> nextEntry() {
-                        if (m_rowNumber <= lastRow()) {
+                        if (m_rowNumber <= numOfRows()) {
                             return new AbstractMap.SimpleImmutableEntry<>(m_rowNumber, constructRow(m_rowNumber++));
                         }
                         return null;
@@ -1107,7 +1125,18 @@ class CachedExcelTable {
             : (m_lastColumnIndex = lastNonNull(m_contents));
     }
 
-    private int lastRow() {
+    /**
+     * @return The last row's index in case it was fully read, otherwise the {@code -(number of read rows) - 1}.
+     */
+    int lastRow() {
+        int length = numOfRows();
+        return m_incomplete ? -length - 1 : length;
+    }
+
+    /**
+     * @return
+     */
+    private int numOfRows() {
         return m_lastRowIndex > Integer.MIN_VALUE ? m_lastRowIndex : (m_lastRowIndex = lastRow(m_contents));
     }
 
@@ -1116,7 +1145,7 @@ class CachedExcelTable {
      * @return
      */
     private int lastRow(final ArrayList<Content>[] contents) {
-        int max = -1;
+        int max = 0;
         for (ArrayList<Content> arrayList : contents) {
             max = Math.max(realSize(arrayList), max);
         }

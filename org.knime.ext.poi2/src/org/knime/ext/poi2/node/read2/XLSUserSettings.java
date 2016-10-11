@@ -79,6 +79,9 @@ public class XLSUserSettings {
     /** Default timeout in milliseconds. */
     static final int DEFAULT_TIMEOUT_IN_MILLISECONDS = 1000;
 
+    /** Default value for the no preview setting. */
+    static final boolean DEFAULT_NO_PREVIEW = false;
+
     private String m_fileLocation;
 
     private boolean m_readAllData;
@@ -120,12 +123,16 @@ public class XLSUserSettings {
     /** When {@code true} it uses DOM reading instead of streaming and reevaluates formulae. */
     private boolean m_reevaluateFormulae;
 
+    private boolean m_noPreview = DEFAULT_NO_PREVIEW;
+
     private int m_timeoutInMilliseconds = DEFAULT_TIMEOUT_IN_MILLISECONDS;
 
     static final boolean DEFAULT_REEVALUATE_FORMULAE = false;
 
     /** Default pattern for formula evaluation error StringCells */
     static final String DEFAULT_ERR_PATTERN = "#XL_EVAL_ERROR#";
+
+    private static final String NO_PREVIEW = "NO_PREVIEW";
 
     /**
      * Constructs a new settings object. All values are uninitialized.
@@ -159,6 +166,8 @@ public class XLSUserSettings {
         m_errorPattern = DEFAULT_ERR_PATTERN;
 
         m_reevaluateFormulae = DEFAULT_REEVALUATE_FORMULAE;
+
+        m_noPreview = DEFAULT_NO_PREVIEW;
     }
 
     /**
@@ -195,6 +204,7 @@ public class XLSUserSettings {
 
         settings.addBoolean(REEVALUATE_FORMULAE, m_reevaluateFormulae);
         settings.addInt(TIMEOUT_IN_MILLISECONDS, m_timeoutInMilliseconds);
+        settings.addBoolean(NO_PREVIEW, m_noPreview);
     }
 
     /**
@@ -223,6 +233,7 @@ public class XLSUserSettings {
         id.append(getID(m_errorPattern));
         id.append(getID(m_reevaluateFormulae));
         id.append(getID(m_timeoutInMilliseconds));
+        id.append(getID(m_noPreview));
         return id.toString();
     }
 
@@ -296,6 +307,7 @@ public class XLSUserSettings {
 
         result.m_reevaluateFormulae = settings.getBoolean(REEVALUATE_FORMULAE, DEFAULT_REEVALUATE_FORMULAE);
         result.m_timeoutInMilliseconds = settings.getInt(TIMEOUT_IN_MILLISECONDS, DEFAULT_TIMEOUT_IN_MILLISECONDS);
+        result.m_noPreview = settings.getBoolean(NO_PREVIEW, DEFAULT_NO_PREVIEW);
         return result;
     }
 
@@ -827,6 +839,20 @@ public class XLSUserSettings {
      */
     public  void setTimeoutInMilliseconds(final int timeoutInMilliseconds) {
         m_timeoutInMilliseconds = timeoutInMilliseconds;
+    }
+
+    /**
+     * @return the noPreview
+     */
+    final boolean isNoPreview() {
+        return m_noPreview;
+    }
+
+    /**
+     * @param noPreview the noPreview to set
+     */
+    final void setNoPreview(final boolean noPreview) {
+        m_noPreview = noPreview;
     }
 
     /**

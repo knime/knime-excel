@@ -87,6 +87,12 @@
             sheet is loaded when no reevaluation is requested and requires much
             less memory to return the cached values.
         </option>
+        <option name="Disable Preview">
+            Preview loading is disabled and no data table configuration is computed, so
+            changes in the format of the xls(x) file will not generate errors after execution.
+            The drawback of the enabled state of this option is that subsequent nodes
+            do not have information about the output table structure.
+        </option>
         <option name="Preview">
             The &quot;Preview&quot; tab shows you the output table with the current
             settings in the dialog. If the settings are invalid an
