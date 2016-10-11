@@ -109,7 +109,7 @@ public class XLSWriter2NodeModel extends NodeModel {
                 || m_settings.getOverwriteOK(), m_settings.getFileMustExist());
         if (isRelative(m_settings.getFilename())) {
             throw new InvalidSettingsException("Relative paths are not allowed ('" + m_settings.getFilename()
-                + "', please enter an absolute path or a URL");
+                + "'), please enter an absolute path or a URL");
         }
         if (warning != null) {
             setWarningMessage(warning);
