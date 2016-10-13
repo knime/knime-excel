@@ -159,10 +159,7 @@ public class XLSWriter2 {
             if (localPath != null) {
                 if (Files.isRegularFile(localPath)) {
                     try (InputStream inStream = Files.newInputStream(localPath)) {
-                        wb = WorkbookFactory.create(inStream);
-                        if (isXLSX && wb instanceof XSSFWorkbook) {
-                            wb = new SXSSFWorkbook((XSSFWorkbook)wb);
-                        }
+                        wb = createWorkbookFromStream(isXLSX, inStream);
                     }
                 } else {
                     if (isXLSX) {
@@ -174,9 +171,8 @@ public class XLSWriter2 {
                 }
             } else {
                 try (InputStream is = m_destination.openStream()) {
-                    wb = WorkbookFactory.create(is);
+                    wb = createWorkbookFromStream(isXLSX, is);
                 } catch (IOException ex) {
-
                     // seems it does not exist, so be it and we create a new workbook
                     LOGGER.debug("Could not read XLS file at " + m_destination + ": " + ex.getMessage(), ex);
                     wb = isXLSX ? createSxssfWorkbook() : new HSSFWorkbook();
@@ -205,7 +201,7 @@ public class XLSWriter2 {
             Sheet sheet = wb.createSheet(sheetName);
             sheet.getPrintSetup().setLandscape(m_settings.getLandscape());
             sheet.getPrintSetup().setPaperSize(m_settings.getPaperSize());
-            Drawing drawing = sheet.createDrawingPatriarch();
+            Drawing drawing = null;
             CreationHelper helper = wb.getCreationHelper();
             CellStyle dateStyle = wb.createCellStyle();
 
@@ -361,6 +357,9 @@ public class XLSWriter2 {
                             double columnRatio = (double)dimension.width / columnWidth.get(new Integer(colIdx));
                             ClientAnchor anchor =
                                 createAnchor(sheetRow.getRowNum(), colIdx, rowRatio, columnRatio, helper);
+                            if (drawing == null) {
+                                drawing = sheet.createDrawingPatriarch();
+                            }
                             drawing.createPicture(anchor, pictureIdx);
                         } else if (colValue.getType().isCompatible(StringValue.class)) {
                             String val = ((StringValue)colValue).getStringValue();
@@ -418,7 +417,23 @@ public class XLSWriter2 {
     }
 
     /**
-     * @return
+     * @param isXLSX Is the stream an xlsx file?
+     * @param inStream An {@link InputStream} of an xls/xlsx file.
+     * @return The {@link Workbook} for the {@code inStream}.
+     * @throws IOException Problem reading.
+     * @throws InvalidFormatException Wrong format.
+     */
+    private Workbook createWorkbookFromStream(final boolean isXLSX, final InputStream inStream)
+        throws IOException, InvalidFormatException {
+        Workbook wb = WorkbookFactory.create(inStream);
+        if (isXLSX && !m_settings.evaluateFormula() && wb instanceof XSSFWorkbook) {
+            wb = new SXSSFWorkbook((XSSFWorkbook)wb);
+        }
+        return wb;
+    }
+
+    /**
+     * @return A streaming version of xlsx workbook.
      */
     private SXSSFWorkbook createSxssfWorkbook() {
         return new SXSSFWorkbook(100);
