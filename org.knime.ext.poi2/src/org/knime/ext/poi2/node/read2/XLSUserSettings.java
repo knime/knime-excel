@@ -74,10 +74,10 @@ public class XLSUserSettings {
      */
     private static final String REEVALUATE_FORMULAE = "REEVALUATE_FORMULAE";
 
-    private static final String TIMEOUT_IN_MILLISECONDS = "TIMEOUT_IN_MILLISECONDS";
+    private static final String TIMEOUT_IN_SECONDS = "TIMEOUT_IN_SECONDS";
 
-    /** Default timeout in milliseconds. */
-    static final int DEFAULT_TIMEOUT_IN_MILLISECONDS = 1000;
+    /** Default timeout in seconds. */
+    static final int DEFAULT_TIMEOUT_IN_SECONDS = 1;
 
     /** Default value for the no preview setting. */
     static final boolean DEFAULT_NO_PREVIEW = false;
@@ -125,7 +125,7 @@ public class XLSUserSettings {
 
     private boolean m_noPreview = DEFAULT_NO_PREVIEW;
 
-    private int m_timeoutInMilliseconds = DEFAULT_TIMEOUT_IN_MILLISECONDS;
+    private int m_timeoutInSeconds = DEFAULT_TIMEOUT_IN_SECONDS;
 
     static final boolean DEFAULT_REEVALUATE_FORMULAE = false;
 
@@ -203,7 +203,7 @@ public class XLSUserSettings {
         settings.addString("FORMULA_ERR_PATTERN", m_errorPattern);
 
         settings.addBoolean(REEVALUATE_FORMULAE, m_reevaluateFormulae);
-        settings.addInt(TIMEOUT_IN_MILLISECONDS, m_timeoutInMilliseconds);
+        settings.addInt(TIMEOUT_IN_SECONDS, m_timeoutInSeconds);
         settings.addBoolean(NO_PREVIEW, m_noPreview);
     }
 
@@ -232,7 +232,7 @@ public class XLSUserSettings {
         id.append(getID(m_useErrorPattern));
         id.append(getID(m_errorPattern));
         id.append(getID(m_reevaluateFormulae));
-        id.append(getID(m_timeoutInMilliseconds));
+        id.append(getID(m_timeoutInSeconds));
         id.append(getID(m_noPreview));
         return id.toString();
     }
@@ -306,7 +306,7 @@ public class XLSUserSettings {
                 settings.getString("FORMULA_ERR_PATTERN", DEFAULT_ERR_PATTERN);
 
         result.m_reevaluateFormulae = settings.getBoolean(REEVALUATE_FORMULAE, DEFAULT_REEVALUATE_FORMULAE);
-        result.m_timeoutInMilliseconds = settings.getInt(TIMEOUT_IN_MILLISECONDS, DEFAULT_TIMEOUT_IN_MILLISECONDS);
+        result.m_timeoutInSeconds = settings.getInt(TIMEOUT_IN_SECONDS, DEFAULT_TIMEOUT_IN_SECONDS);
         result.m_noPreview = settings.getBoolean(NO_PREVIEW, DEFAULT_NO_PREVIEW);
         return result;
     }
@@ -338,7 +338,7 @@ public class XLSUserSettings {
         if (m_fileLocation == null || m_fileLocation.isEmpty()) {
             return "No file location specified";
         }
-        if (m_timeoutInMilliseconds < 0) {
+        if (m_timeoutInSeconds < 0) {
             return "Timeout should be non-negative! (0 means infinite)";
         }
         if (checkFileExistence) {
@@ -828,17 +828,17 @@ public class XLSUserSettings {
     }
 
     /**
-     * @return the timeoutInMilliseconds
+     * @return the timeoutInSeconds
      */
-    public int getTimeoutInMilliseconds() {
-        return m_timeoutInMilliseconds;
+    public int getTimeoutInSeconds() {
+        return m_timeoutInSeconds;
     }
 
     /**
-     * @param timeoutInMilliseconds the timeoutInMilliseconds to set
+     * @param timeoutInSeconds the timeoutInSeconds to set
      */
-    public  void setTimeoutInMilliseconds(final int timeoutInMilliseconds) {
-        m_timeoutInMilliseconds = timeoutInMilliseconds;
+    public  void setTimeoutInSeconds(final int timeoutInSeconds) {
+        m_timeoutInSeconds = timeoutInSeconds;
     }
 
     /**

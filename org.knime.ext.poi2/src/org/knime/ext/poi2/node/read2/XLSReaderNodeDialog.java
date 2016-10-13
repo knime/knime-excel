@@ -52,6 +52,9 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusAdapter;
@@ -105,8 +108,6 @@ import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.border.Border;
 import javax.swing.border.TitledBorder;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import javax.swing.plaf.basic.BasicComboBoxRenderer;
 import javax.swing.table.TableColumnModel;
 import javax.xml.parsers.ParserConfigurationException;
@@ -155,7 +156,8 @@ class XLSReaderNodeDialog extends NodeDialogPane {
 
     private final FilesHistoryPanel m_fileName = new FilesHistoryPanel("XLSReader", ".xls|.xlsx");
 
-    private final JSpinner m_timeout = new JSpinner(new SpinnerNumberModel(XLSUserSettings.DEFAULT_TIMEOUT_IN_MILLISECONDS, 0, Integer.MAX_VALUE, 500));
+    private final JSpinner m_timeout =
+        new JSpinner(new SpinnerNumberModel(XLSUserSettings.DEFAULT_TIMEOUT_IN_SECONDS, 0, Integer.MAX_VALUE, 1));
 
     private final JComboBox<String> m_sheetName = new JComboBox<>();
 
@@ -301,21 +303,28 @@ class XLSReaderNodeDialog extends NodeDialogPane {
     }
 
     private JComponent getFileBox() {
-        Box fBox = Box.createHorizontalBox();
-        fBox.add(Box.createHorizontalGlue());
-        m_fileName.addChangeListener(new ChangeListener() {
-            @Override
-            public void stateChanged(final ChangeEvent e) {
-                fileNameChanged();
-            }
-        });
-        fBox.add(m_fileName);
-        final JLabel timeoutLabel = new JLabel("Connection timeout: ");
-        timeoutLabel.setToolTipText("Timeout to connect to the server in milliseconds");
-        fBox.add(timeoutLabel);
-        fBox.add(m_timeout);
-        fBox.add(Box.createHorizontalGlue());
-        return fBox;
+        JPanel panel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 3, 3, 5);
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        m_fileName.addChangeListener(e -> fileNameChanged());
+        panel.add(m_fileName, gbc);
+
+        gbc.weightx = 0.0;
+        gbc.gridx += 1;
+        final JLabel timeoutLabel = new JLabel("Connect timeout [s]: ");
+        String tooltip = "Timeout to connect to the server in seconds";
+        timeoutLabel.setToolTipText(tooltip);
+        m_timeout.setToolTipText(tooltip);
+        panel.add(timeoutLabel, gbc);
+
+        gbc.gridx += 1;
+        ((JSpinner.DefaultEditor) m_timeout.getEditor()).getTextField().setColumns(4);
+        panel.add(m_timeout, gbc);
+        return panel;
     }
 
     @SuppressWarnings("serial")
@@ -1330,7 +1339,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
         s.setErrorPattern(m_formulaErrPattern.getText());
 
         s.setReevaluateFormulae(m_reevaluateFormulae.isSelected());
-        s.setTimeoutInMilliseconds(((Number)m_timeout.getValue()).intValue());
+        s.setTimeoutInSeconds(((Number)m_timeout.getValue()).intValue());
         s.setNoPreview(m_noPreview.isSelected());
         return s;
     }
@@ -1429,7 +1438,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
 
         m_noPreview.setSelected(s.isNoPreview());
 
-        m_timeout.setValue(s.getTimeoutInMilliseconds());
+        m_timeout.setValue(s.getTimeoutInSeconds());
 
         // clear sheet names
         m_sheetName.setModel(new DefaultComboBoxModel<>());
