@@ -64,8 +64,8 @@ import org.apache.poi.ss.usermodel.DateUtil;
  * @author Gabor Bakos
  */
 class KNIMEDataFormatter extends DataFormatter {
-    private final SimpleDateFormat m_dateAndTimeFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss"),
-            m_dateFormat = new SimpleDateFormat("yyyy/MM/dd");
+    private final SimpleDateFormat m_dateAndTimeFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss"),
+            m_dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
     //Intentionally invalid UFT-16 encoding to avoid collision with valid UTF-16 Strings:
     //https://en.wikipedia.org/wiki/UTF-16
@@ -74,7 +74,7 @@ class KNIMEDataFormatter extends DataFormatter {
     private static final String TRUE = Boolean.toString(true).toUpperCase(),
             FALSE = Boolean.toString(false).toUpperCase();
 
-    private static final int MILLISEC_PER_DAY = 24*3600;
+    private static final int SEC_PER_DAY = 24*3600;
 
     /**
      * The date format to be produced.
@@ -161,7 +161,7 @@ class KNIMEDataFormatter extends DataFormatter {
     private static Date getRoundedDate(final double date, final boolean use1904Windowing) {
         int wholeDays = (int)Math.floor(date);
         double ms = date - wholeDays;
-        int millisecondsInDay = (int)Math.round(MILLISEC_PER_DAY * ms) * 1000;
+        int millisecondsInDay = (int)Math.round(SEC_PER_DAY * ms) * 1000;
 
         Calendar calendar = new GregorianCalendar();
         DateUtil.setCalendar(calendar, wholeDays, millisecondsInDay, use1904Windowing, false);

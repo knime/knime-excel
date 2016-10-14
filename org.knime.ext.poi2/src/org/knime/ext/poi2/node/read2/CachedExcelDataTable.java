@@ -51,7 +51,6 @@ package org.knime.ext.poi2.node.read2;
 import java.io.InputStream;
 import java.text.DateFormat;
 import java.text.Format;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.ZoneOffset;
 import java.util.AbstractMap;
@@ -106,6 +105,7 @@ import org.knime.core.data.DataColumnSpecCreator;
 import org.knime.core.data.DataRow;
 import org.knime.core.data.DataTable;
 import org.knime.core.data.DataTableSpec;
+import org.knime.core.data.DataTableSpecCreator;
 import org.knime.core.data.DataType;
 import org.knime.core.data.DoubleValue;
 import org.knime.core.data.IntValue;
@@ -195,8 +195,8 @@ class CachedExcelTable {
 
     //    private volatile boolean m_readCache = false;
 
-    private final DateFormat m_dateFormat = new SimpleDateFormat("yyyy/MM/dd"),
-            m_dateAndTimeFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+    private final DateFormat m_dateFormat = new SimpleDateFormat("yyyy-MM-dd"),
+            m_dateAndTimeFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 
     {
         m_dateFormat.setTimeZone(TimeZone.getTimeZone(ZoneOffset.UTC));
@@ -703,6 +703,7 @@ class CachedExcelTable {
         final XLSUserSettings settings = XLSUserSettings.normalizeSettings(rawSettings);
         final Set<Integer> skippedCols = new HashSet<>();
         final DataTableSpec spec = createSpec(settings, skippedCols);
+        final DataTableSpec knimeSpec = updatedSpec(spec);
         final Map<Integer, Integer> mapFromExcelColumnIndicesToKNIME = new HashMap<>();
         final DataTable dataTable = new DataTable() {
 
@@ -718,7 +719,7 @@ class CachedExcelTable {
 
             @Override
             public DataTableSpec getDataTableSpec() {
-                return spec;
+                return knimeSpec;
             }
 
             @Override
@@ -837,11 +838,7 @@ class CachedExcelTable {
                                     switch (type) {
                                         case DATE:
                                         case DATE_FORMULA:
-                                            if (expectedType.isCompatible(DateAndTimeValue.class)) {
-                                                m_cells[idx] = convertToCell(valueAsString, expectedType);
-                                            } else {
-                                                m_cells[idx] = convertToCell(original, expectedType);
-                                            }
+                                            m_cells[idx] = convertToCell(valueAsString, expectedType);
                                             break;
                                         case NUMBER:
                                         case NUMBER_DOUBLE:
@@ -943,17 +940,7 @@ class CachedExcelTable {
                                 }
                             }
                             if (type.isCompatible(DateAndTimeValue.class)) {
-                                try {
-                                    return new DateAndTimeCell(m_dateAndTimeFormat.parse(valueAsString).getTime(), true,
-                                        true, false);
-                                } catch (ParseException e) {
-                                    try {
-                                        return new DateAndTimeCell(m_dateFormat.parse(valueAsString).getTime(), true,
-                                            false, false);
-                                    } catch (ParseException e1) {
-                                        return new MissingCell(e.getMessage());
-                                    }
-                                }
+                                return new StringCell(valueAsString);
                             }
                             if (type.isCompatible(StringValue.class)) {
                                 //TODO the dates are in standardized format, which does not work as probably expected.
@@ -1001,6 +988,21 @@ class CachedExcelTable {
             }
         }
         return dataTable;
+    }
+
+    /**
+     * @param spec Original spec with all information present.
+     * @return The updated spec with no data and time columns.
+     */
+    private DataTableSpec updatedSpec(final DataTableSpec spec) {
+        final DataTableSpecCreator tableSpecCreator = new DataTableSpecCreator(spec);
+        for (int i = 0; i < spec.getNumColumns(); i++) {
+            if (spec.getColumnSpec(i).getType().isCompatible(DateAndTimeValue.class)) {
+                tableSpecCreator.replaceColumn(i,
+                    new DataColumnSpecCreator(spec.getColumnSpec(i).getName(), StringCell.TYPE).createSpec());
+            }
+        }
+        return tableSpecCreator.createSpec();
     }
 
     /**
