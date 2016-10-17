@@ -177,10 +177,7 @@ public class XLSWriter2NodeModel extends NodeModel {
         m_settings = new XLSWriter2Settings(settings);
         //AP-6408
         String filename = m_settings.getFilename();
-        if (FilenameUtils.getBaseName(filename).trim().isEmpty()) {
-            throw new InvalidSettingsException("No file name was specified: " + filename);
-        }
-        if ("".equals(FilenameUtils.getExtension(filename))) {
+        if (!FilenameUtils.getBaseName(filename).trim().isEmpty() && "".equals(FilenameUtils.getExtension(filename))) {
             filename += ".xlsx";
             m_settings.setFilename(filename);
         }
@@ -225,10 +222,7 @@ public class XLSWriter2NodeModel extends NodeModel {
      */
     @Override
     protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
-        String filename = new XLSWriter2Settings(settings).getFilename();
-        if ((filename == null) || filename.isEmpty()) {
-            throw new InvalidSettingsException("No output" + " filename specified.");
-        }
+        new XLSWriter2Settings(settings);
         DataColumnSpecFilterConfiguration filterConfig = XLSWriter2NodeDialogPane.createColFilterConf();
         filterConfig.loadConfigurationInModel(settings);
     }

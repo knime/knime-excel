@@ -65,7 +65,6 @@ import javax.swing.ButtonGroup;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
-import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -95,8 +94,8 @@ import org.knime.core.node.NodeSettings;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NotConfigurableException;
-import org.knime.core.node.defaultnodesettings.DialogComponentFileChooser;
-import org.knime.core.node.defaultnodesettings.SettingsModelString;
+import org.knime.core.node.util.FilesHistoryPanel;
+import org.knime.core.node.util.FilesHistoryPanel.LocationValidation;
 import org.knime.core.node.util.filter.NameFilterConfiguration;
 import org.knime.core.node.util.filter.column.DataColumnSpecFilterConfiguration;
 import org.knime.core.node.util.filter.column.DataColumnSpecFilterPanel;
@@ -117,11 +116,9 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
 
     private XLSNodeType m_type;
 
-    private final SettingsModelString m_filename = new SettingsModelString("FOO", "");
-
-    private final DialogComponentFileChooser m_fileComponent = new DialogComponentFileChooser(m_filename, "XLSWRITER",
-            JFileChooser.SAVE_DIALOG, false, createFlowVariableModel("filename", FlowVariable.Type.STRING),
-            new String[]{".xls|.xlsx"});
+    private final FilesHistoryPanel m_filePanel =
+            new FilesHistoryPanel(createFlowVariableModel("filename", FlowVariable.Type.STRING),
+                "XLSWRITER", LocationValidation.FileOutput, ".xlsx", ".xls");
 
     private final JCheckBox m_writeColHdr = new JCheckBox();
 
@@ -169,7 +166,33 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
         m_type = type;
         JPanel tab = new JPanel();
         tab.setLayout(new BoxLayout(tab, BoxLayout.Y_AXIS));
-        tab.add(createFileBox());
+
+        m_filePanel.setDialogTypeSaveWithExtension(".xlsx");
+        final JPanel filePanel = new JPanel();
+        filePanel.setLayout(new BoxLayout(filePanel, BoxLayout.X_AXIS));
+        filePanel.setBorder(BorderFactory.createTitledBorder(BorderFactory
+                .createEtchedBorder(), "Output location:"));
+        m_filePanel.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(final ChangeEvent e) {
+                String selFile = m_filePanel.getSelectedFile();
+                if ((selFile != null) && !selFile.isEmpty()) {
+                    try {
+                        URL newUrl = FileUtil.toURL(selFile);
+                        Path path = FileUtil.resolveToPath(newUrl);
+                        m_overwriteOK.setEnabled(path != null);
+                        m_openFile.setEnabled(path != null);
+                    } catch (IOException | URISyntaxException | InvalidPathException ex) {
+                        // ignore
+                    }
+                }
+            }
+        });
+        filePanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
+        filePanel.add(m_filePanel);
+        filePanel.add(Box.createHorizontalGlue());
+
+        tab.add(filePanel);
 
         if (m_type == XLSNodeType.WRITER) {
             tab.add(createFileOverwriteBox());
@@ -187,8 +210,6 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
         }
         tab.add(createMissingBox());
         tab.add(createLayoutBox());
-        tab.add(Box.createVerticalGlue());
-        tab.add(Box.createVerticalGlue());
         tab.add(m_filter);
 
         addTab("writer options", tab);
@@ -201,31 +222,12 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
         });
     }
 
-    private JPanel createFileBox() {
-        m_fileComponent.addChangeListener(new ChangeListener() {
-            @Override
-            public void stateChanged(final ChangeEvent e) {
-                String selFile = m_filename.getStringValue();
-                if ((selFile != null) && !selFile.isEmpty()) {
-                    try {
-                        URL newUrl = FileUtil.toURL(selFile);
-                        Path path = FileUtil.resolveToPath(newUrl);
-                        m_overwriteOK.setEnabled(path != null);
-                        m_openFile.setEnabled(path != null);
-                    } catch (IOException | URISyntaxException | InvalidPathException ex) {
-                        // ignore
-                    }
-                }
-            }
-        });
-        return m_fileComponent.getComponentPanel();
-    }
-
     private JComponent createFileOverwriteBox() {
         Box overwiteBox = Box.createHorizontalBox();
         overwiteBox.add(Box.createHorizontalStrut(75));
         overwiteBox.add(m_overwriteOK);
         overwiteBox.add(Box.createHorizontalGlue());
+        overwiteBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, m_overwriteOK.getMaximumSize().height));
         return overwiteBox;
     }
 
@@ -234,6 +236,7 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
         formulaBox.add(Box.createHorizontalStrut(70));
         formulaBox.add(m_evaluateFormula);
         formulaBox.add(Box.createHorizontalGlue());
+        formulaBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, m_evaluateFormula.getMaximumSize().height));
 
         JPanel result = new JPanel();
         result.setLayout(new BoxLayout(result, BoxLayout.Y_AXIS));
@@ -248,6 +251,7 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
         fileMustExistBox.add(Box.createHorizontalStrut(75));
         fileMustExistBox.add(m_fileMustExist);
         fileMustExistBox.add(Box.createHorizontalGlue());
+        fileMustExistBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, m_fileMustExist.getMaximumSize().height));
         return fileMustExistBox;
     }
 
@@ -256,6 +260,7 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
         doNotOverwriteSheetBox.add(Box.createHorizontalStrut(75));
         doNotOverwriteSheetBox.add(m_doNotOverwriteSheet);
         doNotOverwriteSheetBox.add(Box.createHorizontalGlue());
+        doNotOverwriteSheetBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, m_doNotOverwriteSheet.getMaximumSize().height));
         return doNotOverwriteSheetBox;
     }
 
@@ -264,6 +269,7 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
         openfileBox.add(Box.createHorizontalStrut(75));
         openfileBox.add(m_openFile);
         openfileBox.add(Box.createHorizontalGlue());
+        openfileBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, m_openFile.getMaximumSize().height));
         return openfileBox;
     }
 
@@ -277,7 +283,7 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
             }
         });
         m_sheetname.setPreferredSize(new Dimension(410, 25));
-        m_sheetname.setMaximumSize(new Dimension(410, 25));
+        m_sheetname.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
         sheetnameBox.add(Box.createHorizontalStrut(70));
         sheetnameBox.add(new JLabel("Name of the sheet:"));
         sheetnameBox.add(Box.createHorizontalStrut(5));
@@ -285,6 +291,7 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
         sheetnameBox.add(Box.createHorizontalStrut(5));
         sheetnameBox.add(m_sheetnameFVM);
         sheetnameBox.add(Box.createHorizontalGlue());
+        sheetnameBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, m_sheetname.getMaximumSize().height));
         return sheetnameBox;
     }
 
@@ -299,11 +306,13 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
         colHdrBox.add(Box.createHorizontalStrut(70));
         colHdrBox.add(m_writeColHdr);
         colHdrBox.add(Box.createHorizontalGlue());
+        colHdrBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, m_writeColHdr.getMaximumSize().height));
 
         Box rowHdrBox = Box.createHorizontalBox();
         rowHdrBox.add(Box.createHorizontalStrut(70));
         rowHdrBox.add(m_writeRowHdr);
         rowHdrBox.add(Box.createHorizontalGlue());
+        rowHdrBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, m_writeRowHdr.getMaximumSize().height));
 
         JPanel result = new JPanel();
         result.setLayout(new BoxLayout(result, BoxLayout.Y_AXIS));
@@ -319,13 +328,14 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
 
         m_missValue.setToolTipText("This text will be set for missing values." + "If unsure, leave empty");
         m_missValue.setPreferredSize(new Dimension(400, 25));
-        m_missValue.setMaximumSize(new Dimension(400, 25));
+        m_missValue.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
         Box missBox = Box.createHorizontalBox();
         missBox.add(Box.createHorizontalStrut(70));
         missBox.add(m_writeMissingValue);
         missBox.add(Box.createHorizontalStrut(5));
         missBox.add(m_missValue);
         missBox.add(Box.createHorizontalGlue());
+        missBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, m_missValue.getMaximumSize().height));
 
         JPanel result = new JPanel();
         result.setLayout(new BoxLayout(result, BoxLayout.Y_AXIS));
@@ -337,23 +347,40 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
 
     private JPanel createLayoutBox() {
         m_portrait.setActionCommand(m_portrait.getText());
+        m_portrait.setSelected(true);
         m_landscape.setActionCommand(m_landscape.getText());
         m_pageFormat.add(m_portrait);
         m_pageFormat.add(m_landscape);
+        m_paperSize.setMaximumSize(m_paperSize.getPreferredSize() );
+
+        Box sizeBox = Box.createHorizontalBox();
+        sizeBox.add(Box.createHorizontalStrut(70));
+        sizeBox.add(m_autosize);
+        sizeBox.add(Box.createHorizontalGlue());
+        sizeBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, m_autosize.getMaximumSize().height));
+
         Box formatBox = Box.createHorizontalBox();
+        formatBox.add(Box.createHorizontalStrut(70));
         formatBox.add(m_portrait);
         formatBox.add(m_landscape);
-        Box sizeBox = Box.createHorizontalBox();
-        sizeBox.add(m_autosize);
-        sizeBox.add(Box.createHorizontalStrut(m_autosize.getSize().width / 2));
-        m_portrait.setSelected(true);
-        Box layoutBox = Box.createVerticalBox();
-        layoutBox.add(sizeBox);
-        layoutBox.add(formatBox);
-        layoutBox.add(m_paperSize);
+        formatBox.add(Box.createHorizontalGlue());
+        formatBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, m_portrait.getMaximumSize().height));
+
+        Box paperSizeBox = Box.createHorizontalBox();
+        paperSizeBox.add(Box.createHorizontalStrut(70));
+        paperSizeBox.add(m_paperSize);
+        paperSizeBox.add(Box.createHorizontalGlue());
+        paperSizeBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, m_paperSize.getMaximumSize().height));
+
         JPanel result = new JPanel();
+        result.setLayout(new BoxLayout(result, BoxLayout.Y_AXIS));
         result.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Layout"));
-        result.add(layoutBox);
+        result.add(sizeBox);
+        result.add(Box.createVerticalStrut(5));
+        result.add(formatBox);
+        result.add(Box.createVerticalStrut(5));
+        result.add(paperSizeBox);
+        result.add(Box.createVerticalStrut(5));
         return result;
     }
 
@@ -371,8 +398,7 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
             newVals = new XLSWriter2Settings(specs[0]);
         }
         //Necessary to update the file dialog component
-        m_filename.setStringValue(null);
-        m_filename.setStringValue(newVals.getFilename());
+        m_filePanel.setSelectedFile(newVals.getFilename());
         m_missValue.setText(newVals.getMissingPattern());
         m_writeColHdr.setSelected(newVals.writeColHeader());
         m_writeRowHdr.setSelected(newVals.writeRowID());
@@ -407,14 +433,11 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
         // we allow it to save its value.
         NodeSettingsWO foo = new NodeSettings("foo");
 
-        String filename = m_filename.getStringValue();
-        if ((filename == null) || (filename.length() == 0)) {
-            throw new InvalidSettingsException("Please specify an output" + " filename.");
-        }
+        String filename = m_filePanel.getSelectedFile();
 
         switch (FilenameUtils.getExtension(filename).toLowerCase()) {
             case "xls":
-                Window windowAncestor = SwingUtilities.getWindowAncestor(m_fileComponent.getComponentPanel());
+                Window windowAncestor = SwingUtilities.getWindowAncestor(m_filePanel);
                 int result = JOptionPane.showOptionDialog(windowAncestor, "<html>You chose the the old <i>xls</i> Excel"
                     + "file format, which was used as default up until Excel 2003. This file format has "
                     + "certain limitations. <br/>"
@@ -424,7 +447,7 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
                     new Object[] {"Write 'XLSX'", "Write 'XLS'"}, "Write 'XLSX'");
                 switch (result) {
                     case JOptionPane.YES_OPTION:
-                        m_filename.setStringValue(FilenameUtils.removeExtension(filename) + ".xlsx");
+                        m_filePanel.setSelectedFile(FilenameUtils.removeExtension(filename) + ".xlsx");
                         break;
                     case JOptionPane.NO_OPTION:
                         default:
@@ -434,17 +457,16 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
                 break;
             case "xlsx":
                 break;
-                default:
-                    if (FilenameUtils.getBaseName(filename).trim().isEmpty()) {
-                        //TODO warning? ignore?
-                    }
-                    m_filename.setStringValue(filename+ ".xlsx");
-                    break;
+            default:
+                if (!FilenameUtils.getBaseName(filename).trim().isEmpty()) {
+                    //Not empty, but no valid extension, add extension
+                    m_filePanel.setSelectedFile(filename + ".xlsx");
+                }
+                break;
         }
-        m_fileComponent.saveSettingsTo(foo);
 
         XLSWriter2Settings vals = new XLSWriter2Settings();
-        vals.setFilename(m_filename.getStringValue());
+        vals.setFilename(m_filePanel.getSelectedFile());
         vals.setMissingPattern(m_missValue.getText());
         vals.setWriteColHeader(m_writeColHdr.isSelected());
         vals.setWriteRowID(m_writeRowHdr.isSelected());
