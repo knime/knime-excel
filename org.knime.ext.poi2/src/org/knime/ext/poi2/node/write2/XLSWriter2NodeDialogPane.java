@@ -188,7 +188,7 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
                 }
             }
         });
-        filePanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
+        filePanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, m_filePanel.getPreferredSize().height));
         filePanel.add(m_filePanel);
         filePanel.add(Box.createHorizontalGlue());
 
@@ -212,7 +212,7 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
         tab.add(createLayoutBox());
         tab.add(m_filter);
 
-        addTab("writer options", tab);
+        addTab("Settings", tab);
 
         m_writeMissingValue.addChangeListener(new ChangeListener() {
             @Override
@@ -398,6 +398,7 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
             newVals = new XLSWriter2Settings(specs[0]);
         }
         //Necessary to update the file dialog component
+        m_filePanel.updateHistory();
         m_filePanel.setSelectedFile(newVals.getFilename());
         m_missValue.setText(newVals.getMissingPattern());
         m_writeColHdr.setSelected(newVals.writeColHeader());
@@ -484,6 +485,7 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
         DataColumnSpecFilterConfiguration config = createColFilterConf();
         m_filter.saveConfiguration(config);
         config.saveConfiguration(settings);
+        m_filePanel.addToHistory();
     }
 
     /**
