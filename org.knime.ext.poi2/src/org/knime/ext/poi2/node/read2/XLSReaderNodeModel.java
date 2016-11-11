@@ -47,24 +47,24 @@
  */
 package org.knime.ext.poi2.node.read2;
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Locale;
-import java.util.concurrent.ExecutionException;
 
 import javax.xml.parsers.ParserConfigurationException;
 
-import org.apache.commons.io.input.CountingInputStream;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.openxml4j.exceptions.OpenXML4JException;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
 import org.apache.poi.xssf.eventusermodel.XSSFReader;
+import org.knime.core.data.DataRow;
+import org.knime.core.data.DataTable;
 import org.knime.core.data.DataTableSpec;
+import org.knime.core.node.BufferedDataContainer;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
@@ -220,33 +220,6 @@ public class XLSReaderNodeModel extends NodeModel {
         if (!m_settings.getID().equals(m_dtsSettingsID)) {
             m_dts = null;
         }
-        if (m_dts == null) {
-            // this could take a while.
-            LOGGER.debug("Building DTS during configure...");
-            XLSUserSettings settings = XLSUserSettings.clone(m_settings);
-            String sheetName = settings.getSheetName();
-            String loc = settings.getFileLocation();
-            try {
-                sheetName = settings(settings, sheetName, loc);
-            } catch (IOException | SAXException | OpenXML4JException | ParserConfigurationException e1) {
-                throw new InvalidSettingsException(e1);
-            }
-            settings.setSheetName(sheetName);
-            CachedExcelTable table;
-            try (InputStream is = FileUtil.openInputStream(loc);
-                    InputStream stream = new BufferedInputStream(is);
-                    CountingInputStream countingStream = new CountingInputStream(stream)) {
-                table = isXlsx() && !m_settings.isReevaluateFormulae()
-                    ? CachedExcelTable.fillCacheFromXlsxStreaming(m_settings.getFileLocation(), countingStream,
-                        sheetName, Locale.ENGLISH, new ExecutionMonitor(), null).get()
-                    : CachedExcelTable.fillCacheFromDOM(m_settings.getFileLocation(), countingStream, sheetName,
-                        Locale.ENGLISH, m_settings.isReevaluateFormulae(), new ExecutionMonitor(), null).get();
-                m_dts = table.createDataTable(settings, null).getDataTableSpec();
-            } catch (InterruptedException | ExecutionException | RuntimeException | IOException e) {
-                throw new InvalidSettingsException(e);
-            }
-            m_dtsSettingsID = m_settings.getID();
-        }
         return new DataTableSpec[]{m_dts};
     }
 
@@ -273,14 +246,31 @@ public class XLSReaderNodeModel extends NodeModel {
         String sheetName = settings.getSheetName();
         String loc = settings.getFileLocation();
         sheetName = settings(settings, sheetName, loc);
-        try (InputStream is = FileUtil.openInputStream(loc, 1000 * settings.getTimeoutInSeconds());
-                CountingInputStream countingStream = new CountingInputStream(is)) {
+        settings.setSheetName(sheetName);
+        try (InputStream is = FileUtil.openInputStream(loc, 1000 * settings.getTimeoutInSeconds())) {
+            ExecutionContext parseExec = exec.createSubExecutionContext(.9);
+            ExecutionContext toTableExec = exec.createSubExecutionContext(.1);
             CachedExcelTable table = isXlsx() && !settings.isReevaluateFormulae()
-                ? CachedExcelTable.fillCacheFromXlsxStreaming(loc, countingStream, sheetName, Locale.ENGLISH,
-                    exec.createSubExecutionContext(.9), null).get()
-                : CachedExcelTable.fillCacheFromDOM(loc, countingStream, sheetName, Locale.ENGLISH,
-                    settings.isReevaluateFormulae(), exec.createSubExecutionContext(.9), null).get();
-            return new BufferedDataTable[]{exec.createBufferedDataTable(table.createDataTable(settings, null), exec)};
+                ? CachedExcelTable.fillCacheFromXlsxStreaming(is, sheetName, Locale.ENGLISH,
+                    parseExec, null).get()
+                : CachedExcelTable.fillCacheFromDOM(loc, is, sheetName, Locale.ENGLISH,
+                    settings.isReevaluateFormulae(), parseExec, null).get();
+
+            DataTable nonBDTable = table.createDataTable(settings, null);
+            BufferedDataContainer container = exec.createDataContainer(nonBDTable.getDataTableSpec());
+            long curRow = 0L;
+            final long totalRow = table.lastRow();
+            for (DataRow r : nonBDTable) {
+                container.addRowToTable(r);
+                toTableExec.checkCanceled();
+                final long curRowFinal = curRow;
+                toTableExec.setProgress(curRow / (double)totalRow,
+                    () -> String.format("Row %d (\"%s\")", curRowFinal, totalRow));
+                curRow += 1L;
+            }
+            container.close();
+
+            return new BufferedDataTable[]{container.getTable()};
         }
     }
 
@@ -296,10 +286,12 @@ public class XLSReaderNodeModel extends NodeModel {
      * @throws InvalidFormatException
      */
     private String settings(final XLSUserSettings settings, String sheetName, final String loc)
-        throws IOException, SAXException, OpenXML4JException, ParserConfigurationException, InvalidFormatException {
+        throws IOException, SAXException, OpenXML4JException, ParserConfigurationException, InvalidFormatException,
+        InvalidSettingsException {
         if (sheetName == null || XLSReaderNodeDialog.FIRST_SHEET.equals(sheetName)) {
             if (isXlsx()) {
-                try (final BufferedInputStream stream = POIUtils.getBufferedInputStream(loc);
+                try (InputStream stream =
+                        POIUtils.openInputStream(loc, settings.getTimeoutInSeconds());
                         final OPCPackage pack = OPCPackage.open(stream)) {
                     sheetName =
                         POIUtils.getFirstSheetNameWithData(new XSSFReader(pack), new ReadOnlySharedStringsTable(pack));
@@ -323,4 +315,5 @@ public class XLSReaderNodeModel extends NodeModel {
     static final boolean isXlsx(final String fileName) {
         return fileName.toLowerCase().endsWith(".xlsx");
     }
+
 }

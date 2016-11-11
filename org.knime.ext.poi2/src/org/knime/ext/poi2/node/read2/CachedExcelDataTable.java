@@ -48,7 +48,10 @@
  */
 package org.knime.ext.poi2.node.read2;
 
+import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.text.DateFormat;
 import java.text.Format;
 import java.text.SimpleDateFormat;
@@ -66,6 +69,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
+import java.util.OptionalDouble;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TimeZone;
@@ -74,7 +79,9 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.input.CountingInputStream;
@@ -126,12 +133,15 @@ import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.util.CheckUtils;
+import org.knime.core.util.FileUtil;
 import org.knime.core.util.Pair;
+import org.knime.core.util.ThreadUtils;
 import org.knime.ext.poi2.node.read2.KNIMEXSSFSheetXMLHandler.KNIMESheetContentsHandler;
 import org.knime.ext.poi2.node.read2.POIUtils.StopProcessing;
 import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.Interner;
 import com.google.common.collect.Interners;
 
@@ -140,26 +150,29 @@ import com.google.common.collect.Interners;
  *
  * @author Gabor Bakos
  */
-class CachedExcelTable {
+final class CachedExcelTable {
+
+    private static final AtomicInteger CACHED_THREAD_POOL_INDEX = new AtomicInteger();
+
     /**
      * Threadpool that can be used to create new cached tables.
      */
-    private static final ExecutorService CACHED_THREAD_POOL = Executors.newCachedThreadPool();
+    private static final ExecutorService CACHED_THREAD_POOL = Executors.newCachedThreadPool(
+        r -> ThreadUtils.threadWithContext(r, "KNIME-XLS-Parser-" + CACHED_THREAD_POOL_INDEX.getAndIncrement()));
 
     /**
      * Container for a cached value.
      */
-    static class Content {
-        private final String m_originalValue, m_valueAsString;
-
+    static final class Content {
+        private final String m_originalValue;
+        private final String m_valueAsString;
         private final ActualDataType m_type;
 
         /**
          * @param valueAsString The contained value in a parseable {@link String}.
          * @param type The {@link ActualDataType} of the content.
          */
-        public Content(final String valueAsString, final ActualDataType type) {
-            super();
+        Content(final String valueAsString, final ActualDataType type) {
             m_originalValue = valueAsString;
             m_valueAsString = valueAsString;
             m_type = type;
@@ -171,8 +184,7 @@ class CachedExcelTable {
          *            formatted value).
          * @param type The {@link ActualDataType} of the content.
          */
-        public Content(final String valueAsString, final String originalValue, final ActualDataType type) {
-            super();
+        Content(final String valueAsString, final String originalValue, final ActualDataType type) {
             m_originalValue = originalValue;
             m_valueAsString = valueAsString;
             m_type = type;
@@ -193,8 +205,6 @@ class CachedExcelTable {
 
     private final Set<Integer> m_hiddenColumns = new HashSet<>();
 
-    //    private volatile boolean m_readCache = false;
-
     private final DateFormat m_dateFormat = new SimpleDateFormat("yyyy-MM-dd"),
             m_dateAndTimeFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 
@@ -209,11 +219,8 @@ class CachedExcelTable {
 
     private final Map<Integer, Content> m_rowMap = new HashMap<>();
 
-    //    private AtomicBoolean m_loadingStarted = new AtomicBoolean(false);
-
     /** Hide constructor. */
     private CachedExcelTable() {
-
     }
 
     /**
@@ -230,16 +237,21 @@ class CachedExcelTable {
 
         private final Interner<String> m_stringInterner = Interners.newWeakInterner();
 
+        private final Supplier<OptionalDouble> m_progressSupplier;
+
         //private final ArrayBlockingQueue<Optional<DataRow>> m_readRows;
 
         //private volatile boolean m_finished = false;
         /**
          * @param formatter
          * @param exec
+         * @param progressSupplier a supplier that reports in [0, 1], or null if unknown progress
          */
-        public KNIMESheetContentVisitor(final KNIMEDataFormatter formatter, final ExecutionMonitor exec) {
+        public KNIMESheetContentVisitor(final KNIMEDataFormatter formatter, final ExecutionMonitor exec,
+            final Supplier<OptionalDouble> progressSupplier) {
             m_formatter = formatter;
             m_exec = exec;
+            m_progressSupplier = progressSupplier;
         }
 
         /**
@@ -252,8 +264,9 @@ class CachedExcelTable {
             m_currentRow = rowNum;
             m_currentRowMap.clear();
             if (m_exec != null) {
-                //As we do not know the actual size of the XLS, provide a logarithmic progress for max row count
-                m_exec.setProgress(Math.log1p(rowNum) / Math.log(1_048_576d), () -> "Reading row " + rowNum);
+                // fallback: we do not know the actual size of the XLS, provide a logarithmic progress for max row count
+                double progress = m_progressSupplier.get().orElseGet(() -> Math.log1p(rowNum) / Math.log(1_048_576d));
+                m_exec.setProgress(progress, () -> "Reading row " + rowNum);
             }
         }
 
@@ -400,43 +413,57 @@ class CachedExcelTable {
     /**
      *
      * Constructs {@link CachedExcelTable} using the xlsx streaming representation.
-     *
-     * @param path The path of the workbook.
      * @param stream The workbook's stream (to handle knime:// urls too, we do not create it on the thread of
      *            threadpool).
      * @param sheet The sheet's name.
      * @param locale The {@link Locale} to use.
-     * @param reevaluate Should we reevaluate the formulae?
      * @param exec The {@link ExecutionMonitor} to use.
      * @param incompleteResult The container for the incomplete result, can be {@code null}.
+     * @param reevaluate Should we reevaluate the formulae?
      * @return The {@link Future} representing the computation of {@link CachedExcelTable}.
      */
-    static Future<CachedExcelTable> fillCacheFromXlsxStreaming(final String path, final CountingInputStream stream,
-        final String sheet, final Locale locale, final ExecutionMonitor exec, final AtomicReference<CachedExcelTable> incompleteResult) {
+    static Future<CachedExcelTable> fillCacheFromXlsxStreaming(final InputStream stream, final String sheet,
+        final Locale locale, final ExecutionMonitor exec, final AtomicReference<CachedExcelTable> incompleteResult) {
         //Probably could be improved to let visit the intermediate results while generating, but it is complicated.
-        return CACHED_THREAD_POOL.submit(() -> {
+        return CACHED_THREAD_POOL.submit(ThreadUtils.callableWithContext(() -> {
             LocaleUtil.setUserLocale(locale);
             final CachedExcelTable table = new CachedExcelTable();
             final KNIMEDataFormatter formatter = new KNIMEDataFormatter(locale);
+
             try (final OPCPackage opc = OPCPackage.open(stream)) {
                 final XSSFReader xssfReader = new XSSFReader(opc);
                 final ReadOnlySharedStringsTable readOnlySharedStringsTable = new ReadOnlySharedStringsTable(opc);
                 for (final SheetIterator sheetIt = (SheetIterator)xssfReader.getSheetsData(); sheetIt.hasNext();) {
-                    final InputStream is = sheetIt.next();
-                    if (sheet.equals(sheetIt.getSheetName())) {
+                    InputStream is = sheetIt.next();
+                    if (sheet.equals(sheetIt.getSheetName())) { // not closed here; method arg to be closed by caller
+                        final Supplier<OptionalDouble> progressSupplier;
+                        long sheetSize;
+                        if (is instanceof ByteArrayInputStream) { // debugger told me this is often a BAIS
+                            sheetSize = ((ByteArrayInputStream)is).available();
+                        } else {
+                            sheetSize = sheetIt.getSheetPart().getSize();
+                        }
+                        if (sheetSize >= 0L) {
+                            final double asDouble = sheetSize;
+                            @SuppressWarnings("resource")
+                            CountingInputStream countingStream = new CountingInputStream(is);
+                            is = countingStream;
+                            progressSupplier = () -> OptionalDouble.of(countingStream.getByteCount() / asDouble);
+                        } else {
+                            progressSupplier = () -> OptionalDouble.empty();
+                        }
                         final InputSource sheetSource = new InputSource(is);
                         final XMLReader sheetParser = SAXHelper.newXMLReader();
                         final KNIMESheetContentVisitor sheetContentsHandler =
-                            table.new KNIMESheetContentVisitor(formatter, exec);
+                            table.new KNIMESheetContentVisitor(formatter, exec, progressSupplier);
+
                         final KNIMEXSSFSheetXMLHandler handler = new KNIMEXSSFSheetXMLHandler(
                             xssfReader.getStylesTable(), /*could be null*/sheetIt.getSheetComments(),
                             readOnlySharedStringsTable, sheetContentsHandler, formatter, false);
                         sheetParser.setContentHandler(handler);
                         try {
                             sheetParser.parse(sheetSource);
-                            if (exec != null) {
-                                exec.setProgress(.99, () -> "Reading finished, generating table");
-                            }
+                            exec.setProgress(1.0, () -> "Reading finished, generating table");
                             table.m_incomplete = false;
                         } catch (RuntimeException e) {//Includes StopProcessing
                             throw e;
@@ -455,7 +482,7 @@ class CachedExcelTable {
                 throw e;
             }
             return table;
-        });
+        }));
     }
 
     /**
@@ -471,15 +498,21 @@ class CachedExcelTable {
      * @param incompleteResult The container for the incomplete result, can be {@code null}.
      * @return The {@link Future} representing the computation of {@link CachedExcelTable}.
      */
-    static Future<CachedExcelTable> fillCacheFromDOM(final String path, final CountingInputStream stream,
-        final String sheet, final Locale locale, final boolean reevaluate, final ExecutionMonitor exec, final AtomicReference<CachedExcelTable> incompleteResult) {
-        return CACHED_THREAD_POOL.submit(() -> {
+    static Future<CachedExcelTable> fillCacheFromDOM(final String path, final InputStream stream,
+        final String sheet, final Locale locale, final boolean reevaluate, final ExecutionMonitor exec,
+        final AtomicReference<CachedExcelTable> incompleteResult) {
+        return CACHED_THREAD_POOL.submit(ThreadUtils.callableWithContext(() -> {
             LocaleUtil.setUserLocale(locale);
+            OptionalLong fileSize = getFileSize(path);
             CachedExcelTable table = new CachedExcelTable();
+            ExecutionMonitor workbookCreateProgress = exec.createSubProgress(.2);
+            ExecutionMonitor workBookParseProgress = exec.createSubProgress(.8);
+            exec.setMessage("Reading workbooks...");
             try (final CancellableReportingInputStream cancellableStream =
-                new CancellableReportingInputStream(stream, exec.createSubProgress(.2));
+                new CancellableReportingInputStream(stream, workbookCreateProgress, fileSize);
                     final Workbook workbook = WorkbookFactory.create(cancellableStream)) {
-                ExecutionMonitor subExec = exec.createSubProgress(.8);
+                workbookCreateProgress.setProgress(1.0);
+                exec.setMessage("Parsing workbooks...");
                 final Sheet sheetXls = workbook.getSheet(sheet);
                 final FormulaEvaluator evaluator =
                     reevaluate ? workbook.getCreationHelper().createFormulaEvaluator() : null;
@@ -499,7 +532,7 @@ class CachedExcelTable {
                 }
 
                 for (Row row : sheetXls) {
-                    subExec.setProgress(((double)row.getRowNum()) / sheetXls.getLastRowNum(),
+                    workBookParseProgress.setProgress(((double)row.getRowNum()) / sheetXls.getLastRowNum(),
                         () -> "Row: " + row.getRowNum());
                     if (currentThread.isInterrupted()) {
                         currentThread.interrupt();
@@ -524,6 +557,7 @@ class CachedExcelTable {
                         }
                     }
                 }
+                workBookParseProgress.setProgress(1.0);
                 int lastCol = lastNonNull(table.m_contents);
                 for (int i = 1; i <= lastCol + 1; ++i) {
                     if (sheetXls.isColumnHidden(i - 1)) {
@@ -538,7 +572,7 @@ class CachedExcelTable {
                 throw e;
             }
             return table;
-        });
+        }));
     }
 
     /**
@@ -553,6 +587,25 @@ class CachedExcelTable {
             }
         }
         return lastNonNull;
+    }
+
+    /** The size of the file as per argument or an empty {@link OptionalLong} if not possible
+     * (e.g. remote file or invalid file).
+     * @param loc The location
+     * @return The size of the file.
+     */
+    private static OptionalLong getFileSize(final String loc) {
+        if (Strings.isNullOrEmpty(loc)) {
+            return OptionalLong.empty();
+        }
+        try {
+            File f = FileUtil.getFileFromURL(FileUtil.toURL(loc));
+            if (f != null) {
+                return OptionalLong.of(f.length());
+            }
+        } catch (MalformedURLException | IllegalArgumentException e) {
+        }
+        return OptionalLong.empty();
     }
 
     /**

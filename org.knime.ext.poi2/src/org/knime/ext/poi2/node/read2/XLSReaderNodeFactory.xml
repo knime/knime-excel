@@ -26,13 +26,13 @@
 			formats. (Note: reading large xlsx files is very slow and memory consuming
 			when formula reevaluation is selected.)
 		</option>
-		<option name="Connect timeout[s]">Timeout in seconds when reading remote files. <tt>0</tt> means no
-		timeout. In case it takes longer to connect to the host, the node fails to execute.
-		</option>
 		<option name="Sheet to Read">
             After selecting a file, you can select the sheet from the
             available sheets in the file.
         </option>
+		<option name="Connect timeout[s]">Timeout in seconds when reading remote files. <tt>0</tt> means no
+		timeout. In case it takes longer to connect to the host, the node fails to execute.
+		</option>
 		<option name="Column Names">
 		    If you want to use column names from the spread sheet, check
 		    &quot;Table contains column names&quot; and enter the number
@@ -78,14 +78,15 @@
             causes the entire column to become a string column in case an
             error occurs. A missing value is type innocent, but also unobtrusive.
         </option>
-        <option name="Reevaluate formulae">
-            When checked it reads the whole file to the memory and reevaluates
-            the formulae before returning the result. This can cause errors
+        <option name="Reevaluate formulas">
+            When checked it reads the whole file into  memory and reevaluates
+            the formulas before returning the result. This can cause errors
             when there are functions -not implemented by the Apache POI library-
             used on the sheet. When unchecked, xls files are still read to the memory,
             but the cached values are returned. For xlsx files, only the requested
             sheet is loaded when no reevaluation is requested and requires much
-            less memory to return the cached values.
+            less memory to return the cached values. If uncertain leave unchecked unless
+            there is a concrete reason.
         </option>
         <option name="Disable Preview">
             Preview loading is disabled and no data table configuration is computed, so

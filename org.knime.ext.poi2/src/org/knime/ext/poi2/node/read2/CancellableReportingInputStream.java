@@ -50,9 +50,10 @@ package org.knime.ext.poi2.node.read2;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.OptionalLong;
 
 import org.apache.commons.io.input.CountingInputStream;
-import org.apache.commons.io.input.ProxyInputStream;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
 
@@ -61,39 +62,43 @@ import org.knime.core.node.ExecutionMonitor;
  *
  * @author Gabor Bakos
  */
-class CancellableReportingInputStream extends ProxyInputStream {
+final class CancellableReportingInputStream extends CountingInputStream {
 
-    private CountingInputStream m_countingInputStream;
-    private ExecutionMonitor m_exec;
+    private final ExecutionMonitor m_exec;
+    private final OptionalLong m_streamLengthIfKnown;
 
     /**
-     * @param proxy The {@link CountingInputStream} to wrap.
-     * @param exec An {@link ExecutionMonitor} to use.
+     * @param proxy The {@link InputStream} to wrap.
+     * @param exec An {@link ExecutionMonitor} to use, not null
+     * @param streamLengthIfKnown Non-empty if stream length is known (progress report)
      */
-    public CancellableReportingInputStream(final CountingInputStream proxy, final ExecutionMonitor exec) {
+    CancellableReportingInputStream(final InputStream proxy, final ExecutionMonitor exec,
+        final OptionalLong streamLengthIfKnown) {
         super(proxy);
-        m_countingInputStream = proxy;
         m_exec = exec;
+        m_streamLengthIfKnown = streamLengthIfKnown;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    protected void afterRead(final int n) throws IOException {
-        super.afterRead(n);
-        if (m_exec != null) {
-            try {
-                m_exec.checkCanceled();
-                Thread currentThread = Thread.currentThread();
-                if (currentThread.isInterrupted()) {
-                    currentThread.interrupt();
-                    throw new EOFException("Reading interrupted.");
-                }
-            } catch (final CanceledExecutionException e) {
-                throw new EOFException("Reading has been cancelled");
+    protected void beforeRead(final int n) throws IOException {
+        super.beforeRead(n);
+        try {
+            m_exec.checkCanceled();
+            Thread currentThread = Thread.currentThread();
+            if (currentThread.isInterrupted()) {
+                currentThread.interrupt();
+                throw new EOFException("Reading interrupted.");
             }
-            m_exec.setProgress(Math.log1p(m_countingInputStream.getByteCount()) / Math.log(Integer.MAX_VALUE));
+        } catch (final CanceledExecutionException e) {
+            throw new EOFException("Reading has been cancelled");
         }
     }
+
+    /** {@inheritDoc} */
+    @Override
+    protected synchronized void afterRead(final int n) {
+        super.afterRead(n);
+        m_streamLengthIfKnown.ifPresent(l -> m_exec.setProgress(getByteCount() / (double) l));
+    }
+
 }

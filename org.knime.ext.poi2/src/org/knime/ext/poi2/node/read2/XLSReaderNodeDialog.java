@@ -62,14 +62,12 @@ import java.awt.event.FocusEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.MouseEvent;
-import java.io.BufferedInputStream;
 import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.lang.ref.WeakReference;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -82,7 +80,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -112,7 +109,6 @@ import javax.swing.plaf.basic.BasicComboBoxRenderer;
 import javax.swing.table.TableColumnModel;
 import javax.xml.parsers.ParserConfigurationException;
 
-import org.apache.commons.io.input.CountingInputStream;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.openxml4j.exceptions.OpenXML4JException;
 import org.apache.poi.openxml4j.opc.OPCPackage;
@@ -123,6 +119,7 @@ import org.apache.poi.xssf.eventusermodel.XSSFReader;
 import org.knime.core.data.DataTable;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.ExecutionMonitor;
+import org.knime.core.node.FlowVariableModel;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeDialogPane;
 import org.knime.core.node.NodeLogger;
@@ -133,15 +130,19 @@ import org.knime.core.node.config.Config;
 import org.knime.core.node.tableview.TableContentView;
 import org.knime.core.node.tableview.TableContentViewTableHeader;
 import org.knime.core.node.tableview.TableView;
+import org.knime.core.node.util.CheckUtils;
 import org.knime.core.node.util.FilesHistoryPanel;
+import org.knime.core.node.util.FilesHistoryPanel.LocationValidation;
 import org.knime.core.node.util.ViewUtils;
-import org.knime.core.util.FileUtil;
+import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.util.MutableInteger;
 import org.knime.core.util.Pair;
 import org.knime.core.util.SwingWorkerWithContext;
 import org.knime.ext.poi2.POIActivator;
 import org.knime.ext.poi2.node.read2.POIUtils.StopProcessing;
 import org.xml.sax.SAXException;
+
+import com.google.common.base.Strings;
 
 /**
  * The dialog to the XLS reader.
@@ -150,11 +151,13 @@ import org.xml.sax.SAXException;
  * @author Gabor Bakos
  */
 class XLSReaderNodeDialog extends NodeDialogPane {
-    private static final String REFRESH = "refresh", RELOAD = "reload", LOADING_INTERRUPTED = "Loading interrupted";
+    private static final String REFRESH = "refresh";
+    private static final String RELOAD = "reload";
+    private static final String LOADING_INTERRUPTED = "Loading interrupted";
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(XLSReaderNodeDialog.class);
 
-    private final FilesHistoryPanel m_fileName = new FilesHistoryPanel("XLSReader", ".xls|.xlsx");
+    private final FilesHistoryPanel m_fileName;
 
     private final JSpinner m_timeout =
         new JSpinner(new SpinnerNumberModel(XLSUserSettings.DEFAULT_TIMEOUT_IN_SECONDS, 0, Integer.MAX_VALUE, 1));
@@ -193,7 +196,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
 
     private final JLabel m_previewMsg = new JLabel();
 
-    private final JButton m_previewUpdate = new JButton();
+    private final JButton m_previewUpdateButton = new JButton();
 
     private final JCheckBox m_skipEmptyCols = new JCheckBox();
 
@@ -213,8 +216,8 @@ class XLSReaderNodeDialog extends NodeDialogPane {
 
     private static final int LEFT_INDENT = 25;
 
-    /* flag to temporarily disable listeners during loading of settings */
-    private final AtomicBoolean m_loading = new AtomicBoolean(false);
+    /** Flag to temporarily disable listeners during loading of settings. */
+    private final AtomicBoolean m_isCurrentlyLoadingNodeSettings = new AtomicBoolean(false);
 
     private static final String SCANNING = "/* scanning... */";
 
@@ -231,28 +234,12 @@ class XLSReaderNodeDialog extends NodeDialogPane {
 
     private static final String PREVIEWBORDER_MSG = "Preview with current settings";
 
-    private final JCheckBox m_reevaluateFormulae = new JCheckBox("<html>Reevaluate formulae <i>- when checked reads the "
-        + "whole file (usually slower, but for xls it reads the file anyway)</i></html>");
+    private final JCheckBox m_reevaluateFormulae = new JCheckBox(
+        "Reevaluate formulas (leave unchecked if uncertain; see node description for details)");
 
-    @SuppressWarnings("serial")
-    private final JCheckBox m_noPreview = new JCheckBox(new AbstractAction("<html>Disable Preview "
-        + "<i>- does not compute the output table structure</i></html>") {
-        @Override
-        public void actionPerformed(final ActionEvent e) {
-            if (m_loading.get()) {
-                return;
-            }
-            boolean noPreview = m_noPreview.isSelected();
-            m_fileTable.setEnabled(!noPreview);
-            m_previewTable.setEnabled(!noPreview);
-            m_previewUpdate.setEnabled(!noPreview);
-            m_previewTablePanel.setEnabled(!noPreview);
-            m_fileTablePanel.setEnabled(!noPreview);
-            if (noPreview) {
-                checkPreviousFuture();
-            }
-        }
-    });
+    private final JCheckBox m_noPreviewChecker = new JCheckBox("Disable Preview "
+        + " (does not compute the output table structure)");
+
     private Map<Pair<String, Boolean>, WeakReference<CachedExcelTable>> m_sheets = new ConcurrentHashMap<>();
 
     private final JButton m_cancel = new JButton("Cancel loading");
@@ -276,6 +263,8 @@ class XLSReaderNodeDialog extends NodeDialogPane {
     public XLSReaderNodeDialog() {
         POIActivator.mkTmpDirRW_Bug3301();
 
+        FlowVariableModel fvBut = createFlowVariableModel(XLSUserSettings.CFG_XLS_LOCATION, FlowVariable.Type.STRING);
+        m_fileName = new FilesHistoryPanel(fvBut, "XLSReader", LocationValidation.FileInput, ".xls|.xlsx");
         JPanel dlgTab = new JPanel();
         dlgTab.setLayout(new BoxLayout(dlgTab, BoxLayout.Y_AXIS));
 
@@ -286,12 +275,10 @@ class XLSReaderNodeDialog extends NodeDialogPane {
         JPanel settingsBox = new JPanel();
         settingsBox.setLayout(new BoxLayout(settingsBox, BoxLayout.Y_AXIS));
         settingsBox.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Adjust Settings:"));
-        settingsBox.add(getSheetBox());
+        settingsBox.add(getSheetAndTimeOutBox());
         settingsBox.add(getColHdrBox());
         settingsBox.add(getRowIDBox());
         settingsBox.add(getAreaBox());
-        settingsBox.add(new JLabel("Tip: Mouse over the row and column headers in the \"File Content\" tab identify "
-            + "the cell coordinates"));
         settingsBox.add(getXLErrBox());
         settingsBox.add(getOptionsBox());
         dlgTab.add(settingsBox);
@@ -313,26 +300,15 @@ class XLSReaderNodeDialog extends NodeDialogPane {
         m_fileName.addChangeListener(e -> fileNameChanged());
         panel.add(m_fileName, gbc);
 
-        gbc.weightx = 0.0;
-        gbc.gridx += 1;
-        final JLabel timeoutLabel = new JLabel("Connect timeout [s]: ");
-        String tooltip = "Timeout to connect to the server in seconds";
-        timeoutLabel.setToolTipText(tooltip);
-        m_timeout.setToolTipText(tooltip);
-        panel.add(timeoutLabel, gbc);
-
-        gbc.gridx += 1;
-        ((JSpinner.DefaultEditor) m_timeout.getEditor()).getTextField().setColumns(4);
-        panel.add(m_timeout, gbc);
         return panel;
     }
 
     @SuppressWarnings("serial")
-    private JComponent getSheetBox() {
-        Box sheetBox = Box.createHorizontalBox();
-        sheetBox.add(Box.createHorizontalGlue());
-        sheetBox.add(new JLabel("Select the sheet to read:"));
-        sheetBox.add(Box.createHorizontalStrut(5));
+    private JComponent getSheetAndTimeOutBox() {
+        Box sheetAndTimeOutBox = Box.createHorizontalBox();
+        sheetAndTimeOutBox.add(Box.createHorizontalGlue());
+        sheetAndTimeOutBox.add(new JLabel("Select the sheet to read:"));
+        sheetAndTimeOutBox.add(Box.createHorizontalStrut(5));
         m_sheetName.setPreferredSize(new Dimension(170, 25));
         m_sheetName.setMaximumSize(new Dimension(170, 25));
         m_sheetName.addItemListener(new ItemListener() {
@@ -360,22 +336,33 @@ class XLSReaderNodeDialog extends NodeDialogPane {
             }
         };
         m_sheetName.setRenderer(sheetNameRenderer);
-        sheetBox.add(m_sheetName);
-        sheetBox.add(Box.createHorizontalGlue());
-        return sheetBox;
+        sheetAndTimeOutBox.add(m_sheetName);
+        sheetAndTimeOutBox.add(Box.createHorizontalGlue());
+        sheetAndTimeOutBox.add(Box.createHorizontalGlue());
+
+        final JLabel timeoutLabel = new JLabel("Connect timeout [s]: ");
+        String tooltip = "Timeout to connect to the server in seconds";
+        timeoutLabel.setToolTipText(tooltip);
+        m_timeout.setToolTipText(tooltip);
+        sheetAndTimeOutBox.add(timeoutLabel);
+        sheetAndTimeOutBox.add(Box.createHorizontalStrut(5));
+        ((JSpinner.DefaultEditor) m_timeout.getEditor()).getTextField().setColumns(4);
+        sheetAndTimeOutBox.add(m_timeout);
+        sheetAndTimeOutBox.add(Box.createHorizontalGlue());
+
+        return sheetAndTimeOutBox;
     }
 
-    private synchronized void sheetNameChanged() {
+    private void sheetNameChanged() {
         m_sheetName.setToolTipText((String)m_sheetName.getSelectedItem());
-        if (m_loading.get()) {
-            m_loading.set(false);
+        if (setCurrentlyLoadingNodeSettings(false)) {
             if (FIRST_SHEET.equals(m_sheetName.getSelectedItem()) || m_sheetName.getSelectedItem() == null) {
                 // now refresh preview tables
                 updateFileTable();
             }
-            return;
+        } else {
+            updateFileTable();
         }
-        updateFileTable();
     }
 
     private JComponent getColHdrBox() {
@@ -554,7 +541,8 @@ class XLSReaderNodeDialog extends NodeDialogPane {
             "When checked not the cached values, but the reevaluated values are returned (using DOM representation, "
                 + "requires significantly more memory, for xls files, it always uses the DOM representation)");
         m_reevaluateFormulae.addActionListener(e -> sheetNameChanged());
-        evaluationBox.add(m_noPreview);
+        evaluationBox.add(m_noPreviewChecker);
+        m_noPreviewChecker.addItemListener(e -> onNoPreviewCheckerSelected());
         evaluationBox.add(Box.createHorizontalGlue());
         return evaluationBox;
     }
@@ -644,11 +632,9 @@ class XLSReaderNodeDialog extends NodeDialogPane {
             // refresh workbook sets the workbook null in case of an error
             m_fileAccessError = e.getMessage();
         }
-        if (m_loading.get()) {
+        if (m_isCurrentlyLoadingNodeSettings.get()) {
             return;
         }
-        m_previewUpdate.setEnabled(false);
-        m_previewMsg.setText("Loading input file...");
         clearTableViews();
         updateSheetListAndSelect(null);
 
@@ -661,13 +647,15 @@ class XLSReaderNodeDialog extends NodeDialogPane {
      * @param sheetName
      */
     private void updateSheetListAndSelect(final String sheetName) {
+        m_previewUpdateButton.setEnabled(false);
+        m_previewMsg.setText("Loading input file...");
         m_sheetName.setModel(new DefaultComboBoxModel<>(new String[]{SCANNING}));
         SwingWorker<String[], Object> sw = new SwingWorkerWithContext<String[], Object>() {
 
             @Override
             protected String[] doInBackgroundWithContext() throws Exception {
                 String file = m_fileName.getSelectedFile();
-                if (file != null && !file.isEmpty()) {
+                if (!Strings.isNullOrEmpty(file)) {
                     if (m_workbook == null && !XLSReaderNodeModel.isXlsx(file)) {
                         m_workbook = getWorkbook(file);
                     }
@@ -684,7 +672,8 @@ class XLSReaderNodeDialog extends NodeDialogPane {
                         }
                     } else {//xlsx without reevaluation
                         List<String> sheetNames = POIUtils
-                            .getSheetNames(new XSSFReader(OPCPackage.open(POIUtils.getBufferedInputStream(file))));
+                            .getSheetNames(new XSSFReader(OPCPackage.open(
+                                POIUtils.openInputStream(file, readTimeOutInSecondsFromSpinner()))));
                         sheetNames.add(0, FIRST_SHEET);
                         return sheetNames.stream().toArray(n -> new String[n]);
                     }
@@ -730,22 +719,18 @@ class XLSReaderNodeDialog extends NodeDialogPane {
         m_fileTablePanel.add(m_fileTable, BorderLayout.CENTER);
         m_cancel.setVisible(false);
         m_loadingProgress.setVisible(false);
-        m_cancel.addActionListener(e -> {
-            m_cancel.setEnabled(false);
-            m_previewMsg.setText(interruptedMessage());
-            checkPreviousFuture();
-            });
+        m_cancel.addActionListener(e -> onCancelButtonClicked());
         m_fileTable.getHeaderTable().setColumnName("Row No.");
         m_previewTablePanel.setLayout(new BorderLayout());
         m_previewTablePanel
             .setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), PREVIEWBORDER_MSG));
         m_previewTablePanel.add(m_previewTable, BorderLayout.CENTER);
-        m_previewUpdate.setText(REFRESH);
-        m_previewUpdate.addActionListener(new ActionListener() {
+        m_previewUpdateButton.setText(REFRESH);
+        m_previewUpdateButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(final ActionEvent e) {
-                m_previewUpdate.setEnabled(false);
-                if (RELOAD.equals(m_previewUpdate.getText())) {
+                m_previewUpdateButton.setEnabled(false);
+                if (RELOAD.equals(m_previewUpdateButton.getText())) {
                     updateFileTable();
                 } else {
                     updatePreviewTable();
@@ -758,7 +743,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
         m_previewMsg.setForeground(Color.RED);
         m_previewMsg.setText("");
         Box errBox = Box.createHorizontalBox();
-        errBox.add(m_previewUpdate);
+        errBox.add(m_previewUpdateButton);
         errBox.add(Box.createHorizontalStrut(5));
         errBox.add(m_previewMsg);
         errBox.add(Box.createHorizontalGlue());
@@ -774,52 +759,78 @@ class XLSReaderNodeDialog extends NodeDialogPane {
         return viewTabs;
     }
 
-    private synchronized void clearTableViews() {
-        clearPreview();
-        clearFileview();
+    private void clearTableViews() {
+        ViewUtils.invokeLaterInEDT(() -> {
+            setNewPreviewDataTableInEDT(null);
+            setNewFileDataTableInEDT(null);
+        });
     }
 
-    private synchronized void clearPreview() {
-        ViewUtils.runOrInvokeLaterInEDT(() -> {
-            m_previewTable.setDataTable(null);
-        });
-        if (m_previewDataTable != null && m_previewDataTable instanceof Closeable) {
-            try {
-                ((Closeable)m_previewDataTable).close();
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
+    private void onCancelButtonClicked() {
+        m_cancel.setEnabled(false);
+        m_previewMsg.setText(interruptedMessage());
+        checkPreviousFuture();
+    }
+
+    private void onNoPreviewCheckerSelected() {
+        boolean noPreview = m_noPreviewChecker.isSelected();
+        m_fileTable.setEnabled(!noPreview);
+        m_previewTable.setEnabled(!noPreview);
+        m_previewUpdateButton.setEnabled(!noPreview);
+        m_previewTablePanel.setEnabled(!noPreview);
+        m_fileTablePanel.setEnabled(!noPreview);
+        if (noPreview) {
+            m_previewUpdateButton.setText(RELOAD);
+            m_previewMsg.setText("");
+            checkPreviousFuture();
+            clearTableViews();
         }
-        m_previewDataTable = null;
     }
 
-    private synchronized void clearFileview() {
-        ViewUtils.runOrInvokeLaterInEDT(new Runnable() {
-            @Override
-            public void run() {
-                m_fileTable.setDataTable(null);
-            }
-        });
-        if (m_fileDataTable != null && m_fileDataTable instanceof Closeable) {
+    /** Updates the file TableView and also sets the field.
+     * @param newFileDataTable The new file table to set or null
+     */
+    private void setNewFileDataTableInEDT(final DataTable newFileDataTable) {
+        assert SwingUtilities.isEventDispatchThread() : "Not run in EDT";
+        if (m_fileDataTable instanceof Closeable) {
             try {
                 ((Closeable)m_fileDataTable).close();
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
         }
-        m_fileDataTable = null;
+        m_fileDataTable = newFileDataTable;
+        m_fileTable.setDataTable(newFileDataTable);
+    }
+
+    /** Updates the preview TableView and also sets the field.
+     * @param newPreviewDataTable The new file table to set or null
+     */
+    private void setNewPreviewDataTableInEDT(final DataTable newPreviewDataTable) {
+        assert SwingUtilities.isEventDispatchThread() : "Not run in EDT";
+        if (m_previewDataTable instanceof Closeable) {
+            try {
+                ((Closeable)m_previewDataTable).close();
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+        m_previewDataTable = newPreviewDataTable;
+        m_previewTable.setDataTable(newPreviewDataTable);
     }
 
     /**
      * reads the current filename and sheetname and fills the file content view.
      */
-    private synchronized void updateFileTable() {
-        if (m_noPreview.isSelected()) {
+    private void updateFileTable() {
+        if (m_noPreviewChecker.isSelected()) {
+            m_previewUpdateButton.setText(RELOAD);
+            m_previewMsg.setText("");
             return;
         }
-        m_previewUpdate.setText(REFRESH);
+        m_previewUpdateButton.setText(REFRESH);
         final String file = m_fileName.getSelectedFile();
-        if (file == null || file.isEmpty()) {
+        if (Strings.isNullOrEmpty(file)) {
             setFileTablePanelBorderTitle("<no file set>");
             clearTableViews();
             updatePreviewTable();
@@ -835,8 +846,11 @@ class XLSReaderNodeDialog extends NodeDialogPane {
             clearTableViews();
             return;
         }
-        if (m_loading.get()) {
+        if (m_isCurrentlyLoadingNodeSettings.get()) {
             // do not read from the file while loading settings.
+            return;
+        }
+        if (m_noPreviewChecker.isSelected()) {
             return;
         }
         //To prevent showing invalid content:
@@ -883,7 +897,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
                     } catch (InterruptedException | CancellationException e) {
                         fixInterrupt();
                         checkPreviousFuture();
-                        m_previewUpdate.setText(RELOAD);
+                        m_previewUpdateButton.setText(RELOAD);
                         CachedExcelTable cachedExcelTable = m_currentTable.get();
                         if (cachedExcelTable != null) {
                             fileTableSettings(localSheet, settings);
@@ -894,7 +908,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
                     }
                 } catch (Throwable t) {
                     checkPreviousFuture();
-                    m_previewUpdate.setText(RELOAD);
+                    m_previewUpdateButton.setText(RELOAD);
                     NodeLogger.getLogger(XLSReaderNodeDialog.class)
                         .debug("Unable to create setttings for file content view", t);
                     clearTableViews();
@@ -938,20 +952,13 @@ class XLSReaderNodeDialog extends NodeDialogPane {
                     msg = "<unable to create view>";
                 }
                 setFileTablePanelBorderTitle(msg);
-                m_fileTable.setDataTable(dt.get());
-                if (m_fileDataTable != null && m_fileDataTable instanceof Closeable) {
-                    try {
-                        ((Closeable)m_fileDataTable).close();
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
-                }
-                m_fileDataTable = dt.get();
+                DataTable newFileDataTable = dt.get();
+                setNewFileDataTableInEDT(newFileDataTable);
                 m_currentFileWorker.set(null);
                 updatePreviewTable();
             }
+
         };
-        clearFileview();
         setFileTablePanelBorderTitle("Updating file content view...");
         m_previewMsg.setText("Loading input file...");
         SwingWorker<?, ?> oldWorker = m_currentFileWorker.getAndSet(sw);
@@ -983,27 +990,26 @@ class XLSReaderNodeDialog extends NodeDialogPane {
      * @param reevaluateFormulae Reevaluate formulae or not?
      * @return The {@link CachedExcelTable}.
      */
-    private synchronized CachedExcelTable getSheetTable(final String file, final String sheet,
+    private CachedExcelTable getSheetTable(final String file, final String sheet,
         final boolean reevaluateFormulae) {
         CachedExcelTable sheetTable;
         final Pair<String, Boolean> key = Pair.create(sheet, reevaluateFormulae);
         if (!m_sheets.containsKey(key) || (sheetTable = m_sheets.get(key).get()) == null) {
             LOGGER.debug("Loading sheet " + sheet + "  of " + file);
-            try (InputStream is = FileUtil.openInputStream(file);
-                    InputStream stream = new BufferedInputStream(is);
-                    CountingInputStream countingStream = new CountingInputStream(stream)) {
+
+            try (InputStream stream = POIUtils.openInputStream(file, readTimeOutInSecondsFromSpinner())) {
                 checkPreviousFuture();
                 ExecutionMonitor monitor = new ExecutionMonitor();
                 monitor.getProgressMonitor()
                     .addProgressListener(e -> m_loadingProgress.setValue((int)(100*e.getNodeProgress().getProgress())));
                 final Future<CachedExcelTable> tableFuture =
                     XLSReaderNodeModel.isXlsx(file) && !reevaluateFormulae
-                        ? CachedExcelTable.fillCacheFromXlsxStreaming(file, countingStream, sheet, Locale.ROOT,
-                            monitor, m_currentTable)
-                        : CachedExcelTable.fillCacheFromDOM(file, countingStream, sheet, Locale.ROOT,
+                        ? CachedExcelTable.fillCacheFromXlsxStreaming(stream,
+                            sheet, Locale.ROOT, monitor, m_currentTable)
+                        : CachedExcelTable.fillCacheFromDOM(file, stream, sheet, Locale.ROOT,
                             reevaluateFormulae, monitor, m_currentTable);
                 checkPreviousFutureAndCancel(m_currentlyRunningFuture.getAndSet(tableFuture));
-                invokeSoonOnEDT(() -> {
+                ViewUtils.invokeAndWaitInEDT(() -> {
                     m_loadingProgress.setValue(0);
                     m_loadingProgress.setVisible(true);
                     m_cancel.setEnabled(true);
@@ -1018,7 +1024,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
                 m_sheets.put(key, new WeakReference<>(sheetTable));
             } catch (CancellationException | StopProcessing | InterruptedException | ExecutionException e) {
                 sheetTable = m_currentTable.get();
-                m_previewUpdate.setText(RELOAD);
+                m_previewUpdateButton.setText(RELOAD);
                 fixInterrupt();
                 m_currentlyRunningFuture.set(null);
             } catch (IOException | InvalidSettingsException e) {
@@ -1027,6 +1033,11 @@ class XLSReaderNodeDialog extends NodeDialogPane {
         }
         m_currentTable.set(sheetTable);
         return sheetTable;
+    }
+
+    /** @return int value from {@link #m_timeout}. */
+    private int readTimeOutInSecondsFromSpinner() {
+        return ((Number)m_timeout.getValue()).intValue();
     }
 
     /**
@@ -1042,19 +1053,20 @@ class XLSReaderNodeDialog extends NodeDialogPane {
     /**
      * Checks whether previous future exists and if not finished yet, it cancels.
      */
-    private void checkPreviousFuture() {
+    private boolean checkPreviousFuture() {
         Future<CachedExcelTable> previousFuture = m_currentlyRunningFuture.get();
-        checkPreviousFutureAndCancel(previousFuture);
+        return checkPreviousFutureAndCancel(previousFuture);
     }
 
     /**
      * @param previousFuture The previous {@link Future} to cancel.
      */
-    private void checkPreviousFutureAndCancel(final Future<CachedExcelTable> previousFuture) {
+    private boolean checkPreviousFutureAndCancel(final Future<CachedExcelTable> previousFuture) {
         if (previousFuture != null && !previousFuture.isDone()) {
             LOGGER.debug("Cancelling loading");
-            previousFuture.cancel(true);
+            return previousFuture.cancel(true);
         }
+        return false;
     }
 
     /**
@@ -1065,11 +1077,12 @@ class XLSReaderNodeDialog extends NodeDialogPane {
      */
     String firstSheetName(final String file) {
         if (XLSReaderNodeModel.isXlsx(file)) {
-            try (final InputStream stream = POIUtils.getBufferedInputStream(file);
+            try (final InputStream stream = POIUtils.openInputStream(file, readTimeOutInSecondsFromSpinner());
                     final OPCPackage opcpackage = OPCPackage.open(stream)) {
                 XSSFReader reader = new XSSFReader(opcpackage);
                 return POIUtils.getFirstSheetNameWithData(reader, new ReadOnlySharedStringsTable(opcpackage));
-            } catch (IOException | SAXException | OpenXML4JException | ParserConfigurationException e) {
+            } catch (IOException | SAXException | OpenXML4JException
+                    | ParserConfigurationException | InvalidSettingsException e) {
                 return null;
             }
         } else {
@@ -1079,6 +1092,8 @@ class XLSReaderNodeDialog extends NodeDialogPane {
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 } catch (InvalidFormatException e) {
+                    throw new RuntimeException(e);
+                } catch (InvalidSettingsException e) {
                     throw new RuntimeException(e);
                 }
             }
@@ -1093,25 +1108,15 @@ class XLSReaderNodeDialog extends NodeDialogPane {
      * @return The workbook or null if it could not be loaded
      * @throws IOException
      * @throws InvalidFormatException
+     * @throws InvalidSettingsException
      * @throws RuntimeException the underlying POI library also throws other kind of exceptions
      */
-    public Workbook getWorkbook(final String path) throws IOException, InvalidFormatException {
-        Workbook workbook = null;
-        InputStream in = null;
-        try {
-            in = POIUtils.getBufferedInputStream(path);
+    public Workbook getWorkbook(final String path)
+            throws IOException, InvalidFormatException, InvalidSettingsException {
+        try (InputStream in = POIUtils.openInputStream(path, readTimeOutInSecondsFromSpinner())) {
             // This should be the only place in the code where a workbook gets loaded
-            workbook = WorkbookFactory.create(in);
-        } finally {
-            if (in != null) {
-                try {
-                    in.close();
-                } catch (IOException e2) {
-                    // ignore
-                }
-            }
+            return WorkbookFactory.create(in);
         }
-        return workbook;
     }
 
     private void setFileTablePanelBorderTitle(final String title) {
@@ -1142,23 +1147,25 @@ class XLSReaderNodeDialog extends NodeDialogPane {
         });
     }
 
-    private synchronized void invalidatePreviewTable() {
-        m_previewMsg.setText("Preview table is out of sync with current settings. Please refresh.");
+    private void invalidatePreviewTable() {
+        String txt = m_noPreviewChecker.isSelected() ? ""
+            : "Preview table is out of sync with current settings. Please refresh.";
+        m_previewMsg.setText(txt);
     }
 
     /**
      * Call in EDT.
      */
-    private synchronized void updatePreviewTable() {
+    private void updatePreviewTable() {
         // make sure user doesn't trigger it again
-        m_previewUpdate.setEnabled(false);
+        m_previewUpdateButton.setEnabled(false);
 
         String file = m_fileName.getSelectedFile();
         if (file == null || file.isEmpty()) {
             m_previewMsg.setText("Set a filename.");
             clearTableViews();
             // enable the refresh button again
-            m_previewUpdate.setEnabled(!m_noPreview.isSelected());
+            m_previewUpdateButton.setEnabled(!m_noPreviewChecker.isSelected());
             return;
         }
         String sheet = (String)m_sheetName.getSelectedItem();
@@ -1176,11 +1183,11 @@ class XLSReaderNodeDialog extends NodeDialogPane {
         if (sheet == SCANNING) {
             clearTableViews();
             // enable the refresh button again
-            m_previewUpdate.setEnabled(!m_noPreview.isSelected());
+            m_previewUpdateButton.setEnabled(!m_noPreviewChecker.isSelected());
             return;
         }
 
-        if (m_loading.get()) {
+        if (m_isCurrentlyLoadingNodeSettings.get()) {
             // do nothing while loading settings.
             return;
         }
@@ -1188,6 +1195,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
 
         final AtomicReference<DataTable> dt = new AtomicReference<>(null);
 
+        m_readRows.setValue(-1);
         final String finalSheet = sheet;
         SwingWorker<String, Object> sw = new SwingWorkerWithContext<String, Object>() {
             @Override
@@ -1199,6 +1207,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
                     CachedExcelTable sheetTable = m_currentTable.get();
                     m_mapFromKNIMEColumnsToExcel.clear();
                     if (sheetTable != null) {
+                        m_readRows.setValue(sheetTable.lastRow());
                         dt.set(sheetTable.createDataTable(s, m_mapFromKNIMEColumnsToExcel));
                     }
                 } catch (Throwable t) {
@@ -1227,29 +1236,26 @@ class XLSReaderNodeDialog extends NodeDialogPane {
                     }
                     if (err != null) {
                         m_previewMsg.setText(err);
-                        clearPreview();
+                        setNewPreviewDataTableInEDT(null);
                         return;
                     }
 
                     String messagePrefix = interruptedMessage();
                     m_previewMsg.setText(messagePrefix);
                     try {
-                        String previewTxt = PREVIEWBORDER_MSG + ": "
-                            + (dt.get() == null ? finalSheet : dt.get().getDataTableSpec().getName());
+                        DataTable newPreviewDataTable = dt.get();
+                        String previewTxt = PREVIEWBORDER_MSG + ": " + (newPreviewDataTable == null
+                                ? finalSheet : newPreviewDataTable.getDataTableSpec().getName());
                         setPreviewTablePanelBorderTitle(previewTxt);
-                        m_previewTable.setDataTable(dt.get());
-                        if (m_previewDataTable != null && m_previewDataTable instanceof Closeable) {
-                            ((Closeable)m_previewDataTable).close();
-                        }
-                        m_previewDataTable = dt.get();
+                        setNewPreviewDataTableInEDT(newPreviewDataTable);
                     } catch (Throwable t) {
-                        t.printStackTrace();
+                        LOGGER.debug(t);
                         m_previewMsg.setText(messagePrefix.isEmpty() || t.getMessage() == null ? t.getMessage()
                             : messagePrefix + " " + t.getMessage());
                     }
                 } finally {
                     // enable the refresh button again
-                    m_previewUpdate.setEnabled(!m_noPreview.isSelected());
+                    m_previewUpdateButton.setEnabled(!m_noPreviewChecker.isSelected());
                 }
             }
         };
@@ -1267,7 +1273,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
         m_previewMsg.setText(msg);
         clearTableViews();
         // enable the refresh button again
-        m_previewUpdate.setEnabled(!m_noPreview.isSelected());
+        m_previewUpdateButton.setEnabled(!m_noPreviewChecker.isSelected());
     }
 
     private XLSUserSettings createSettingsFromComponents() throws InvalidSettingsException {
@@ -1339,8 +1345,8 @@ class XLSReaderNodeDialog extends NodeDialogPane {
         s.setErrorPattern(m_formulaErrPattern.getText());
 
         s.setReevaluateFormulae(m_reevaluateFormulae.isSelected());
-        s.setTimeoutInSeconds(((Number)m_timeout.getValue()).intValue());
-        s.setNoPreview(m_noPreview.isSelected());
+        s.setTimeoutInSeconds(readTimeOutInSecondsFromSpinner());
+        s.setNoPreview(m_noPreviewChecker.isSelected());
         return s;
     }
 
@@ -1436,7 +1442,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
 
         m_reevaluateFormulae.setSelected(s.isReevaluateFormulae());
 
-        m_noPreview.setSelected(s.isNoPreview());
+        m_noPreviewChecker.setSelected(s.isNoPreview());
 
         m_timeout.setValue(s.getTimeoutInSeconds());
 
@@ -1479,6 +1485,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
         s.save(settings);
         DataTable preview = m_previewDataTable;
         if (!s.isNoPreview() /*&& !m_incomplete*/) {
+            CheckUtils.checkSettingNotNull(preview, "No preview table created - reload the sheet");
             // if we have a preview table, store the DTS with the settings.
             // This is a hack around to avoid long configure times.
             // Causes the node's execute method to issue a bad warning, if the
@@ -1490,13 +1497,33 @@ class XLSReaderNodeDialog extends NodeDialogPane {
         m_fileName.addToHistory();
     }
 
+    /** Sets {@link #m_isCurrentlyLoadingNodeSettings} and returns the previous value. It also enables/disables
+     * controls according to the new state.
+     * @param newValue The new value to set
+     * @return the previous value.
+     */
+    private boolean setCurrentlyLoadingNodeSettings(final boolean newValue) {
+        boolean oldValue = m_isCurrentlyLoadingNodeSettings.getAndSet(newValue);
+        if (oldValue != newValue) {
+            boolean enableControls = !newValue;
+            m_skipEmptyCols.setEnabled(enableControls);
+            m_skipEmptyRows.setEnabled(enableControls);
+            m_reevaluateFormulae.setEnabled(enableControls);
+            m_noPreviewChecker.setEnabled(enableControls);
+            m_previewUpdateButton.setEnabled(enableControls);
+            m_cancel.setEnabled(enableControls);
+            onNoPreviewCheckerSelected();
+        }
+        return oldValue;
+    }
+
     /**
      * {@inheritDoc}
      */
     @Override
     protected void loadSettingsFrom(final NodeSettingsRO settings, final DataTableSpec[] specs)
         throws NotConfigurableException {
-        m_loading.set(true);
+        setCurrentlyLoadingNodeSettings(true);
         clearTableViews();
         XLSUserSettings s;
         try {
@@ -1522,7 +1549,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
             // now refresh preview tables
             updateFileTable();
         }
-        //m_loading is set back to false in updateSheetListAndSelect on the event dispatch thread.
+        //m_isCurrentlyLoadingNodeSettings is set back to false in updateSheetListAndSelect on the event dispatch thread
     }
 
     private void addFocusLostListener(final JTextField field) {
@@ -1611,25 +1638,21 @@ class XLSReaderNodeDialog extends NodeDialogPane {
         }
     }
 
-    private static final void invokeSoonOnEDT(final Runnable run) {
-        if (SwingUtilities.isEventDispatchThread()) {
-            run.run();
-        } else {
-            try {
-                SwingUtilities.invokeAndWait(run);
-            } catch (InvocationTargetException | InterruptedException e) {
-                SwingUtilities.invokeLater(run);
-            }
-        }
-    }
-
     /**
      * @return
      */
     private String interruptedMessage() {
-        return m_readRows.intValue() < 0 ? LOADING_INTERRUPTED + (m_readRows.intValue() == -1
-            ? ", no preview is available"
-            : ", preview is based on the first " + -(m_readRows.intValue() + 1) + " values of the sheet")
-            : "";
+        int nrRowsRead = m_readRows.intValue();
+        if (nrRowsRead < 0) {
+            String interruptSuffix;
+            if (nrRowsRead == -1) {
+                interruptSuffix = ", no preview is available";
+            } else {
+                interruptSuffix = ", preview is based on the first " + -(nrRowsRead + 1) + " values of the sheet";
+            }
+            return LOADING_INTERRUPTED + interruptSuffix;
+        } else {
+            return "";
+        }
     }
 }

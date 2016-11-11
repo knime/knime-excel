@@ -69,6 +69,9 @@ import org.knime.core.util.FileUtil;
  */
 public class XLSUserSettings {
 
+    /** Key under which the file url is stored. */
+    static final String CFG_XLS_LOCATION = "XLS_LOCATION";
+
     /**
      * Key for reevaluating formulae.
      */
@@ -176,7 +179,7 @@ public class XLSUserSettings {
      * @param settings object to write values into
      */
     public void save(final NodeSettingsWO settings) {
-        settings.addString("XLS_LOCATION", m_fileLocation);
+        settings.addString(CFG_XLS_LOCATION, m_fileLocation);
 
         settings.addString("SHEET_NAME", m_sheetName);
 
@@ -276,7 +279,7 @@ public class XLSUserSettings {
             throws InvalidSettingsException {
         XLSUserSettings result = new XLSUserSettings();
 
-        result.m_fileLocation = settings.getString("XLS_LOCATION");
+        result.m_fileLocation = settings.getString(CFG_XLS_LOCATION);
 
         result.m_sheetName = settings.getString("SHEET_NAME");
 

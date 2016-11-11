@@ -48,12 +48,8 @@
  */
 package org.knime.ext.poi2.node.read2;
 
-import java.io.BufferedInputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -576,21 +572,14 @@ class POIUtils {
      * location could either be a filename or a URL.
      *
      * @param location a filename or a URL
+     * @param timeOutInSeconds ...
      * @return a new opened buffered input stream.
      * @throws IOException
+     * @throws InvalidSettingsException
      */
-    public static BufferedInputStream getBufferedInputStream(
-            final String location) throws IOException {
-        InputStream in;
-        try {
-            URL url = new URL(location);
-            in = FileUtil.openStreamWithTimeout(url);
-        } catch (MalformedURLException mue) {
-            // then try a file
-            in = new FileInputStream(location);
-        }
-        return new BufferedInputStream(in);
-
+    static InputStream openInputStream(
+        final String location, final int timeOutInSeconds) throws IOException, InvalidSettingsException {
+        return FileUtil.openInputStream(location, 1000 * timeOutInSeconds);
     }
 
     /**
