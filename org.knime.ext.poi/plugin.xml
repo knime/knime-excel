@@ -22,16 +22,4 @@
             factory-class="org.knime.ext.poi.node.readsheets.XLSSheetReaderNodeFactory">
       </node>
    </extension>
-     <extension
-           point="org.knime.workbench.repository.registeredFileExtensions">
-        <FileExtensionMapping
-              NodeFactory="org.knime.ext.poi.node.read2.XLSReaderNodeFactory">
-           <FileExtension
-                 extension=".xls">
-           </FileExtension>
-           <FileExtension
-                 extension=".xlsx">
-           </FileExtension>
-        </FileExtensionMapping>
-    </extension>   
 </plugin>
