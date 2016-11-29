@@ -168,7 +168,7 @@ public class XLSWriter2Settings {
         m_writeRowID = settings.getBoolean(CFGKEY_WRITEROWHDR);
         m_filename = settings.getString(CFGKEY_FILENAME);
         m_sheetname = settings.getString(CFGKEY_SHEETNAME);
-        if (m_sheetname == null || m_sheetname.length() == 0) {
+        if (m_sheetname == null) {
             throw new InvalidSettingsException("Please specify a sheet name.");
         }
         m_missingPattern = settings.getString(CFGKEY_MISSINGPATTERN);
