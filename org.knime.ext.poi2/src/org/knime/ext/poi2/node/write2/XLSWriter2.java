@@ -74,6 +74,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.xssf.streaming.SXSSFSheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFClientAnchor;
 import org.apache.poi.xssf.usermodel.XSSFShape;
@@ -81,14 +82,12 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.knime.core.data.BooleanValue;
 import org.knime.core.data.DataCell;
 import org.knime.core.data.DataRow;
-import org.knime.core.data.DataTable;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.DoubleValue;
 import org.knime.core.data.StringValue;
 import org.knime.core.data.date.DateAndTimeValue;
 import org.knime.core.data.image.png.PNGImageContent;
 import org.knime.core.data.image.png.PNGImageValue;
-import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeLogger;
@@ -141,6 +140,8 @@ public class XLSWriter2 {
      * Writes <code>table</code> with current settings.
      *
      * @param table the table to write to the file
+     * @param spec {@link DataTableSpec} of {@code table}.
+     * @param numOfRows
      * @param exec an execution monitor where to check for canceled status and report progress to. (In case of
      *            cancellation, the file will be deleted.)
      * @throws IOException if any related I/O error occurs
@@ -149,7 +150,7 @@ public class XLSWriter2 {
      * @throws URISyntaxException if the destination URL is invalid
      * @throws NullPointerException if table is <code>null</code>
      */
-    public void write(final DataTable table, final ExecutionMonitor exec) throws IOException,
+    public void write(final Iterable<DataRow> table, final DataTableSpec spec, final int numOfRows, final ExecutionMonitor exec) throws IOException,
             CanceledExecutionException, InvalidFormatException, URISyntaxException {
 
         Workbook wb = null;
@@ -182,7 +183,7 @@ public class XLSWriter2 {
             int sheetIdx = 0; // in case the table doesn't fit in one sheet
             String sheetName = m_settings.getSheetname();
             if ((sheetName == null) || (sheetName.trim().length() == 0)) {
-                sheetName = table.getDataTableSpec().getName();
+                sheetName = spec.getName();
             }
             // max sheetname length is 32 incl. added running index. We cut it to 25
             if (sheetName.length() > 25) {
@@ -199,24 +200,22 @@ public class XLSWriter2 {
             }
 
             Sheet sheet = wb.createSheet(sheetName);
+            if (m_settings.getAutosize() && sheet instanceof SXSSFSheet) {
+                ((SXSSFSheet)sheet).trackAllColumnsForAutoSizing();
+            }
             sheet.getPrintSetup().setLandscape(m_settings.getLandscape());
             sheet.getPrintSetup().setPaperSize(m_settings.getPaperSize());
             Drawing drawing = null;
             CreationHelper helper = wb.getCreationHelper();
             CellStyle dateStyle = wb.createCellStyle();
 
-            DataTableSpec inSpec = table.getDataTableSpec();
-            int numOfCols = inSpec.getNumColumns();
+            int numOfCols = spec.getNumColumns();
             int rowHdrIncr = m_settings.writeRowID() ? 1 : 0;
 
             if (!isXLSX && numOfCols + rowHdrIncr > MAX_NUM_OF_COLS) {
                 LOGGER.warn("The table to write has too many columns! Can't put more than " + MAX_NUM_OF_COLS
                     + " columns in one sheet. Truncating columns " + (MAX_NUM_OF_COLS + 1) + " to " + numOfCols);
                 numOfCols = MAX_NUM_OF_COLS - rowHdrIncr;
-            }
-            int numOfRows = -1;
-            if (table instanceof BufferedDataTable) {
-                numOfRows = (int)((BufferedDataTable)table).size();
             }
 
             int rowIdx = 0; // the index of the row in the XLsheet
@@ -232,7 +231,7 @@ public class XLSWriter2 {
                     hdrRow.createCell(colIdx++).setCellValue("row ID");
                 }
                 for (int c = 0; c < numOfCols; c++) {
-                    String cName = inSpec.getColumnSpec(c).getName();
+                    String cName = spec.getColumnSpec(c).getName();
                     hdrRow.createCell(colIdx++).setCellValue(cName);
                 }
 
@@ -245,7 +244,7 @@ public class XLSWriter2 {
             Map<Integer, Integer> columnWidth = new HashMap<Integer, Integer>();
             Map<Integer, Integer> rowHeight = new HashMap<Integer, Integer>();
             int colHdrIncr = m_settings.writeColHeader() ? 1 : 0;
-            if (table.getDataTableSpec().containsCompatibleType(PNGImageValue.class)) {
+            if (spec.containsCompatibleType(PNGImageValue.class)) {
                 int i = 0;
                 for (DataRow row : table) {
                     for (int j = 0; j < numOfCols; j++) {

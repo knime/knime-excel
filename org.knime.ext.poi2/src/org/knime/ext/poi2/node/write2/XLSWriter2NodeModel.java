@@ -56,7 +56,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.apache.commons.io.FilenameUtils;
-import org.knime.core.data.DataTable;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.container.ColumnRearranger;
 import org.knime.core.node.BufferedDataTable;
@@ -163,14 +162,14 @@ public class XLSWriter2NodeModel extends NodeModel {
                 Files.deleteIfExists(localPath);
             }
 
-            DataTable table = inData[0];
+            BufferedDataTable table = inData[0];
             ColumnRearranger rearranger = new ColumnRearranger(inData[0].getDataTableSpec());
             FilterResult filter = m_filterConfig.applyTo(inData[0].getDataTableSpec());
             rearranger.keepOnly(filter.getIncludes());
             table = exec.createColumnRearrangeTable(inData[0], rearranger, exec);
 
             XLSWriter2 xlsWriter = new XLSWriter2(url, m_settings);
-            xlsWriter.write(table, exec);
+            xlsWriter.write(table, table.getDataTableSpec(), (int)table.size(), exec);
         } finally {
             if (localPath != null) {
                 KeyLocker.unlock(localPath);
