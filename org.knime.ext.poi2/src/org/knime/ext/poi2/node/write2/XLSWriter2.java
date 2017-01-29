@@ -47,7 +47,6 @@
  */
 package org.knime.ext.poi2.node.write2;
 
-import java.awt.Desktop;
 import java.awt.Dimension;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -91,6 +90,7 @@ import org.knime.core.data.image.png.PNGImageValue;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeLogger;
+import org.knime.core.util.DesktopUtil;
 import org.knime.core.util.FileUtil;
 
 /**
@@ -407,11 +407,7 @@ public class XLSWriter2 {
         }
 
         if ((localPath != null) && m_settings.getOpenFile()) {
-            if (Desktop.isDesktopSupported()) {
-                Desktop.getDesktop().open(localPath.toFile());
-            } else {
-                LOGGER.warn("Automatic opening of the file not supported");
-            }
+            DesktopUtil.open(localPath.toFile());
         }
     }
 
