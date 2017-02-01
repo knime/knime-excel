@@ -59,6 +59,7 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettings;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
+import org.knime.core.node.util.CheckUtils;
 import org.knime.core.util.FileUtil;
 
 /**
@@ -107,6 +108,10 @@ public class XLSUserSettings {
 
     private int m_rowHdrCol0;
 
+    private boolean m_indexContinuous;
+
+    private boolean m_indexSkipJumps;
+
     private String m_missValuePattern;
 
     private boolean m_skipEmptyColumns;
@@ -153,6 +158,8 @@ public class XLSUserSettings {
 
         m_hasColHeaders = false;
         m_colHdrRow0 = 0;
+        m_indexContinuous = true;
+        m_indexSkipJumps = false;
         m_hasRowHeaders = false;
         m_rowHdrCol0 = 0;
 
@@ -179,6 +186,11 @@ public class XLSUserSettings {
      * @param settings object to write values into
      */
     public void save(final NodeSettingsWO settings) {
+        CheckUtils.checkState(
+            (m_hasRowHeaders && !m_indexContinuous && !m_indexSkipJumps)
+                || (!m_hasRowHeaders && m_indexContinuous && !m_indexSkipJumps)
+                || (!m_hasRowHeaders && !m_indexContinuous && m_indexSkipJumps),
+            "Exactly one of generate row ids or table contains row ids in column should be selected!");
         settings.addString(CFG_XLS_LOCATION, m_fileLocation);
 
         settings.addString("SHEET_NAME", m_sheetName);
@@ -191,6 +203,8 @@ public class XLSUserSettings {
 
         settings.addBoolean("HAS_COL_HDRS", m_hasColHeaders);
         settings.addInt("COL_HDR_ROW", getColHdrRow());
+        settings.addBoolean("INDEX_CONTINUOUS", m_indexContinuous);
+        settings.addBoolean("INDEX_JUMP_SKIPS", m_indexSkipJumps);
         settings.addBoolean("HAS_ROW_HDRS", m_hasRowHeaders);
         settings.addString("ROW_HDR_COL", POIUtils.oneBasedColumnNumber(getRowHdrCol()));
 
@@ -224,6 +238,7 @@ public class XLSUserSettings {
         id.append(getID(getLastColumn()));
         id.append(getID(m_hasColHeaders));
         id.append(getID(getColHdrRow()));
+        //id of m_indexSkipJumps, m_indexContinuous are not important, those are just for generated row keys.
         id.append(getID(m_hasRowHeaders));
         id.append(getID(getRowHdrCol()));
         id.append(getID(m_missValuePattern));
@@ -293,6 +308,19 @@ public class XLSUserSettings {
         result.setColHdrRow(settings.getInt("COL_HDR_ROW"));
         result.m_hasRowHeaders = settings.getBoolean("HAS_ROW_HDRS");
         result.setRowHdrCol(POIUtils.oneBasedColumnNumber(settings.getString("ROW_HDR_COL")));
+        try {
+            result.m_indexContinuous = settings.getBoolean("INDEX_CONTINUOUS");
+            result.m_indexSkipJumps = settings.getBoolean("INDEX_JUMP_SKIPS");
+        } catch (InvalidSettingsException e) {
+            //Added in 3.3.2
+            if (result.m_hasRowHeaders) {
+                result.m_indexContinuous = false;
+                result.m_indexSkipJumps = false;
+            } else {
+                result.m_indexContinuous = false;
+                result.m_indexSkipJumps = true;
+            }
+        }
 
         result.m_missValuePattern = settings.getString("MISS_VAL_PATTERN");
         result.m_skipEmptyColumns = settings.getBoolean("SKIP_EMPTY_COLS");
@@ -392,6 +420,13 @@ public class XLSUserSettings {
         if (m_hasRowHeaders && m_rowHdrCol0 < 0) {
             return "Column containing row IDs is not specified";
         }
+        if (!(
+            (m_hasRowHeaders && !m_indexContinuous && !m_indexSkipJumps)
+                || (!m_hasRowHeaders && m_indexContinuous && !m_indexSkipJumps)
+                || (!m_hasRowHeaders && !m_indexContinuous && m_indexSkipJumps))) {
+            return "Exactly one of generate row ids or table contains row ids in column should be selected!";
+        }
+
         return null;
     }
 
@@ -715,6 +750,36 @@ public class XLSUserSettings {
      */
     public int getRowHdrCol() {
         return m_rowHdrCol0 + 1;
+    }
+
+
+    /**
+     * @return the indexContinuous (the row index is continuous starting from {@code Row0} when {@code true})
+     */
+    boolean isIndexContinuous() {
+        return m_indexContinuous;
+    }
+
+    /**
+     * @param indexContinuous the indexContinuous (the row index is continuous starting from {@code Row0} when
+     *            {@code true}) to set
+     */
+    void setIndexContinuous(final boolean indexContinuous) {
+        m_indexContinuous = indexContinuous;
+    }
+
+    /**
+     * @return the indexSkipJumps (row keys have jumps for missing rows)
+     */
+    boolean isIndexSkipJumps() {
+        return m_indexSkipJumps;
+    }
+
+    /**
+     * @param indexSkipJumps the indexSkipJumps (row keys have jumps for missing rows) to set
+     */
+    void setIndexSkipJumps(final boolean indexSkipJumps) {
+        m_indexSkipJumps = indexSkipJumps;
     }
 
     /**
