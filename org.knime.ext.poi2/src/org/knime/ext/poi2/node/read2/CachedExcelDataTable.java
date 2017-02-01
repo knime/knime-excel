@@ -323,12 +323,15 @@ final class CachedExcelTable {
             CellReference cellReferenceObj = new CellReference(cellReference);
             int thisCol = cellReferenceObj.getCol();
             //int thisRow = cellReferenceObj.getRow();
-            ActualDataType type = null;
+            final ActualDataType type;
             final String valueAsString;
             switch (m_dataType) {
                 case NUMBER_OR_DATE:
-                    // Number or string?
-                    if (formattedValue.startsWith(KNIMEDataFormatter.DATE_PREFIX)) {
+                    if (formattedValue == null) {
+                        //Most probably a missing cell with a comment
+                        valueAsString = null;
+                        type = ActualDataType.MISSING;
+                    } else /* Number or string?*/  if (formattedValue.startsWith(KNIMEDataFormatter.DATE_PREFIX)) {
                         type = ActualDataType.DATE;
                         valueAsString = formattedValue.substring(KNIMEDataFormatter.DATE_PREFIX.length());
                     } else if (formattedValue.startsWith(KNIMEDataFormatter.NUMBER_PREFIX)) {
@@ -395,7 +398,7 @@ final class CachedExcelTable {
                 }
                 m_currentRowMap.put(thisCol,
                     new Content(m_stringInterner.intern(valueAsString), lastOriginalFormattedValue, type));
-            } else {
+            } else if (valueAsString != null) {
                 m_currentRowMap.put(thisCol, new Content(m_stringInterner.intern(valueAsString), type));
             }
         }
