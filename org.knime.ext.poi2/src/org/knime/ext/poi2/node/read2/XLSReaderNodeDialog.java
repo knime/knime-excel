@@ -168,7 +168,11 @@ class XLSReaderNodeDialog extends NodeDialogPane {
 
     private final JTextField m_colHdrRow = new JTextField();
 
-    private final JCheckBox m_hasRowIDs = new JCheckBox();
+    private final JRadioButton m_hasRowIDs = new JRadioButton();
+
+    private final JRadioButton m_indexContinuous = new JRadioButton();
+
+    private final JRadioButton m_indexSkipJumps = new JRadioButton();
 
     private final JTextField m_rowIDCol = new JTextField();
 
@@ -242,7 +246,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
 
     private Map<Pair<String, Boolean>, WeakReference<CachedExcelTable>> m_sheets = new ConcurrentHashMap<>();
 
-    private final JButton m_cancel = new JButton("Cancel loading");
+    private final JButton m_cancel = new JButton("Qucik Scan");
 
     private final JProgressBar m_loadingProgress = new JProgressBar(SwingConstants.HORIZONTAL);
 
@@ -401,6 +405,10 @@ class XLSReaderNodeDialog extends NodeDialogPane {
     }
 
     private JComponent getRowIDBox() {
+        ButtonGroup bg = new ButtonGroup();
+        bg.add(m_hasRowIDs);
+        bg.add(m_indexContinuous);
+        bg.add(m_indexSkipJumps);
 
         Box rowBox = Box.createHorizontalBox();
         m_hasRowIDs.setText("Table contains row IDs in column:");
@@ -419,9 +427,8 @@ class XLSReaderNodeDialog extends NodeDialogPane {
         rowBox.add(m_hasRowIDs);
         rowBox.add(Box.createHorizontalStrut(3));
         rowBox.add(m_rowIDCol);
-        rowBox.add(Box.createHorizontalGlue());
+        //rowBox.add(Box.createHorizontalGlue());
 
-        Box uniquifyRowIDBox = Box.createHorizontalBox();
         m_uniquifyRowIDs.setText("Make row IDs unique");
         m_uniquifyRowIDs.setToolTipText("If checked, row IDs are uniquified "
             + "by adding a suffix if necessary (could cause memory problems with very large data sets).");
@@ -432,14 +439,29 @@ class XLSReaderNodeDialog extends NodeDialogPane {
                 invalidatePreviewTable();
             }
         });
-        uniquifyRowIDBox.add(Box.createHorizontalStrut(LEFT_INDENT));
-        uniquifyRowIDBox.add(m_uniquifyRowIDs);
-        uniquifyRowIDBox.add(Box.createHorizontalGlue());
+        rowBox.add(Box.createHorizontalStrut(6));
+        rowBox.add(m_uniquifyRowIDs);
+        rowBox.add(Box.createHorizontalGlue());
+
+        Box indexContinousBox = Box.createHorizontalBox();
+        m_indexContinuous.setText("Generate RowIDs (index incrementing, starting with 'Row0')");
+        m_indexContinuous
+            .setToolTipText("The skipped rows (like empty or header rows) do not increase the row id counter");
+        m_indexSkipJumps.setText("Generate RowIDs (index as per sheet content, skipped rows will increment index)");
+        m_indexSkipJumps
+            .setToolTipText("Empty or header rows are not in the result, but keep increasing the row counter");
+        m_indexContinuous.addItemListener(e -> checkBoxChanged());
+        m_indexSkipJumps.addItemListener(e -> checkBoxChanged());
+        indexContinousBox.add(Box.createHorizontalStrut(LEFT_INDENT));
+        indexContinousBox.add(m_indexContinuous);
+        indexContinousBox.add(Box.createHorizontalStrut(6));
+        indexContinousBox.add(m_indexSkipJumps);
+        indexContinousBox.add(Box.createHorizontalGlue());
 
         Box rowIDBox = Box.createVerticalBox();
         rowIDBox.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Row IDs:"));
+        rowIDBox.add(indexContinousBox);
         rowIDBox.add(rowBox);
-        rowIDBox.add(uniquifyRowIDBox);
         return rowIDBox;
     }
 
@@ -751,6 +773,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
         errBox.add(m_loadingProgress);
         errBox.add(Box.createRigidArea(new Dimension(5, 0)));
         errBox.add(m_cancel);
+        m_cancel.setToolTipText("Stops further loading of the preview, specify the columns based on the read rows.");
         errBox.add(Box.createVerticalStrut(30));
         m_previewTablePanel.add(errBox, BorderLayout.NORTH);
         viewTabs.addTab("Preview", m_previewTablePanel);
@@ -1303,6 +1326,8 @@ class XLSReaderNodeDialog extends NodeDialogPane {
         }
         s.setUniquifyRowIDs(m_uniquifyRowIDs.isSelected());
         s.setHasRowHeaders(m_hasRowIDs.isSelected());
+        s.setIndexContinuous(m_indexContinuous.isSelected());
+        s.setIndexSkipJumps(m_indexSkipJumps.isSelected());
         try {
             s.setRowHdrCol(getColumnNumberFromTextField(m_rowIDCol));
         } catch (InvalidSettingsException ise) {
@@ -1381,7 +1406,11 @@ class XLSReaderNodeDialog extends NodeDialogPane {
     }
 
     private void transferSettingsIntoComponents(final XLSUserSettings s) {
-
+        CheckUtils.checkState(
+            (s.getHasRowHeaders() && !s.isIndexContinuous() && !s.isIndexSkipJumps())
+                || (!s.getHasRowHeaders() && s.isIndexContinuous() && !s.isIndexSkipJumps())
+                || (!s.getHasRowHeaders() && !s.isIndexContinuous() && s.isIndexSkipJumps()),
+            "Exactly one of generate row ids or table contains row ids in column should be selected!");
         try {
             m_fileName.setSelectedFile(s.getFileLocation());
         } catch (RuntimeException e) {
@@ -1400,6 +1429,8 @@ class XLSReaderNodeDialog extends NodeDialogPane {
         // dialog shows numbers - internally we use indices
         m_hasColHdr.setSelected(s.getHasColHeaders());
         m_colHdrRow.setText(String.valueOf(s.getColHdrRow()));
+        m_indexContinuous.setSelected(s.isIndexContinuous());
+        m_indexSkipJumps.setSelected(s.isIndexSkipJumps());
         m_hasRowIDs.setSelected(s.getHasRowHeaders());
         m_uniquifyRowIDs.setSelected(s.getUniquifyRowIDs());
 

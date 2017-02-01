@@ -215,7 +215,8 @@ final class CachedExcelTable {
 
     private volatile boolean m_incomplete = true;
 
-    private int m_lastColumnIndex = Integer.MIN_VALUE, m_lastRowIndex = Integer.MIN_VALUE;
+    private int m_lastColumnIndex = Integer.MIN_VALUE;
+    private int m_lastRowIndex = Integer.MIN_VALUE;
 
     private final Map<Integer, Content> m_rowMap = new HashMap<>();
 
@@ -786,6 +787,7 @@ final class CachedExcelTable {
                     private Entry<Integer, Map<Integer, Content>> m_nextRow;
 
                     private long m_lastRow = Math.max(0, settings.getFirstRow0()) - 1;
+                    private long m_rowKeyIndex = -1;
 
                     private boolean m_calledNext = true;
 
@@ -815,6 +817,7 @@ final class CachedExcelTable {
                             m_hasNext = next != null;
                             if (next != null) {
                                 m_lastRow = next.getKey().longValue();
+                                m_rowKeyIndex++;
                                 process(next);
                             }
                         } else {//keep empty rows
@@ -825,6 +828,7 @@ final class CachedExcelTable {
                                 m_lastRow++;
                                 //TODO handle the case when it should be skipped.
                                 m_hasNext = m_lastRow >= settings.getFirstRow0() && m_lastRow <= settings.getLastRow0();
+                                m_rowKeyIndex++;
                                 rowKey(new AbstractMap.SimpleImmutableEntry<>(Integer.valueOf((int)m_lastRow),
                                     Collections.emptyMap()));
                                 //cells are already empty
@@ -832,12 +836,16 @@ final class CachedExcelTable {
                                 //next row should come unless it is to be skipped
                                 while (m_nextRow != null && isSkipRow(m_nextRow.getKey())) {
                                     m_lastRow++;
+                                    if (!isHeader(settings, m_nextRow.getKey())) {
+                                        m_rowKeyIndex++;
+                                    }
                                     m_nextRow = nextEntry();
                                 }
                                 if (m_nextRow == null) {
                                     return hasNext();
                                 }
                                 m_lastRow++;
+                                m_rowKeyIndex++;
                                 process(m_nextRow);
                                 m_hasNext = true;
                                 m_nextRow = nextEntry();
@@ -848,6 +856,7 @@ final class CachedExcelTable {
                                     && (settings.getLastRow0() < 0 || m_lastRow <= settings.getLastRow0());
                                 rowKey(new AbstractMap.SimpleImmutableEntry<>(Integer.valueOf((int)m_lastRow),
                                     Collections.emptyMap()));
+                                m_rowKeyIndex++;
                                 //cells are already empty
                             }
                         }
@@ -954,7 +963,11 @@ final class CachedExcelTable {
                                 rowKey = RowKey.createRowKey(m_lastRow).getString();
                             }
                             m_rowKey = new RowKey(rowKey);
-                        } else {
+                        } else if (settings.getKeepXLColNames()) {
+                            m_rowKey = new RowKey(Long.toString(m_rowKeyIndex + 1L));
+                        } else if (settings.isIndexContinuous()){
+                            m_rowKey = RowKey.createRowKey(m_rowKeyIndex);
+                        } else if (settings.isIndexSkipJumps()) {
                             m_rowKey = RowKey.createRowKey(m_lastRow);
                         }
                     }
@@ -1010,10 +1023,20 @@ final class CachedExcelTable {
                     }
 
                     private boolean isSkipRow(final Integer key) {
-                        boolean isHeader = settings.getHasColHeaders() && key == settings.getColHdrRow0();
+                        boolean isHeader = isHeader(settings, key);
                         int lastRow = settings.getLastRow0();
                         return isHeader || (!settings.getReadAllData()
                             && (key < settings.getFirstRow0() || (lastRow >= 0 && key > lastRow)));
+                    }
+
+                    /**
+                     * @param settings
+                     * @param key
+                     * @return
+                     */
+                    private boolean isHeader(final XLSUserSettings settings, final Integer key) {
+                        boolean isHeader = settings.getHasColHeaders() && key == settings.getColHdrRow0();
+                        return isHeader;
                     }
 
                     private Entry<Integer, Map<Integer, Content>> nextEntry() {

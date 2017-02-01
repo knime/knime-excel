@@ -53,6 +53,7 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Locale;
+import java.util.concurrent.ExecutionException;
 
 import javax.xml.parsers.ParserConfigurationException;
 
@@ -75,6 +76,14 @@ import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
+import org.knime.core.node.port.PortObjectSpec;
+import org.knime.core.node.streamable.OutputPortRole;
+import org.knime.core.node.streamable.PartitionInfo;
+import org.knime.core.node.streamable.PortInput;
+import org.knime.core.node.streamable.PortOutput;
+import org.knime.core.node.streamable.RowOutput;
+import org.knime.core.node.streamable.StreamableOperator;
+import org.knime.core.node.streamable.StreamableOperatorInternals;
 import org.knime.core.util.FileUtil;
 import org.knime.ext.poi2.POIActivator;
 import org.xml.sax.SAXException;
@@ -86,6 +95,75 @@ import org.xml.sax.SAXException;
  * @author Gabor Bakos
  */
 public class XLSReaderNodeModel extends NodeModel {
+
+    /**
+     * An implementation of {@link StreamableOperator} for streaming Excel reading.
+     */
+    private final class XLSReaderStreamableOperator extends StreamableOperator {
+        private DataTable m_dataTable;
+        private CachedExcelTable m_table;
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public void runIntermediate(final PortInput[] inputs, final ExecutionContext exec) throws Exception {
+            computeDataTable(new ExecutionMonitor());
+            m_dts = m_dataTable.getDataTableSpec();
+        }
+
+        @Override
+        public void runFinal(final PortInput[] inputs, final PortOutput[] outputs, final ExecutionContext exec)
+            throws Exception {
+            //With the current implementation of CachedExcelTable it does not make sense to create an intermediate step
+            //as it would require serializing and deserializing the whole sheet
+            // Changes here should probably also be applied to #execute
+            if (m_dataTable == null) {
+                computeDataTable(exec);
+            }
+            final RowOutput output = (RowOutput)outputs[0];
+            long curRow = 0L;
+            final long totalRow = m_table.lastRow();
+            ExecutionContext toTableExec = exec.createSubExecutionContext(.1);
+            for (final DataRow row : m_dataTable) {
+                final long curRowFinal = curRow;
+                toTableExec.setProgress(curRow / (double)totalRow,
+                    () -> String.format("Row %d (\"%s\")", curRowFinal, totalRow));
+                curRow += 1L;
+                toTableExec.checkCanceled();
+                output.push(row);
+            }
+            output.close();
+        }
+
+        /**
+         * @throws InvalidSettingsException
+         * @throws ParserConfigurationException
+         * @throws OpenXML4JException
+         * @throws SAXException
+         * @throws IOException
+         * @throws InvalidFormatException
+         * @throws ExecutionException
+         * @throws InterruptedException
+         */
+        private void computeDataTable(final ExecutionMonitor exec) throws InvalidSettingsException, InvalidFormatException, IOException, SAXException, OpenXML4JException, ParserConfigurationException, InterruptedException, ExecutionException {
+            // Execute is an isolated call so do not keep the workbook in memory
+            // Changes here should probably also be applied to #execute
+            final XLSUserSettings settings = XLSUserSettings.clone(m_settings);
+            final String loc = settings.getFileLocation();
+            String sheetName = settings.getSheetName();
+            sheetName = settings(settings, sheetName, loc);
+            settings.setSheetName(sheetName);
+            try (final InputStream is = FileUtil.openInputStream(loc, 1000 * settings.getTimeoutInSeconds())) {
+                m_table = isXlsx() && !settings.isReevaluateFormulae()
+                    ? CachedExcelTable.fillCacheFromXlsxStreaming(is, sheetName, Locale.ENGLISH,
+                        exec, null).get()
+                    : CachedExcelTable.fillCacheFromDOM(loc, is, sheetName, Locale.ENGLISH,
+                        settings.isReevaluateFormulae(), exec, null).get();
+            }
+            m_dataTable = m_table.createDataTable(settings, null);
+        }
+    }
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(XLSReaderNodeModel.class);
 
@@ -215,6 +293,9 @@ public class XLSReaderNodeModel extends NodeModel {
         if (errMsg != null) {
             throw new InvalidSettingsException(errMsg);
         }
+        if (m_settings.isNoPreview()) {
+            return null;
+        }
 
         // make sure the DTS still fits the settings
         if (!m_settings.getID().equals(m_dtsSettingsID)) {
@@ -241,6 +322,7 @@ public class XLSReaderNodeModel extends NodeModel {
     @Override
     protected BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec)
         throws Exception {
+        // As it is possible that we do not have a proper spec, this part does not reuse the logic used in streaming.
         // Execute is an isolated call so do not keep the workbook in memory
         XLSUserSettings settings = XLSUserSettings.clone(m_settings);
         String sheetName = settings.getSheetName();
@@ -316,4 +398,66 @@ public class XLSReaderNodeModel extends NodeModel {
         return fileName.toLowerCase().endsWith(".xlsx");
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public StreamableOperator createStreamableOperator(final PartitionInfo partitionInfo,
+        final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
+        return new XLSReaderStreamableOperator();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean iterate(final StreamableOperatorInternals internals) {
+        return m_dts == null;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public PortObjectSpec[] computeFinalOutputSpecs(final StreamableOperatorInternals internals, final PortObjectSpec[] inSpecs)
+        throws InvalidSettingsException {
+        PortObjectSpec[] normalSpecs = super.computeFinalOutputSpecs(internals, inSpecs);
+        if (normalSpecs == null || normalSpecs[0] == null) {
+            if (m_dts != null) {
+                return new PortObjectSpec[] {m_dts};
+            }
+            //Probably this should not happen as during iteration m_dts is computed and it is not ditributable,
+            //though tester acts as if it were distributable.
+            final XLSUserSettings settings = XLSUserSettings.clone(m_settings);
+            final String loc = settings.getFileLocation();
+            String sheetName = settings.getSheetName();
+            try {
+                sheetName = settings(settings, sheetName, loc);
+            } catch (IOException | SAXException | OpenXML4JException | ParserConfigurationException ex) {
+                throw new RuntimeException(ex);
+            }
+            settings.setSheetName(sheetName);
+            CachedExcelTable table;
+            try (final InputStream is = FileUtil.openInputStream(loc, 1000 * settings.getTimeoutInSeconds())) {
+                table = isXlsx() && !settings.isReevaluateFormulae()
+                    ? CachedExcelTable.fillCacheFromXlsxStreaming(is, sheetName, Locale.ENGLISH,
+                        new ExecutionMonitor(), null).get()
+                    : CachedExcelTable.fillCacheFromDOM(loc, is, sheetName, Locale.ENGLISH,
+                        settings.isReevaluateFormulae(), new ExecutionMonitor(), null).get();
+            } catch (IOException | InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+            final DataTable dataTable = table.createDataTable(settings, null);
+            return new PortObjectSpec[] { m_dts = dataTable.getDataTableSpec() };
+        }
+        return normalSpecs;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public OutputPortRole[] getOutputPortRoles() {
+        return new OutputPortRole[]{OutputPortRole.NONDISTRIBUTED};
+    }
 }

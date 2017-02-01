@@ -42,6 +42,11 @@
 		    (&quot;Col0&quot;, &quot;Col1&quot;, etc.).
 		</option>
         <option name="Row IDs">
+            The option &quot;Generate RowIDs (index incrementing, starting with 'Row0')&quot;
+            generates row ids starting from <tt>Row0</tt> and produces all integer numbers till the end.
+            The option &quot;Generate RowIDs (index as per sheet content, skipped rows will increment index)&quot;
+            generates row ids based on sheet row indices starting from <tt>Row0</tt>,
+            but numbers might get skipped when the row is skipped.<br/>
             If you want to use row IDs from the spread sheet, check
             &quot;Table contains row IDs&quot; and provide the column that
             contains the row ids. Enter the label of the column (&quot;A&quot;,
