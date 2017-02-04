@@ -73,6 +73,7 @@
             If empty rows or columns should be removed from the result Data Table,
             check the appropriate option.
         </option>
+        <option name="Skip hidden columns">Hidden columns are removed when checked.</option>
         <option name="Evaluation Error Handling">
             Specify the data that is inserted in a cell with an error. Not all
             formulas supported by all spreadsheet applications are supported by
