@@ -204,6 +204,8 @@ class XLSReaderNodeDialog extends NodeDialogPane {
 
     private final JCheckBox m_skipEmptyCols = new JCheckBox();
 
+    private final JCheckBox m_skipHiddenColumns = new JCheckBox("Skip hidden columns");
+
     private final JCheckBox m_skipEmptyRows = new JCheckBox();
 
     private final JCheckBox m_uniquifyRowIDs = new JCheckBox();
@@ -585,6 +587,14 @@ class XLSReaderNodeDialog extends NodeDialogPane {
         skipColsBox.add(m_skipEmptyCols);
         skipColsBox.add(Box.createHorizontalGlue());
 
+        Box skipHiddenColumns = Box.createHorizontalBox();
+        m_skipHiddenColumns.setToolTipText("If checked, hidden column's content is not included in the output");
+        m_skipHiddenColumns.setSelected(true);
+        m_skipHiddenColumns.addItemListener(e -> invalidatePreviewTable());
+        skipHiddenColumns.add(Box.createHorizontalStrut(LEFT_INDENT));
+        skipHiddenColumns.add(m_skipHiddenColumns);
+        skipHiddenColumns.add(Box.createHorizontalGlue());
+
         Box skipRowsBox = Box.createHorizontalBox();
         m_skipEmptyRows.setText("Skip empty rows");
         m_skipEmptyRows
@@ -602,6 +612,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
 
         Box skipBox = Box.createVerticalBox();
         skipBox.add(skipColsBox);
+        skipBox.add(skipHiddenColumns);
         skipBox.add(skipRowsBox);
         skipBox.add(Box.createVerticalGlue());
         return skipBox;
@@ -1312,7 +1323,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
 
         s.setSkipEmptyColumns(m_skipEmptyCols.isSelected());
         s.setSkipEmptyRows(m_skipEmptyRows.isSelected());
-        s.setSkipHiddenColumns(true);
+        s.setSkipHiddenColumns(m_skipHiddenColumns.isSelected());
         s.setReadAllData(m_readAllData.isSelected());
 
         s.setHasColHeaders(m_hasColHdr.isSelected());
@@ -1423,6 +1434,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
         }
 
         m_skipEmptyCols.setSelected(s.getSkipEmptyColumns());
+        m_skipHiddenColumns.setSelected(s.getSkipHiddenColumns());
         m_skipEmptyRows.setSelected(s.getSkipEmptyRows());
         m_readAllData.setSelected(s.getReadAllData());
 
@@ -1538,6 +1550,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
         if (oldValue != newValue) {
             boolean enableControls = !newValue;
             m_skipEmptyCols.setEnabled(enableControls);
+            m_skipHiddenColumns.setEnabled(enableControls);
             m_skipEmptyRows.setEnabled(enableControls);
             m_reevaluateFormulae.setEnabled(enableControls);
             m_noPreviewChecker.setEnabled(enableControls);
