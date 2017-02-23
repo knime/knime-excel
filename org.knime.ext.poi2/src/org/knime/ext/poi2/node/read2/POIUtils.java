@@ -165,7 +165,9 @@ class POIUtils {
          * @param type The type of the new cell.
          * @return An updated (new) map with {@code rowIndex0} and {@code type} added that can be an argument of other
          *         {@link #combine(SortedMap, int, ActualDataType)} call.
+         * @deprecated because of performance problems with large sparse tables.
          */
+        @Deprecated
         public default SortedMap<Integer, Pair<ActualDataType, Integer>> combine(
             final SortedMap<Integer, Pair<ActualDataType, Integer>> currentTypes, final int rowIndex0,
             final ActualDataType type) {
@@ -180,8 +182,8 @@ class POIUtils {
                 "Cannot process a map with rows higher than the current " + lastKey + " >= " + rowIndex0);
             Pair<ActualDataType, Integer> lastValue = currentTypes.get(lastKey);
             CheckUtils.checkState(lastValue.getSecond() < rowIndex0,
-                "Cannot process a map with rows right interval higher than the current " + lastValue.getSecond() + " >= "
-                    + rowIndex0);
+                "Cannot process a map with rows right interval higher than the current " + lastValue.getSecond() +
+                " >= " + rowIndex0);
             if (lastValue.getSecond() + 1 == rowIndex0) {//No missing rows are in-between
                 Optional<ActualDataType> compatibility = compatibility(lastValue.getFirst(), canonical);
                 if (compatibility.isPresent()) {
@@ -258,7 +260,9 @@ class POIUtils {
      * Some combination strategies that might be useful.
      */
     enum CombinationStrategies implements CombinationStrategy {
-        /** Combines only identical values, no further processing, keeps formulae. */
+        /** Combines only identical values, no further processing, keeps formulae.
+         * @deprecated use org.knime.ext.poi2.node.read2.POIUtils.ColumnTypeCombinator */
+        @Deprecated
             KeepEverythingAsIsCombineOnlyIdentical {
                 /**
                  * {@inheritDoc}
@@ -276,6 +280,71 @@ class POIUtils {
                     return last == next ? Optional.of(last) : Optional.empty();
                 }
             }
+    }
+
+    /**
+     * Combines column types. Combines only identical values, no further processing, keeps formulae.
+     */
+    static class ColumnTypeCombinator {
+        private SortedMap<Integer, Pair<ActualDataType, Integer>> m_currentTypes = new TreeMap<>();
+
+        ColumnTypeCombinator(final int firstRow, final Pair<ActualDataType, Integer> firstPair) {
+            m_currentTypes.put(firstRow, firstPair);
+        }
+
+        private ActualDataType canonical(final ActualDataType type) {
+            return type;
+        }
+
+        private Optional<ActualDataType> compatibility(final ActualDataType last, final ActualDataType next) {
+            return last == next ? Optional.of(last) : Optional.empty();
+        }
+
+
+        void  combine(
+            final int rowIndex0,
+            final ActualDataType type) {
+            CheckUtils.checkArgument(rowIndex0 >= 0, "Row index should be non-negative: " + rowIndex0);
+            ActualDataType canonical = canonical(type);
+            CheckUtils.checkState(m_currentTypes != null && !m_currentTypes.isEmpty(), "Current type is empty");
+
+            Integer lastKey = m_currentTypes.lastKey();
+            CheckUtils.checkState(lastKey < rowIndex0,
+                "Cannot process a map with rows higher than the current " + lastKey + " >= " + rowIndex0);
+            Pair<ActualDataType, Integer> lastValue = m_currentTypes.get(lastKey);
+            CheckUtils.checkState(lastValue.getSecond() < rowIndex0,
+                "Cannot process a map with rows right interval higher than the current " + lastValue.getSecond() +
+                " >= " + rowIndex0);
+            if (lastValue.getSecond() + 1 == rowIndex0) {//No missing rows are in-between
+                Optional<ActualDataType> compatibility = compatibility(lastValue.getFirst(), canonical);
+                if (compatibility.isPresent()) {
+                    m_currentTypes.put(lastKey, Pair.create(compatibility.get(), rowIndex0));
+                } else {
+                    m_currentTypes.put(rowIndex0, Pair.create(canonical, rowIndex0));
+                }
+            } else {//Missings are between
+                Optional<ActualDataType> compatibility = compatibility(lastValue.getFirst(), ActualDataType.MISSING);
+                if (compatibility.isPresent()) {
+                    Optional<ActualDataType> missingCompatibility = compatibility(ActualDataType.MISSING, canonical);
+                    if (missingCompatibility.isPresent()) {
+                        m_currentTypes.put(lastKey, Pair.create(compatibility.get(), rowIndex0));
+                    } else {
+                        m_currentTypes.put(lastKey, Pair.create(compatibility.get(), rowIndex0 - 1));
+                        m_currentTypes.put(rowIndex0, Pair.create(canonical, rowIndex0));
+                    }
+                } else {
+                    m_currentTypes.put(lastValue.getSecond() + 1, Pair.create(ActualDataType.MISSING, rowIndex0 - 1));
+                    m_currentTypes.put(rowIndex0, Pair.create(canonical, rowIndex0));
+                }
+            }
+        }
+
+        /**
+         * @return the currentTypes
+         */
+        public SortedMap<Integer, Pair<ActualDataType, Integer>> getCurrentTypes() {
+            return new TreeMap<>(m_currentTypes);
+        }
     }
 
     /**
