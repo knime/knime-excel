@@ -248,7 +248,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
 
     private Map<Pair<String, Boolean>, WeakReference<CachedExcelTable>> m_sheets = new ConcurrentHashMap<>();
 
-    private final JButton m_cancel = new JButton("Qucik Scan");
+    private final JButton m_cancel = new JButton("Quick Scan");
 
     private final JProgressBar m_loadingProgress = new JProgressBar(SwingConstants.HORIZONTAL);
 
