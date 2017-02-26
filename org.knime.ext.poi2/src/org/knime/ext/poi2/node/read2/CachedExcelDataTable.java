@@ -137,6 +137,7 @@ import org.knime.core.util.FileUtil;
 import org.knime.core.util.Pair;
 import org.knime.core.util.ThreadUtils;
 import org.knime.ext.poi2.node.read2.KNIMEXSSFSheetXMLHandler.KNIMESheetContentsHandler;
+import org.knime.ext.poi2.node.read2.POIUtils.ColumnTypeCombinator;
 import org.knime.ext.poi2.node.read2.POIUtils.StopProcessing;
 import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
@@ -1184,15 +1185,15 @@ final class CachedExcelTable {
         for (int i = 0; i < m_contents.length; i++) {
             ArrayList<Content> arrayList = m_contents[i];
             if (arrayList != null) {
-                SortedMap<Integer, Pair<ActualDataType, Integer>> map = new TreeMap<>();
                 Content firstContent = arrayList.size() > 0 ? arrayList.get(0) : null;
-                map.put(0, Pair.create(firstContent == null ? ActualDataType.MISSING : firstContent.m_type, 0));
+                ColumnTypeCombinator combiner = new ColumnTypeCombinator(0,
+                    Pair.create(firstContent == null ? ActualDataType.MISSING : firstContent.m_type, 0));
                 for (int j = 1; j < arrayList.size(); j++) {
                     Content content = arrayList.get(j);
-                    map = POIUtils.CombinationStrategies.KeepEverythingAsIsCombineOnlyIdentical.combine(map, j,
+                    combiner.combine(j,
                         content == null ? ActualDataType.MISSING : content.m_type);
                 }
-                ret.put(i, map);
+                ret.put(i, combiner.getCurrentTypes());
             }
         }
         return ret;
