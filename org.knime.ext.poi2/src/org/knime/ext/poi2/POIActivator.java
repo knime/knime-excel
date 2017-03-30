@@ -50,13 +50,14 @@ import java.io.UncheckedIOException;
 
 import org.apache.poi.util.TempFile;
 import org.eclipse.core.runtime.Plugin;
+import org.knime.core.node.KNIMEConstants;
+import org.knime.core.util.FileUtil;
 import org.osgi.framework.BundleContext;
 
 /**
  * The activator class controls the plug-in life cycle.
  */
 public class POIActivator extends Plugin {
-
     /** The plug-in ID. */
     public static final String PLUGIN_ID = "org.knime.ext.poi";
 
@@ -71,10 +72,14 @@ public class POIActivator extends Plugin {
      */
     @Override
     public void start(final BundleContext context) throws Exception {
-        // disable logging of POI. To speed it up.
-        System.setProperty("org.apache.poi.util.POILogger",
-                "org.apache.poi.util.NullLogger");
         super.start(context);
+        // disable logging of POI. To speed it up.
+        System.setProperty("org.apache.poi.util.POILogger", "org.apache.poi.util.NullLogger");
+
+        // We must explicitly use the standard temp dir here, otherwise it may end up in a workflow-specific temp
+        // directory and be removed when the workflow is closed.
+        TempFile.setTempFileCreationStrategy(new TempFile.DefaultTempFileCreationStrategy(
+            FileUtil.createTempDir("poifiles", KNIMEConstants.getKNIMETempPath().toFile())));
     }
 
     /**
