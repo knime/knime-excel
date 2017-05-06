@@ -56,7 +56,9 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.ZoneId;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -67,6 +69,7 @@ import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.ClientAnchor;
 import org.apache.poi.ss.usermodel.ClientAnchor.AnchorType;
 import org.apache.poi.ss.usermodel.CreationHelper;
+import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.usermodel.Drawing;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.Row;
@@ -87,6 +90,11 @@ import org.knime.core.data.StringValue;
 import org.knime.core.data.date.DateAndTimeValue;
 import org.knime.core.data.image.png.PNGImageContent;
 import org.knime.core.data.image.png.PNGImageValue;
+import org.knime.core.data.time.duration.DurationValue;
+import org.knime.core.data.time.localdate.LocalDateValue;
+import org.knime.core.data.time.localdatetime.LocalDateTimeValue;
+import org.knime.core.data.time.period.PeriodValue;
+import org.knime.core.data.time.zoneddatetime.ZonedDateTimeValue;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeLogger;
@@ -346,6 +354,27 @@ public class XLSWriter2 {
                             }
                             dateStyle.setDataFormat(helper.createDataFormat().getFormat(format));
                             sheetCell.setCellStyle(dateStyle);
+                        } else if (colValue.getType().isCompatible(LocalDateValue.class)) {
+                            LocalDateValue dateValue = (LocalDateValue)colValue;
+                            dateStyle.setDataFormat(helper.createDataFormat().getFormat("yyyy-mm-dd"));
+                            sheetCell.setCellStyle(dateStyle);
+                            sheetCell.setCellValue(DateUtil.getExcelDate(new Date(dateValue.getLocalDate().atTime(0, 0).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())));
+                        } else if (colValue.getType().isCompatible(PeriodValue.class)) {
+                            PeriodValue periodValue = (PeriodValue)colValue;
+                            sheetCell.setCellValue(periodValue.getPeriod().toString());
+                        } else if (colValue.getType().isCompatible(LocalDateTimeValue.class)) {
+                            LocalDateTimeValue dtValue = (LocalDateTimeValue)colValue;
+                            dateStyle.setDataFormat(helper.createDataFormat().getFormat("yyyy-mm-dd hh:mm:ss"));
+                            sheetCell.setCellStyle(dateStyle);
+                            sheetCell.setCellValue(DateUtil.getExcelDate(new Date(dtValue.getLocalDateTime().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())));
+                        } else if (colValue.getType().isCompatible(ZonedDateTimeValue.class)) {
+                            ZonedDateTimeValue zdtValue = (ZonedDateTimeValue)colValue;
+                            dateStyle.setDataFormat(helper.createDataFormat().getFormat("yyyy-mm-dd hh:mm:ss"));
+                            sheetCell.setCellStyle(dateStyle);
+                            sheetCell.setCellValue(DateUtil.getExcelDate(new Date(zdtValue.getZonedDateTime().toInstant().toEpochMilli())));
+                        } else if (colValue.getType().isCompatible(DurationValue.class)) {
+                            DurationValue durationValue = (DurationValue)colValue;
+                            sheetCell.setCellValue(durationValue.getDuration().toString());
                         } else if (colValue.getType().isCompatible(PNGImageValue.class)) {
                             PNGImageContent image = ((PNGImageValue)colValue).getImageContent();
                             Dimension dimension = image.getPreferredSize();
