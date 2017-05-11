@@ -129,6 +129,7 @@ import org.knime.core.data.def.DefaultRow;
 import org.knime.core.data.def.DoubleCell;
 import org.knime.core.data.def.IntCell;
 import org.knime.core.data.def.StringCell;
+import org.knime.core.data.util.CancellableReportingInputStream;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.InvalidSettingsException;
@@ -514,7 +515,7 @@ final class CachedExcelTable {
             ExecutionMonitor workBookParseProgress = exec.createSubProgress(.8);
             exec.setMessage("Reading workbooks...");
             try (final CancellableReportingInputStream cancellableStream =
-                new CancellableReportingInputStream(stream, workbookCreateProgress, fileSize);
+                new CancellableReportingInputStream(stream, workbookCreateProgress, fileSize.orElse(-1L));
                     final Workbook workbook = WorkbookFactory.create(cancellableStream)) {
                 workbookCreateProgress.setProgress(1.0);
                 exec.setMessage("Parsing workbooks...");
