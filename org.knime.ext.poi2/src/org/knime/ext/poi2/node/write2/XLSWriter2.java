@@ -56,6 +56,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Calendar;
 import java.util.Date;
@@ -93,6 +94,7 @@ import org.knime.core.data.image.png.PNGImageValue;
 import org.knime.core.data.time.duration.DurationValue;
 import org.knime.core.data.time.localdate.LocalDateValue;
 import org.knime.core.data.time.localdatetime.LocalDateTimeValue;
+import org.knime.core.data.time.localtime.LocalTimeValue;
 import org.knime.core.data.time.period.PeriodValue;
 import org.knime.core.data.time.zoneddatetime.ZonedDateTimeValue;
 import org.knime.core.node.CanceledExecutionException;
@@ -215,7 +217,7 @@ public class XLSWriter2 {
             sheet.getPrintSetup().setPaperSize(m_settings.getPaperSize());
             Drawing drawing = null;
             CreationHelper helper = wb.getCreationHelper();
-            CellStyle dateStyle = wb.createCellStyle();
+            Map<String, CellStyle> dateStyles = new HashMap<>();
 
             int numOfCols = spec.getNumColumns();
             int rowHdrIncr = m_settings.writeRowID() ? 1 : 0;
@@ -352,25 +354,25 @@ public class XLSWriter2 {
                             if (dateAndTime.hasMillis()) {
                                 format += "000";
                             }
-                            dateStyle.setDataFormat(helper.createDataFormat().getFormat(format));
-                            sheetCell.setCellStyle(dateStyle);
+                            sheetCell.setCellStyle(dateOrTimeStyle(wb, helper, dateStyles, format));
                         } else if (colValue.getType().isCompatible(LocalDateValue.class)) {
                             LocalDateValue dateValue = (LocalDateValue)colValue;
-                            dateStyle.setDataFormat(helper.createDataFormat().getFormat("yyyy-mm-dd"));
-                            sheetCell.setCellStyle(dateStyle);
+                            sheetCell.setCellStyle(dateOrTimeStyle(wb, helper, dateStyles, "yyyy-mm-dd"));
                             sheetCell.setCellValue(DateUtil.getExcelDate(new Date(dateValue.getLocalDate().atTime(0, 0).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())));
                         } else if (colValue.getType().isCompatible(PeriodValue.class)) {
                             PeriodValue periodValue = (PeriodValue)colValue;
                             sheetCell.setCellValue(periodValue.getPeriod().toString());
                         } else if (colValue.getType().isCompatible(LocalDateTimeValue.class)) {
                             LocalDateTimeValue dtValue = (LocalDateTimeValue)colValue;
-                            dateStyle.setDataFormat(helper.createDataFormat().getFormat("yyyy-mm-dd hh:mm:ss"));
-                            sheetCell.setCellStyle(dateStyle);
+                            sheetCell.setCellStyle(dateOrTimeStyle(wb, helper, dateStyles, "yyyy-mm-dd hh:mm:ss"));
                             sheetCell.setCellValue(DateUtil.getExcelDate(new Date(dtValue.getLocalDateTime().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())));
+                        } else if (colValue.getType().isCompatible(LocalTimeValue.class)) {
+                            LocalTimeValue tValue = (LocalTimeValue)colValue;
+                            sheetCell.setCellStyle(dateOrTimeStyle(wb, helper, dateStyles, "hh:mm:ss;@"));
+                            sheetCell.setCellValue(DateUtil.getExcelDate(new Date(LocalDate.of(1900, 1, 1).atTime(tValue.getLocalTime()).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()))%1);
                         } else if (colValue.getType().isCompatible(ZonedDateTimeValue.class)) {
                             ZonedDateTimeValue zdtValue = (ZonedDateTimeValue)colValue;
-                            dateStyle.setDataFormat(helper.createDataFormat().getFormat("yyyy-mm-dd hh:mm:ss"));
-                            sheetCell.setCellStyle(dateStyle);
+                            sheetCell.setCellStyle(dateOrTimeStyle(wb, helper, dateStyles, "yyyy-mm-dd hh:mm:ss"));
                             sheetCell.setCellValue(DateUtil.getExcelDate(new Date(zdtValue.getZonedDateTime().toInstant().toEpochMilli())));
                         } else if (colValue.getType().isCompatible(DurationValue.class)) {
                             DurationValue durationValue = (DurationValue)colValue;
@@ -438,6 +440,26 @@ public class XLSWriter2 {
         if ((localPath != null) && m_settings.getOpenFile()) {
             DesktopUtil.open(localPath.toFile());
         }
+    }
+
+    /**
+     * @param wb Workbook
+     * @param helper creation helper
+     * @param dateStyles used date styles
+     * @param format format to use
+     * @return {@link CellStyle} of the date.
+     */
+    private CellStyle dateOrTimeStyle(final Workbook wb, final CreationHelper helper, final Map<String, CellStyle> dateStyles,
+        final String format) {
+        CellStyle dateStyle;
+        if (dateStyles.containsKey(format)) {
+            dateStyle = dateStyles.get(format);
+        } else {
+            dateStyle = wb.createCellStyle();
+            dateStyle.setDataFormat(helper.createDataFormat().getFormat(format));
+            dateStyles.put(format, dateStyle);
+        }
+        return dateStyle;
     }
 
     /**
