@@ -15,13 +15,18 @@
       </node>
       <node
             category-path="/io/read"
+            deprecated="true"
+            factory-class="org.knime.ext.poi2.node.read2.XLSReaderNodeFactory">
+      </node>
+      <node
+            category-path="/io/read"
             factory-class="org.knime.ext.poi2.node.readsheets.XLSSheetReaderNodeFactory">
       </node>
    </extension>
      <extension
            point="org.knime.workbench.repository.registeredFileExtensions">
         <FileExtensionMapping
-              NodeFactory="org.knime.ext.poi2.node.read2.XLSReaderNodeFactory">
+              NodeFactory="org.knime.ext.poi2.node.read3.XLSReaderNodeFactory">
            <FileExtension
                  extension=".xls">
            </FileExtension>
