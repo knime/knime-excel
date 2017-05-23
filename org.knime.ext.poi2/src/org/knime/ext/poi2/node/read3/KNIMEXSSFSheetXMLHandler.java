@@ -46,7 +46,7 @@
  * History
  *   23 Aug 2016 (Gabor Bakos): created
  */
-package org.knime.ext.poi2.node.read2;
+package org.knime.ext.poi2.node.read3;
 
 import java.util.Collections;
 import java.util.LinkedHashSet;

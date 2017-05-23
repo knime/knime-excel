@@ -44,72 +44,56 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   2 Sep 2016 (Gabor Bakos): created
+ *   29 Sep 2016 (Gabor Bakos): created
  */
-package org.knime.ext.poi2.node.read2;
+package org.knime.ext.poi2.node.read3;
 
-import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
-import org.knime.core.util.MutableInteger;
+import org.apache.poi.ss.usermodel.DateUtil;
 
 /**
- * Makes values unique, ideal for row ids.
+ * Caches the seen date formats. <br/>
+ * <b>NOT thread-safe</b>
  *
- * @author Peter Ohl, KNIME.com, Zurich, Switzerland
  * @author Gabor Bakos
  */
-//TODO unit test
-class ValueUniquifier {
-
-    private static final Integer NOSUFFIX = new Integer(0);
-    private final HashMap<String, Number> m_rowIDhash = new HashMap<>();
-
-    //TODO should we have a constructor to reuse a previous/clone it?
+final class DateFormatCache {
+    private final Set<String> m_dateFormat = new HashSet<>();
+    private final Set<String> m_nonDateFormat = new HashSet<>();
 
     /**
-     *
+     * Constructs the cache.
      */
-    ValueUniquifier() {
-        super();
+    DateFormatCache() {
     }
 
-    String uniquifyRowHeader(final String newRowHeader) {
-        //TODO should we check for potential suffices?
-
-        Number oldSuffix = m_rowIDhash.put(newRowHeader, NOSUFFIX);
-
-        if (oldSuffix == null) {
-            // haven't seen the rowID so far.
-            return newRowHeader;
+    /**
+     * @param formatCode
+     * @param format
+     * @return Checks whether it is a valid date format or not.
+     */
+    boolean isDateFormat(final int formatCode, final String format) {
+        String key = key(formatCode, format);
+        if (m_dateFormat.contains(key)) {
+            return true;
         }
-
-        String result = newRowHeader;
-        while (oldSuffix != null) {
-
-            // we have seen this rowID before!
-            int idx = oldSuffix.intValue();
-
-            assert idx >= NOSUFFIX.intValue();
-
-            idx++;
-
-            if (oldSuffix == NOSUFFIX) {
-                // until now the NOSUFFIX placeholder was in the hash
-                assert idx - 1 == NOSUFFIX.intValue();
-                m_rowIDhash.put(result, new MutableInteger(idx));
-            } else {
-                assert oldSuffix instanceof MutableInteger;
-                ((MutableInteger)oldSuffix).inc();
-                assert idx == oldSuffix.intValue();
-                // put back the old (incr.) suffix (overridden with NOSUFFIX).
-                m_rowIDhash.put(result, oldSuffix);
-            }
-
-            result = result + "_" + idx;
-            oldSuffix = m_rowIDhash.put(result, NOSUFFIX);
-
+        if (m_nonDateFormat.contains(key)) {
+            return false;
         }
+        boolean ret = DateUtil.isADateFormat(formatCode, format);
+        (ret ? m_dateFormat : m_nonDateFormat).add(key);
+        return ret;
+    }
 
-        return result;
+    /**
+     * @param formatCode
+     * @param format
+     * @return
+     */
+    private String key(final int formatCode, final String format) {
+        return format == null ? Integer.toBinaryString(formatCode) + "\u0000\u0000"
+            : Integer.toString(formatCode) + "\u0000" + format;
     }
 }

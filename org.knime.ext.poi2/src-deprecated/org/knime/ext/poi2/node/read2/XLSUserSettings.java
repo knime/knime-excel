@@ -68,6 +68,7 @@ import org.knime.core.util.FileUtil;
  * @author Peter Ohl, KNIME.com, Zurich, Switzerland
  * @author Gabor Bakos
  */
+@Deprecated
 public class XLSUserSettings {
 
     /** Key under which the file url is stored. */

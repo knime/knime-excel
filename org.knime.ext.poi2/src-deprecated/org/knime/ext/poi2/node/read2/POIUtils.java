@@ -90,6 +90,7 @@ import org.xml.sax.XMLReader;
  *
  * @author Gabor Bakos
  */
+@Deprecated
 class POIUtils {
     /**
      * Checks whether the sheet is empty or not.

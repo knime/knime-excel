@@ -45,7 +45,7 @@
  * History
  *   Apr 8, 2009 (ohl): created
  */
-package org.knime.ext.poi2.node.read2;
+package org.knime.ext.poi2.node.read3;
 
 import java.io.File;
 import java.io.IOException;

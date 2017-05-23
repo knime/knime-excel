@@ -150,6 +150,7 @@ import com.google.common.base.Strings;
  * @author Peter Ohl, KNIME.com, Zurich, Switzerland
  * @author Gabor Bakos
  */
+@Deprecated
 class XLSReaderNodeDialog extends NodeDialogPane {
     private static final String REFRESH = "refresh";
     private static final String RELOAD = "reload";

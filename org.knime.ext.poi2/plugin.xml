@@ -11,7 +11,7 @@
             factory-class="org.knime.ext.poi2.node.write2.XLSAppenderNodeFactory"/>
       <node
             category-path="/io/read"
-            factory-class="org.knime.ext.poi2.node.read2.XLSReaderNodeFactory">
+            factory-class="org.knime.ext.poi2.node.read3.XLSReaderNodeFactory">
       </node>
       <node
             category-path="/io/read"

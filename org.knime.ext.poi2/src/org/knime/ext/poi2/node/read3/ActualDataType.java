@@ -46,7 +46,7 @@
  * History
  *   23 Aug 2016 (Gabor Bakos): created
  */
-package org.knime.ext.poi2.node.read2;
+package org.knime.ext.poi2.node.read3;
 
 /**
  * The data type as seen from the file.
@@ -68,7 +68,7 @@ public enum ActualDataType {
     NUMBER_DOUBLE,
     /** Text */
     STRING,
-    /** Date or time */
+    /** Date/time */
     DATE,
     /** Formula with missing value as a result. (Probably cannot happen.) */
     MISSING_FORMULA,
@@ -84,7 +84,7 @@ public enum ActualDataType {
     NUMBER_DOUBLE_FORMULA,
     /** Formula with text as a result. */
     STRING_FORMULA,
-    /** Formula with date or time as a result. */
+    /** Formula with date/time as a result. */
     DATE_FORMULA;
 
     /**

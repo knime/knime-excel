@@ -63,6 +63,7 @@ import org.apache.poi.ss.usermodel.DateUtil;
  *
  * @author Gabor Bakos
  */
+@Deprecated
 class KNIMEDataFormatter extends DataFormatter {
     private final SimpleDateFormat m_dateAndTimeFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss"),
             m_dateFormat = new SimpleDateFormat("yyyy-MM-dd");

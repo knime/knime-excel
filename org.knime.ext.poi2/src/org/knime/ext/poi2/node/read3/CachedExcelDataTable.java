@@ -46,7 +46,7 @@
  * History
  *   2 Sep 2016 (Gabor Bakos): created
  */
-package org.knime.ext.poi2.node.read2;
+package org.knime.ext.poi2.node.read3;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -55,7 +55,11 @@ import java.net.MalformedURLException;
 import java.text.DateFormat;
 import java.text.Format;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeParseException;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -121,14 +125,15 @@ import org.knime.core.data.MissingValue;
 import org.knime.core.data.RowIterator;
 import org.knime.core.data.RowKey;
 import org.knime.core.data.StringValue;
-import org.knime.core.data.date.DateAndTimeCell;
-import org.knime.core.data.date.DateAndTimeValue;
 import org.knime.core.data.def.BooleanCell;
 import org.knime.core.data.def.BooleanCell.BooleanCellFactory;
 import org.knime.core.data.def.DefaultRow;
 import org.knime.core.data.def.DoubleCell;
 import org.knime.core.data.def.IntCell;
 import org.knime.core.data.def.StringCell;
+import org.knime.core.data.time.localdatetime.LocalDateTimeCell;
+import org.knime.core.data.time.localdatetime.LocalDateTimeCellFactory;
+import org.knime.core.data.time.localdatetime.LocalDateTimeValue;
 import org.knime.core.data.util.CancellableReportingInputStream;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
@@ -137,9 +142,9 @@ import org.knime.core.node.util.CheckUtils;
 import org.knime.core.util.FileUtil;
 import org.knime.core.util.Pair;
 import org.knime.core.util.ThreadUtils;
-import org.knime.ext.poi2.node.read2.KNIMEXSSFSheetXMLHandler.KNIMESheetContentsHandler;
-import org.knime.ext.poi2.node.read2.POIUtils.ColumnTypeCombinator;
-import org.knime.ext.poi2.node.read2.POIUtils.StopProcessing;
+import org.knime.ext.poi2.node.read3.KNIMEXSSFSheetXMLHandler.KNIMESheetContentsHandler;
+import org.knime.ext.poi2.node.read3.POIUtils.ColumnTypeCombinator;
+import org.knime.ext.poi2.node.read3.POIUtils.StopProcessing;
 import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
 
@@ -838,7 +843,7 @@ final class CachedExcelTable {
                                 //next row should come unless it is to be skipped
                                 while (m_nextRow != null && isSkipRow(m_nextRow.getKey())) {
                                     m_lastRow++;
-                                    if (!isHeader(settings, m_nextRow.getKey())) {
+                                    if (!isHeader(m_nextRow.getKey())) {
                                         m_rowKeyIndex++;
                                     }
                                     m_nextRow = nextEntry();
@@ -1010,8 +1015,19 @@ final class CachedExcelTable {
                                     return new MissingCell(e.getMessage());
                                 }
                             }
-                            if (type.isCompatible(DateAndTimeValue.class)) {
-                                return new StringCell(valueAsString);
+                            if (type.isCompatible(LocalDateTimeValue.class)) {
+                                try {
+                                    return LocalDateTimeCellFactory.create(valueAsString);
+                                } catch (DateTimeParseException e) {
+                                    try {
+                                        LocalDate date = LocalDate.parse(valueAsString);
+                                        return LocalDateTimeCellFactory.create(LocalDateTime.from(date.atStartOfDay()));
+                                    } catch (DateTimeParseException ed) {
+                                        LocalTime time = LocalTime.parse(valueAsString);
+                                        return LocalDateTimeCellFactory
+                                            .create(LocalDateTime.from(time.atDate(LocalDate.of(1900, 1, 1))));
+                                    }
+                                }
                             }
                             if (type.isCompatible(StringValue.class)) {
                                 //TODO the dates are in standardized format, which does not work as probably expected.
@@ -1025,18 +1041,17 @@ final class CachedExcelTable {
                     }
 
                     private boolean isSkipRow(final Integer key) {
-                        boolean isHeader = isHeader(settings, key);
+                        boolean isHeader = isHeader(key);
                         int lastRow = settings.getLastRow0();
                         return isHeader || (!settings.getReadAllData()
                             && (key < settings.getFirstRow0() || (lastRow >= 0 && key > lastRow)));
                     }
 
                     /**
-                     * @param settings
                      * @param key
                      * @return
                      */
-                    private boolean isHeader(final XLSUserSettings settings, final Integer key) {
+                    private boolean isHeader(final Integer key) {
                         boolean isHeader = settings.getHasColHeaders() && key == settings.getColHdrRow0();
                         return isHeader;
                     }
@@ -1078,9 +1093,9 @@ final class CachedExcelTable {
     private DataTableSpec updatedSpec(final DataTableSpec spec) {
         final DataTableSpecCreator tableSpecCreator = new DataTableSpecCreator(spec);
         for (int i = 0; i < spec.getNumColumns(); i++) {
-            if (spec.getColumnSpec(i).getType().isCompatible(DateAndTimeValue.class)) {
+            if (spec.getColumnSpec(i).getType().isCompatible(LocalDateTimeValue.class)) {
                 tableSpecCreator.replaceColumn(i,
-                    new DataColumnSpecCreator(spec.getColumnSpec(i).getName(), StringCell.TYPE).createSpec());
+                    new DataColumnSpecCreator(spec.getColumnSpec(i).getName(), LocalDateTimeCell.TYPE).createSpec());
             }
         }
         return tableSpecCreator.createSpec();
@@ -1343,13 +1358,13 @@ final class CachedExcelTable {
                     return BooleanCell.TYPE;
                 }
                 if (common == StringCell.TYPE || common == IntCell.TYPE || common == DoubleCell.TYPE
-                    || common == DateAndTimeCell.TYPE) {
+                    || common == LocalDateTimeCell.TYPE) {
                     return StringCell.TYPE;
                 }
                 throw new IllegalStateException("common: " + common);
             case DATE:
-                if (common == DateAndTimeCell.TYPE || common.isCompatible(MissingValue.class)) {
-                    return DateAndTimeCell.TYPE;
+                if (common == LocalDateTimeCell.TYPE || common.isCompatible(MissingValue.class)) {
+                    return LocalDateTimeCell.TYPE;
                 }
                 if (common == StringCell.TYPE || common == IntCell.TYPE || common == DoubleCell.TYPE
                     || common == BooleanCell.TYPE) {
@@ -1368,7 +1383,7 @@ final class CachedExcelTable {
                 if (common == DoubleCell.TYPE || common == IntCell.TYPE || common.isCompatible(MissingValue.class)) {
                     return DoubleCell.TYPE;
                 }
-                if (common == StringCell.TYPE || common == DateAndTimeCell.TYPE || common == BooleanCell.TYPE) {
+                if (common == StringCell.TYPE || common == LocalDateTimeCell.TYPE || common == BooleanCell.TYPE) {
                     return StringCell.TYPE;
                 }
                 throw new IllegalStateException("common: " + common);
@@ -1379,7 +1394,7 @@ final class CachedExcelTable {
                 if (common == DoubleCell.TYPE) {
                     return common;
                 }
-                if (common == StringCell.TYPE || common == DateAndTimeCell.TYPE || common == BooleanCell.TYPE) {
+                if (common == StringCell.TYPE || common == LocalDateTimeCell.TYPE || common == BooleanCell.TYPE) {
                     return StringCell.TYPE;
                 }
                 throw new IllegalStateException("common: " + common);
