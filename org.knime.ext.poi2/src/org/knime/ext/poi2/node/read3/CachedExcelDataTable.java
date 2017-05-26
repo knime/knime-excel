@@ -131,7 +131,6 @@ import org.knime.core.data.def.DefaultRow;
 import org.knime.core.data.def.DoubleCell;
 import org.knime.core.data.def.IntCell;
 import org.knime.core.data.def.StringCell;
-import org.knime.core.data.time.localdatetime.LocalDateTimeCell;
 import org.knime.core.data.time.localdatetime.LocalDateTimeCellFactory;
 import org.knime.core.data.time.localdatetime.LocalDateTimeValue;
 import org.knime.core.data.util.CancellableReportingInputStream;
@@ -1095,7 +1094,7 @@ final class CachedExcelTable {
         for (int i = 0; i < spec.getNumColumns(); i++) {
             if (spec.getColumnSpec(i).getType().isCompatible(LocalDateTimeValue.class)) {
                 tableSpecCreator.replaceColumn(i,
-                    new DataColumnSpecCreator(spec.getColumnSpec(i).getName(), LocalDateTimeCell.TYPE).createSpec());
+                    new DataColumnSpecCreator(spec.getColumnSpec(i).getName(), LocalDateTimeCellFactory.TYPE).createSpec());
             }
         }
         return tableSpecCreator.createSpec();
@@ -1358,13 +1357,13 @@ final class CachedExcelTable {
                     return BooleanCell.TYPE;
                 }
                 if (common == StringCell.TYPE || common == IntCell.TYPE || common == DoubleCell.TYPE
-                    || common == LocalDateTimeCell.TYPE) {
+                    || common == LocalDateTimeCellFactory.TYPE) {
                     return StringCell.TYPE;
                 }
                 throw new IllegalStateException("common: " + common);
             case DATE:
-                if (common == LocalDateTimeCell.TYPE || common.isCompatible(MissingValue.class)) {
-                    return LocalDateTimeCell.TYPE;
+                if (common == LocalDateTimeCellFactory.TYPE || common.isCompatible(MissingValue.class)) {
+                    return LocalDateTimeCellFactory.TYPE;
                 }
                 if (common == StringCell.TYPE || common == IntCell.TYPE || common == DoubleCell.TYPE
                     || common == BooleanCell.TYPE) {
@@ -1383,7 +1382,7 @@ final class CachedExcelTable {
                 if (common == DoubleCell.TYPE || common == IntCell.TYPE || common.isCompatible(MissingValue.class)) {
                     return DoubleCell.TYPE;
                 }
-                if (common == StringCell.TYPE || common == LocalDateTimeCell.TYPE || common == BooleanCell.TYPE) {
+                if (common == StringCell.TYPE || common == LocalDateTimeCellFactory.TYPE || common == BooleanCell.TYPE) {
                     return StringCell.TYPE;
                 }
                 throw new IllegalStateException("common: " + common);
@@ -1394,7 +1393,7 @@ final class CachedExcelTable {
                 if (common == DoubleCell.TYPE) {
                     return common;
                 }
-                if (common == StringCell.TYPE || common == LocalDateTimeCell.TYPE || common == BooleanCell.TYPE) {
+                if (common == StringCell.TYPE || common == LocalDateTimeCellFactory.TYPE || common == BooleanCell.TYPE) {
                     return StringCell.TYPE;
                 }
                 throw new IllegalStateException("common: " + common);

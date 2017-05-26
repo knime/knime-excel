@@ -69,10 +69,12 @@ class KNIMEDataFormatter extends DataFormatter {
 
     //Intentionally invalid UFT-16 encoding to avoid collision with valid UTF-16 Strings:
     //https://en.wikipedia.org/wiki/UTF-16
-    static final String DATE_PREFIX = "\uDC37\uDC37", NUMBER_PREFIX = "\uDC73\uDC73", BOOL_PREFIX = "\uDC45\uDC45";
+    static final String DATE_PREFIX = "\uDC37\uDC37";
+    static final String NUMBER_PREFIX = "\uDC73\uDC73";
+    static final String BOOL_PREFIX = "\uDC45\uDC45";
 
-    private static final String TRUE = Boolean.toString(true).toUpperCase(),
-            FALSE = Boolean.toString(false).toUpperCase();
+    private static final String TRUE = Boolean.toString(true).toUpperCase();
+    private static final String FALSE = Boolean.toString(false).toUpperCase();
 
     private static final int SEC_PER_DAY = 24*3600;
 
