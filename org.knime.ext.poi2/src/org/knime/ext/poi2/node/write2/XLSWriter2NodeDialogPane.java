@@ -426,7 +426,7 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
                     + "file format, which was used as default up until Excel 2003. This file format has "
                     + "certain limitations. <br/>"
                     + "Do you still want to write <i>xls</i> or use the newer <i>xlsx</i> format? "
-                    + "For details see the node description.", ".xls or .xlsx?</html>",
+                    + "For details see the node description.</html>", ".xls or .xlsx?",
                     JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,
                     new Object[] {"Write 'XLSX'", "Write 'XLS'"}, "Write 'XLSX'");
                 switch (result) {
