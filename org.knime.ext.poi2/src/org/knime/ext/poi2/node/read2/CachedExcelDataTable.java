@@ -387,11 +387,18 @@ final class CachedExcelTable {
             }
             //Safe call as only this thread uses it
             String lastOriginalFormattedValue = m_formatter.getLastOriginalFormattedValue();
-            if (ActualDataType.isDate(type) || ActualDataType.isNumber(type) || ActualDataType.isBoolean(type)) {
-                if (lastOriginalFormattedValue.startsWith(KNIMEDataFormatter.BOOL_PREFIX)) {
+            if (ActualDataType.isBoolean(type)) {
+                if (lastOriginalFormattedValue != null
+                    && lastOriginalFormattedValue.startsWith(KNIMEDataFormatter.BOOL_PREFIX)) {
                     lastOriginalFormattedValue =
                         lastOriginalFormattedValue.substring(KNIMEDataFormatter.BOOL_PREFIX.length());
-                } else if (lastOriginalFormattedValue.startsWith(KNIMEDataFormatter.DATE_PREFIX)) {
+                } else {
+                    lastOriginalFormattedValue = m_stringInterner.intern(valueAsString);
+                }
+                m_currentRowMap.put(thisCol,
+                    new Content(m_stringInterner.intern(valueAsString), lastOriginalFormattedValue, type));
+            } else if (ActualDataType.isDate(type) || ActualDataType.isNumber(type)) {
+                if (lastOriginalFormattedValue.startsWith(KNIMEDataFormatter.DATE_PREFIX)) {
                     lastOriginalFormattedValue =
                         lastOriginalFormattedValue.substring(KNIMEDataFormatter.DATE_PREFIX.length());
                 } else if (lastOriginalFormattedValue.startsWith(KNIMEDataFormatter.NUMBER_PREFIX)) {
