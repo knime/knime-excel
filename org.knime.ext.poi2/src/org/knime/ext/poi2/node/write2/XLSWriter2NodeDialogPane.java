@@ -155,6 +155,8 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
 
     private final JCheckBox m_writeMissingValue = new JCheckBox("For missing values write:");
 
+    private boolean m_xlsIsConfirmed = false;
+
     /**
      * Creates a new dialog for the XLS writer node.
      *
@@ -421,22 +423,27 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
 
         switch (FilenameUtils.getExtension(filename).toLowerCase()) {
             case "xls":
-                Window windowAncestor = SwingUtilities.getWindowAncestor(m_filePanel);
-                int result = JOptionPane.showOptionDialog(windowAncestor, "<html>You chose the the old <i>xls</i> Excel"
-                    + "file format, which was used as default up until Excel 2003. This file format has "
-                    + "certain limitations. <br/>"
-                    + "Do you still want to write <i>xls</i> or use the newer <i>xlsx</i> format? "
-                    + "For details see the node description.</html>", ".xls or .xlsx?",
-                    JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,
-                    new Object[] {"Write 'XLSX'", "Write 'XLS'"}, "Write 'XLSX'");
-                switch (result) {
-                    case JOptionPane.YES_OPTION:
-                        m_filePanel.setSelectedFile(FilenameUtils.removeExtension(filename) + ".xlsx");
-                        break;
-                    case JOptionPane.NO_OPTION:
-                        default:
-                        //Nothing to do
-                        break;
+                if (m_xlsIsConfirmed) {
+                    break;
+                } else {
+                    Window windowAncestor = SwingUtilities.getWindowAncestor(m_filePanel);
+                    int result = JOptionPane.showOptionDialog(windowAncestor, "<html>You chose the the old <i>xls</i> "
+                        + "Excel file format, which was used as default up until Excel 2003. This file format has "
+                        + "certain limitations. <br/>"
+                        + "Do you still want to write <i>xls</i> or use the newer <i>xlsx</i> format? "
+                        + "For details see the node description.</html>", ".xls or .xlsx?",
+                        JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,
+                        new Object[] {"Write 'XLSX'", "Write 'XLS'"}, "Write 'XLSX'");
+                    switch (result) {
+                        case JOptionPane.YES_OPTION:
+                            m_filePanel.setSelectedFile(FilenameUtils.removeExtension(filename) + ".xlsx");
+                            break;
+                        case JOptionPane.NO_OPTION:
+                            m_xlsIsConfirmed = true;
+                            default:
+                            //Nothing to do
+                            break;
+                    }
                 }
                 break;
             case "xlsx":
