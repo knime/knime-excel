@@ -373,7 +373,7 @@ public class XLSWriter2 {
                         } else if (colValue.getType().isCompatible(ZonedDateTimeValue.class)) {
                             ZonedDateTimeValue zdtValue = (ZonedDateTimeValue)colValue;
                             sheetCell.setCellStyle(dateOrTimeStyle(wb, helper, dateStyles, "yyyy-mm-dd hh:mm:ss"));
-                            sheetCell.setCellValue(DateUtil.getExcelDate(new Date(zdtValue.getZonedDateTime().toInstant().toEpochMilli())));
+                            sheetCell.setCellValue(DateUtil.getExcelDate(new Date(zdtValue.getZonedDateTime().toLocalDateTime().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())));
                         } else if (colValue.getType().isCompatible(DurationValue.class)) {
                             DurationValue durationValue = (DurationValue)colValue;
                             sheetCell.setCellValue(durationValue.getDuration().toString());
