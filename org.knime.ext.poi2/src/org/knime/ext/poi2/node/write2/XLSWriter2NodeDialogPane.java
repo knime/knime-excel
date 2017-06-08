@@ -522,4 +522,12 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
 
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void onOpen() {
+        super.onOpen();
+        m_xlsIsConfirmed = false;
+    }
 }
