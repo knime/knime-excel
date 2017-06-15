@@ -58,6 +58,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -372,8 +373,7 @@ public class XLSWriter2 {
                             sheetCell.setCellValue(DateUtil.getExcelDate(new Date(LocalDate.of(1900, 1, 1).atTime(tValue.getLocalTime()).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()))%1);
                         } else if (colValue.getType().isCompatible(ZonedDateTimeValue.class)) {
                             ZonedDateTimeValue zdtValue = (ZonedDateTimeValue)colValue;
-                            sheetCell.setCellStyle(dateOrTimeStyle(wb, helper, dateStyles, "yyyy-mm-dd hh:mm:ss"));
-                            sheetCell.setCellValue(DateUtil.getExcelDate(new Date(zdtValue.getZonedDateTime().toLocalDateTime().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())));
+                            sheetCell.setCellValue(DateTimeFormatter.ISO_ZONED_DATE_TIME.format(zdtValue.getZonedDateTime()));
                         } else if (colValue.getType().isCompatible(DurationValue.class)) {
                             DurationValue durationValue = (DurationValue)colValue;
                             sheetCell.setCellValue(durationValue.getDuration().toString());
