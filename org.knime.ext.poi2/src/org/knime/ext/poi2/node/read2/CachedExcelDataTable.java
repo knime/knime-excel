@@ -85,6 +85,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.input.CountingInputStream;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.ss.usermodel.Cell;
@@ -388,8 +389,7 @@ final class CachedExcelTable {
             //Safe call as only this thread uses it
             String lastOriginalFormattedValue = m_formatter.getLastOriginalFormattedValue();
             if (ActualDataType.isBoolean(type)) {
-                if (lastOriginalFormattedValue != null
-                    && lastOriginalFormattedValue.startsWith(KNIMEDataFormatter.BOOL_PREFIX)) {
+                if (StringUtils.startsWith(lastOriginalFormattedValue, KNIMEDataFormatter.BOOL_PREFIX)) {
                     lastOriginalFormattedValue =
                         lastOriginalFormattedValue.substring(KNIMEDataFormatter.BOOL_PREFIX.length());
                 } else {
@@ -398,10 +398,10 @@ final class CachedExcelTable {
                 m_currentRowMap.put(thisCol,
                     new Content(m_stringInterner.intern(valueAsString), lastOriginalFormattedValue, type));
             } else if (ActualDataType.isDate(type) || ActualDataType.isNumber(type)) {
-                if (lastOriginalFormattedValue.startsWith(KNIMEDataFormatter.DATE_PREFIX)) {
+                if (StringUtils.startsWith(lastOriginalFormattedValue, KNIMEDataFormatter.DATE_PREFIX)) {
                     lastOriginalFormattedValue =
                         lastOriginalFormattedValue.substring(KNIMEDataFormatter.DATE_PREFIX.length());
-                } else if (lastOriginalFormattedValue.startsWith(KNIMEDataFormatter.NUMBER_PREFIX)) {
+                } else if (StringUtils.startsWith(lastOriginalFormattedValue, KNIMEDataFormatter.NUMBER_PREFIX)) {
                     lastOriginalFormattedValue =
                         lastOriginalFormattedValue.substring(KNIMEDataFormatter.NUMBER_PREFIX.length());
                 }
