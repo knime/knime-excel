@@ -2,7 +2,7 @@
 <feature
       id="org.knime.features.ext.poi"
       label="KNIME Excel Support"
-      version="3.3.2.qualifier"
+      version="3.3.3.qualifier"
       provider-name="KNIME GmbH, Konstanz, Germany"
       plugin="org.knime.ext.poi">
 
