@@ -391,6 +391,8 @@ class XLSReaderNodeDialog extends NodeDialogPane {
         colHdrBox.add(m_hasColHdr);
         colHdrBox.add(Box.createHorizontalStrut(3));
         colHdrBox.add(m_colHdrRow);
+        colHdrBox.add(Box.createHorizontalStrut(3));
+        colHdrBox.add(new JLabel("(Row numbers start with 1. Mouse over header to see row number.)"));
         colHdrBox.add(Box.createHorizontalGlue());
         return colHdrBox;
     }
