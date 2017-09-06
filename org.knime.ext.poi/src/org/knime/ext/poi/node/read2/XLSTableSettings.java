@@ -768,7 +768,7 @@ public class XLSTableSettings {
             }
 
         } catch (Exception e) {
-            NodeLogger.getLogger(XLSUserSettings.class).debug(
+            NodeLogger.getLogger(XLSTableSettings.class).debug(
                     "Caught exception while accessing file "
                             + settings.getFileLocation()
                             + ". Creating synthetic column names", e);
