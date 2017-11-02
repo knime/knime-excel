@@ -1,6 +1,6 @@
 /*
  * ------------------------------------------------------------------------
- *  Copyright by KNIME GmbH, Konstanz, Germany
+ *  Copyright by KNIME AG, Zurich, Switzerland
  *  Website: http://www.knime.com; Email: contact@knime.com
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -147,7 +147,7 @@ import com.google.common.base.Strings;
 /**
  * The dialog to the XLS reader.
  *
- * @author Peter Ohl, KNIME.com, Zurich, Switzerland
+ * @author Peter Ohl, KNIME AG, Zurich, Switzerland
  * @author Gabor Bakos
  */
 class XLSReaderNodeDialog extends NodeDialogPane {
