@@ -1,5 +1,6 @@
 /*
  * ------------------------------------------------------------------------
+ *
  *  Copyright by KNIME AG, Zurich, Switzerland
  *  Website: http://www.knime.com; Email: contact@knime.com
  *
@@ -21,7 +22,7 @@
  *  Hence, KNIME and ECLIPSE are both independent programs and are not
  *  derived from each other. Should, however, the interpretation of the
  *  GNU GPL Version 3 ("License") under any applicable laws result in
- *  KNIME and ECLIPSE being a combined program, KNIME GMBH herewith grants
+ *  KNIME and ECLIPSE being a combined program, KNIME AG herewith grants
  *  you the additional permission to use and propagate KNIME together with
  *  ECLIPSE with only the license terms in place for ECLIPSE applying to
  *  ECLIPSE and the GNU GPL Version 3 applying for KNIME, provided the
@@ -40,70 +41,58 @@
  *  propagated with or for interoperation with KNIME.  The owner of a Node
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
- * -------------------------------------------------------------------
+ * ---------------------------------------------------------------------
+ *
+ * History
+ *   Feb 19, 2018 (ferry): created
  */
 package org.knime.ext.poi2;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
-import org.apache.poi.util.TempFile;
-import org.eclipse.core.runtime.Plugin;
-import org.knime.core.node.KNIMEConstants;
+import org.apache.poi.util.TempFile.DefaultTempFileCreationStrategy;
+import org.apache.poi.util.TempFileCreationStrategy;
 import org.knime.core.util.PathUtils;
-import org.osgi.framework.BundleContext;
 
 /**
- * The activator class controls the plug-in life cycle.
+ * Temp file creation strategy that ensures that the temp directory always exists (which is a problem in
+ * {@link DefaultTempFileCreationStrategy}).
+ *
+ * @author Ferry Abt, KNIME GmbH, Konstanz, Germany
  */
-public class POIActivator extends Plugin {
-    /** The plug-in ID. */
-    public static final String PLUGIN_ID = "org.knime.ext.poi";
+final class KNIMEPOITempFileCreationStrategy implements TempFileCreationStrategy {
+    private final Path m_dir;
 
     /**
-     * The constructor.
+     * Creates the strategy allowing to set the
+     *
+     * @param dir The directory where the temporary files will be created
      */
-    public POIActivator() {
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void start(final BundleContext context) throws Exception {
-        super.start(context);
-        // disable logging of POI. To speed it up.
-        System.setProperty("org.apache.poi.util.POILogger", "org.apache.poi.util.NullLogger");
-
-        // We must explicitly use the standard temp dir here, otherwise it may end up in a workflow-specific temp
-        // directory and be removed when the workflow is closed.
-        TempFile.setTempFileCreationStrategy(new KNIMEPOITempFileCreationStrategy(
-            PathUtils.createTempDir("poifiles", KNIMEConstants.getKNIMETempPath())));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void stop(final BundleContext finalContext) throws Exception {
-        super.stop(finalContext);
-    }
-
-    /**
-     * This method currently creates the temp dir for POI and sets the write permissions to everyone, so that multiple
-     * users can use POI at the same time.
-     */
-    public static void mkTmpDirRW_Bug3301() {
-        // Create
-        File tmpFile;
-        try {
-            tmpFile = TempFile.createTempFile("erase", "me");
-            tmpFile.delete();
-            File tmpDir = tmpFile.getParentFile();
-            tmpDir.setWritable(true, false);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+    KNIMEPOITempFileCreationStrategy(final Path dir) {
+        if (dir == null) {
+            throw new IllegalArgumentException("Apache POI temp directory must not be null!");
         }
+        m_dir = dir;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public File createTempFile(final String prefix, final String suffix) throws IOException {
+        Files.createDirectories(m_dir);
+
+        Path newFile;
+        // Set the delete on exit flag, unless explicitly disabled
+        if (System.getProperty("poi.keep.tmp.files") == null) {
+            newFile = PathUtils.createTempFile(m_dir, prefix, suffix);
+        } else {
+            newFile = Files.createTempFile(m_dir, prefix, suffix);
+        }
+
+        return newFile.toFile();
     }
 }
