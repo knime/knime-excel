@@ -85,7 +85,6 @@ import org.knime.core.node.streamable.RowOutput;
 import org.knime.core.node.streamable.StreamableOperator;
 import org.knime.core.node.streamable.StreamableOperatorInternals;
 import org.knime.core.util.FileUtil;
-import org.knime.ext.poi2.POIActivator;
 import org.xml.sax.SAXException;
 
 /**
@@ -178,7 +177,6 @@ public class XLSReaderNodeModel extends NodeModel {
      */
     public XLSReaderNodeModel() {
         super(0, 1);
-        POIActivator.mkTmpDirRW_Bug3301();
     }
 
     XLSReaderNodeModel(final NodeCreationContext context) {

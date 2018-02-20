@@ -138,7 +138,6 @@ import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.util.MutableInteger;
 import org.knime.core.util.Pair;
 import org.knime.core.util.SwingWorkerWithContext;
-import org.knime.ext.poi2.POIActivator;
 import org.knime.ext.poi2.node.read3.POIUtils.StopProcessing;
 import org.xml.sax.SAXException;
 
@@ -267,8 +266,6 @@ class XLSReaderNodeDialog extends NodeDialogPane {
      *
      */
     public XLSReaderNodeDialog() {
-        POIActivator.mkTmpDirRW_Bug3301();
-
         FlowVariableModel fvBut = createFlowVariableModel(XLSUserSettings.CFG_XLS_LOCATION, FlowVariable.Type.STRING);
         m_fileName = new FilesHistoryPanel(fvBut, "XLSReader", LocationValidation.FileInput, ".xls|.xlsx");
         JPanel dlgTab = new JPanel();

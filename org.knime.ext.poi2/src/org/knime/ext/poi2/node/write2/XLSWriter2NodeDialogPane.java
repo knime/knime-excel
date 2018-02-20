@@ -102,7 +102,6 @@ import org.knime.core.node.util.filter.column.DataColumnSpecFilterPanel;
 import org.knime.core.node.util.filter.column.DataTypeColumnFilter;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.util.FileUtil;
-import org.knime.ext.poi2.POIActivator;
 
 /**
  *
@@ -164,7 +163,6 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
      * @param type Of what type is this node?
      */
     public XLSWriter2NodeDialogPane(final XLSNodeType type) {
-        POIActivator.mkTmpDirRW_Bug3301();
         m_type = type;
         JPanel tab = new JPanel();
         tab.setLayout(new BoxLayout(tab, BoxLayout.Y_AXIS));

@@ -70,7 +70,6 @@ import org.knime.core.node.util.CheckUtils;
 import org.knime.core.node.util.filter.NameFilterConfiguration.FilterResult;
 import org.knime.core.node.util.filter.column.DataColumnSpecFilterConfiguration;
 import org.knime.core.util.FileUtil;
-import org.knime.ext.poi2.POIActivator;
 
 /**
  *
@@ -90,7 +89,6 @@ public class XLSWriter2NodeModel extends NodeModel {
      */
     public XLSWriter2NodeModel(final XLSNodeType type) {
         super(1, 0); // one input, no output
-        POIActivator.mkTmpDirRW_Bug3301();
         m_type = type;
     }
 

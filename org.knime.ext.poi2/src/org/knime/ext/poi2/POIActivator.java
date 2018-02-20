@@ -44,10 +44,6 @@
  */
 package org.knime.ext.poi2;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-
 import org.apache.poi.util.TempFile;
 import org.eclipse.core.runtime.Plugin;
 import org.knime.core.node.KNIMEConstants;
@@ -58,15 +54,6 @@ import org.osgi.framework.BundleContext;
  * The activator class controls the plug-in life cycle.
  */
 public class POIActivator extends Plugin {
-    /** The plug-in ID. */
-    public static final String PLUGIN_ID = "org.knime.ext.poi";
-
-    /**
-     * The constructor.
-     */
-    public POIActivator() {
-    }
-
     /**
      * {@inheritDoc}
      */
@@ -80,30 +67,5 @@ public class POIActivator extends Plugin {
         // directory and be removed when the workflow is closed.
         TempFile.setTempFileCreationStrategy(new KNIMEPOITempFileCreationStrategy(
             PathUtils.createTempDir("poifiles", KNIMEConstants.getKNIMETempPath())));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void stop(final BundleContext finalContext) throws Exception {
-        super.stop(finalContext);
-    }
-
-    /**
-     * This method currently creates the temp dir for POI and sets the write permissions to everyone, so that multiple
-     * users can use POI at the same time.
-     */
-    public static void mkTmpDirRW_Bug3301() {
-        // Create
-        File tmpFile;
-        try {
-            tmpFile = TempFile.createTempFile("erase", "me");
-            tmpFile.delete();
-            File tmpDir = tmpFile.getParentFile();
-            tmpDir.setWritable(true, false);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
     }
 }
