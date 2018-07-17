@@ -377,7 +377,7 @@ public class XLSUserSettings {
             try {
                 URL url = new URL(m_fileLocation);
                 try {
-                    FileUtil.openStreamWithTimeout(url).close();
+                    FileUtil.openStreamWithTimeout(url, 1000 * m_timeoutInSeconds).close();
                 } catch (IOException ioe) {
                     return "Can't open specified location (" + m_fileLocation
                             + ")";
