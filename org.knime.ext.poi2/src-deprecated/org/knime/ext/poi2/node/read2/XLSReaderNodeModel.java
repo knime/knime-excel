@@ -371,14 +371,14 @@ public class XLSReaderNodeModel extends NodeModel {
         InvalidSettingsException {
         if (sheetName == null || XLSReaderNodeDialog.FIRST_SHEET.equals(sheetName)) {
             if (isXlsx()) {
-                try (InputStream stream =
-                        POIUtils.openInputStream(loc, settings.getTimeoutInSeconds());
+                try (InputStream stream = POIUtils.openInputStream(loc, settings.getTimeoutInSeconds());
                         final OPCPackage pack = OPCPackage.open(stream)) {
                     sheetName =
                         POIUtils.getFirstSheetNameWithData(new XSSFReader(pack), new ReadOnlySharedStringsTable(pack));
                 }
             } else {
-                sheetName = POIUtils.getFirstSheetNameWithData(POIUtils.getWorkbook(loc));
+                sheetName =
+                    POIUtils.getFirstSheetNameWithData(POIUtils.getWorkbook(loc, settings.getTimeoutInSeconds()));
             }
             settings.setSheetName(sheetName);
         }

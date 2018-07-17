@@ -72,12 +72,15 @@ import org.knime.core.node.NodeCreationContext;
 import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
-import org.knime.ext.poi2.node.read2.XLSUserSettings;
+import org.knime.ext.poi2.node.read3.XLSUserSettings;
 
 /**
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
 public class XLSSheetReaderNodeModel extends NodeModel {
+
+    /** The default timeout in seconds. */
+    private static final int DEFAULT_TIMEOUT_IN_SEC = 5;
 
     private XLSSheetReaderSettings m_settings = new XLSSheetReaderSettings();
 
@@ -238,7 +241,7 @@ public class XLSSheetReaderNodeModel extends NodeModel {
         Workbook workbook = null;
         InputStream in = null;
         try {
-            in = XLSUserSettings.getBufferedInputStream(path);
+            in = XLSUserSettings.getBufferedInputStream(path, DEFAULT_TIMEOUT_IN_SEC);
             workbook = WorkbookFactory.create(in);
         } finally {
             if (in != null) {

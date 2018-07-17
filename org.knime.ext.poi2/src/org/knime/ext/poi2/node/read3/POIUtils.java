@@ -332,16 +332,18 @@ class POIUtils {
      * Loads a workbook from the file system.
      *
      * @param path Path to the workbook
+     * @param timeOutInSeconds The timeout in seconds
      * @return The workbook or null if it could not be loaded
      * @throws IOException Problem reading.
      * @throws InvalidFormatException Problem reading.
      * @throws RuntimeException the underlying POI library also throws other kind of exceptions
      */
-    public static Workbook getWorkbook(final String path) throws IOException, InvalidFormatException {
+    public static Workbook getWorkbook(final String path, final int timeOutInSeconds)
+        throws IOException, InvalidFormatException {
         Workbook workbook = null;
         InputStream in = null;
         try {
-            in = XLSUserSettings.getBufferedInputStream(path);
+            in = XLSUserSettings.getBufferedInputStream(path, timeOutInSeconds);
             // This should be the only place in the code where a workbook gets loaded
             workbook = WorkbookFactory.create(in);
         } finally {

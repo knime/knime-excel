@@ -456,23 +456,24 @@ public class XLSUserSettings {
      * @throws IOException
      */
     public BufferedInputStream getBufferedInputStream() throws IOException {
-        return getBufferedInputStream(m_fileLocation);
+        return getBufferedInputStream(m_fileLocation, m_timeoutInSeconds);
     }
 
     /**
-     * Opens and returns a new buffered input stream on the passed location. The
-     * location could either be a filename or a URL.
+     * Opens and returns a new buffered input stream on the passed location. The location could either be a filename or
+     * a URL.
      *
      * @param location a filename or a URL
+     * @param timeOutInSeconds the timeout in seconds
      * @return a new opened buffered input stream.
      * @throws IOException
      */
-    public static BufferedInputStream getBufferedInputStream(
-            final String location) throws IOException {
+    public static BufferedInputStream getBufferedInputStream(final String location, final int timeOutInSeconds)
+        throws IOException {
         InputStream in;
         try {
             URL url = new URL(location);
-            in = FileUtil.openStreamWithTimeout(url);
+            in = FileUtil.openStreamWithTimeout(url, 1000 * timeOutInSeconds);
         } catch (MalformedURLException mue) {
             // then try a file
             in = new FileInputStream(location);
