@@ -95,4 +95,22 @@ final class KNIMEPOITempFileCreationStrategy implements TempFileCreationStrategy
 
         return newFile.toFile();
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public File createTempDirectory(final String prefix) throws IOException {
+        Files.createDirectories(m_dir);
+
+        Path newDirectory;
+        // Set the delete on exit flag, unless explicitly disabled
+        if (System.getProperty("poi.keep.tmp.files") == null) {
+            newDirectory = PathUtils.createTempDir(prefix, m_dir);
+        } else {
+            newDirectory = Files.createTempDirectory(m_dir, prefix);
+        }
+
+        return newDirectory.toFile();
+    }
 }
