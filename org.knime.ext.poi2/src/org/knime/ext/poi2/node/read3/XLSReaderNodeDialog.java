@@ -943,7 +943,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
                     checkPreviousFuture();
                     m_previewUpdateButton.setText(RELOAD);
                     NodeLogger.getLogger(XLSReaderNodeDialog.class)
-                        .debug("Unable to create setttings for file content view", t);
+                        .debug("Unable to create settings for file content view", t);
                     clearTableViews();
                     return "<unable to create view>";
                 } finally {
