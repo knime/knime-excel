@@ -6,6 +6,7 @@
     <dependency name="org.knime.workbench.help" componentType="osgi.bundle"/>
     <dependency name="org.knime.config" componentType="osgi.bundle"/>
     <dependency name="org.apache.commons.codec" componentType="osgi.bundle" versionDesignator="1.10.0"/>
+    <dependency name="com.github.virtuald.curvesapi" componentType="osgi.bundle"/>
   </dependencies>
   <actions>
     <!-- Dynamically build the files for the Eclipse help. -->
