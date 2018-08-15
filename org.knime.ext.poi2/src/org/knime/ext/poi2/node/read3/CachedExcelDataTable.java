@@ -322,9 +322,11 @@ final class CachedExcelTable {
         @Override
         public void cell(String cellReference, final String formattedValue, final XSSFComment comment) {
             checkCancelled();
-            // gracefully handle missing CellRef here in a similar way as XSSFCell does
             if (cellReference == null) {
-                cellReference = new CellAddress(m_currentRow, -1).formatAsString();
+                // gracefully handle missing CellRef here in a similar way as XSSFCell does;
+                // according to the API description the cellReference argument shouldn't be null,
+                // though it can be as seen in the file attached to AP-9380
+                cellReference = new CellAddress(m_currentRow, 0).formatAsString();
             }
 
             // Did we miss any cells?
