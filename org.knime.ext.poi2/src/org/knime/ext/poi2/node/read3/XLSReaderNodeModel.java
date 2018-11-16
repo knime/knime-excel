@@ -373,7 +373,7 @@ public class XLSReaderNodeModel extends NodeModel {
                 try (InputStream stream = POIUtils.openInputStream(loc, settings.getTimeoutInSeconds());
                         final OPCPackage pack = OPCPackage.open(stream)) {
                     sheetName =
-                        POIUtils.getFirstSheetNameWithData(new XSSFReader(pack), new ReadOnlySharedStringsTable(pack));
+                        POIUtils.getFirstSheetNameWithData(new XSSFReader(pack), new ReadOnlySharedStringsTable(pack, false));
                 }
             } else {
                 sheetName =

@@ -451,7 +451,7 @@ final class CachedExcelTable {
 
             try (final OPCPackage opc = OPCPackage.open(stream)) {
                 final XSSFReader xssfReader = new XSSFReader(opc);
-                final ReadOnlySharedStringsTable readOnlySharedStringsTable = new ReadOnlySharedStringsTable(opc);
+                final ReadOnlySharedStringsTable readOnlySharedStringsTable = new ReadOnlySharedStringsTable(opc, false);
                 for (final SheetIterator sheetIt = (SheetIterator)xssfReader.getSheetsData(); sheetIt.hasNext();) {
                     InputStream is = sheetIt.next();
                     if (sheet.equals(sheetIt.getSheetName())) { // not closed here; method arg to be closed by caller
