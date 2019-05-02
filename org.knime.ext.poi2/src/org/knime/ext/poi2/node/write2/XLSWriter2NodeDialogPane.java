@@ -446,8 +446,6 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
                 break;
             case "xlsx":
                 break;
-            case "xlsm":
-                break;
             default:
                 if (!FilenameUtils.getBaseName(filename).trim().isEmpty()) {
                     //Not empty, but no valid extension, add extension
