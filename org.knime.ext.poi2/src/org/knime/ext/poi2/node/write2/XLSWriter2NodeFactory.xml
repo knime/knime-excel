@@ -30,7 +30,7 @@
                 overwritten.
             </p>
          <p>
-         	When no extension is specified, it will be treated as an xlsx file.
+         	When no extension is specified, it will be treated as an xlsx file. This nodes does not support writing in the 'xlsm' format.
          </p>
         </intro>
         <option name="Output location"> Enter a valid file name or URL. You can also choose a previously selected local from the

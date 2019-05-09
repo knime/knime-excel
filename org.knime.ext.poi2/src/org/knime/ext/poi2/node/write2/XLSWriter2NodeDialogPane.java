@@ -419,39 +419,35 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
 
         String filename = m_filePanel.getSelectedFile();
 
-        switch (FilenameUtils.getExtension(filename).toLowerCase()) {
-            case "xls":
-                if (m_xlsIsConfirmed) {
-                    break;
-                } else {
-                    Window windowAncestor = SwingUtilities.getWindowAncestor(m_filePanel);
-                    int result = JOptionPane.showOptionDialog(windowAncestor, "<html>You chose the the old <i>xls</i> "
-                        + "Excel file format, which was used as default up until Excel 2003. This file format has "
-                        + "certain limitations. <br/>"
-                        + "Do you still want to write <i>xls</i> or use the newer <i>xlsx</i> format? "
-                        + "For details see the node description.</html>", ".xls or .xlsx?",
-                        JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,
-                        new Object[] {"Write 'XLSX'", "Write 'XLS'"}, "Write 'XLSX'");
-                    switch (result) {
-                        case JOptionPane.YES_OPTION:
-                            m_filePanel.setSelectedFile(FilenameUtils.removeExtension(filename) + ".xlsx");
-                            break;
-                        case JOptionPane.NO_OPTION:
-                            m_xlsIsConfirmed = true;
-                            default:
-                            //Nothing to do
-                            break;
-                    }
+        String fileExtension = FilenameUtils.getExtension(filename).toLowerCase();
+        if (fileExtension.equals("xls")) {
+
+            if (!m_xlsIsConfirmed) {
+                Window windowAncestor = SwingUtilities.getWindowAncestor(m_filePanel);
+                int result = JOptionPane.showOptionDialog(windowAncestor, "<html>You chose the the old <i>xls</i> "
+                    + "Excel file format, which was used as default up until Excel 2003. This file format has "
+                    + "certain limitations. <br/>"
+                    + "Do you still want to write <i>xls</i> or use the newer <i>xlsx</i> format? "
+                    + "For details see the node description.</html>", ".xls or .xlsx?",
+                    JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,
+                    new Object[] {"Write 'XLSX'", "Write 'XLS'"}, "Write 'XLSX'");
+                switch (result) {
+                    case JOptionPane.YES_OPTION:
+                        m_filePanel.setSelectedFile(FilenameUtils.removeExtension(filename) + ".xlsx");
+                        break;
+                    case JOptionPane.NO_OPTION:
+                        m_xlsIsConfirmed = true;
+                        default:
+                        //Nothing to do
+                        break;
                 }
-                break;
-            case "xlsx":
-                break;
-            default:
-                if (!FilenameUtils.getBaseName(filename).trim().isEmpty()) {
-                    //Not empty, but no valid extension, add extension
-                    m_filePanel.setSelectedFile(filename + ".xlsx");
-                }
-                break;
+            }
+        } else if (!fileExtension.equals("xlsx") && !(m_type.equals(XLSNodeType.APPENDER) && fileExtension.equals("xlsm"))) {
+            // if fileExtension is not xlsx and also no xlsm used in the appender
+            if (!FilenameUtils.getBaseName(filename).trim().isEmpty()) {
+                //Not empty, but no valid extension, add extension
+                m_filePanel.setSelectedFile(filename + ".xlsx");
+            }
         }
 
         XLSWriter2Settings vals = new XLSWriter2Settings();
