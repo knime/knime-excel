@@ -1,24 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE knimeNode PUBLIC "-//UNIKN//DTD KNIME Node 2.0//EN" "http://www.knime.org/Node.dtd">
-<knimeNode type="Sink" icon="./xlsappender.png">
+
+<knimeNode type="Sink" icon="./xlsappender.png" xmlns="http://knime.org/node/v3.6" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://knime.org/node/v3.6 http://knime.org/node/v3.6.xsd">
 	<name>Excel Sheet Appender (XLS)</name>
 
 	<shortDescription>
-		Saves a data table into a spreadsheet.
+		Appends a data table to an existing workbook.
 	</shortDescription>
 
 	<fullDescription>
 		<intro>
-			This node writes the input data table into a spreadsheet and appends it to an existing workbook.
-            If no workbook is present a new one will be created. The files can
-            be read then with other applications like Microsoft Excel, for
-			example. The writer supports both the old 'xls' format as well as 'xlsx', whereby the same limitations
-			apply as described in the documentation to the Excel Writer node (max 65536x256 for 'xls'). <br />
-         Note that if the destination location is a remote URL not all options are available because in general it's
-         not possible to determine whether the remote location exists. In this case it will always be overwritten.
-         <br/>
-         When no extension is specified, it will be treated as an xlsx file. This node can append data to macro-enabled
-         workbooks (.xlsm), however, new workbooks cannot be created this way.
+			<p>This node writes the input data table into a spreadsheet and appends it to an existing workbook.
+            If no workbook is present, a new one will be created. The files can then be read with other
+            applications such as Microsoft Excel.</p>
+            <p>The node supports three formats chosen by file extension:
+            <ul>
+                <li>
+                    .xls format: This is the file format which was used by default up until Excel 2003. The maximum
+                    number of columns held by a spreadsheet of this format is 256 (all additional columns in the data
+                    table are truncated). If the input data table has more than 65536 rows, it is split into multiple
+                    spreadsheets (all stored in the created workbook).
+                </li>
+                <li>
+                    .xlsx format: The Office Open XML format is the file format used by default from Excel 2007 onwards.
+                </li>
+	 			<li>
+	 				.xlsm format: This node can append data to macro-enabled workbooks, however, new workbooks cannot be created this way.
+				</li>
+            </ul>
+            </p>
+            <p>Specifying
+            a remote URL as the destination location will force the node to overwrite this file as it is not
+            possible to determine whether this location already exists. If no extension is specified, the
+            file will be written in the .xlsx format.</p>
 		</intro>
 		<option name="Output location">
 			Enter a valid file name or URL. You can also choose a previously
@@ -26,16 +39,16 @@
 			the &quot;Browse...&quot; dialog.
 		</option>
         <option name="Abort if file does not exist">
-            Abort the execution if the XLS/XLSX file does not exist. If this option
-            is not selected a new file will be created.
+            Aborts the execution if the specified file does not exist. If this option
+            is not selected, a new file will be created.
         </option>
         <option name="Abort if sheet already exists">
             If a sheet with the same name does already exist, then the execution
-            will fail. If this option is not selected the old sheet will be
+            will fail. If this option is not selected, the old sheet will be
             replaced by the new one.
         </option>
         <option name="Open file after execution">
-            Opens the file after it has been successfully written. The file will
+            Opens the file after it has been successfully created. The file will
             be opened in the default application of the system. This might not
             be supported by every system.
         </option>
@@ -56,12 +69,12 @@
             if other sheets in the file refer to the data just written and their content needs updating. 
         </option>
 		<option name="Missing Value Pattern">
-			Enter a pattern that is set for missing data values. If not
+			Enter a pattern that is used for missing data values. If not
 			specified, the corresponding data cell of the spreadsheet
 			stays empty.
 		</option>
 		<option name="Autosize columns">
-			Fits the columns width to the content.
+			Fits each column's width to its content.
 		</option>
 		<option name="Portrait/Landscape">
 			Sets the print format to portrait or landscape.
@@ -70,8 +83,8 @@
 			Sets the paper size in the print setup.
 		</option>
         <option name="Exclude/Include columns">
-            Select the columns that will be written in the XLS/XLSX file. If the
-            columns in the input table should change, they will automatically be
+            Select the columns that will be appended to the file. If the
+            columns in the input table change, they will automatically be
             excluded.
         </option>
 	</fullDescription>
