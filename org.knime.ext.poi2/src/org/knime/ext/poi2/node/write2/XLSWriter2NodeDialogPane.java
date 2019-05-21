@@ -421,7 +421,6 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
 
         String fileExtension = FilenameUtils.getExtension(filename).toLowerCase();
         if (fileExtension.equals("xls")) {
-
             if (!m_xlsIsConfirmed) {
                 Window windowAncestor = SwingUtilities.getWindowAncestor(m_filePanel);
                 int result = JOptionPane.showOptionDialog(windowAncestor, "<html>You chose the the old <i>xls</i> "
@@ -442,8 +441,7 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
                         break;
                 }
             }
-        } else if (!fileExtension.equals("xlsx") && !(m_type.equals(XLSNodeType.APPENDER) && fileExtension.equals("xlsm"))) {
-            // if fileExtension is not xlsx and also no xlsm used in the appender
+        } else if (!isValidFileExtension(fileExtension)) {
             if (!FilenameUtils.getBaseName(filename).trim().isEmpty()) {
                 //Not empty, but no valid extension, add extension
                 m_filePanel.setSelectedFile(filename + ".xlsx");
@@ -470,6 +468,16 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
         m_filter.saveConfiguration(config);
         config.saveConfiguration(settings);
         m_filePanel.addToHistory();
+    }
+
+    private boolean isValidFileExtension(final String fileExtension) {
+        boolean result = false;
+        if (m_type.equals(XLSNodeType.WRITER)) {
+            result = fileExtension.equals("xlsx");
+        } else if (m_type.equals(XLSNodeType.APPENDER)) {
+            result = fileExtension.equals("xlsx") || fileExtension.equals("xlsm");
+        }
+        return result;
     }
 
     /**
