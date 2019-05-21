@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<knimeNode type="Sink" icon="./xlsappender.png" xmlns="http://knime.org/node/v3.6" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://knime.org/node/v3.6 http://knime.org/node/v3.6.xsd">
+<knimeNode type="Sink" icon="./xlsappender.png"
+	xmlns="http://knime.org/node/v3.6"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://knime.org/node/v3.6 http://knime.org/node/v3.6.xsd">
 	<name>Excel Sheet Appender (XLS)</name>
 
 	<shortDescription>
@@ -24,7 +27,8 @@
                     .xlsx format: The Office Open XML format is the file format used by default from Excel 2007 onwards.
                 </li>
 	 			<li>
-	 				.xlsm format: This node can append data to macro-enabled workbooks, however, new workbooks cannot be created this way.
+	 				.xlsm format: This node can append data to macro-enabled workbooks, however, new workbooks cannot 
+	 				be created this way.
 				</li>
             </ul>
             </p>
