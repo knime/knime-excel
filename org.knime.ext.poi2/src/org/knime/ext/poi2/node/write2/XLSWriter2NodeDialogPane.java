@@ -115,9 +115,7 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
 
     private XLSNodeType m_type;
 
-    private final FilesHistoryPanel m_filePanel =
-            new FilesHistoryPanel(createFlowVariableModel("filename", FlowVariable.Type.STRING),
-                "XLSWRITER", LocationValidation.FileOutput, ".xlsx", ".xls");
+    private FilesHistoryPanel m_filePanel;
 
     private final JCheckBox m_writeColHdr = new JCheckBox();
 
@@ -167,6 +165,11 @@ class XLSWriter2NodeDialogPane extends NodeDialogPane {
         JPanel tab = new JPanel();
         tab.setLayout(new BoxLayout(tab, BoxLayout.Y_AXIS));
 
+        // enable xlsm support for file chooser if node is appender
+        String[] validExtensions = m_type == XLSNodeType.APPENDER ? new String[] { ".xlsx", ".xls", ".xlsm" }
+            : new String[] { ".xlsx", ".xls" };
+        m_filePanel = new FilesHistoryPanel(createFlowVariableModel("filename", FlowVariable.Type.STRING),
+                "XLSWRITER", LocationValidation.FileOutput, validExtensions);
         m_filePanel.setDialogTypeSaveWithExtension(".xlsx");
         final JPanel filePanel = new JPanel();
         filePanel.setLayout(new BoxLayout(filePanel, BoxLayout.X_AXIS));
