@@ -185,7 +185,6 @@ public class XLSWriter2 {
                     wb = createWorkbookFromStream(isXLSX, is);
                 } catch (IOException ex) {
                     // seems it does not exist, so be it and we create a new workbook
-                    LOGGER.debug("Could not read XLS file at " + m_destination + ": " + ex.getMessage(), ex);
                     wb = isXLSX ? createSxssfWorkbook() : new HSSFWorkbook();
                 }
             }
