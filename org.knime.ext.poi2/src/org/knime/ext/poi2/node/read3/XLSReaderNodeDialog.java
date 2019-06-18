@@ -78,6 +78,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.swing.BorderFactory;
@@ -261,6 +262,8 @@ class XLSReaderNodeDialog extends NodeDialogPane {
 
     private final MutableInteger m_readRows = new MutableInteger(0);
 
+    private final AtomicLong m_updateSheetListId = new AtomicLong(0);
+
 
     /**
      *
@@ -358,14 +361,9 @@ class XLSReaderNodeDialog extends NodeDialogPane {
 
     private void sheetNameChanged() {
         m_sheetName.setToolTipText((String)m_sheetName.getSelectedItem());
-        if (setCurrentlyLoadingNodeSettings(false)) {
-            if (FIRST_SHEET.equals(m_sheetName.getSelectedItem()) || m_sheetName.getSelectedItem() == null) {
-                // now refresh preview tables
-                updateFileTable();
-            }
-        } else {
-            updateFileTable();
-        }
+        // Refresh preview tables
+        updateFileTable();
+
     }
 
     private JComponent getColHdrBox() {
@@ -682,6 +680,10 @@ class XLSReaderNodeDialog extends NodeDialogPane {
         m_previewUpdateButton.setEnabled(false);
         m_previewMsg.setText("Loading input file...");
         m_sheetName.setModel(new DefaultComboBoxModel<>(new String[]{SCANNING}));
+        // The id of the current update
+        // Note that this code and the doneWithContext is always executed by the same thread
+        // Therefore we only have to make sure that the doneWithContext belongs to the most current update
+        final long currentId = m_updateSheetListId.incrementAndGet();
         SwingWorker<String[], Object> sw = new SwingWorkerWithContext<String[], Object>() {
 
             @Override
@@ -718,6 +720,11 @@ class XLSReaderNodeDialog extends NodeDialogPane {
              */
             @Override
             protected void doneWithContext() {
+                if (currentId != m_updateSheetListId.get()) {
+                    // Another update of the sheet list has started
+                    // Do not update the sheet list
+                    return;
+                }
                 String[] names = new String[]{};
                 try {
                     names = get();
@@ -1592,7 +1599,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
             // now refresh preview tables
             updateFileTable();
         }
-        //m_isCurrentlyLoadingNodeSettings is set back to false in updateSheetListAndSelect on the event dispatch thread
+        setCurrentlyLoadingNodeSettings(false);
     }
 
     private void addFocusLostListener(final JTextField field) {
