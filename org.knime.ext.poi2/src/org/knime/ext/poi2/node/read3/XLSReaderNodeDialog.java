@@ -77,7 +77,6 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -223,7 +222,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
     private static final int LEFT_INDENT = 25;
 
     /** Flag to temporarily disable listeners during loading of settings. */
-    private final AtomicBoolean m_isCurrentlyLoadingNodeSettings = new AtomicBoolean(false);
+    private final boolean m_isCurrentlyLoadingNodeSettings = false;
 
     private static final String SCANNING = "/* scanning... */";
 
@@ -662,7 +661,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
             // refresh workbook sets the workbook null in case of an error
             m_fileAccessError = e.getMessage();
         }
-        if (m_isCurrentlyLoadingNodeSettings.get()) {
+        if (m_isCurrentlyLoadingNodeSettings) {
             return;
         }
         clearTableViews();
@@ -886,7 +885,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
             clearTableViews();
             return;
         }
-        if (m_isCurrentlyLoadingNodeSettings.get()) {
+        if (m_isCurrentlyLoadingNodeSettings) {
             // do not read from the file while loading settings.
             return;
         }
@@ -1227,7 +1226,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
             return;
         }
 
-        if (m_isCurrentlyLoadingNodeSettings.get()) {
+        if (m_isCurrentlyLoadingNodeSettings) {
             // do nothing while loading settings.
             return;
         }
@@ -1552,7 +1551,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
      * @return the previous value.
      */
     private boolean setCurrentlyLoadingNodeSettings(final boolean newValue) {
-        boolean oldValue = m_isCurrentlyLoadingNodeSettings.getAndSet(newValue);
+        boolean oldValue = m_isCurrentlyLoadingNodeSettings;
         if (oldValue != newValue) {
             boolean enableControls = !newValue;
             m_skipEmptyCols.setEnabled(enableControls);
