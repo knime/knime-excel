@@ -222,7 +222,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
     private static final int LEFT_INDENT = 25;
 
     /** Flag to temporarily disable listeners during loading of settings. */
-    private final boolean m_isCurrentlyLoadingNodeSettings = false;
+    private boolean m_isCurrentlyLoadingNodeSettings = false;
 
     private static final String SCANNING = "/* scanning... */";
 
@@ -1552,6 +1552,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
      */
     private boolean setCurrentlyLoadingNodeSettings(final boolean newValue) {
         boolean oldValue = m_isCurrentlyLoadingNodeSettings;
+        m_isCurrentlyLoadingNodeSettings = newValue;
         if (oldValue != newValue) {
             boolean enableControls = !newValue;
             m_skipEmptyCols.setEnabled(enableControls);
