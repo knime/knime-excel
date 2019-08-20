@@ -1,4 +1,4 @@
-# ![Image](https://www.knime.com/files/knime_logo_github_40x40_4layers.png) KNIME� Excel Support
+# ![Image](https://www.knime.com/files/knime_logo_github_40x40_4layers.png) KNIME® Excel Support
 
 This repository contains the plugins for the KNIME Excel Support.
 The extension allows you to read spread sheets and sheet names from excel files (xls/xlsx),
