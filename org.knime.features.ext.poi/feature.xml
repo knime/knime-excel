@@ -7,7 +7,7 @@
       plugin="org.knime.ext.poi">
 
    <description>
-      This feature contains for reading and writing Excel files with
+      This feature contains nodes for reading and writing Excel files with
 KNIME. It uses libraries from the Jakarta POI project (http://jakarta.apache.org/poi/index.html)
 which is part of and copyrighted by the Apache Software Foundation
 (http://www.apache.org).
