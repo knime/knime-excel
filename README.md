@@ -17,8 +17,7 @@ The extension contains the following nodes:
 ## Example Workflows
 
 You can download the example workflows from the KNIME public example server
-(See [here how to connect...](https://www.knime.org/example-workflows)) or
-from the [KNIME node guide](https://www.knime.com/nodeguide/data-access/common-type-files).
+(See [here how to connect...](https://www.knime.org/example-workflows)).
 
 ## Development Notes
 
