@@ -14,10 +14,9 @@ The extension contains the following nodes:
 * **Excel Writer (XLS)**: Writes data into a spread sheet of a workbook.
 * **Excel Sheet Appender (XLS)**: Writes data into a spread sheet and appends it to an existing workbook.
 
-## Example Workflows
+## Example Workflows on the KNIME Hub
 
-You can download the example workflows from the KNIME public example server
-(See [here how to connect...](https://www.knime.org/example-workflows)).
+You can find example workflows on the [KNIME Hub](https://hub.knime.com/search?q=Excel).
 
 ## Development Notes
 
