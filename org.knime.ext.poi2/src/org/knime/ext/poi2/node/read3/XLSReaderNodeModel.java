@@ -49,33 +49,23 @@ package org.knime.ext.poi2.node.read3;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.Locale;
-import java.util.concurrent.ExecutionException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Optional;
 
-import javax.xml.parsers.ParserConfigurationException;
-
-import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
-import org.apache.poi.openxml4j.exceptions.OpenXML4JException;
-import org.apache.poi.openxml4j.opc.OPCPackage;
-import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
-import org.apache.poi.xssf.eventusermodel.XSSFReader;
-import org.knime.core.data.DataRow;
-import org.knime.core.data.DataTable;
+import org.knime.base.node.io.filehandling.FileHandlingUtil;
 import org.knime.core.data.DataTableSpec;
-import org.knime.core.node.BufferedDataContainer;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.NodeCreationContext;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
+import org.knime.core.node.context.NodeCreationConfiguration;
+import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.streamable.OutputPortRole;
 import org.knime.core.node.streamable.PartitionInfo;
@@ -84,8 +74,10 @@ import org.knime.core.node.streamable.PortOutput;
 import org.knime.core.node.streamable.RowOutput;
 import org.knime.core.node.streamable.StreamableOperator;
 import org.knime.core.node.streamable.StreamableOperatorInternals;
-import org.knime.core.util.FileUtil;
-import org.xml.sax.SAXException;
+import org.knime.filehandling.core.connections.FSConnection;
+import org.knime.filehandling.core.defaultnodesettings.FileChooserHelper;
+import org.knime.filehandling.core.defaultnodesettings.SettingsModelFileChooser2;
+import org.knime.filehandling.core.port.FileSystemPortObjectSpec;
 
 /**
  * Xls(x) reader node's {@link NodeModel}.
@@ -93,22 +85,21 @@ import org.xml.sax.SAXException;
  * @author Peter Ohl, KNIME AG, Zurich, Switzerland
  * @author Gabor Bakos
  */
-public class XLSReaderNodeModel extends NodeModel {
+class XLSReaderNodeModel extends NodeModel {
 
     /**
      * An implementation of {@link StreamableOperator} for streaming Excel reading.
      */
     private final class XLSReaderStreamableOperator extends StreamableOperator {
-        private DataTable m_dataTable;
-        private CachedExcelTable m_table;
+        private FileHandlingUtil m_util;
 
         /**
          * {@inheritDoc}
          */
         @Override
         public void runIntermediate(final PortInput[] inputs, final ExecutionContext exec) throws Exception {
-            computeDataTable(new ExecutionMonitor());
-            m_dts = m_dataTable.getDataTableSpec();
+            m_util = createFileHandlingUtil();
+            m_dts = m_util.createDataTableSpec();
         }
 
         @Override
@@ -117,50 +108,12 @@ public class XLSReaderNodeModel extends NodeModel {
             //With the current implementation of CachedExcelTable it does not make sense to create an intermediate step
             //as it would require serializing and deserializing the whole sheet
             // Changes here should probably also be applied to #execute
-            if (m_dataTable == null) {
-                computeDataTable(exec);
+            if (m_util == null) {
+                m_util = createFileHandlingUtil();
             }
             final RowOutput output = (RowOutput)outputs[0];
-            long curRow = 0L;
-            final long totalRow = m_table.lastRow();
-            ExecutionContext toTableExec = exec.createSubExecutionContext(.1);
-            for (final DataRow row : m_dataTable) {
-                final long curRowFinal = curRow;
-                toTableExec.setProgress(curRow / (double)totalRow,
-                    () -> String.format("Row %d (\"%s\")", curRowFinal, totalRow));
-                curRow += 1L;
-                toTableExec.checkCanceled();
-                output.push(row);
-            }
+            m_util.pushRowsToOutput(output, exec);
             output.close();
-        }
-
-        /**
-         * @throws InvalidSettingsException
-         * @throws ParserConfigurationException
-         * @throws OpenXML4JException
-         * @throws SAXException
-         * @throws IOException
-         * @throws InvalidFormatException
-         * @throws ExecutionException
-         * @throws InterruptedException
-         */
-        private void computeDataTable(final ExecutionMonitor exec) throws InvalidSettingsException, InvalidFormatException, IOException, SAXException, OpenXML4JException, ParserConfigurationException, InterruptedException, ExecutionException {
-            // Execute is an isolated call so do not keep the workbook in memory
-            // Changes here should probably also be applied to #execute
-            final XLSUserSettings settings = XLSUserSettings.clone(m_settings);
-            final String loc = settings.getFileLocation();
-            String sheetName = settings.getSheetName();
-            sheetName = settings(settings, sheetName, loc);
-            settings.setSheetName(sheetName);
-            try (final InputStream is = FileUtil.openInputStream(loc, 1000 * settings.getTimeoutInSeconds())) {
-                m_table = isXlsx() && !settings.isReevaluateFormulae()
-                    ? CachedExcelTable.fillCacheFromXlsxStreaming(is, sheetName, Locale.ENGLISH,
-                        exec, null).get()
-                    : CachedExcelTable.fillCacheFromDOM(loc, is, sheetName, Locale.ENGLISH,
-                        settings.isReevaluateFormulae(), exec, null).get();
-            }
-            m_dataTable = m_table.createDataTable(settings, null);
         }
     }
 
@@ -168,20 +121,41 @@ public class XLSReaderNodeModel extends NodeModel {
 
     private XLSUserSettings m_settings = new XLSUserSettings();
 
+    private static final String CFG_KEY_FILE_CHOOSER = "FILE_CHOOSER";
+
+    static final SettingsModelFileChooser2 getSettingsModelFileChooser() {
+        return new SettingsModelFileChooser2(CFG_KEY_FILE_CHOOSER, XLSUserSettings.CFG_XLS_LOCATION);
+    }
+
+    private final SettingsModelFileChooser2 m_settingsModelFileChooser = getSettingsModelFileChooser();
+
     private DataTableSpec m_dts = null;
 
     private String m_dtsSettingsID = null;
 
-    /**
-     *
-     */
-    public XLSReaderNodeModel() {
-        super(0, 1);
+    private Optional<FSConnection> m_fs;
+
+    XLSReaderNodeModel(final NodeCreationConfiguration creationConfig) {
+        super(creationConfig.getPortConfig().get().getInputPorts(),
+            creationConfig.getPortConfig().get().getOutputPorts());
+        if (creationConfig.getURLConfig().isPresent()) {
+            m_settings.setFileLocation(creationConfig.getURLConfig().get().getUrl().toString());
+        }
     }
 
-    XLSReaderNodeModel(final NodeCreationContext context) {
-        this();
-        m_settings.setFileLocation(context.getUrl().toString());
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected BufferedDataTable[] execute(final PortObject[] inObjects, final ExecutionContext exec) throws Exception {
+        final FileHandlingUtil fhUtil = createFileHandlingUtil();
+        return new BufferedDataTable[]{fhUtil.createDataTable(exec)};
+    }
+
+    private FileHandlingUtil createFileHandlingUtil() throws InvalidSettingsException, IOException {
+        final ExcelTableReader reader = new ExcelTableReader(m_settings);
+
+        return new FileHandlingUtil(reader, getFileChooserHelper());
     }
 
     /**
@@ -197,23 +171,19 @@ public class XLSReaderNodeModel extends NodeModel {
          * be recreated we check here if the file exists and set a warning
          * message if it doesn't.
          */
-        String fName = m_settings.getFileLocation();
-        if (fName == null || fName.isEmpty()) {
+        final String fName = m_settings.getFileLocation();
+        if ((fName == null) || fName.isEmpty()) {
             return;
         }
 
-        try {
-            new URL(fName);
-            // don't check URLs - don't open a stream.
-            return;
-        } catch (MalformedURLException mue) {
-            // continue on a file
+        final Path path = getFileChooserHelper().getPathFromSettings();
+        if (!Files.exists(path)) {
+            setWarningMessage("The file/directory '" + path.toString() + "' can't be accessed anymore!");
         }
-        File location = new File(fName);
+    }
 
-        if (!location.canRead() || location.isDirectory()) {
-            setWarningMessage("The file '" + location.getAbsolutePath() + "' can't be accessed anymore!");
-        }
+    private FileChooserHelper getFileChooserHelper() throws IOException {
+        return new FileChooserHelper(m_fs, m_settingsModelFileChooser, m_settings.getTimeoutInSeconds() * 1000);
     }
 
     /**
@@ -222,15 +192,17 @@ public class XLSReaderNodeModel extends NodeModel {
     @Override
     protected void loadValidatedSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
         m_settings = XLSUserSettings.load(settings);
+        m_settingsModelFileChooser.loadSettingsFrom(settings);
+
         try {
-            String settingsID = settings.getString(XLSReaderNodeDialog.XLS_CFG_ID_FOR_TABLESPEC);
+            final String settingsID = settings.getString(XLSReaderNodeDialog.XLS_CFG_ID_FOR_TABLESPEC);
             if (!m_settings.getID().equals(settingsID)) {
                 throw new InvalidSettingsException("IDs don't match");
             }
-            NodeSettingsRO dtsConfig = settings.getNodeSettings(XLSReaderNodeDialog.XLS_CFG_TABLESPEC);
+            final NodeSettingsRO dtsConfig = settings.getNodeSettings(XLSReaderNodeDialog.XLS_CFG_TABLESPEC);
             m_dts = DataTableSpec.load(dtsConfig);
             m_dtsSettingsID = settingsID;
-        } catch (InvalidSettingsException ise) {
+        } catch (final InvalidSettingsException ise) {
             LOGGER.debug("No DTS saved in settings");
             // it's optional - if it's not saved we create it later
             m_dts = null;
@@ -262,6 +234,7 @@ public class XLSReaderNodeModel extends NodeModel {
     protected void saveSettingsTo(final NodeSettingsWO settings) {
         if (m_settings != null) {
             m_settings.save(settings);
+            m_settingsModelFileChooser.saveSettingsTo(settings);
             if (m_dts != null) {
                 settings.addString(XLSReaderNodeDialog.XLS_CFG_ID_FOR_TABLESPEC, m_dtsSettingsID);
                 m_dts.save(settings.addConfig(XLSReaderNodeDialog.XLS_CFG_TABLESPEC));
@@ -275,22 +248,26 @@ public class XLSReaderNodeModel extends NodeModel {
     @Override
     protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
         XLSUserSettings.load(settings);
+        m_settingsModelFileChooser.validateSettings(settings);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected DataTableSpec[] configure(final DataTableSpec[] inSpecs) throws InvalidSettingsException {
+    protected DataTableSpec[] configure(final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
 
-        if (m_settings == null) {
+        m_fs = FileSystemPortObjectSpec.getFileSystemConnection(inSpecs, 0);
+
+        if ((m_settings == null) || (m_settingsModelFileChooser == null)) {
             throw new InvalidSettingsException("Node not configured.");
         }
 
-        String errMsg = m_settings.getStatus(true);
+        final String errMsg = m_settings.getStatus();
         if (errMsg != null) {
             throw new InvalidSettingsException(errMsg);
         }
+
         if (m_settings.isNoPreview()) {
             return null;
         }
@@ -299,101 +276,8 @@ public class XLSReaderNodeModel extends NodeModel {
         if (!m_settings.getID().equals(m_dtsSettingsID)) {
             m_dts = null;
         }
+
         return new DataTableSpec[]{m_dts};
-    }
-
-    /**
-     * @param e
-     * @return
-     */
-    String message(final Exception e) {
-        String execMsg = e.getMessage();
-        if (execMsg == null) {
-            execMsg = e.getClass().getSimpleName();
-        }
-        return execMsg;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec)
-        throws Exception {
-        // As it is possible that we do not have a proper spec, this part does not reuse the logic used in streaming.
-        // Execute is an isolated call so do not keep the workbook in memory
-        XLSUserSettings settings = XLSUserSettings.clone(m_settings);
-        String sheetName = settings.getSheetName();
-        String loc = settings.getFileLocation();
-        sheetName = settings(settings, sheetName, loc);
-        settings.setSheetName(sheetName);
-        try (InputStream is = FileUtil.openInputStream(loc, 1000 * settings.getTimeoutInSeconds())) {
-            ExecutionContext parseExec = exec.createSubExecutionContext(.9);
-            ExecutionContext toTableExec = exec.createSubExecutionContext(.1);
-            CachedExcelTable table = isXlsx() && !settings.isReevaluateFormulae()
-                ? CachedExcelTable.fillCacheFromXlsxStreaming(is, sheetName, Locale.ENGLISH,
-                    parseExec, null).get()
-                : CachedExcelTable.fillCacheFromDOM(loc, is, sheetName, Locale.ENGLISH,
-                    settings.isReevaluateFormulae(), parseExec, null).get();
-
-            DataTable nonBDTable = table.createDataTable(settings, null);
-            BufferedDataContainer container = exec.createDataContainer(nonBDTable.getDataTableSpec());
-            long curRow = 0L;
-            final long totalRow = table.lastRow();
-            for (DataRow r : nonBDTable) {
-                container.addRowToTable(r);
-                toTableExec.checkCanceled();
-                final long curRowFinal = curRow;
-                toTableExec.setProgress(curRow / (double)totalRow,
-                    () -> String.format("Row %d (\"%s\")", curRowFinal, totalRow));
-                curRow += 1L;
-            }
-            container.close();
-
-            return new BufferedDataTable[]{container.getTable()};
-        }
-    }
-
-    /**
-     * @param settings
-     * @param sheetName
-     * @param loc
-     * @return
-     * @throws IOException
-     * @throws SAXException
-     * @throws OpenXML4JException
-     * @throws ParserConfigurationException
-     * @throws InvalidFormatException
-     */
-    private String settings(final XLSUserSettings settings, String sheetName, final String loc)
-        throws IOException, SAXException, OpenXML4JException, ParserConfigurationException, InvalidFormatException,
-        InvalidSettingsException {
-        if (sheetName == null || XLSReaderNodeDialog.FIRST_SHEET.equals(sheetName)) {
-            if (isXlsx()) {
-                try (InputStream stream = POIUtils.openInputStream(loc, settings.getTimeoutInSeconds());
-                        final OPCPackage pack = OPCPackage.open(stream)) {
-                    sheetName =
-                        POIUtils.getFirstSheetNameWithData(new XSSFReader(pack), new ReadOnlySharedStringsTable(pack, false));
-                }
-            } else {
-                sheetName =
-                    POIUtils.getFirstSheetNameWithData(POIUtils.getWorkbook(loc, settings.getTimeoutInSeconds()));
-            }
-            settings.setSheetName(sheetName);
-        }
-        return sheetName;
-    }
-
-    final boolean isXlsx() {
-        return isXlsx(m_settings.getFileLocation());
-    }
-
-    /**
-     * @param fileName The file name/url
-     * @return Whether its name ends with {@code .xsls} (case insensitive).
-     */
-    static final boolean isXlsx(final String fileName) {
-        return fileName.toLowerCase().endsWith(".xlsx");
     }
 
     /**
@@ -417,43 +301,24 @@ public class XLSReaderNodeModel extends NodeModel {
      * {@inheritDoc}
      */
     @Override
-    public PortObjectSpec[] computeFinalOutputSpecs(final StreamableOperatorInternals internals, final PortObjectSpec[] inSpecs)
-        throws InvalidSettingsException {
-        PortObjectSpec[] normalSpecs = super.computeFinalOutputSpecs(internals, inSpecs);
-        if (normalSpecs == null || normalSpecs[0] == null) {
+    public PortObjectSpec[] computeFinalOutputSpecs(final StreamableOperatorInternals internals,
+        final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
+        final PortObjectSpec[] normalSpecs = super.computeFinalOutputSpecs(internals, inSpecs);
+        if ((normalSpecs == null) || (normalSpecs[0] == null)) {
             if (m_dts != null) {
-                return new PortObjectSpec[] {m_dts};
+                return new PortObjectSpec[]{m_dts};
             }
-            //Probably this should not happen as during iteration m_dts is computed and it is not ditributable,
+            //Probably this should not happen as during iteration m_dts is computed and it is not distributable,
             //though tester acts as if it were distributable.
-            final XLSUserSettings settings = XLSUserSettings.clone(m_settings);
-            final String loc = settings.getFileLocation();
-            String sheetName = settings.getSheetName();
             try {
-                sheetName = settings(settings, sheetName, loc);
-            } catch (IOException | SAXException | OpenXML4JException | ParserConfigurationException ex) {
-                throw new RuntimeException(ex);
-            }
-            settings.setSheetName(sheetName);
-            CachedExcelTable table;
-            try (final InputStream is = FileUtil.openInputStream(loc, 1000 * settings.getTimeoutInSeconds())) {
-                table = isXlsx() && !settings.isReevaluateFormulae()
-                    ? CachedExcelTable.fillCacheFromXlsxStreaming(is, sheetName, Locale.ENGLISH,
-                        new ExecutionMonitor(), null).get()
-                    : CachedExcelTable.fillCacheFromDOM(loc, is, sheetName, Locale.ENGLISH,
-                        settings.isReevaluateFormulae(), new ExecutionMonitor(), null).get();
-            } catch (IOException | InterruptedException | ExecutionException e) {
+                return new PortObjectSpec[]{m_dts = createFileHandlingUtil().createDataTableSpec()};
+            } catch (final Exception e) {
                 throw new RuntimeException(e);
             }
-            final DataTable dataTable = table.createDataTable(settings, null);
-            return new PortObjectSpec[] { m_dts = dataTable.getDataTableSpec() };
         }
         return normalSpecs;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public OutputPortRole[] getOutputPortRoles() {
         return new OutputPortRole[]{OutputPortRole.NONDISTRIBUTED};

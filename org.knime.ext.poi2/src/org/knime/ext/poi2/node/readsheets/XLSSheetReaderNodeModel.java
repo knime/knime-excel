@@ -47,7 +47,9 @@
  */
 package org.knime.ext.poi2.node.readsheets;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -72,7 +74,7 @@ import org.knime.core.node.NodeCreationContext;
 import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
-import org.knime.ext.poi2.node.read3.XLSUserSettings;
+import org.knime.core.util.FileUtil;
 
 /**
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
@@ -241,7 +243,7 @@ public class XLSSheetReaderNodeModel extends NodeModel {
         Workbook workbook = null;
         InputStream in = null;
         try {
-            in = XLSUserSettings.getBufferedInputStream(path, DEFAULT_TIMEOUT_IN_SEC);
+            in = getBufferedInputStream(path, DEFAULT_TIMEOUT_IN_SEC);
             workbook = WorkbookFactory.create(in);
         } finally {
             if (in != null) {
@@ -253,6 +255,29 @@ public class XLSSheetReaderNodeModel extends NodeModel {
             }
         }
         return workbook;
+    }
+
+    /**
+     * Opens and returns a new buffered input stream on the passed location. The location could either be a filename or
+     * a URL.
+     *
+     * @param location a filename or a URL
+     * @param timeOutInSeconds the timeout in seconds
+     * @return a new opened buffered input stream.
+     * @throws IOException
+     */
+    private static BufferedInputStream getBufferedInputStream(final String location, final int timeOutInSeconds)
+        throws IOException {
+        InputStream in;
+        try {
+            URL url = new URL(location);
+            in = FileUtil.openStreamWithTimeout(url, 1000 * timeOutInSeconds);
+        } catch (MalformedURLException mue) {
+            // then try a file
+            in = new FileInputStream(location);
+        }
+        return new BufferedInputStream(in);
+
     }
 
 }

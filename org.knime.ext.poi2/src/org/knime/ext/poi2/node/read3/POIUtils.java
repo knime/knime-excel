@@ -50,6 +50,8 @@ package org.knime.ext.poi2.node.read3;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -77,7 +79,6 @@ import org.apache.poi.xssf.model.StylesTable;
 import org.apache.poi.xssf.usermodel.XSSFComment;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.util.CheckUtils;
-import org.knime.core.util.FileUtil;
 import org.knime.core.util.Pair;
 import org.knime.ext.poi2.node.read3.KNIMEXSSFSheetXMLHandler.DataType;
 import org.knime.ext.poi2.node.read3.KNIMEXSSFSheetXMLHandler.KNIMESheetContentsHandler;
@@ -155,7 +156,7 @@ class POIUtils {
      * Combines column types. Combines only identical values, no further processing, keeps formulae.
      */
     static class ColumnTypeCombinator {
-        private SortedMap<Integer, Pair<ActualDataType, Integer>> m_currentTypes = new TreeMap<>();
+        private final SortedMap<Integer, Pair<ActualDataType, Integer>> m_currentTypes = new TreeMap<>();
 
         ColumnTypeCombinator(final int firstRow, final Pair<ActualDataType, Integer> firstPair) {
             m_currentTypes.put(firstRow, firstPair);
@@ -169,32 +170,31 @@ class POIUtils {
             return last == next ? Optional.of(last) : Optional.empty();
         }
 
-
-        void  combine(
-            final int rowIndex0,
-            final ActualDataType type) {
+        void combine(final int rowIndex0, final ActualDataType type) {
             CheckUtils.checkArgument(rowIndex0 >= 0, "Row index should be non-negative: " + rowIndex0);
-            ActualDataType canonical = canonical(type);
-            CheckUtils.checkState(m_currentTypes != null && !m_currentTypes.isEmpty(), "Current type is empty");
+            final ActualDataType canonical = canonical(type);
+            CheckUtils.checkState((m_currentTypes != null) && !m_currentTypes.isEmpty(), "Current type is empty");
 
-            Integer lastKey = m_currentTypes.lastKey();
+            final Integer lastKey = m_currentTypes.lastKey();
             CheckUtils.checkState(lastKey < rowIndex0,
                 "Cannot process a map with rows higher than the current " + lastKey + " >= " + rowIndex0);
-            Pair<ActualDataType, Integer> lastValue = m_currentTypes.get(lastKey);
+            final Pair<ActualDataType, Integer> lastValue = m_currentTypes.get(lastKey);
             CheckUtils.checkState(lastValue.getSecond() < rowIndex0,
-                "Cannot process a map with rows right interval higher than the current " + lastValue.getSecond() +
-                " >= " + rowIndex0);
-            if (lastValue.getSecond() + 1 == rowIndex0) {//No missing rows are in-between
-                Optional<ActualDataType> compatibility = compatibility(lastValue.getFirst(), canonical);
+                "Cannot process a map with rows right interval higher than the current " + lastValue.getSecond()
+                    + " >= " + rowIndex0);
+            if ((lastValue.getSecond() + 1) == rowIndex0) {//No missing rows are in-between
+                final Optional<ActualDataType> compatibility = compatibility(lastValue.getFirst(), canonical);
                 if (compatibility.isPresent()) {
                     m_currentTypes.put(lastKey, Pair.create(compatibility.get(), rowIndex0));
                 } else {
                     m_currentTypes.put(rowIndex0, Pair.create(canonical, rowIndex0));
                 }
             } else {//Missings are between
-                Optional<ActualDataType> compatibility = compatibility(lastValue.getFirst(), ActualDataType.MISSING);
+                final Optional<ActualDataType> compatibility =
+                    compatibility(lastValue.getFirst(), ActualDataType.MISSING);
                 if (compatibility.isPresent()) {
-                    Optional<ActualDataType> missingCompatibility = compatibility(ActualDataType.MISSING, canonical);
+                    final Optional<ActualDataType> missingCompatibility =
+                        compatibility(ActualDataType.MISSING, canonical);
                     if (missingCompatibility.isPresent()) {
                         m_currentTypes.put(lastKey, Pair.create(compatibility.get(), rowIndex0));
                     } else {
@@ -230,7 +230,7 @@ class POIUtils {
      */
     public static ArrayList<String> getSheetNames(final Workbook wb) {
 
-        ArrayList<String> names = new ArrayList<String>();
+        final ArrayList<String> names = new ArrayList<String>();
         for (int sIdx = 0; sIdx < wb.getNumberOfSheets(); sIdx++) {
             names.add(wb.getSheetName(sIdx));
         }
@@ -246,15 +246,15 @@ class POIUtils {
     public static String getFirstSheetNameWithData(final Workbook wBook) {
         String result = null;
         for (int sIdx = 0; sIdx < wBook.getNumberOfSheets(); sIdx++) {
-            String sheetName = wBook.getSheetName(sIdx);
+            final String sheetName = wBook.getSheetName(sIdx);
             if (sIdx == 0) {
                 // return the first sheet, in case there is no data in the book
                 result = sheetName;
             }
-            Sheet sheet = wBook.getSheet(sheetName);
-            int maxRowIdx = POIUtils.getLastRowIdx(sheet);
-            int minRowIdx = sheet.getFirstRowNum();
-            if (minRowIdx >= 0 && maxRowIdx >= 0 && minRowIdx <= maxRowIdx) {
+            final Sheet sheet = wBook.getSheet(sheetName);
+            final int maxRowIdx = POIUtils.getLastRowIdx(sheet);
+            final int minRowIdx = sheet.getFirstRowNum();
+            if ((minRowIdx >= 0) && (maxRowIdx >= 0) && (minRowIdx <= maxRowIdx)) {
                 return sheetName;
             }
         }
@@ -305,11 +305,11 @@ class POIUtils {
     public static String getFirstSheetNameWithData(final XSSFReader wBook, final ReadOnlySharedStringsTable strings)
         throws IOException, SAXException, OpenXML4JException, ParserConfigurationException {
         String result = null;
-        StylesTable styles = wBook.getStylesTable();
-        SheetIterator iter = (SheetIterator)wBook.getSheetsData();
+        final StylesTable styles = wBook.getStylesTable();
+        final SheetIterator iter = (SheetIterator)wBook.getSheetsData();
         while (iter.hasNext()) {
             try (final InputStream stream = iter.next()) {
-                String sheetName = iter.getSheetName();
+                final String sheetName = iter.getSheetName();
                 if (result == null) {
                     result = sheetName;
                 }
@@ -332,30 +332,15 @@ class POIUtils {
      * Loads a workbook from the file system.
      *
      * @param path Path to the workbook
-     * @param timeOutInSeconds The timeout in seconds
      * @return The workbook or null if it could not be loaded
      * @throws IOException Problem reading.
      * @throws InvalidFormatException Problem reading.
      * @throws RuntimeException the underlying POI library also throws other kind of exceptions
      */
-    public static Workbook getWorkbook(final String path, final int timeOutInSeconds)
-        throws IOException, InvalidFormatException {
-        Workbook workbook = null;
-        InputStream in = null;
-        try {
-            in = XLSUserSettings.getBufferedInputStream(path, timeOutInSeconds);
-            // This should be the only place in the code where a workbook gets loaded
-            workbook = WorkbookFactory.create(in);
-        } finally {
-            if (in != null) {
-                try {
-                    in.close();
-                } catch (IOException e2) {
-                    // ignore
-                }
-            }
+    public static Workbook getWorkbook(final Path path) throws IOException, InvalidFormatException {
+        try (final InputStream is = Files.newInputStream(path)) {
+            return WorkbookFactory.create(is);
         }
-        return workbook;
     }
 
     /**
@@ -365,7 +350,7 @@ class POIUtils {
      * @return the number of rows in the sheet minus one.
      */
     public static int getLastRowIdx(final Sheet sheet) {
-        int rowMaxIdx = sheet.getLastRowNum();
+        final int rowMaxIdx = sheet.getLastRowNum();
         if (rowMaxIdx == 0) {
             if (sheet.getPhysicalNumberOfRows() == 0) {
                 return -1;
@@ -392,7 +377,7 @@ class POIUtils {
 
         int result = 0;
         for (int d = 0; d < columnLabel.length(); d++) {
-            int dig = toNumber(columnLabel.charAt(columnLabel.length() - d - 1));
+            final int dig = toNumber(columnLabel.charAt(columnLabel.length() - d - 1));
             result += dig * (int)Math.round(Math.pow(26, d));
         }
 
@@ -408,16 +393,16 @@ class POIUtils {
      */
     private static void processSheet(final StylesTable styles, final ReadOnlySharedStringsTable strings,
         final SheetContentsHandler sheetHandler, final InputStream sheetInputStream)
-            throws IOException, ParserConfigurationException, SAXException {
-        DataFormatter formatter = new KNIMEDataFormatter();
-        InputSource sheetSource = new InputSource(sheetInputStream);
+        throws IOException, ParserConfigurationException, SAXException {
+        final DataFormatter formatter = new KNIMEDataFormatter();
+        final InputSource sheetSource = new InputSource(sheetInputStream);
         try {
-            XMLReader sheetParser = SAXHelper.newXMLReader();
-            org.xml.sax.ContentHandler handler =
+            final XMLReader sheetParser = SAXHelper.newXMLReader();
+            final org.xml.sax.ContentHandler handler =
                 new XSSFSheetXMLHandler(styles, null, strings, sheetHandler, formatter, false);
             sheetParser.setContentHandler(handler);
             sheetParser.parse(sheetSource);
-        } catch (ParserConfigurationException e) {
+        } catch (final ParserConfigurationException e) {
             throw new RuntimeException("SAX parser appears to be broken - " + e.getMessage());
         }
     }
@@ -429,9 +414,9 @@ class POIUtils {
     public static boolean isInteger(final String str) {
         try {
             //Integer.parseInt(str);
-            double d = Double.parseDouble(str);
-            return Double.isFinite(d) && d == (int)d;
-        } catch (NumberFormatException e) {
+            final double d = Double.parseDouble(str);
+            return Double.isFinite(d) && (d == (int)d);
+        } catch (final NumberFormatException e) {
             return false;
         }
     }
@@ -442,7 +427,7 @@ class POIUtils {
      * @throws InvalidSettingsException In case it is not a column reference.
      */
     static int oneBasedColumnNumberChecked(final String input) throws InvalidSettingsException {
-        if (input == null || input.isEmpty()) {
+        if ((input == null) || input.isEmpty()) {
             throw new InvalidSettingsException("please enter a column number.");
         }
         return oneBasedColumnNumber(input);
@@ -454,18 +439,18 @@ class POIUtils {
      * @throws InvalidSettingsException Not a column reference.
      */
     static int oneBasedColumnNumber(final String input) throws InvalidSettingsException {
-        if (input == null || input.isEmpty()) {
+        if ((input == null) || input.isEmpty()) {
             return 0;
         }
         int i;
         try {
             i = Integer.parseInt(input);
-        } catch (NumberFormatException nfe) {
+        } catch (final NumberFormatException nfe) {
             try {
                 i = getColumnIndex(input.toUpperCase());
                 // we want a number here (not an index)...
                 i++;
-            } catch (IllegalArgumentException iae) {
+            } catch (final IllegalArgumentException iae) {
                 throw new InvalidSettingsException(
                     "not a valid column number (enter a number or " + "'A', 'B', ..., 'Z', 'AA', etc.)");
             }
@@ -478,6 +463,7 @@ class POIUtils {
 
     /**
      * Converts a {@code 1}-based column reference to {@link String}.
+     *
      * @param input A positive int.
      * @return The column name (starting from {@code A}).
      * @throws InvalidSettingsException Wrong number.
@@ -503,23 +489,8 @@ class POIUtils {
         if (input <= 26 /*Z*/) {
             return String.valueOf((char)('A' + (input - 1)));
         }
-        int rem = (input - 1) % 26, div = (input - 1) / 26;
+        final int rem = (input - 1) % 26, div = (input - 1) / 26;
         return oneBasedColumnNumber(div) + String.valueOf((char)('A' + rem));
-    }
-
-    /**
-     * Opens and returns a new buffered input stream on the passed location. The
-     * location could either be a filename or a URL.
-     *
-     * @param location a filename or a URL
-     * @param timeOutInSeconds ...
-     * @return a new opened buffered input stream.
-     * @throws IOException
-     * @throws InvalidSettingsException
-     */
-    static InputStream openInputStream(
-        final String location, final int timeOutInSeconds) throws IOException, InvalidSettingsException {
-        return FileUtil.openInputStream(location, 1000 * timeOutInSeconds);
     }
 
     /**
@@ -534,21 +505,21 @@ class POIUtils {
         if (columnMap.isEmpty()) {
             return true;
         }
-        int firstRow = settings.getFirstRow0(), lastRow = settings.getLastRow0();
+        final int firstRow = settings.getFirstRow0(), lastRow = settings.getLastRow0();
 
-        for (Entry<Integer, Pair<ActualDataType, Integer>> entry : columnMap.entrySet()) {
-            if (firstRow >= 0 && entry.getValue().getSecond() < firstRow) {
+        for (final Entry<Integer, Pair<ActualDataType, Integer>> entry : columnMap.entrySet()) {
+            if ((firstRow >= 0) && (entry.getValue().getSecond() < firstRow)) {
                 continue;
             }
             //Skip column header
-            if (settings.getHasColHeaders() && entry.getKey() == settings.getColHdrRow0()
-                && entry.getValue().getSecond() == settings.getColHdrRow0()) {
+            if (settings.getHasColHeaders() && (entry.getKey() == settings.getColHdrRow0())
+                && (entry.getValue().getSecond() == settings.getColHdrRow0())) {
                 continue;
             }
-            if (lastRow >= 0 && entry.getKey() > lastRow) {
+            if ((lastRow >= 0) && (entry.getKey() > lastRow)) {
                 break;
             }
-            ActualDataType dataType = entry.getValue().getFirst();
+            final ActualDataType dataType = entry.getValue().getFirst();
             if (ActualDataType.isMissing(dataType)
                 || (!settings.getUseErrorPattern() && ActualDataType.isError(dataType))) {
                 continue;
@@ -560,6 +531,7 @@ class POIUtils {
 
     /**
      * Provides names for {@code null} {@code colHdrs}.
+     *
      * @param settings The user settings.
      * @param skippedCols The skipped columns.
      * @param colHdrs The known column headers.
@@ -567,7 +539,7 @@ class POIUtils {
     static void fillEmptyColHeaders(final XLSUserSettings settings, final Set<Integer> skippedCols,
         final String[] colHdrs) {
         //TODO should we use something like ValueUniquifier here?
-        HashSet<String> names = new HashSet<String>();
+        final HashSet<String> names = new HashSet<String>();
         for (int i = 0; i < colHdrs.length; i++) {
             if (colHdrs[i] != null) {
                 names.add(colHdrs[i]);

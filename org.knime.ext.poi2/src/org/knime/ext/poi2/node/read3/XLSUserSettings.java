@@ -47,20 +47,11 @@
  */
 package org.knime.ext.poi2.node.read3;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
-
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettings;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.util.CheckUtils;
-import org.knime.core.util.FileUtil;
 
 /**
  * Configuration settings for POI reading of xls(x) files.
@@ -68,7 +59,7 @@ import org.knime.core.util.FileUtil;
  * @author Peter Ohl, KNIME AG, Zurich, Switzerland
  * @author Gabor Bakos
  */
-public class XLSUserSettings {
+class XLSUserSettings {
 
     /** Key under which the file url is stored. */
     static final String CFG_XLS_LOCATION = "XLS_LOCATION";
@@ -145,7 +136,7 @@ public class XLSUserSettings {
     /**
      * Constructs a new settings object. All values are uninitialized.
      */
-    public XLSUserSettings() {
+    XLSUserSettings() {
         m_fileLocation = null;
 
         m_sheetName = null;
@@ -185,7 +176,7 @@ public class XLSUserSettings {
      *
      * @param settings object to write values into
      */
-    public void save(final NodeSettingsWO settings) {
+    final void save(final NodeSettingsWO settings) {
         CheckUtils.checkState(
             (m_hasRowHeaders && !m_indexContinuous && !m_indexSkipJumps)
                 || (!m_hasRowHeaders && m_indexContinuous && !m_indexSkipJumps)
@@ -227,7 +218,7 @@ public class XLSUserSettings {
     /**
      * @return Simplified id of the settings.
      */
-    public String getID() {
+    final String getID() {
         StringBuilder id = new StringBuilder("SettingsID:");
         id.append(getID(m_fileLocation));
         id.append(getID(m_sheetName));
@@ -259,7 +250,7 @@ public class XLSUserSettings {
      * @param value A value.
      * @return Id of a {@link String} value.
      */
-    protected String getID(final String value) {
+    private static String getID(final String value) {
         if (value == null) {
             return "-";
         }
@@ -272,14 +263,14 @@ public class XLSUserSettings {
      * @param value A boolean value.
      * @return Id of the {@code value}.
      */
-    protected String getID(final boolean value) {
+    private static String getID(final boolean value) {
         return value ? "1" : "0";
     }
     /**
      * @param value An int value.
      * @return Id of the {@code value}.
      */
-    protected String getID(final int value) {
+    private static String getID(final int value) {
         return "" + value;
     }
 
@@ -290,7 +281,7 @@ public class XLSUserSettings {
      * @return a new settings object
      * @throws InvalidSettingsException if the stored settings are incorrect.
      */
-    public static XLSUserSettings load(final NodeSettingsRO settings)
+    static final XLSUserSettings load(final NodeSettingsRO settings)
             throws InvalidSettingsException {
         XLSUserSettings result = new XLSUserSettings();
 
@@ -349,7 +340,7 @@ public class XLSUserSettings {
      * @return a copy of the argument
      * @throws InvalidSettingsException normally not
      */
-    public static XLSUserSettings clone(final XLSUserSettings orig)
+    static final XLSUserSettings clone(final XLSUserSettings orig)
             throws InvalidSettingsException {
         NodeSettings clone = new NodeSettings("clone");
         orig.save(clone);
@@ -360,43 +351,14 @@ public class XLSUserSettings {
      * Checks the settings and returns an error message - or null if everything
      * is alright.
      *
-     * @param checkFileExistence if true existence and readability of the
-     *            specified file location is checked (not the content/format
-     *            though).
      * @return an error message or null if settings are okay
      */
-    public String getStatus(final boolean checkFileExistence) {
+    final String getStatus() {
         if (m_fileLocation == null || m_fileLocation.isEmpty()) {
             return "No file location specified";
         }
         if (m_timeoutInSeconds < 0) {
             return "Timeout should be non-negative! (0 means infinite)";
-        }
-        if (checkFileExistence) {
-            try {
-                URL url = new URL(m_fileLocation);
-                try {
-                    FileUtil.openStreamWithTimeout(url, 1000 * m_timeoutInSeconds).close();
-                } catch (IOException ioe) {
-                    return "Can't open specified location (" + m_fileLocation
-                            + ")";
-                }
-            } catch (MalformedURLException mue) {
-                // then try a file
-                File f = new File(m_fileLocation);
-                if (!f.exists()) {
-                    return "Specified file doesn't exist ("
-                            + f.getAbsolutePath() + ")";
-                }
-                if (!f.canRead()) {
-                    return "Specified file is not readable ("
-                            + f.getAbsolutePath() + ")";
-                }
-                if (!f.isFile()) {
-                    return "Specified location is not a file ("
-                            + f.getAbsolutePath() + ")";
-                }
-            }
         }
 
         if (!m_readAllData) {
@@ -437,319 +399,279 @@ public class XLSUserSettings {
     /**
      * @param fileLocation the fileLocation to set
      */
-    public void setFileLocation(final String fileLocation) {
+    final void setFileLocation(final String fileLocation) {
         m_fileLocation = fileLocation;
     }
 
     /**
      * @return the fileLocation
      */
-    public String getFileLocation() {
+    final String getFileLocation() {
         return m_fileLocation;
-    }
-
-    /**
-     * Opens and returns a new buffered input stream on the xls location.
-     *
-     * @return a new buffered input stream on the xls location.
-     * @throws IOException
-     */
-    public BufferedInputStream getBufferedInputStream() throws IOException {
-        return getBufferedInputStream(m_fileLocation, m_timeoutInSeconds);
-    }
-
-    /**
-     * Opens and returns a new buffered input stream on the passed location. The location could either be a filename or
-     * a URL.
-     *
-     * @param location a filename or a URL
-     * @param timeOutInSeconds the timeout in seconds
-     * @return a new opened buffered input stream.
-     * @throws IOException
-     */
-    public static BufferedInputStream getBufferedInputStream(final String location, final int timeOutInSeconds)
-        throws IOException {
-        InputStream in;
-        try {
-            URL url = new URL(location);
-            in = FileUtil.openStreamWithTimeout(url, 1000 * timeOutInSeconds);
-        } catch (MalformedURLException mue) {
-            // then try a file
-            in = new FileInputStream(location);
-        }
-        return new BufferedInputStream(in);
-
     }
 
     /**
      * @return the simple name of the file
      */
-    public String getSimpleFilename() {
-        try {
-            URL url = new URL(m_fileLocation);
-            String path = url.getPath();
-            int idx = path.lastIndexOf('/');
-            if (idx < 0 || idx >= path.length() - 2) {
-                return path;
-            } else {
-                return path.substring(idx + 1);
-            }
-        } catch (MalformedURLException mue) {
-            // then try a file
-            File f = new File(m_fileLocation);
-            return f.getName();
+    final String getSimpleFilename() {
+        String path = m_fileLocation;
+        int idx = path.lastIndexOf('/');
+        if (idx < 0 || idx >= path.length() - 2) {
+            return path;
+        } else {
+            return path.substring(idx + 1);
         }
     }
 
     /**
      * @param sheetName name of sheet to read
      */
-    public void setSheetName(final String sheetName) {
+    final void setSheetName(final String sheetName) {
         m_sheetName = sheetName;
     }
 
     /**
      * @return the index of the sheet to read
      */
-    public String getSheetName() {
+    final String getSheetName() {
         return m_sheetName;
     }
 
     /**
      * @return the firstRow ({@code 0}-based)
      */
-    int getFirstRow0() {
+    final int getFirstRow0() {
         return m_firstRow0;
     }
 
     /**
      * @return the firstRow ({@code 1}-based)
      */
-    public int getFirstRow() {
+    final int getFirstRow() {
         return m_firstRow0 + 1;
     }
 
     /**
      * @param firstRow the firstRow ({@code 0}-based) to set
      */
-    void setFirstRow0(final int firstRow) {
+    final void setFirstRow0(final int firstRow) {
         m_firstRow0 = firstRow;
     }
 
     /**
      * @param firstRow the firstRow ({@code 1}-based) to set
      */
-    public void setFirstRow(final int firstRow) {
+    final void setFirstRow(final int firstRow) {
         m_firstRow0 = firstRow - 1;
     }
 
     /**
      * @return the lastRow ({@code 0}-based)
      */
-    int getLastRow0() {
+    final int getLastRow0() {
         return m_lastRow0;
     }
 
     /**
      * @return the lastRow ({@code 1}-based)
      */
-    public int getLastRow() {
+    final int getLastRow() {
         return m_lastRow0 + 1;
     }
 
     /**
      * @param lastRow the lastRow ({@code 0}-based) to set
      */
-    void setLastRow0(final int lastRow) {
+    final void setLastRow0(final int lastRow) {
         m_lastRow0 = lastRow;
     }
 
     /**
      * @param lastRow the lastRow ({@code 1}-based) to set
      */
-    public void setLastRow(final int lastRow) {
+    final void setLastRow(final int lastRow) {
         m_lastRow0 = lastRow - 1;
     }
 
     /**
      * @return the firstColumn ({@code 0}-based)
      */
-    int getFirstColumn0() {
+    final int getFirstColumn0() {
         return m_firstColumn0;
     }
 
     /**
      * @return the firstColumn ({@code 1}-based)
      */
-    public int getFirstColumn() {
+    final int getFirstColumn() {
         return m_firstColumn0 + 1;
     }
 
     /**
      * @param firstColumn the firstColumn ({@code 1}-based) to set
      */
-    public void setFirstColumn(final int firstColumn) {
+    final void setFirstColumn(final int firstColumn) {
         m_firstColumn0 = firstColumn - 1;
     }
 
     /**
      * @param firstColumn the firstColumn to set ({@code 0}-based)
      */
-    void setFirstColumn0(final int firstColumn) {
+    final void setFirstColumn0(final int firstColumn) {
         m_firstColumn0 = firstColumn;
     }
 
     /**
      * @return the lastColumn ({@code 0}-based) (can be {@code -1})
      */
-    int getLastColumn0() {
+    final int getLastColumn0() {
         return m_lastColumn0;
     }
 
     /**
      * @return the lastColumn ({@code 1}-based) (can be {@code 0})
      */
-    public int getLastColumn() {
+    final int getLastColumn() {
         return m_lastColumn0 + 1;
     }
 
     /**
      * @param lastColumn the lastColumn ({@code 0}-based) to set (can be {@code -1})
      */
-    void setLastColumn0(final int lastColumn) {
+    final void setLastColumn0(final int lastColumn) {
         m_lastColumn0 = lastColumn;
     }
 
     /**
      * @param lastColumn the lastColumn ({@code 1}-based) to set (can be {@code 0})
      */
-    public void setLastColumn(final int lastColumn) {
+    final void setLastColumn(final int lastColumn) {
         m_lastColumn0 = lastColumn  - 1;
     }
 
     /**
      * @param skipHiddenColumns the skipHiddenColumns to set
      */
-    public void setSkipHiddenColumns(final boolean skipHiddenColumns) {
+    final void setSkipHiddenColumns(final boolean skipHiddenColumns) {
         m_skipHiddenColumns = skipHiddenColumns;
     }
 
     /**
      * @return the skipHiddenColumns
      */
-    public boolean getSkipHiddenColumns() {
+    final boolean getSkipHiddenColumns() {
         return m_skipHiddenColumns;
     }
 
     /**
      * @return true if empty columns are skipped
      */
-    public boolean getSkipEmptyColumns() {
+    final boolean getSkipEmptyColumns() {
         return m_skipEmptyColumns;
     }
 
     /**
      * @param skipEmptyColumns the skipEmptyColumns to set
      */
-    public void setSkipEmptyColumns(final boolean skipEmptyColumns) {
+    final void setSkipEmptyColumns(final boolean skipEmptyColumns) {
         m_skipEmptyColumns = skipEmptyColumns;
     }
 
     /**
      * @param skipEmptyRows the skipEmptyRows to set
      */
-    public void setSkipEmptyRows(final boolean skipEmptyRows) {
+    final void setSkipEmptyRows(final boolean skipEmptyRows) {
         m_skipEmptyRows = skipEmptyRows;
     }
 
     /**
      * @return the skipEmptyRows
      */
-    public boolean getSkipEmptyRows() {
+    final boolean getSkipEmptyRows() {
         return m_skipEmptyRows;
     }
 
     /**
      * @return the colHdrRow ({@code 0}-based) (row of the column names)
      */
-    int getColHdrRow0() {
+    final int getColHdrRow0() {
         return m_colHdrRow0;
     }
 
     /**
      * @return the colHdrRow ({@code 1}-based) (row of the column names)
      */
-    public int getColHdrRow() {
+    final int getColHdrRow() {
         return m_colHdrRow0 + 1;
     }
 
     /**
      * @param colHdrRow the colHdrRow ({@code 0}-based) (row of the column names) to set
      */
-    void setColHdrRow0(final int colHdrRow) {
+    final void setColHdrRow0(final int colHdrRow) {
         m_colHdrRow0 = colHdrRow;
     }
 
     /**
      * @param colHdrRow the colHdrRow ({@code 1}-based) (row of the column names) to set
      */
-    public void setColHdrRow(final int colHdrRow) {
+    final void setColHdrRow(final int colHdrRow) {
         m_colHdrRow0 = colHdrRow - 1;
     }
 
     /**
      * @return the hasColHeaders (column names are specified)
      */
-    public boolean getHasColHeaders() {
+    final boolean getHasColHeaders() {
         return m_hasColHeaders;
     }
 
     /**
      * @param hasColHeaders the hasColHeaders (column names are specified) to set
      */
-    public void setHasColHeaders(final boolean hasColHeaders) {
+    final void setHasColHeaders(final boolean hasColHeaders) {
         m_hasColHeaders = hasColHeaders;
     }
 
     /**
      * @param hasRowHeaders the hasRowHeaders (row ids are specified) to set
      */
-    public void setHasRowHeaders(final boolean hasRowHeaders) {
+    final void setHasRowHeaders(final boolean hasRowHeaders) {
         m_hasRowHeaders = hasRowHeaders;
     }
 
     /**
      * @return the hasRowHeaders (row ids are specified)
      */
-    public boolean getHasRowHeaders() {
+    final boolean getHasRowHeaders() {
         return m_hasRowHeaders;
     }
 
     /**
      * @param rowHdrCol the rowHdrCol ({@code 0}-based) (column of row ids) to set
      */
-    void setRowHdrCol0(final int rowHdrCol) {
+    final void setRowHdrCol0(final int rowHdrCol) {
         m_rowHdrCol0 = rowHdrCol;
     }
 
     /**
      * @param rowHdrCol the rowHdrCol ({@code 1}-based) (column of row ids) to set
      */
-    public void setRowHdrCol(final int rowHdrCol) {
+    final void setRowHdrCol(final int rowHdrCol) {
         m_rowHdrCol0 = rowHdrCol - 1;
     }
 
     /**
      * @return the rowHdrCol ({@code 0}-based) (column of row ids)
      */
-    int getRowHdrCol0() {
+    final int getRowHdrCol0() {
         return m_rowHdrCol0;
     }
 
     /**
      * @return the rowHdrCol ({@code 1}-based) (column of row ids)
      */
-    public int getRowHdrCol() {
+    final int getRowHdrCol() {
         return m_rowHdrCol0 + 1;
     }
 
@@ -757,7 +679,7 @@ public class XLSUserSettings {
     /**
      * @return the indexContinuous (the row index is continuous starting from {@code Row0} when {@code true})
      */
-    boolean isIndexContinuous() {
+    final boolean isIndexContinuous() {
         return m_indexContinuous;
     }
 
@@ -765,77 +687,77 @@ public class XLSUserSettings {
      * @param indexContinuous the indexContinuous (the row index is continuous starting from {@code Row0} when
      *            {@code true}) to set
      */
-    void setIndexContinuous(final boolean indexContinuous) {
+    final void setIndexContinuous(final boolean indexContinuous) {
         m_indexContinuous = indexContinuous;
     }
 
     /**
      * @return the indexSkipJumps (row keys have jumps for missing rows)
      */
-    boolean isIndexSkipJumps() {
+    final boolean isIndexSkipJumps() {
         return m_indexSkipJumps;
     }
 
     /**
      * @param indexSkipJumps the indexSkipJumps (row keys have jumps for missing rows) to set
      */
-    void setIndexSkipJumps(final boolean indexSkipJumps) {
+    final void setIndexSkipJumps(final boolean indexSkipJumps) {
         m_indexSkipJumps = indexSkipJumps;
     }
 
     /**
      * @return the keepXLColNames
      */
-    public boolean getKeepXLColNames() {
+    final boolean getKeepXLColNames() {
         return m_keepXLColNames;
     }
 
     /**
      * @param keepXLColNames the keepXLColNames to set
      */
-    public void setKeepXLNames(final boolean keepXLColNames) {
+    final void setKeepXLNames(final boolean keepXLColNames) {
         m_keepXLColNames = keepXLColNames;
     }
 
     /**
      * @return the missValuePattern
      */
-    public String getMissValuePattern() {
+    final String getMissValuePattern() {
         return m_missValuePattern;
     }
 
     /**
      * @param missValuePattern the missValuePattern to set
      */
-    public void setMissValuePattern(final String missValuePattern) {
+    final void setMissValuePattern(final String missValuePattern) {
         m_missValuePattern = missValuePattern;
     }
 
     /**
      * @return the readAllData
      */
-    public boolean getReadAllData() {
+    final boolean getReadAllData() {
         return m_readAllData;
     }
 
     /**
      * @param readAllData the readAllData to set
      */
-    public void setReadAllData(final boolean readAllData) {
+    final void setReadAllData(final boolean readAllData) {
         m_readAllData = readAllData;
     }
 
     /**
      * @return the uniquifyRowIDs
      */
-    public boolean getUniquifyRowIDs() {
+    final boolean getUniquifyRowIDs() {
         return m_uniquifyRowIDs;
     }
 
     /**
      * @param uniquifyRowIDs the uniquifyRowIDs to set
      */
-    public void setUniquifyRowIDs(final boolean uniquifyRowIDs) {
+    final void setUniquifyRowIDs(final boolean uniquifyRowIDs) {
         m_uniquifyRowIDs = uniquifyRowIDs;
     }
 
@@ -845,7 +767,7 @@ public class XLSUserSettings {
      *            evaluation fails (only if the corresponding boolean flag is
      *            true).
      */
-    public void setErrorPattern(final String errorPattern) {
+    final void setErrorPattern(final String errorPattern) {
         if (errorPattern == null) {
             m_errorPattern = "";
         } else {
@@ -859,7 +781,7 @@ public class XLSUserSettings {
      *         the formula value in case the formula eval fails - and the
      *         corresponding flag is set true.
      */
-    public String getErrorPattern() {
+    final String getErrorPattern() {
         return m_errorPattern;
     }
 
@@ -869,7 +791,7 @@ public class XLSUserSettings {
      *            StringCell) if formula evaluations fail (causing the entire
      *            column to become a string column).
      */
-    public void setUseErrorPattern(final boolean useErrorPattern) {
+    final void setUseErrorPattern(final boolean useErrorPattern) {
         m_useErrorPattern = useErrorPattern;
     }
 
@@ -878,35 +800,35 @@ public class XLSUserSettings {
      * @return true, if a StringCell is inserted when formula evaluation fails.
      *         Or false, if a missing cell is inserted instead.
      */
-    public boolean getUseErrorPattern() {
+    final boolean getUseErrorPattern() {
         return m_useErrorPattern;
     }
 
     /**
      * @return the reevaluate formulae (DOM instead of stream reading) value
      */
-    public boolean isReevaluateFormulae() {
+    final boolean isReevaluateFormulae() {
         return m_reevaluateFormulae;
     }
 
     /**
      * @param reevaluateFormulae the reevaluate formulae (DOM instead of stream reading) to set
      */
-    public void setReevaluateFormulae(final boolean reevaluateFormulae) {
+    final void setReevaluateFormulae(final boolean reevaluateFormulae) {
         m_reevaluateFormulae = reevaluateFormulae;
     }
 
     /**
      * @return the timeoutInSeconds
      */
-    public int getTimeoutInSeconds() {
+    final int getTimeoutInSeconds() {
         return m_timeoutInSeconds;
     }
 
     /**
      * @param timeoutInSeconds the timeoutInSeconds to set
      */
-    public  void setTimeoutInSeconds(final int timeoutInSeconds) {
+    final void setTimeoutInSeconds(final int timeoutInSeconds) {
         m_timeoutInSeconds = timeoutInSeconds;
     }
 
@@ -931,7 +853,7 @@ public class XLSUserSettings {
      * @return Easier to use settings (with first/last columns set to "invalid"/special values for read all data.)
      * @throws InvalidSettingsException
      */
-    static XLSUserSettings normalizeSettings(final XLSUserSettings rawSettings) throws InvalidSettingsException {
+    static final XLSUserSettings normalizeSettings(final XLSUserSettings rawSettings) throws InvalidSettingsException {
         final XLSUserSettings settings = clone(rawSettings);
         if (settings.getReadAllData()) {
             settings.setLastRow0(-1);

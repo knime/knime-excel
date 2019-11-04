@@ -50,8 +50,10 @@ package org.knime.ext.poi2.node.read3;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.nio.file.Path;
 import java.text.DateFormat;
 import java.text.Format;
 import java.text.SimpleDateFormat;
@@ -432,6 +434,7 @@ final class CachedExcelTable {
     /**
      *
      * Constructs {@link CachedExcelTable} using the xlsx streaming representation.
+     *
      * @param stream The workbook's stream (to handle knime:// urls too, we do not create it on the thread of
      *            threadpool).
      * @param sheet The sheet's name.
@@ -441,8 +444,9 @@ final class CachedExcelTable {
      * @param reevaluate Should we reevaluate the formulae?
      * @return The {@link Future} representing the computation of {@link CachedExcelTable}.
      */
-    static Future<CachedExcelTable> fillCacheFromXlsxStreaming(final InputStream stream, final String sheet,
-        final Locale locale, final ExecutionMonitor exec, final AtomicReference<CachedExcelTable> incompleteResult) {
+    static Future<CachedExcelTable> fillCacheFromXlsxStreaming(final Path path, final InputStream stream,
+        final String sheet, final Locale locale, final ExecutionMonitor exec,
+        final AtomicReference<CachedExcelTable> incompleteResult) {
         //Probably could be improved to let visit the intermediate results while generating, but it is complicated.
         return CACHED_THREAD_POOL.submit(ThreadUtils.callableWithContext(() -> {
             LocaleUtil.setUserLocale(locale);
@@ -452,9 +456,11 @@ final class CachedExcelTable {
             try (final OPCPackage opc = OPCPackage.open(stream)) {
                 final XSSFReader xssfReader = new XSSFReader(opc);
                 final ReadOnlySharedStringsTable readOnlySharedStringsTable = new ReadOnlySharedStringsTable(opc, false);
+                boolean sheetAvailable = false;
                 for (final SheetIterator sheetIt = (SheetIterator)xssfReader.getSheetsData(); sheetIt.hasNext();) {
                     InputStream is = sheetIt.next();
                     if (sheet.equals(sheetIt.getSheetName())) { // not closed here; method arg to be closed by caller
+                        sheetAvailable = true;
                         final Supplier<OptionalDouble> progressSupplier;
                         long sheetSize;
                         if (is instanceof ByteArrayInputStream) { // debugger told me this is often a BAIS
@@ -482,7 +488,7 @@ final class CachedExcelTable {
                         sheetParser.setContentHandler(handler);
                         try {
                             sheetParser.parse(sheetSource);
-                            exec.setProgress(1.0, () -> "Reading finished, generating table");
+                            exec.setProgress(1.0, () -> "Reading finished");
                             table.m_incomplete = false;
                         } catch (RuntimeException e) {//Includes StopProcessing
                             throw e;
@@ -493,6 +499,10 @@ final class CachedExcelTable {
                         }
                         break;
                     }
+                }
+                if (!sheetAvailable) {
+                    throw new IOException("Workbook \"" + path.getFileName().toString()
+                        + "\" does not contain a sheet called \"" + sheet + "\"");
                 }
             } catch (StopProcessing e) {
                 if (incompleteResult != null) {
@@ -517,12 +527,12 @@ final class CachedExcelTable {
      * @param incompleteResult The container for the incomplete result, can be {@code null}.
      * @return The {@link Future} representing the computation of {@link CachedExcelTable}.
      */
-    static Future<CachedExcelTable> fillCacheFromDOM(final String path, final InputStream stream,
+    static Future<CachedExcelTable> fillCacheFromDOM(final Path path, final InputStream stream,
         final String sheet, final Locale locale, final boolean reevaluate, final ExecutionMonitor exec,
         final AtomicReference<CachedExcelTable> incompleteResult) {
         return CACHED_THREAD_POOL.submit(ThreadUtils.callableWithContext(() -> {
             LocaleUtil.setUserLocale(locale);
-            OptionalLong fileSize = getFileSize(path);
+            OptionalLong fileSize = getFileSize(path.toString());
             CachedExcelTable table = new CachedExcelTable();
             ExecutionMonitor workbookCreateProgress = exec.createSubProgress(.2);
             ExecutionMonitor workBookParseProgress = exec.createSubProgress(.8);
@@ -533,6 +543,10 @@ final class CachedExcelTable {
                 workbookCreateProgress.setProgress(1.0);
                 exec.setMessage("Parsing workbooks...");
                 final Sheet sheetXls = workbook.getSheet(sheet);
+                if (sheetXls == null) {
+                    throw new IOException("Workbook \"" + path.getFileName().toString()
+                        + "\" does not contain a sheet called \"" + sheet + "\"");
+                }
                 final FormulaEvaluator evaluator =
                     reevaluate ? workbook.getCreationHelper().createFormulaEvaluator() : null;
                 Thread currentThread = Thread.currentThread();
@@ -767,10 +781,12 @@ final class CachedExcelTable {
      * @param rawSettings The settings to be used to generate the table.
      * @param resultExcelToKNIME The mapping of excel {@code 1-based} columns to KNIME output columns {@code 0}-based.
      *            This will be a result.
+     * @param uniquifier the {@link ValueUniquifier} to use accross all files
      * @return The {@link DataTable}.
      * @throws InvalidSettingsException Some settings in {@code rawSettings} is incorrect.
      */
-    DataTable createDataTable(final XLSUserSettings rawSettings, final Map<Integer, Integer> resultExcelToKNIME)
+    DataTable createDataTable(final XLSUserSettings rawSettings, final Map<Integer, Integer> resultExcelToKNIME,
+        final long rowNoToStart, final long totalNoOfPreviousRows, final ValueUniquifier uniquifier)
         throws InvalidSettingsException {
         final XLSUserSettings settings = XLSUserSettings.normalizeSettings(rawSettings);
         final Set<Integer> skippedCols = new HashSet<>();
@@ -801,8 +817,10 @@ final class CachedExcelTable {
 
                     private Entry<Integer, Map<Integer, Content>> m_nextRow;
 
+                    private final long m_noOfRowsPreviousTables = totalNoOfPreviousRows;
+
                     private long m_lastRow = Math.max(0, settings.getFirstRow0()) - 1;
-                    private long m_rowKeyIndex = -1;
+                    private long m_rowKeyIndex = rowNoToStart;
 
                     private boolean m_calledNext = true;
 
@@ -815,8 +833,6 @@ final class CachedExcelTable {
                     }
 
                     private RowKey m_rowKey;
-
-                    private ValueUniquifier m_unifier = new ValueUniquifier();
 
                     @Override
                     public boolean hasNext() {
@@ -831,7 +847,7 @@ final class CachedExcelTable {
                             } while (next != null && (isAllMissing(next) || isSkipRow(next.getKey())));
                             m_hasNext = next != null;
                             if (next != null) {
-                                m_lastRow = next.getKey().longValue();
+                                m_lastRow = next.getKey().longValue() + m_noOfRowsPreviousTables;
                                 m_rowKeyIndex++;
                                 process(next);
                             }
@@ -842,7 +858,7 @@ final class CachedExcelTable {
                             if (m_nextRow == null) {//We are after the last real row
                                 m_lastRow++;
                                 //TODO handle the case when it should be skipped.
-                                m_hasNext = m_lastRow >= settings.getFirstRow0() && m_lastRow <= settings.getLastRow0();
+                                m_hasNext = m_lastRow >= settings.getFirstRow0() && m_lastRow <= settings.getLastRow0() && m_lastRow < numOfRows();
                                 m_rowKeyIndex++;
                                 rowKey(new AbstractMap.SimpleImmutableEntry<>(Integer.valueOf((int)m_lastRow),
                                     Collections.emptyMap()));
@@ -973,9 +989,9 @@ final class CachedExcelTable {
                             String rowKey =
                                 content == null ? "" : content.m_valueAsString == null ? "" : content.m_valueAsString;
                             if (settings.getUniquifyRowIDs()) {
-                                rowKey = m_unifier.uniquifyRowHeader(rowKey);
+                                rowKey = uniquifier.uniquifyRowHeader(rowKey);
                             } else if (rowKey.isEmpty()) {
-                                rowKey = RowKey.createRowKey(m_lastRow).getString();
+                                rowKey = RowKey.createRowKey(m_lastRow + m_noOfRowsPreviousTables).getString();
                             }
                             m_rowKey = new RowKey(rowKey);
                         } else if (settings.getKeepXLColNames()) {
@@ -983,7 +999,7 @@ final class CachedExcelTable {
                         } else if (settings.isIndexContinuous()){
                             m_rowKey = RowKey.createRowKey(m_rowKeyIndex);
                         } else if (settings.isIndexSkipJumps()) {
-                            m_rowKey = RowKey.createRowKey(m_lastRow);
+                            m_rowKey = RowKey.createRowKey(m_lastRow + m_noOfRowsPreviousTables);
                         }
                     }
 
@@ -1095,10 +1111,24 @@ final class CachedExcelTable {
     }
 
     /**
+     * Generates a {@link DataTable} based on {@code rawSettings}.
+     *
+     * @param rawSettings The settings to be used to generate the table.
+     * @param resultExcelToKNIME The mapping of excel {@code 1-based} columns to KNIME output columns {@code 0}-based.
+     *            This will be a result.
+     * @return The {@link DataTable}.
+     * @throws InvalidSettingsException Some settings in {@code rawSettings} is incorrect.
+     */
+    DataTable createDataTable(final XLSUserSettings rawSettings, final Map<Integer, Integer> resultExcelToKNIME)
+        throws InvalidSettingsException {
+        return createDataTable(rawSettings, resultExcelToKNIME, -1, 0, new ValueUniquifier());
+    }
+
+    /**
      * @param spec Original spec with all information present.
      * @return The updated spec with no data and time columns.
      */
-    private DataTableSpec updatedSpec(final DataTableSpec spec) {
+    private static DataTableSpec updatedSpec(final DataTableSpec spec) {
         final DataTableSpecCreator tableSpecCreator = new DataTableSpecCreator(spec);
         for (int i = 0; i < spec.getNumColumns(); i++) {
             if (spec.getColumnSpec(i).getType().isCompatible(LocalDateTimeValue.class)) {
@@ -1250,7 +1280,7 @@ final class CachedExcelTable {
      * @param contents
      * @return
      */
-    private int lastRow(final ArrayList<Content>[] contents) {
+    private static int lastRow(final ArrayList<Content>[] contents) {
         int max = 0;
         for (ArrayList<Content> arrayList : contents) {
             max = Math.max(realSize(arrayList), max);
@@ -1262,7 +1292,7 @@ final class CachedExcelTable {
      * @param arrayList
      * @return The last cell containing value.
      */
-    private int realSize(final ArrayList<Content> arrayList) {
+    private static int realSize(final ArrayList<Content> arrayList) {
         if (arrayList == null) {
             return -1;
         }
@@ -1279,7 +1309,7 @@ final class CachedExcelTable {
      * @param settings The user settings.
      * @return The KNIME {@link DataType} of the column.
      */
-    private DataType dataTypeOf(final SortedMap<Integer, Pair<ActualDataType, Integer>> columnMap,
+    private static DataType dataTypeOf(final SortedMap<Integer, Pair<ActualDataType, Integer>> columnMap,
         final XLSUserSettings settings) {
         //Not all empty
         int firstRow = settings.getFirstRow0(), lastRow = settings.getLastRow0();

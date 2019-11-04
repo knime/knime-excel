@@ -47,22 +47,26 @@
  */
 package org.knime.ext.poi2.node.read3;
 
-import org.knime.core.node.ContextAwareNodeFactory;
-import org.knime.core.node.NodeCreationContext;
+import java.util.Optional;
+
+import org.knime.core.node.BufferedDataTable;
+import org.knime.core.node.ConfigurableNodeFactory;
 import org.knime.core.node.NodeDialogPane;
 import org.knime.core.node.NodeView;
+import org.knime.core.node.context.NodeCreationConfiguration;
+import org.knime.filehandling.core.port.FileSystemPortObject;
 
 /**
  *
  * @author Peter Ohl, KNIME AG, Zurich, Switzerland
  */
-public class XLSReaderNodeFactory extends ContextAwareNodeFactory<XLSReaderNodeModel> {
+public class XLSReaderNodeFactory extends ConfigurableNodeFactory<XLSReaderNodeModel> {
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected NodeDialogPane createNodeDialogPane() {
+    protected NodeDialogPane createNodeDialogPane(final NodeCreationConfiguration creationConfig) {
         return new XLSReaderNodeDialog();
     }
 
@@ -70,16 +74,26 @@ public class XLSReaderNodeFactory extends ContextAwareNodeFactory<XLSReaderNodeM
      * {@inheritDoc}
      */
     @Override
-    public XLSReaderNodeModel createNodeModel() {
-        return new XLSReaderNodeModel();
+    protected XLSReaderNodeModel createNodeModel(final NodeCreationConfiguration creationConfig) {
+        return new XLSReaderNodeModel(creationConfig);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public NodeView<XLSReaderNodeModel> createNodeView(final int viewIndex,
-            final XLSReaderNodeModel nodeModel) {
+    public Optional<PortsConfigurationBuilder> createPortsConfigBuilder() {
+        PortsConfigurationBuilder builder = new PortsConfigurationBuilder();
+        builder.addOptionalInputPortGroup("File System Connection", FileSystemPortObject.TYPE);
+        builder.addFixedOutputPortGroup("Data table", BufferedDataTable.TYPE);
+        return Optional.of(builder);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public NodeView<XLSReaderNodeModel> createNodeView(final int viewIndex, final XLSReaderNodeModel nodeModel) {
         return null;
     }
 
@@ -97,13 +111,5 @@ public class XLSReaderNodeFactory extends ContextAwareNodeFactory<XLSReaderNodeM
     @Override
     protected boolean hasDialog() {
         return true;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public XLSReaderNodeModel createNodeModel(final NodeCreationContext context) {
-        return new XLSReaderNodeModel(context);
     }
 }
