@@ -111,6 +111,7 @@ import javax.swing.plaf.basic.BasicComboBoxRenderer;
 import javax.swing.table.TableColumnModel;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.apache.commons.lang3.tuple.Triple;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.openxml4j.exceptions.OpenXML4JException;
 import org.apache.poi.openxml4j.opc.OPCPackage;
@@ -134,7 +135,6 @@ import org.knime.core.node.tableview.TableView;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.core.node.util.ViewUtils;
 import org.knime.core.util.MutableInteger;
-import org.knime.core.util.Pair;
 import org.knime.core.util.SwingWorkerWithContext;
 import org.knime.ext.poi2.node.read3.POIUtils.StopProcessing;
 import org.knime.filehandling.core.connections.FSConnection;
@@ -249,7 +249,8 @@ class XLSReaderNodeDialog extends NodeDialogPane {
     private final JCheckBox m_noPreviewChecker =
         new JCheckBox("Disable Preview " + " (does not compute the output table structure)");
 
-    private final Map<Pair<String, Boolean>, WeakReference<CachedExcelTable>> m_sheets = new ConcurrentHashMap<>();
+    private final Map<Triple<String, String, Boolean>, WeakReference<CachedExcelTable>> m_sheets =
+        new ConcurrentHashMap<>();
 
     private final JButton m_cancel = new JButton("Quick Scan");
 
@@ -1065,7 +1066,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
      */
     private CachedExcelTable getSheetTable(final Path path, final String sheet, final boolean reevaluateFormulae) {
         CachedExcelTable sheetTable;
-        final Pair<String, Boolean> key = Pair.create(sheet, reevaluateFormulae);
+        final Triple<String, String, Boolean> key = Triple.of(path.toString(), sheet, reevaluateFormulae);
         if (!m_sheets.containsKey(key) || ((sheetTable = m_sheets.get(key).get()) == null)) {
             LOGGER.debug("Loading sheet " + sheet + "  of " + path.getFileName().toString());
 
