@@ -91,6 +91,7 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
@@ -279,7 +280,8 @@ class XLSReaderNodeDialog extends NodeDialogPane {
     XLSReaderNodeDialog() {
 
         m_fileChooserSettings = XLSReaderNodeModel.getSettingsModelFileChooser();
-        m_fileChooser = new DialogComponentFileChooser2(0, m_fileChooserSettings, "XLSReader", this, ".xls|.xlsx");
+        m_fileChooser = new DialogComponentFileChooser2(0, m_fileChooserSettings, "XLSReader", JFileChooser.OPEN_DIALOG,
+            JFileChooser.FILES_AND_DIRECTORIES, this, ".xls|.xlsx");
         final JPanel dlgTab = new JPanel();
         dlgTab.setLayout(new BoxLayout(dlgTab, BoxLayout.Y_AXIS));
 
