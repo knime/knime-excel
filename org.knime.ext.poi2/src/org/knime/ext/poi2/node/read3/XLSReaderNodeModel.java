@@ -124,7 +124,7 @@ class XLSReaderNodeModel extends NodeModel {
     private static final String CFG_KEY_FILE_CHOOSER = "FILE_CHOOSER";
 
     static final SettingsModelFileChooser2 getSettingsModelFileChooser() {
-        return new SettingsModelFileChooser2(CFG_KEY_FILE_CHOOSER, XLSUserSettings.CFG_XLS_LOCATION);
+        return new SettingsModelFileChooser2(CFG_KEY_FILE_CHOOSER, XLSUserSettings.CFG_XLS_LOCATION , "xls" ,"xlsx");
     }
 
     private final SettingsModelFileChooser2 m_settingsModelFileChooser = getSettingsModelFileChooser();
