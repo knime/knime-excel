@@ -122,6 +122,7 @@ import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
 import org.apache.poi.xssf.eventusermodel.XSSFReader;
 import org.knime.core.data.DataTable;
 import org.knime.core.node.ExecutionMonitor;
+import org.knime.core.node.FlowVariableModel;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeDialogPane;
 import org.knime.core.node.NodeLogger;
@@ -135,6 +136,7 @@ import org.knime.core.node.tableview.TableContentViewTableHeader;
 import org.knime.core.node.tableview.TableView;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.core.node.util.ViewUtils;
+import org.knime.core.node.workflow.FlowVariable.Type;
 import org.knime.core.util.MutableInteger;
 import org.knime.core.util.SwingWorkerWithContext;
 import org.knime.ext.poi2.node.read3.POIUtils.StopProcessing;
@@ -280,8 +282,10 @@ class XLSReaderNodeDialog extends NodeDialogPane {
     XLSReaderNodeDialog() {
 
         m_fileChooserSettings = XLSReaderNodeModel.getSettingsModelFileChooser();
+        final FlowVariableModel fvm = createFlowVariableModel(XLSUserSettings.CFG_XLS_LOCATION, Type.STRING);
+
         m_fileChooser = new DialogComponentFileChooser2(0, m_fileChooserSettings, "XLSReader", JFileChooser.OPEN_DIALOG,
-            JFileChooser.FILES_AND_DIRECTORIES, this);
+            JFileChooser.FILES_AND_DIRECTORIES, fvm);
         final JPanel dlgTab = new JPanel();
         dlgTab.setLayout(new BoxLayout(dlgTab, BoxLayout.Y_AXIS));
 
