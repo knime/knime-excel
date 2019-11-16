@@ -54,7 +54,9 @@ import java.util.concurrent.locks.ReentrantLock;
  * Manages one lock per key.
  *
  * @author Patrick Winter
+ * @deprecated
  */
+@Deprecated
 final class KeyLocker {
 
     private static Lock mapLock = new ReentrantLock();

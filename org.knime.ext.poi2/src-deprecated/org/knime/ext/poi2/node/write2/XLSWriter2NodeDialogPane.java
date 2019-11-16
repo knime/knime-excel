@@ -106,7 +106,9 @@ import org.knime.core.util.FileUtil;
 /**
  *
  * @author ohl, University of Konstanz
+ * @deprecated
  */
+@Deprecated
 class XLSWriter2NodeDialogPane extends NodeDialogPane {
 
     @SuppressWarnings("unchecked")

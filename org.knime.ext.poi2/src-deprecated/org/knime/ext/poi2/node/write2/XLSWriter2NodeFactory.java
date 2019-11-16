@@ -40,26 +40,63 @@
  *  propagated with or for interoperation with KNIME.  The owner of a Node
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
- * ---------------------------------------------------------------------
+ * -------------------------------------------------------------------
  *
- * Created on Feb 19, 2013 by Patrick Winter
+ * History
+ *   Mar 15, 2007 (ohl): created
  */
 package org.knime.ext.poi2.node.write2;
 
+import org.knime.core.node.NodeDialogPane;
+import org.knime.core.node.NodeFactory;
+import org.knime.core.node.NodeView;
+
 /**
- * 
- * @author Patrick Winter
+ *
+ * @author ohl, University of Konstanz
+ * @deprecated
  */
-enum XLSNodeType {
+@Deprecated
+public class XLSWriter2NodeFactory extends NodeFactory<XLSWriter2NodeModel> {
 
     /**
-     * Writer node that writes new XLS files.
+     * {@inheritDoc}
      */
-    WRITER,
+    @Override
+    protected NodeDialogPane createNodeDialogPane() {
+        return new XLSWriter2NodeDialogPane(XLSNodeType.WRITER);
+    }
 
     /**
-     * Appender node that appends sheets to existing XLS files.
+     * {@inheritDoc}
      */
-    APPENDER
+    @Override
+    public XLSWriter2NodeModel createNodeModel() {
+        return new XLSWriter2NodeModel(XLSNodeType.WRITER);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public NodeView<XLSWriter2NodeModel> createNodeView(final int viewIndex, final XLSWriter2NodeModel nodeModel) {
+        return null;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected int getNrNodeViews() {
+        return 0;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected boolean hasDialog() {
+        return true;
+    }
 
 }

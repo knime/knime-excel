@@ -74,7 +74,9 @@ import org.knime.core.util.FileUtil;
 /**
  *
  * @author ohl, University of Konstanz
+ * @deprecated
  */
+@Deprecated
 public class XLSWriter2NodeModel extends NodeModel {
 
     private XLSNodeType m_type;

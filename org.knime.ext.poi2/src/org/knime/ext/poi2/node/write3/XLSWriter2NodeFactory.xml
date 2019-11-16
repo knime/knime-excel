@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<knimeNode icon="./xlswriter.png" type="Sink"
+	xmlns="http://knime.org/node/v3.6"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://knime.org/node/v3.6 http://knime.org/node/v3.6.xsd">
+    <name>Excel Writer (XLS)</name>
+    <shortDescription> Saves a data table into a new workbook. 
+    </shortDescription>
+    <fullDescription>
+        <intro>
+            <p> This node writes the input data table into a spreadsheet of a workbook. The files can then be read with
+                other applications such as Microsoft Excel.
+            </p>
+            <p>The node supports two formats chosen by file extension:
+            <ul>
+                <li>
+                    .xls format: This is the file format which was used by default up until Excel 2003. The maximum
+                    number of columns held by a spreadsheet of this format is 256 (all additional columns in the data
+                    table are truncated). If the input data table has more than 65536 rows, it is split into multiple
+                    spreadsheets (all stored in the created workbook).
+                </li>
+                <li>
+                    .xlsx format: The Office Open XML format is the file format used by default from Excel 2007 onwards.
+                </li>
+            </ul>
+            </p>
+	        <p>This nodes does not support writing in the 'xlsm' format.</p>
+            <p>Specifying a remote URL as the destination location will force the node to overwrite this file as it is 
+            not possible to determine whether this location already exists. If no extension is specified, the
+            file will be written in the .xlsx format.</p>
+        </intro>
+        <option name="Output location"> Enter a valid file name or URL. You can also choose a previously selected 
+        	location from the drop-down list, or select a file from the &quot;Browse...&quot; dialog.
+        </option>
+        <option name="Overwrite existing file"> Existing files will be overwritten if this option is enabled. Otherwise 
+        	the node will fail during execution to retain the original file and to avoid unintentional overwrite. 
+        	Remote locations will always be overwritten.
+        </option>
+        <option name="Open file after execution"> 
+            Opens the file after it has been successfully created. The file will be opened in the default application 
+            of the system. This might not be supported by every system and is not available for remote locations.
+        </option>
+        <option name="Sheet name"> Name of the sheet that will be created. If left empty, the name of the input table 
+        	will be used.
+        </option>
+        <option name="Write column header"> If checked, the column names are written out in the first row of the 
+        	spreadsheet.
+        </option>
+        <option name="Write row ID"> If checked, the row IDs are added to the output, in the first column of the 
+        	spreadsheet.
+        </option>
+        <option name="Missing Value Pattern"> Enter a pattern that is used for missing data values. If not specified, 
+        	the corresponding data cell of the spreadsheet stays empty.
+        </option>
+        <option name="Autosize columns"> Fits each column's width to its content.
+        </option>
+        <option name="Portrait/Landscape"> Sets the print format to portrait or landscape.
+        </option>
+        <option name="Paper size"> Sets the paper size in the print setup.
+        </option>
+        <option name="Exclude/Include columns"> Select the columns that will be written in the file. If the columns in 
+        	the input table should change, they will automatically be excluded.
+        </option>
+    </fullDescription>
+    <ports>
+        <inPort index="0" name="Input table"> The data table to write out.
+        </inPort>
+    </ports>
+</knimeNode>

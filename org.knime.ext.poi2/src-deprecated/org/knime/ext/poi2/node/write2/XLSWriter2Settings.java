@@ -57,7 +57,9 @@ import org.knime.core.node.NodeSettingsWO;
  * Holds the settings for the XLSWriter.
  *
  * @author ohl, University of Konstanz
+ * @deprecated
  */
+@Deprecated
 public class XLSWriter2Settings {
 
     private static final String CFGKEY_XCELLOFFSET = "xCellOffset";
