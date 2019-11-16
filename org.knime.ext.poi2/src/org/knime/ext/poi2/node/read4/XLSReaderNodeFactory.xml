@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<knimeNode type="Source" icon="./xlswriter.png" xmlns="http://knime.org/node/v4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://knime.org/node/v4.1 http://knime.org/node/v4.1.xsd">
+	<name>Excel Reader (XLS)</name>
+
+	<shortDescription>
+		Reads one or more Excel files.
+	</shortDescription>
+	
+	<fullDescription>
+		<intro>
+			This node reads a spread sheet and provides it at its output port.<br />
+			It reads only data from one sheet, but it is possible to read multiple files that contain the same sheet name at once.<br/>
+			It can read only numeric, date, boolean and string data but, of course, no diagrams, pictures, or other items.<br />
+			Currently supported KNIME types are String, TimeAndDate, Double, Boolean, and Int.<br />
+			It reads in the data from the sheet and sets a type for all columns that
+			is compatible with the data in that column (in the worst case &quot;String&quot; covers all).<br />
+			The performance of the reader node is limited (due to the underlying library
+			of the Apache POI project). Reading large files takes a very long time and uses a
+			lot of memory (especially files in xlsx format when formula reevaluation is selected).
+		</intro>
+		<option name="File or folder">
+			Select whether you want to read a file or multiple files within a folder.
+		</option>
+		<option name="Read from..."> 
+			Select a file system which stores the data you want to read. There are three default file systems to choose from.<br/>
+			<ul>
+				<li>Local File System: Allows you to select a file/folder from your local system.</li>
+				<li>KNIME: Allows you to choose a specific KNIME file system. Whenever this is selected, a new dropdown menu appears to choose whether to use workflow, mountpoint or node relative browsing and file selection.</li>
+				<li>Custom URL: Uses the standard URL handler providing the ability to read a file from URLs (e.g. file, http or KNIME protocol). Browsing and reading folders are disabled for this option.</li>
+			</ul>
+			It is possible to use other file systems with this node. Therefore, you have to enable the file system connection input port of this node by clicking the <b>+</b> in the bottom left corner of the node's icon and choose <i>Add File System Connection port</i>.<br/>
+			Afterwards, you can simply connect the desired connector node to the reader node. The file system connection will then be shown in the drop down menu.
+		</option>	
+		<option name="File/folder or URL">
+			Enter a valid destination. Depending on the selected file system this is either a path (used by <i>Local File System</i>, <i>KNIME File System</i> and custom file systems added by specific connector nodes) or a URL (used by <i>Custom URL</i> option).<br/>
+			A path usually starts with a slash (/) character and does not contain a protocol.
+			You can also choose a previously selected file/folder from the drop-down list, or select a destination from	the &quot;Browse...&quot; dialog (browsing is not available for custom URLs). Supported are xls and xlsx file
+			formats. (Note: reading large xlsx files is very slow and memory consuming
+			when formula reevaluation is selected.)
+		</option>
+		<option name="Include subfolders">
+			Check if you want to include all matching files from subfolders of the defined location.
+		</option>
+		<option name="File filtering">
+			Press this button for file filtering options.
+		</option>
+		<option name="File filtering: File extension(s)">
+			Enter file extensions used to filter files. This option is activated by default and filters for .xls and .xlsx files.
+			In case you want to read files with other file extensions, deactivate this option or add new file extensions.
+			Additionally, there is an option to choose whether the filter should work in a case sensitive or insensitive manner.
+		</option>
+		<option name="File filtering: File names">
+			Select the desired filter method (regular expression or wildcard) and enter a valid expression to match the filenames of the files to be read.
+			Additionally, there is an option to choose whether the filter should work in a case sensitive or insensitive manner.
+		</option>
+		<option name="File filtering options: Filter hidden files">
+			Select if hidden files should be filtered.
+		</option>
+		<option name="Sheet to Read">
+            After selecting a file, you can select the sheet from the
+            available sheets in the file. If a folder is selected, the sheets of the first file in the folder are displayed.
+        </option>
+		<option name="Connect timeout[s]">Timeout in seconds when reading remote files. <tt>0</tt> means no
+		timeout. In case it takes longer to connect to the host, the node fails to execute. <br/>
+		<i>Note</i>: This option is only active in case that the <i>Custom URL</i> file system is selected. Other file
+		system don't use a timeout or the timeout is set directly in the specific connector node.
+		</option>
+		<option name="Column Names">
+		    If you want to use column names from the spread sheet, check
+		    &quot;Table contains column names&quot; and enter the number
+		    of the row that contains the column names (enter the number
+		    (starting at one), not the index). <br/>
+		    <i>Attention</i>: In case multiple files are read, only the column names of the first file will be used. 
+		    Rows with the specified index in all other files are not read and will be ignored. <br/>
+		    If this option is not checked, default names are generated
+		    (&quot;Col0&quot;, &quot;Col1&quot;, etc.).
+		</option>
+        <option name="Row IDs">
+            The option &quot;Generate RowIDs (index incrementing, starting with 'Row0')&quot;
+            generates row ids starting from <tt>Row0</tt> and produces all integer numbers till the end.
+            The option &quot;Generate RowIDs (index as per sheet content, skipped rows will increment index)&quot;
+            generates row ids based on sheet row indices starting from <tt>Row0</tt>,
+            but numbers might get skipped when the row is skipped.<br/>
+            If you want to use row IDs from the spread sheet, check
+            &quot;Table contains row IDs&quot; and provide the column that
+            contains the row ids. Enter the label of the column (&quot;A&quot;,
+            &quot;B&quot;, etc.) or the number (starting at one) of the column.<br />
+            The rowIDs in the sheet must be unique, otherwise the execution fails.
+            If you check &quot;Make row IDs unique&quot;, the node will append
+            a suffix to duplicates, ensuring row ID uniqueness.
+            For very large data sets this could cause memory problems.
+        </option>
+        <option name="Select the columns and rows to read">
+            Specify the region of the data sheet that should be read in. If you
+            check &quot;Read entire data sheet&quot; the region provided by the
+            data sheet file will be read in. This includes areas where diagrams,
+            borders, coloring, etc. are placed and could create quite some empty
+            rows or columns (see skip empty rows and columns options below). <br />
+            If you want to read in a fixed area, remove the check mark and enter
+            the first and last column, and first and last row to read. (Last
+            row and column is optional, causing it to read to the last row or
+            column provided by the sheet). For columns
+            you need to enter the label (&quot;A&quot;, &quot;B&quot;, etc.),
+            for rows enter the number (one-based).
+        </option>
+        <option name="Skip Empty Rows or Columns">
+            If empty rows or columns should be removed from the result Data Table,
+            check the appropriate option.
+        </option>
+        <option name="Skip hidden columns">Hidden columns are removed when checked.</option>
+        <option name="Evaluation Error Handling">
+            Specify the data that is inserted in a cell with an error. Not all
+            formulas supported by all spreadsheet applications are supported by
+            the XLS Reader Node. If an error occurs during formula evaluation
+            (or if the spreadsheet contains an error cell), the selected data is
+            inserted. You can either choose to insert a cell representing a
+            missing value, or to insert a certain string pattern. A pattern
+            causes the entire column to become a string column in case an
+            error occurs. A missing value is type innocent, but also unobtrusive.
+        </option>
+        <option name="Reevaluate formulas">
+            When checked it reads the whole file into  memory and reevaluates
+            the formulas before returning the result. This can cause errors
+            when there are functions -not implemented by the Apache POI library-
+            used on the sheet. When unchecked, xls files are still read to the memory,
+            but the cached values are returned. For xlsx files, only the requested
+            sheet is loaded when no reevaluation is requested and requires much
+            less memory to return the cached values. If uncertain leave unchecked unless
+            there is a concrete reason.
+        </option>
+        <option name="Disable Preview">
+            Preview loading is disabled and no data table configuration is computed, so
+            changes in the format of the xls(x) file will not generate errors after execution.
+            The drawback of the enabled state of this option is that subsequent nodes
+            do not have information about the output table structure.
+        </option>
+        <option name="Preview">
+            The &quot;Preview&quot; tab shows you the output table with the current
+            settings in the dialog. If the settings are invalid an
+            error message will be displayed in this tab. The table updates only
+            when the &quot;refresh&quot; button is clicked. A warning is shown,
+            if the table content is out of sync with the current settings.
+        </option>
+        <option name="File Content">
+            The &quot;File Content&quot; table shows you the content of the
+            currently selected sheet. It shows the entire content (no settings
+            are applied there). The column names here are the ones
+            that need to be specified in the corresponding setting fields, row numbers are 0-based.
+        </option>
+		<link href="https://www.knime.com/knime-introductory-course/chapter2/section1/excel-reader-node">
+			KNIME E-Learning Course: Excel Reader Node
+		</link>
+	</fullDescription>
+
+	<ports>
+		<dynInPort insert-before="0" name="File system connection" group-identifier="File System Connection"> 
+			The file system connection.
+		</dynInPort>
+		<outPort index="0" name="Output table">
+			The data table read in.
+		</outPort>
+	</ports>
+</knimeNode>

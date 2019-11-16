@@ -45,7 +45,7 @@
  * History
  *   Apr 8, 2009 (ohl): created
  */
-package org.knime.ext.poi2.node.read3;
+package org.knime.ext.poi2.node.read4;
 
 import java.io.File;
 import java.io.IOException;
@@ -76,6 +76,7 @@ import org.knime.core.node.streamable.StreamableOperator;
 import org.knime.core.node.streamable.StreamableOperatorInternals;
 import org.knime.filehandling.core.connections.FSConnection;
 import org.knime.filehandling.core.defaultnodesettings.FileChooserHelper;
+import org.knime.filehandling.core.defaultnodesettings.FileChooserSettingsConverter;
 import org.knime.filehandling.core.defaultnodesettings.SettingsModelFileChooser2;
 import org.knime.filehandling.core.port.FileSystemPortObjectSpec;
 
@@ -124,7 +125,7 @@ class XLSReaderNodeModel extends NodeModel {
     private static final String CFG_KEY_FILE_CHOOSER = "FILE_CHOOSER";
 
     static final SettingsModelFileChooser2 getSettingsModelFileChooser() {
-        return new SettingsModelFileChooser2(CFG_KEY_FILE_CHOOSER, XLSUserSettings.CFG_XLS_LOCATION , "xls" ,"xlsx");
+        return new SettingsModelFileChooser2(CFG_KEY_FILE_CHOOSER, new String[]{"xls", "xlsx"});
     }
 
     private final SettingsModelFileChooser2 m_settingsModelFileChooser = getSettingsModelFileChooser();
@@ -139,13 +140,11 @@ class XLSReaderNodeModel extends NodeModel {
         super(creationConfig.getPortConfig().get().getInputPorts(),
             creationConfig.getPortConfig().get().getOutputPorts());
         if (creationConfig.getURLConfig().isPresent()) {
-            m_settings.setFileLocation(creationConfig.getURLConfig().get().getUrl().toString());
+            m_settingsModelFileChooser.setPathOrURL(creationConfig.getURLConfig().get().getUrl().toString());
+            FileChooserSettingsConverter.convert(m_settingsModelFileChooser);
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected BufferedDataTable[] execute(final PortObject[] inObjects, final ExecutionContext exec) throws Exception {
         final FileHandlingUtil fhUtil = createFileHandlingUtil();
@@ -154,7 +153,6 @@ class XLSReaderNodeModel extends NodeModel {
 
     private FileHandlingUtil createFileHandlingUtil() throws InvalidSettingsException, IOException {
         final ExcelTableReader reader = new ExcelTableReader(m_settings);
-
         return new FileHandlingUtil(reader, getFileChooserHelper());
     }
 
@@ -171,7 +169,7 @@ class XLSReaderNodeModel extends NodeModel {
          * be recreated we check here if the file exists and set a warning
          * message if it doesn't.
          */
-        final String fName = m_settings.getFileLocation();
+        final String fName = m_settingsModelFileChooser.getPathOrURL();
         if ((fName == null) || fName.isEmpty()) {
             return;
         }
@@ -186,9 +184,6 @@ class XLSReaderNodeModel extends NodeModel {
         return new FileChooserHelper(m_fs, m_settingsModelFileChooser, m_settings.getTimeoutInSeconds() * 1000);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected void loadValidatedSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
         m_settings = XLSUserSettings.load(settings);
@@ -196,7 +191,8 @@ class XLSReaderNodeModel extends NodeModel {
 
         try {
             final String settingsID = settings.getString(XLSReaderNodeDialog.XLS_CFG_ID_FOR_TABLESPEC);
-            if (!m_settings.getID().equals(settingsID)) {
+            final String id = SettingsIDBuilder.getID(m_settingsModelFileChooser, m_settings);
+            if (!id.equals(settingsID)) {
                 throw new InvalidSettingsException("IDs don't match");
             }
             final NodeSettingsRO dtsConfig = settings.getNodeSettings(XLSReaderNodeDialog.XLS_CFG_TABLESPEC);
@@ -210,17 +206,11 @@ class XLSReaderNodeModel extends NodeModel {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected void reset() {
         // empty
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected void saveInternals(final File nodeInternDir, final ExecutionMonitor exec)
         throws IOException, CanceledExecutionException {
@@ -232,9 +222,9 @@ class XLSReaderNodeModel extends NodeModel {
      */
     @Override
     protected void saveSettingsTo(final NodeSettingsWO settings) {
+        m_settingsModelFileChooser.saveSettingsTo(settings);
         if (m_settings != null) {
             m_settings.save(settings);
-            m_settingsModelFileChooser.saveSettingsTo(settings);
             if (m_dts != null) {
                 settings.addString(XLSReaderNodeDialog.XLS_CFG_ID_FOR_TABLESPEC, m_dtsSettingsID);
                 m_dts.save(settings.addConfig(XLSReaderNodeDialog.XLS_CFG_TABLESPEC));
@@ -263,6 +253,11 @@ class XLSReaderNodeModel extends NodeModel {
             throw new InvalidSettingsException("Node not configured.");
         }
 
+        final String pathOrUrl = m_settingsModelFileChooser.getPathOrURL();
+        if (pathOrUrl == null || pathOrUrl.isEmpty()) {
+            throw new InvalidSettingsException("No source location provided! Please enter a valid location.");
+        }
+
         final String errMsg = m_settings.getStatus();
         if (errMsg != null) {
             throw new InvalidSettingsException(errMsg);
@@ -273,7 +268,8 @@ class XLSReaderNodeModel extends NodeModel {
         }
 
         // make sure the DTS still fits the settings
-        if (!m_settings.getID().equals(m_dtsSettingsID)) {
+        final String id = SettingsIDBuilder.getID(m_settingsModelFileChooser, m_settings);
+        if (!id.equals(m_dtsSettingsID)) {
             m_dts = null;
         }
 

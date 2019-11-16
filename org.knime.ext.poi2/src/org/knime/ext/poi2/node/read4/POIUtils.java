@@ -46,7 +46,7 @@
  * History
  *   11 Sep 2016 (Gabor Bakos): created
  */
-package org.knime.ext.poi2.node.read3;
+package org.knime.ext.poi2.node.read4;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -80,8 +80,8 @@ import org.apache.poi.xssf.usermodel.XSSFComment;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.core.util.Pair;
-import org.knime.ext.poi2.node.read3.KNIMEXSSFSheetXMLHandler.DataType;
-import org.knime.ext.poi2.node.read3.KNIMEXSSFSheetXMLHandler.KNIMESheetContentsHandler;
+import org.knime.ext.poi2.node.read4.KNIMEXSSFSheetXMLHandler.DataType;
+import org.knime.ext.poi2.node.read4.KNIMEXSSFSheetXMLHandler.KNIMESheetContentsHandler;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;

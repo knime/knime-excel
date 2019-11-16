@@ -46,7 +46,7 @@
  * History
  *   Sep 25, 2019 (julian): created
  */
-package org.knime.ext.poi2.node.read3;
+package org.knime.ext.poi2.node.read4;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -125,7 +125,7 @@ class ExcelTableReader implements FilesToDataTableReader {
                 : CachedExcelTable.fillCacheFromDOM(path, is, m_sheetName, Locale.ENGLISH,
                     m_settings.isReevaluateFormulae(), parseExec, null).get();
 
-            final DataTable dt = table.createDataTable(m_settings, null, m_curRow, m_totalRows, m_uniquifier);
+            final DataTable dt = table.createDataTable(path, m_settings, null, m_curRow, m_totalRows, m_uniquifier);
             if (!m_processedTableFromSpecCreation && (m_firstTable == null)) {
                 m_firstTable = dt;
             }

@@ -45,7 +45,7 @@
  * History
  *   Apr 3, 2009 (ohl): created
  */
-package org.knime.ext.poi2.node.read3;
+package org.knime.ext.poi2.node.read4;
 
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettings;
@@ -61,9 +61,6 @@ import org.knime.core.node.util.CheckUtils;
  */
 class XLSUserSettings {
 
-    /** Key under which the file url is stored. */
-    static final String CFG_XLS_LOCATION = "XLS_LOCATION";
-
     /**
      * Key for reevaluating formulae.
      */
@@ -76,8 +73,6 @@ class XLSUserSettings {
 
     /** Default value for the no preview setting. */
     static final boolean DEFAULT_NO_PREVIEW = false;
-
-    private String m_fileLocation;
 
     private boolean m_readAllData;
 
@@ -137,8 +132,6 @@ class XLSUserSettings {
      * Constructs a new settings object. All values are uninitialized.
      */
     XLSUserSettings() {
-        m_fileLocation = null;
-
         m_sheetName = null;
 
         m_readAllData = true;
@@ -182,8 +175,6 @@ class XLSUserSettings {
                 || (!m_hasRowHeaders && m_indexContinuous && !m_indexSkipJumps)
                 || (!m_hasRowHeaders && !m_indexContinuous && m_indexSkipJumps),
             "Exactly one of generate row ids or table contains row ids in column should be selected!");
-        settings.addString(CFG_XLS_LOCATION, m_fileLocation);
-
         settings.addString("SHEET_NAME", m_sheetName);
 
         settings.addBoolean("READ_ALL_DATA", m_readAllData);
@@ -216,65 +207,6 @@ class XLSUserSettings {
     }
 
     /**
-     * @return Simplified id of the settings.
-     */
-    final String getID() {
-        StringBuilder id = new StringBuilder("SettingsID:");
-        id.append(getID(m_fileLocation));
-        id.append(getID(m_sheetName));
-        id.append(getID(m_readAllData));
-        id.append(getID(getFirstRow()));
-        id.append(getID(getLastRow()));
-        id.append(getID(getFirstColumn()));
-        id.append(getID(getLastColumn()));
-        id.append(getID(m_hasColHeaders));
-        id.append(getID(getColHdrRow()));
-        //id of m_indexSkipJumps, m_indexContinuous are not important, those are just for generated row keys.
-        id.append(getID(m_hasRowHeaders));
-        id.append(getID(getRowHdrCol()));
-        id.append(getID(m_missValuePattern));
-        id.append(getID(m_skipEmptyColumns));
-        id.append(getID(m_skipEmptyRows));
-        id.append(getID(m_skipHiddenColumns));
-        id.append(getID(m_keepXLColNames));
-        id.append(getID(m_uniquifyRowIDs));
-        id.append(getID(m_useErrorPattern));
-        id.append(getID(m_errorPattern));
-        id.append(getID(m_reevaluateFormulae));
-        id.append(getID(m_timeoutInSeconds));
-        id.append(getID(m_noPreview));
-        return id.toString();
-    }
-
-    /**
-     * @param value A value.
-     * @return Id of a {@link String} value.
-     */
-    private static String getID(final String value) {
-        if (value == null) {
-            return "-";
-        }
-        if (value.isEmpty()) {
-            return ".";
-        }
-        return value;
-    }
-    /**
-     * @param value A boolean value.
-     * @return Id of the {@code value}.
-     */
-    private static String getID(final boolean value) {
-        return value ? "1" : "0";
-    }
-    /**
-     * @param value An int value.
-     * @return Id of the {@code value}.
-     */
-    private static String getID(final int value) {
-        return "" + value;
-    }
-
-    /**
      * Creates a new settings object with values from the settings passed.
      *
      * @param settings the values to store in the new object
@@ -284,8 +216,6 @@ class XLSUserSettings {
     static final XLSUserSettings load(final NodeSettingsRO settings)
             throws InvalidSettingsException {
         XLSUserSettings result = new XLSUserSettings();
-
-        result.m_fileLocation = settings.getString(CFG_XLS_LOCATION);
 
         result.m_sheetName = settings.getString("SHEET_NAME");
 
@@ -354,9 +284,6 @@ class XLSUserSettings {
      * @return an error message or null if settings are okay
      */
     final String getStatus() {
-        if (m_fileLocation == null || m_fileLocation.isEmpty()) {
-            return "No file location specified";
-        }
         if (m_timeoutInSeconds < 0) {
             return "Timeout should be non-negative! (0 means infinite)";
         }
@@ -395,33 +322,6 @@ class XLSUserSettings {
     /*
      * ---------------- setter and getter ------------------------------------
      */
-
-    /**
-     * @param fileLocation the fileLocation to set
-     */
-    final void setFileLocation(final String fileLocation) {
-        m_fileLocation = fileLocation;
-    }
-
-    /**
-     * @return the fileLocation
-     */
-    final String getFileLocation() {
-        return m_fileLocation;
-    }
-
-    /**
-     * @return the simple name of the file
-     */
-    final String getSimpleFilename() {
-        String path = m_fileLocation;
-        int idx = path.lastIndexOf('/');
-        if (idx < 0 || idx >= path.length() - 2) {
-            return path;
-        } else {
-            return path.substring(idx + 1);
-        }
-    }
 
     /**
      * @param sheetName name of sheet to read

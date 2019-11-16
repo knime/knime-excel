@@ -1,5 +1,6 @@
 /*
  * ------------------------------------------------------------------------
+ *
  *  Copyright by KNIME AG, Zurich, Switzerland
  *  Website: http://www.knime.com; Email: contact@knime.com
  *
@@ -40,76 +41,75 @@
  *  propagated with or for interoperation with KNIME.  The owner of a Node
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
- * -------------------------------------------------------------------
+ * ---------------------------------------------------------------------
  *
  * History
- *   Apr 8, 2009 (ohl): created
+ *   2 Sep 2016 (Gabor Bakos): created
  */
-package org.knime.ext.poi2.node.read3;
+package org.knime.ext.poi2.node.read4;
 
-import java.util.Optional;
+import java.util.HashMap;
 
-import org.knime.core.node.BufferedDataTable;
-import org.knime.core.node.ConfigurableNodeFactory;
-import org.knime.core.node.NodeDialogPane;
-import org.knime.core.node.NodeView;
-import org.knime.core.node.context.NodeCreationConfiguration;
-import org.knime.filehandling.core.port.FileSystemPortObject;
+import org.knime.core.util.MutableInteger;
 
 /**
+ * Makes values unique, ideal for row ids.
  *
  * @author Peter Ohl, KNIME AG, Zurich, Switzerland
+ * @author Gabor Bakos
  */
-public class XLSReaderNodeFactory extends ConfigurableNodeFactory<XLSReaderNodeModel> {
+//TODO unit test
+class ValueUniquifier {
+
+    private static final Integer NOSUFFIX = new Integer(0);
+    private final HashMap<String, Number> m_rowIDhash = new HashMap<>();
+
+    //TODO should we have a constructor to reuse a previous/clone it?
 
     /**
-     * {@inheritDoc}
+     *
      */
-    @Override
-    protected NodeDialogPane createNodeDialogPane(final NodeCreationConfiguration creationConfig) {
-        return new XLSReaderNodeDialog();
+    ValueUniquifier() {
+        super();
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected XLSReaderNodeModel createNodeModel(final NodeCreationConfiguration creationConfig) {
-        return new XLSReaderNodeModel(creationConfig);
-    }
+    String uniquifyRowHeader(final String newRowHeader) {
+        //TODO should we check for potential suffices?
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Optional<PortsConfigurationBuilder> createPortsConfigBuilder() {
-        PortsConfigurationBuilder builder = new PortsConfigurationBuilder();
-        builder.addOptionalInputPortGroup("File System Connection", FileSystemPortObject.TYPE);
-        builder.addFixedOutputPortGroup("Data table", BufferedDataTable.TYPE);
-        return Optional.of(builder);
-    }
+        Number oldSuffix = m_rowIDhash.put(newRowHeader, NOSUFFIX);
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public NodeView<XLSReaderNodeModel> createNodeView(final int viewIndex, final XLSReaderNodeModel nodeModel) {
-        return null;
-    }
+        if (oldSuffix == null) {
+            // haven't seen the rowID so far.
+            return newRowHeader;
+        }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected int getNrNodeViews() {
-        return 0;
-    }
+        String result = newRowHeader;
+        while (oldSuffix != null) {
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected boolean hasDialog() {
-        return true;
+            // we have seen this rowID before!
+            int idx = oldSuffix.intValue();
+
+            assert idx >= NOSUFFIX.intValue();
+
+            idx++;
+
+            if (oldSuffix == NOSUFFIX) {
+                // until now the NOSUFFIX placeholder was in the hash
+                assert idx - 1 == NOSUFFIX.intValue();
+                m_rowIDhash.put(result, new MutableInteger(idx));
+            } else {
+                assert oldSuffix instanceof MutableInteger;
+                ((MutableInteger)oldSuffix).inc();
+                assert idx == oldSuffix.intValue();
+                // put back the old (incr.) suffix (overridden with NOSUFFIX).
+                m_rowIDhash.put(result, oldSuffix);
+            }
+
+            result = result + "_" + idx;
+            oldSuffix = m_rowIDhash.put(result, NOSUFFIX);
+
+        }
+
+        return result;
     }
 }
