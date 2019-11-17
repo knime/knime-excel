@@ -68,6 +68,8 @@ import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.context.NodeCreationConfiguration;
+import org.knime.core.node.port.PortObject;
+import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.util.filter.NameFilterConfiguration.FilterResult;
 import org.knime.core.node.util.filter.column.DataColumnSpecFilterConfiguration;
 import org.knime.filehandling.core.connections.FSConnection;
@@ -96,8 +98,6 @@ final class XLSWriter2NodeModel extends NodeModel {
 
     private DataColumnSpecFilterConfiguration m_filterConfig = null;
 
-    private Optional<FSConnection> m_fs;
-
     /**
      * @param creationConfig
      * @param type Of what type is this node?
@@ -115,16 +115,16 @@ final class XLSWriter2NodeModel extends NodeModel {
      * {@inheritDoc}
      */
     @Override
-    protected DataTableSpec[] configure(final DataTableSpec[] inSpecs) throws InvalidSettingsException {
+    protected DataTableSpec[] configure(final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
         if (m_settings == null) {
             m_settings = new XLSWriter2Settings();
         }
 
-        m_fs = FileSystemPortObjectSpec.getFileSystemConnection(inSpecs, 1);
+        final Optional<FSConnection> fs = FileSystemPortObjectSpec.getFileSystemConnection(inSpecs, 1);
 
         final FileChooserHelper helper;
         try {
-            helper = getFileChooserHelper(m_fs, m_settingsModel);
+            helper = getFileChooserHelper(fs, m_settingsModel);
         } catch (final IOException e) {
             throw new InvalidSettingsException(e.getMessage());
         }
@@ -154,13 +154,13 @@ final class XLSWriter2NodeModel extends NodeModel {
      * {@inheritDoc}
      */
     @Override
-    protected BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec)
+    protected BufferedDataTable[] execute(final PortObject[] inData, final ExecutionContext exec)
         throws Exception {
-        m_fs = FileSystemPortObject.getFileSystemConnection(inData, 1);
+        final Optional<FSConnection> fs = FileSystemPortObject.getFileSystemConnection(inData, 1);
 
         final FileChooserHelper helper;
         try {
-            helper = getFileChooserHelper(m_fs, m_settingsModel);
+            helper = getFileChooserHelper(fs, m_settingsModel);
         } catch (final IOException e) {
             throw new InvalidSettingsException(e.getMessage());
         }
@@ -174,20 +174,24 @@ final class XLSWriter2NodeModel extends NodeModel {
             m_settings.getFileMustExist());
 
         KeyLocker.lock(path);
-        if ((m_type == XLSNodeType.WRITER) && m_settings.getOverwriteOK()) {
-            Files.deleteIfExists(path);
+        try {
+            if ((m_type == XLSNodeType.WRITER) && m_settings.getOverwriteOK()) {
+                Files.deleteIfExists(path);
+            }
+            final BufferedDataTable dataTable = (BufferedDataTable)inData[0];
+            final ColumnRearranger rearranger = new ColumnRearranger(dataTable.getDataTableSpec());
+            final FilterResult filter = m_filterConfig.applyTo(dataTable.getDataTableSpec());
+            rearranger.keepOnly(filter.getIncludes());
+            final BufferedDataTable table = exec.createColumnRearrangeTable(dataTable, rearranger, exec);
+
+            final XLSWriter2 xlsWriter = new XLSWriter2(path, m_settings, m_settingsModel.getFileSystemChoice());
+            xlsWriter.write(table, table.getDataTableSpec(), (int)table.size(), exec);
+            return new BufferedDataTable[]{};
+        } finally {
+            //always unlock the path
+            KeyLocker.unlock(path);
         }
 
-        final ColumnRearranger rearranger = new ColumnRearranger(inData[0].getDataTableSpec());
-        final FilterResult filter = m_filterConfig.applyTo(inData[0].getDataTableSpec());
-        rearranger.keepOnly(filter.getIncludes());
-        final BufferedDataTable table = exec.createColumnRearrangeTable(inData[0], rearranger, exec);
-
-        final XLSWriter2 xlsWriter = new XLSWriter2(path, m_settings, m_settingsModel.getFileSystemChoice());
-        xlsWriter.write(table, table.getDataTableSpec(), (int)table.size(), exec);
-        KeyLocker.unlock(path);
-
-        return new BufferedDataTable[]{};
     }
 
     /**

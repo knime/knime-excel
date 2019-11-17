@@ -94,6 +94,7 @@ import org.knime.core.node.NodeSettings;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NotConfigurableException;
+import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.util.filter.NameFilterConfiguration;
 import org.knime.core.node.util.filter.column.DataColumnSpecFilterConfiguration;
 import org.knime.core.node.util.filter.column.DataColumnSpecFilterPanel;
@@ -371,8 +372,9 @@ final class XLSWriter2NodeDialogPane extends NodeDialogPane {
      * {@inheritDoc}
      */
     @Override
-    protected void loadSettingsFrom(final NodeSettingsRO settings, final DataTableSpec[] specs)
+    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs)
         throws NotConfigurableException {
+        final DataTableSpec tableSpec = (DataTableSpec)specs[0];
         m_fs = FileSystemPortObjectSpec.getFileSystemConnection(specs, 1);
         try {
             addChangeListenerToFileChooserSettings();
@@ -385,7 +387,7 @@ final class XLSWriter2NodeDialogPane extends NodeDialogPane {
             newVals = new XLSWriter2Settings(settings);
         } catch (final InvalidSettingsException ise) {
             // keep the defaults.
-            newVals = new XLSWriter2Settings(specs[0]);
+            newVals = new XLSWriter2Settings(tableSpec);
         }
         //Necessary to update the file dialog component
         m_fileChooserComponent.loadSettingsFrom(settings, specs);
@@ -409,8 +411,8 @@ final class XLSWriter2NodeDialogPane extends NodeDialogPane {
         m_writeMissingValue.setSelected(newVals.getWriteMissingValues());
         m_missValue.setEnabled(newVals.getWriteMissingValues());
         final DataColumnSpecFilterConfiguration config = createColFilterConf();
-        config.loadConfigurationInDialog(settings, specs[0]);
-        m_filter.loadConfiguration(config, specs[0]);
+        config.loadConfigurationInDialog(settings, tableSpec);
+        m_filter.loadConfiguration(config, tableSpec);
     }
 
     private void addChangeListenerToFileChooserSettings() throws IOException {
