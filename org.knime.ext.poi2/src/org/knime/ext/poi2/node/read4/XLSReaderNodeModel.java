@@ -135,7 +135,7 @@ class XLSReaderNodeModel extends NodeModel {
 
     private String m_dtsSettingsID = null;
 
-    private Optional<FSConnection> m_fs;
+    private Optional<FSConnection> m_fs = Optional.empty();
 
     XLSReaderNodeModel(final NodeCreationConfiguration creationConfig) {
         super(creationConfig.getPortConfig().get().getInputPorts(),
@@ -163,23 +163,24 @@ class XLSReaderNodeModel extends NodeModel {
     @Override
     protected void loadInternals(final File nodeInternDir, final ExecutionMonitor exec)
         throws IOException, CanceledExecutionException {
-        /*
-         * This is a special "deal" for the reader: The reader, if previously
-         * executed, has data at it's output - even if the file that was read
-         * doesn't exist anymore. In order to warn the user that the data cannot
-         * be recreated we check here if the file exists and set a warning
-         * message if it doesn't.
-         */
-        final String fName = m_settingsModelFileChooser.getPathOrURL();
-        if ((fName == null) || fName.isEmpty()) {
-            return;
-        }
 
-        final Path path = getFileChooserHelper().getPathFromSettings();
+        if (FileSystemChoice.getLocalFsChoice().equals(m_settingsModelFileChooser.getFileSystemChoice())) {
+            /*
+             * This is a special "deal" for the reader: The reader, if previously
+             * executed, has data at it's output - even if the file that was read
+             * doesn't exist anymore. In order to warn the user that the data cannot
+             * be recreated we check here if the file exists and set a warning
+             * message if it doesn't.
+             */
+            final String fName = m_settingsModelFileChooser.getPathOrURL();
+            if ((fName == null) || fName.isEmpty()) {
+                return;
+            }
 
-        if (FileSystemChoice.getLocalFsChoice().equals(m_settingsModelFileChooser.getFileSystemChoice())
-            && !Files.exists(path)) {
-            setWarningMessage("The file/directory '" + path.toString() + "' can't be accessed anymore!");
+            final Path path = getFileChooserHelper().getPathFromSettings();
+            if (!Files.exists(path)) {
+                setWarningMessage("The file/directory '" + path.toString() + "' can't be accessed anymore!");
+            }
         }
     }
 
