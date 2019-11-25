@@ -130,10 +130,8 @@ class ExcelTableReader implements FilesToDataTableReader {
             final DataTable dt = table.createDataTable(path, m_settings, null, m_curRow, m_totalRows, m_uniquifier);
             if (!m_processedTableFromSpecCreation && (m_firstTable == null)) {
                 m_firstTable = dt;
-                m_spec = dt.getDataTableSpec();
-            } else {
-                validateTableSpecs(path, dt);
             }
+            validateTableSpecs(path, dt);
             m_lastNoOfRows = table.lastRow();
             m_totalRows += m_lastNoOfRows;
             return dt;
@@ -141,7 +139,11 @@ class ExcelTableReader implements FilesToDataTableReader {
     }
 
     private void validateTableSpecs(final Path path, final DataTable table) {
-        if (m_spec != null && !table.getDataTableSpec().equalStructure(m_spec)) {
+        if (m_spec == null) {
+            m_spec = table.getDataTableSpec();
+            return;
+        }
+        if (!table.getDataTableSpec().equalStructure(m_spec)) {
             throw new RuntimeException("Table created from file '" + path.getFileName().toString()
                 + "' has different structure than previously read file(s)");
         }
