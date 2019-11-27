@@ -72,6 +72,9 @@ import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.util.filter.NameFilterConfiguration.FilterResult;
 import org.knime.core.node.util.filter.column.DataColumnSpecFilterConfiguration;
+import org.knime.core.node.workflow.NodeContext;
+import org.knime.core.node.workflow.WorkflowContext;
+import org.knime.core.node.workflow.WorkflowManager;
 import org.knime.filehandling.core.connections.FSConnection;
 import org.knime.filehandling.core.defaultnodesettings.FileChooserHelper;
 import org.knime.filehandling.core.defaultnodesettings.SettingsModelFileChooser2;
@@ -131,9 +134,14 @@ final class XLSWriter2NodeModel extends NodeModel {
 
         final Path path = helper.getPathFromSettings();
 
+        final WorkflowManager workflowManager = NodeContext.getContext().getWorkflowManager();
+        final WorkflowContext context = workflowManager.getContext();
+        helper.canExecuteOnServer(path, context);
+
         final String warning = checkDestinationFile(path,
             (m_type == XLSNodeType.APPENDER) || m_settings.getOverwriteOK(), m_settings.getFileMustExist());
-        if (!path.isAbsolute()) {
+
+        if (!path.isAbsolute() && !helper.isKNIMERelativePath(path)) {
             throw new InvalidSettingsException("Relative paths are not allowed ('" + path.getFileName()
                 + "'), please enter an absolute path or a URL");
         }
