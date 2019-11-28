@@ -77,6 +77,7 @@ import org.knime.core.node.streamable.StreamableOperatorInternals;
 import org.knime.filehandling.core.connections.FSConnection;
 import org.knime.filehandling.core.defaultnodesettings.FileChooserHelper;
 import org.knime.filehandling.core.defaultnodesettings.FileChooserSettingsConverter;
+import org.knime.filehandling.core.defaultnodesettings.FileSystemChoice;
 import org.knime.filehandling.core.defaultnodesettings.SettingsModelFileChooser2;
 import org.knime.filehandling.core.port.FileSystemPortObjectSpec;
 
@@ -175,7 +176,9 @@ class XLSReaderNodeModel extends NodeModel {
         }
 
         final Path path = getFileChooserHelper().getPathFromSettings();
-        if (!Files.exists(path)) {
+
+        if (FileSystemChoice.getLocalFsChoice().equals(m_settingsModelFileChooser.getFileSystemChoice())
+            && !Files.exists(path)) {
             setWarningMessage("The file/directory '" + path.toString() + "' can't be accessed anymore!");
         }
     }
