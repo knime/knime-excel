@@ -253,6 +253,8 @@ class XLSReaderNodeModel extends NodeModel {
 
         m_fs = FileSystemPortObjectSpec.getFileSystemConnection(inSpecs, 0);
 
+        checkKNIMEPathIsValid();
+
         if ((m_settings == null) || (m_settingsModelFileChooser == null)) {
             throw new InvalidSettingsException("Node not configured.");
         }
@@ -278,6 +280,15 @@ class XLSReaderNodeModel extends NodeModel {
         }
 
         return new DataTableSpec[]{m_dts};
+    }
+
+    private void checkKNIMEPathIsValid() throws InvalidSettingsException {
+        try {
+            final FileChooserHelper fileChooserHelper = getFileChooserHelper();
+            fileChooserHelper.checkKNIMEPathIsValid();
+        } catch (IOException e) {
+            throw new InvalidSettingsException(e);
+        }
     }
 
     /**
