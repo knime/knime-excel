@@ -427,7 +427,7 @@ final class XLSWriter2NodeDialogPane extends NodeDialogPane {
                         final Path path = helper.getPathFromSettings();
                         m_overwriteOK.setEnabled(path != null);
                         m_openFile.setEnabled(path != null);
-                    } catch (final IllegalArgumentException ex) {
+                    } catch (final IllegalArgumentException | InvalidSettingsException ex) {
                         // do nothing
                     }
                 }

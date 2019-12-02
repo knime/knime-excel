@@ -50,6 +50,7 @@ package org.knime.ext.poi2.node.read4;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Optional;
 
@@ -177,7 +178,12 @@ class XLSReaderNodeModel extends NodeModel {
                 return;
             }
 
-            final Path path = getFileChooserHelper().getPathFromSettings();
+            Path path = null;
+            try {
+                path = getFileChooserHelper().getPathFromSettings();
+            } catch (InvalidSettingsException e) {
+                throw new InvalidPathException("Error when fetching path from settings.", e.getMessage());
+            }
             if (!Files.exists(path)) {
                 setWarningMessage("The file/directory '" + path.toString() + "' can't be accessed anymore!");
             }
@@ -253,8 +259,6 @@ class XLSReaderNodeModel extends NodeModel {
 
         m_fs = FileSystemPortObjectSpec.getFileSystemConnection(inSpecs, 0);
 
-        checkKNIMEPathIsValid();
-
         if ((m_settings == null) || (m_settingsModelFileChooser == null)) {
             throw new InvalidSettingsException("Node not configured.");
         }
@@ -280,15 +284,6 @@ class XLSReaderNodeModel extends NodeModel {
         }
 
         return new DataTableSpec[]{m_dts};
-    }
-
-    private void checkKNIMEPathIsValid() throws InvalidSettingsException {
-        try {
-            final FileChooserHelper fileChooserHelper = getFileChooserHelper();
-            fileChooserHelper.checkKNIMEPathIsValid();
-        } catch (IOException e) {
-            throw new InvalidSettingsException(e);
-        }
     }
 
     /**
