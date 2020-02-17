@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <knimeNode type="Sink" icon="./xlsappender.png"
-	xmlns="http://knime.org/node/v3.6"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://knime.org/node/v3.6 http://knime.org/node/v3.6.xsd">
+	 xmlns="http://knime.org/node/v4.1"
+	 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	 xsi:schemaLocation="http://knime.org/node/v4.1 http://knime.org/node/v4.1.xsd">
 	<name>Excel Sheet Appender (XLS)</name>
 
 	<shortDescription>
@@ -97,6 +97,9 @@
 		<inPort index="0" name="Input table">
 			The data table to write out.
 		</inPort>
+        <dynInPort insert-before="1" name="File system connection" group-identifier="File System Connection"> 
+            The file system connection.
+        </dynInPort>
 	</ports>
 </knimeNode>
 
