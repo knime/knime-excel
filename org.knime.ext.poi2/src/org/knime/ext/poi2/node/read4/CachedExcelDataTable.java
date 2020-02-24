@@ -229,8 +229,15 @@ final class CachedExcelTable {
 
     private final Map<Integer, Content> m_rowMap = new HashMap<>();
 
-    /** Hide constructor. */
-    private CachedExcelTable() {
+    private final Path m_path;
+
+    private final String m_sheet;
+
+    /** Hide constructor.
+     * @param path */
+    private CachedExcelTable(final Path path, final String sheet) {
+        m_path = path;
+        m_sheet = sheet;
     }
 
     /**
@@ -450,7 +457,7 @@ final class CachedExcelTable {
         //Probably could be improved to let visit the intermediate results while generating, but it is complicated.
         return CACHED_THREAD_POOL.submit(ThreadUtils.callableWithContext(() -> {
             LocaleUtil.setUserLocale(locale);
-            final CachedExcelTable table = new CachedExcelTable();
+            final CachedExcelTable table = new CachedExcelTable(path, sheet);
             final KNIMEDataFormatter formatter = new KNIMEDataFormatter(locale);
 
             try (final OPCPackage opc = OPCPackage.open(stream)) {
@@ -533,7 +540,7 @@ final class CachedExcelTable {
         return CACHED_THREAD_POOL.submit(ThreadUtils.callableWithContext(() -> {
             LocaleUtil.setUserLocale(locale);
             OptionalLong fileSize = getFileSize(path.toString());
-            CachedExcelTable table = new CachedExcelTable();
+            CachedExcelTable table = new CachedExcelTable(path, sheet);
             ExecutionMonitor workbookCreateProgress = exec.createSubProgress(.2);
             ExecutionMonitor workBookParseProgress = exec.createSubProgress(.8);
             exec.setMessage("Reading workbooks...");
@@ -785,12 +792,15 @@ final class CachedExcelTable {
      * @return The {@link DataTable}.
      * @throws InvalidSettingsException Some settings in {@code rawSettings} is incorrect.
      */
-    DataTable createDataTable(final Path path, final XLSUserSettings rawSettings, final Map<Integer, Integer> resultExcelToKNIME,
+    DataTable createDataTable(final XLSUserSettings rawSettings, final Map<Integer, Integer> resultExcelToKNIME,
         final long rowNoToStart, final long totalNoOfPreviousRows, final ValueUniquifier uniquifier)
         throws InvalidSettingsException {
+
         final XLSUserSettings settings = XLSUserSettings.normalizeSettings(rawSettings);
+        settings.setSheetName(m_sheet);
+
         final Set<Integer> skippedCols = new HashSet<>();
-        final DataTableSpec spec = createSpec(path, settings, skippedCols);
+        final DataTableSpec spec = createSpec(settings, skippedCols);
         final DataTableSpec knimeSpec = updatedSpec(spec);
         final Map<Integer, Integer> mapFromExcelColumnIndicesToKNIME = new HashMap<>();
         final DataTable dataTable = new DataTable() {
@@ -1119,9 +1129,9 @@ final class CachedExcelTable {
      * @return The {@link DataTable}.
      * @throws InvalidSettingsException Some settings in {@code rawSettings} is incorrect.
      */
-    DataTable createDataTable(final Path path, final XLSUserSettings rawSettings,
+    DataTable createDataTable(final XLSUserSettings rawSettings,
         final Map<Integer, Integer> resultExcelToKNIME) throws InvalidSettingsException {
-        return createDataTable(path, rawSettings, resultExcelToKNIME, -1, 0, new ValueUniquifier());
+        return createDataTable(rawSettings, resultExcelToKNIME, -1, 0, new ValueUniquifier());
     }
 
     /**
@@ -1147,14 +1157,11 @@ final class CachedExcelTable {
      * @param settings the pre-set settings.
      * @return the result settings
      */
-    private List<DataType> analyzeColumnTypes(final Path path, final XLSUserSettings settings,
+    private List<DataType> analyzeColumnTypes(final XLSUserSettings settings,
         final Set<Integer> skippedCols) {
 
         if (settings == null) {
             throw new NullPointerException("Settings can't be null");
-        }
-        if (path == null) {
-            throw new NullPointerException("File location must be set.");
         }
 
         return setColumnTypes(settings, skippedCols);
@@ -1451,9 +1458,9 @@ final class CachedExcelTable {
      * @return a new table spec from the current settings
      * @throws InvalidSettingsException if settings are invalid.
      */
-    private DataTableSpec createSpec(final Path path, final XLSUserSettings settings, final Set<Integer> skippedCols) {
+    private DataTableSpec createSpec(final XLSUserSettings settings, final Set<Integer> skippedCols) {
 
-        List<DataType> columnTypes = analyzeColumnTypes(path, settings, skippedCols);
+        List<DataType> columnTypes = analyzeColumnTypes(settings, skippedCols);
 
         int numOfCols = columnTypes.size();
         String[] colHdrs = createColHeaders(settings, numOfCols, skippedCols);
@@ -1466,13 +1473,7 @@ final class CachedExcelTable {
             colSpecs[col] = new DataColumnSpecCreator(colHdrs[col], columnTypes.get(col)).createSpec();
         }
 
-        // create a name
-        String sheetName = settings.getSheetName();
-        if (sheetName == null || sheetName.isEmpty()) {
-            throw new IllegalStateException("Sheet name should be valid at this point: " + sheetName);
-        }
-
-        String tableName = path.toString() + " [" + sheetName + "]";
+        String tableName = m_path.toString() + " [" + m_sheet + "]";
         return new DataTableSpec(tableName, colSpecs);
     }
 

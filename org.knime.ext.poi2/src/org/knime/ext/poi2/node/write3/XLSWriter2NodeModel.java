@@ -76,7 +76,6 @@ import org.knime.filehandling.core.connections.FSConnection;
 import org.knime.filehandling.core.defaultnodesettings.FileChooserHelper;
 import org.knime.filehandling.core.defaultnodesettings.SettingsModelFileChooser2;
 import org.knime.filehandling.core.port.FileSystemPortObject;
-import org.knime.filehandling.core.port.FileSystemPortObjectSpec;
 
 /**
  *
@@ -118,34 +117,6 @@ final class XLSWriter2NodeModel extends NodeModel {
     protected DataTableSpec[] configure(final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
         if (m_settings == null) {
             m_settings = new XLSWriter2Settings();
-        }
-
-        final Optional<FSConnection> fs = FileSystemPortObjectSpec.getFileSystemConnection(inSpecs, 1);
-
-        final FileChooserHelper helper;
-        try {
-            helper = getFileChooserHelper(fs, m_settingsModel);
-        } catch (final IOException e) {
-            throw new InvalidSettingsException(e.getMessage());
-        }
-
-        final Path path = helper.getPathFromSettings();
-
-        final String warning = checkDestinationFile(path,
-            (m_type == XLSNodeType.APPENDER) || m_settings.getOverwriteOK(), m_settings.getFileMustExist());
-
-        if (!path.isAbsolute() && !helper.isKNIMERelativePath(path)) {
-            throw new InvalidSettingsException("Relative paths are not allowed ('" + path.getFileName()
-                + "'), please enter an absolute path or a URL");
-        }
-        if (warning != null) {
-            setWarningMessage(warning);
-        } else if (m_type == XLSNodeType.APPENDER) {
-            try {
-                checkDestinationFile(path, true, true);
-            } catch (final InvalidSettingsException ise) {
-                setWarningMessage(ise.getMessage());
-            }
         }
 
         return new DataTableSpec[]{};
@@ -263,6 +234,7 @@ final class XLSWriter2NodeModel extends NodeModel {
     /**
      * {@inheritDoc}
      */
+    @SuppressWarnings("unused")
     @Override
     protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
         m_settingsModel.validateSettings(settings);
