@@ -134,10 +134,6 @@ final class XLSWriter2NodeModel extends NodeModel {
         final String warning = checkDestinationFile(path,
             (m_type == XLSNodeType.APPENDER) || m_settings.getOverwriteOK(), m_settings.getFileMustExist());
 
-        if (!path.isAbsolute() && !helper.isKNIMERelativePath(path)) {
-            throw new InvalidSettingsException("Relative paths are not allowed ('" + path.getFileName()
-                + "'), please enter an absolute path or a URL");
-        }
         if (warning != null) {
             setWarningMessage(warning);
         } else if (m_type == XLSNodeType.APPENDER) {
