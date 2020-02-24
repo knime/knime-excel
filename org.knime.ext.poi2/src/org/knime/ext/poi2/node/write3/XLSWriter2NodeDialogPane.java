@@ -88,7 +88,6 @@ import org.knime.core.node.FlowVariableModel;
 import org.knime.core.node.FlowVariableModelButton;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeDialogPane;
-import org.knime.core.node.NodeSettings;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NotConfigurableException;
@@ -422,10 +421,6 @@ final class XLSWriter2NodeDialogPane extends NodeDialogPane {
     @Override
     protected void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
 
-        // kind of a hack: the component only saves the history when
-        // we allow it to save its value.
-        final NodeSettingsWO foo = new NodeSettings("foo");
-
         final String filename = ((SettingsModelFileChooser2)m_fileChooserComponent.getModel()).getPathOrURL();
 
         final String fileExtension = FilenameUtils.getExtension(filename).toLowerCase();
@@ -448,16 +443,14 @@ final class XLSWriter2NodeDialogPane extends NodeDialogPane {
                         break;
                     case JOptionPane.NO_OPTION:
                         m_xlsIsConfirmed = true;
+                        break;
                     default:
                         //Nothing to do
-                        break;
                 }
             }
-        } else if (!isValidFileExtension(fileExtension)) {
-            if (!FilenameUtils.getBaseName(filename).trim().isEmpty()) {
+        } else if (!isValidFileExtension(fileExtension) && !FilenameUtils.getBaseName(filename).trim().isEmpty()) {
                 //Not empty, but no valid extension, add extension
                 ((SettingsModelFileChooser2)m_fileChooserComponent.getModel()).setPathOrURL(filename + ".xlsx");
-            }
         }
 
         m_fileChooserComponent.saveSettingsTo(settings);

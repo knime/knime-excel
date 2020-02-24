@@ -239,6 +239,7 @@ final class XLSWriter2NodeModel extends NodeModel {
     /**
      * {@inheritDoc}
      */
+    @SuppressWarnings("unused")
     @Override
     protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
         m_settingsModel.validateSettings(settings);
