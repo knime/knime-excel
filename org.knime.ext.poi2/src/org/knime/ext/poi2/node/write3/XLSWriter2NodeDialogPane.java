@@ -49,8 +49,6 @@ package org.knime.ext.poi2.node.write3;
 
 import java.awt.Dimension;
 import java.awt.Window;
-import java.io.IOException;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -103,7 +101,7 @@ import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.FlowVariable.Type;
 import org.knime.filehandling.core.connections.FSConnection;
 import org.knime.filehandling.core.defaultnodesettings.DialogComponentFileChooser2;
-import org.knime.filehandling.core.defaultnodesettings.FileChooserHelper;
+import org.knime.filehandling.core.defaultnodesettings.FileSystemChoice;
 import org.knime.filehandling.core.defaultnodesettings.SettingsModelFileChooser2;
 import org.knime.filehandling.core.port.FileSystemPortObjectSpec;
 
@@ -376,11 +374,8 @@ final class XLSWriter2NodeDialogPane extends NodeDialogPane {
         throws NotConfigurableException {
         final DataTableSpec tableSpec = (DataTableSpec)specs[0];
         m_fs = FileSystemPortObjectSpec.getFileSystemConnection(specs, 1);
-        try {
-            addChangeListenerToFileChooserSettings();
-        } catch (final IOException e) {
-            throw new NotConfigurableException(e.getMessage());
-        }
+
+        addChangeListenerToFileChooserSettings();
 
         XLSWriter2Settings newVals;
         try {
@@ -415,24 +410,10 @@ final class XLSWriter2NodeDialogPane extends NodeDialogPane {
         m_filter.loadConfiguration(config, tableSpec);
     }
 
-    private void addChangeListenerToFileChooserSettings() throws IOException {
+    private void addChangeListenerToFileChooserSettings() {
         final SettingsModelFileChooser2 model = (SettingsModelFileChooser2)m_fileChooserComponent.getModel();
-        final FileChooserHelper helper = new FileChooserHelper(m_fs, model);
-        final String pathOrUrlAsString = model.getPathOrURL();
-        model.addChangeListener(new ChangeListener() {
-            @Override
-            public void stateChanged(final ChangeEvent e) {
-                if ((pathOrUrlAsString != null) && !pathOrUrlAsString.isEmpty()) {
-                    try {
-                        final Path path = helper.getPathFromSettings();
-                        m_overwriteOK.setEnabled(path != null);
-                        m_openFile.setEnabled(path != null);
-                    } catch (final IllegalArgumentException | InvalidSettingsException ex) {
-                        // do nothing
-                    }
-                }
-            }
-        });
+        model.addChangeListener(
+            event -> m_openFile.setEnabled(model.getFileSystemChoice() == FileSystemChoice.getLocalFsChoice()));
     }
 
     /**
