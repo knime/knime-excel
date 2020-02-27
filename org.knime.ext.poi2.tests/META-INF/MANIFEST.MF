@@ -1,7 +1,7 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Unit-Tests for org.knime.ext.poi2
-Bundle-SymbolicName: org.knime.ext.poi2.testing;singleton:=true
+Bundle-SymbolicName: org.knime.ext.poi2.tests;singleton:=true
 Bundle-Version: 4.2.0.qualifier
 Bundle-Vendor: KNIME AG, Zurich, Switzerland
 Fragment-Host: org.knime.ext.poi2;bundle-version="[4.0.0,5.0.0)"
