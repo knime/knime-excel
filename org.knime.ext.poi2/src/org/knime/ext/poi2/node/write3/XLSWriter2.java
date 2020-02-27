@@ -52,14 +52,20 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URISyntaxException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
@@ -97,9 +103,8 @@ import org.knime.core.data.time.period.PeriodValue;
 import org.knime.core.data.time.zoneddatetime.ZonedDateTimeValue;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionMonitor;
+import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeLogger;
-import org.knime.core.util.DesktopUtil;
-import org.knime.filehandling.core.defaultnodesettings.FileSystemChoice;
 
 /**
  *
@@ -130,22 +135,23 @@ class XLSWriter2 {
 
     private final Path m_destination;
 
-    private final FileSystemChoice m_fileSystemChoice;
+    private final XLSNodeType m_type;
 
     /**
      * Creates a new writer with the specified settings.
      *
      * @param destination the destination to which the workbook will be written
+     * @param type The Excel node type (writer or appender).
      * @param settings the settings.
      * @param choice the file system choice
      */
-    XLSWriter2(final Path destination, final XLSWriter2Settings settings, final FileSystemChoice choice) {
+    XLSWriter2(final Path destination, final XLSNodeType type, final XLSWriter2Settings settings) {
         if (settings == null) {
             throw new IllegalArgumentException("Can't operate with null settings!");
         }
         m_destination = destination;
+        m_type = type;
         m_settings = settings;
-        m_fileSystemChoice = choice;
     }
 
     /**
@@ -160,36 +166,17 @@ class XLSWriter2 {
      * @throws CanceledExecutionException if execution in <code>exec</code> has been canceled
      * @throws InvalidFormatException if the existing file is not of the correct format
      * @throws URISyntaxException if the destination URL is invalid
+     * @throws InvalidSettingsException
      * @throws NullPointerException if table is <code>null</code>
      */
     void write(final Iterable<DataRow> table, final DataTableSpec spec, final int numOfRows,
         final ExecutionMonitor exec)
-        throws IOException, CanceledExecutionException, InvalidFormatException, URISyntaxException {
+        throws IOException, CanceledExecutionException, InvalidFormatException, URISyntaxException, InvalidSettingsException {
 
         Workbook wb = null;
         final boolean isXLSX = m_destination.toString().toLowerCase().endsWith("xlsx");
         try {
-            if (m_destination != null) {
-                if (Files.isRegularFile(m_destination)) {
-                    try (InputStream inStream = Files.newInputStream(m_destination)) {
-                        wb = createWorkbookFromStream(isXLSX, inStream);
-                    }
-                } else {
-                    if (isXLSX) {
-                        wb = createSxssfWorkbook();
-                        ((SXSSFWorkbook)wb).setCompressTempFiles(true);
-                    } else {
-                        wb = new HSSFWorkbook();
-                    }
-                }
-            } else {
-                try (InputStream is = Files.newInputStream(m_destination)) {
-                    wb = createWorkbookFromStream(isXLSX, is);
-                } catch (final IOException ex) {
-                    // seems it does not exist, so be it and we create a new workbook
-                    wb = isXLSX ? createSxssfWorkbook() : new HSSFWorkbook();
-                }
-            }
+            wb = readOrCreateWorkbook(isXLSX);
 
             int sheetIdx = 0; // in case the table doesn't fit in one sheet
             String sheetName = m_settings.getSheetname();
@@ -427,10 +414,7 @@ class XLSWriter2 {
                 evaluator.evaluateAll();
             }
 
-            // Write the output to a file
-            try (final OutputStream os = Files.newOutputStream(m_destination)) {
-                wb.write(os);
-            }
+            writeWorkbook(wb);
         } finally {
             if (wb instanceof SXSSFWorkbook) {
                 final SXSSFWorkbook sxssfWorkbook = (SXSSFWorkbook)wb;
@@ -440,11 +424,71 @@ class XLSWriter2 {
                 wb.close();
             }
         }
+    }
 
-        if (FileSystemChoice.getLocalFsChoice().equals(m_fileSystemChoice) && (m_destination != null)
-            && m_settings.getOpenFile()) {
-            DesktopUtil.open(m_destination.toFile());
+    private void writeWorkbook(final Workbook wb) throws IOException, InvalidSettingsException {
+
+        final Set<OpenOption> openOptions = new HashSet<>();
+        openOptions.add(StandardOpenOption.WRITE);
+
+        if (m_type == XLSNodeType.WRITER) {
+            if (m_settings.getOverwriteOK()) {
+                // creates a file if it does not already exist, or truncates an existing file
+                openOptions.add(StandardOpenOption.CREATE);
+                openOptions.add(StandardOpenOption.TRUNCATE_EXISTING);
+            } else {
+                // fails with FileAlreadyExistsException if it already exists
+                openOptions.add(StandardOpenOption.CREATE_NEW);
+            }
+        } else { // appender
+            openOptions.add(StandardOpenOption.CREATE);
+            openOptions.add(StandardOpenOption.TRUNCATE_EXISTING);
         }
+
+        // Write the output to a file
+        try (final OutputStream os = Files.newOutputStream(m_destination)) {
+            wb.write(os);
+        } catch (FileAlreadyExistsException e) {
+            throw new InvalidSettingsException(
+                "Output file '" + m_destination + "' exists and must not be overwritten due to user settings");
+        } // other IO Exceptions while writing will get thrown
+    }
+
+    private Workbook readOrCreateWorkbook(final boolean isXLSX) throws IOException, InvalidFormatException, InvalidSettingsException {
+        Workbook wb;
+
+        if (m_type == XLSNodeType.APPENDER) {
+            try (InputStream inStream = Files.newInputStream(m_destination)) {
+                wb = createWorkbookFromStream(isXLSX, inStream);
+            } catch (NoSuchFileException e) {
+                if (m_settings.getFileMustExist()) {
+                    throw new InvalidSettingsException("Output location '" + m_destination + "' does not exist, append not possible");
+                } else {
+                    // the file does not exist, hence we start with a fresh workbook
+                    wb = createNewWorkbook(isXLSX);
+                }
+            } // other IO Exceptions while reading will get thrown
+        } else {
+            // for the writer node we always start with a new workbook
+            wb = createNewWorkbook(isXLSX);
+        }
+
+        return wb;
+    }
+
+    /**
+     * @param isXLSX
+     * @return
+     */
+    private Workbook createNewWorkbook(final boolean isXLSX) {
+        final Workbook wb;
+        if (isXLSX) {
+            wb = createSxssfWorkbook();
+            ((SXSSFWorkbook)wb).setCompressTempFiles(true);
+        } else {
+            wb = new HSSFWorkbook();
+        }
+        return wb;
     }
 
     /**

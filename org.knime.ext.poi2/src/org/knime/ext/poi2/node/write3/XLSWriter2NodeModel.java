@@ -72,11 +72,12 @@ import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.util.filter.NameFilterConfiguration.FilterResult;
 import org.knime.core.node.util.filter.column.DataColumnSpecFilterConfiguration;
+import org.knime.core.util.DesktopUtil;
 import org.knime.filehandling.core.connections.FSConnection;
 import org.knime.filehandling.core.defaultnodesettings.FileChooserHelper;
+import org.knime.filehandling.core.defaultnodesettings.FileSystemChoice;
 import org.knime.filehandling.core.defaultnodesettings.SettingsModelFileChooser2;
 import org.knime.filehandling.core.port.FileSystemPortObject;
-import org.knime.filehandling.core.port.FileSystemPortObjectSpec;
 
 /**
  *
@@ -120,34 +121,6 @@ final class XLSWriter2NodeModel extends NodeModel {
             m_settings = new XLSWriter2Settings();
         }
 
-        final Optional<FSConnection> fs = FileSystemPortObjectSpec.getFileSystemConnection(inSpecs, 1);
-
-        final FileChooserHelper helper;
-        try {
-            helper = getFileChooserHelper(fs, m_settingsModel);
-        } catch (final IOException e) {
-            throw new InvalidSettingsException(e.getMessage());
-        }
-
-        final Path path = helper.getPathFromSettings();
-
-        final String warning = checkDestinationFile(path,
-            (m_type == XLSNodeType.APPENDER) || m_settings.getOverwriteOK(), m_settings.getFileMustExist());
-
-        if (!path.isAbsolute() && !helper.isKNIMERelativePath(path)) {
-            throw new InvalidSettingsException("Relative paths are not allowed ('" + path.getFileName()
-                + "'), please enter an absolute path or a URL");
-        }
-        if (warning != null) {
-            setWarningMessage(warning);
-        } else if (m_type == XLSNodeType.APPENDER) {
-            try {
-                checkDestinationFile(path, true, true);
-            } catch (final InvalidSettingsException ise) {
-                setWarningMessage(ise.getMessage());
-            }
-        }
-
         return new DataTableSpec[]{};
     }
 
@@ -176,17 +149,20 @@ final class XLSWriter2NodeModel extends NodeModel {
 
         KeyLocker.lock(path);
         try {
-            if ((m_type == XLSNodeType.WRITER) && m_settings.getOverwriteOK()) {
-                Files.deleteIfExists(path);
-            }
             final BufferedDataTable dataTable = (BufferedDataTable)inData[0];
             final ColumnRearranger rearranger = new ColumnRearranger(dataTable.getDataTableSpec());
             final FilterResult filter = m_filterConfig.applyTo(dataTable.getDataTableSpec());
             rearranger.keepOnly(filter.getIncludes());
             final BufferedDataTable table = exec.createColumnRearrangeTable(dataTable, rearranger, exec);
 
-            final XLSWriter2 xlsWriter = new XLSWriter2(path, m_settings, m_settingsModel.getFileSystemChoice());
+            final XLSWriter2 xlsWriter = new XLSWriter2(path, m_type, m_settings);
             xlsWriter.write(table, table.getDataTableSpec(), (int)table.size(), exec);
+
+            if (FileSystemChoice.getLocalFsChoice().equals(m_settingsModel.getFileSystemChoice())
+                && m_settings.getOpenFile()) {
+                DesktopUtil.open(path.toFile());
+            }
+
             return new BufferedDataTable[]{};
         } finally {
             //always unlock the path
