@@ -727,10 +727,12 @@ class XLSReaderNodeDialog extends NodeDialogPane {
                         sheetNames.add(0, FIRST_SHEET);
                         return sheetNames.toArray(new String[sheetNames.size()]);
                     } else {//xlsx without reevaluation
-                        final List<String> sheetNames =
-                            POIUtils.getSheetNames(new XSSFReader(OPCPackage.open(Files.newInputStream(path))));
-                        sheetNames.add(0, FIRST_SHEET);
-                        return sheetNames.stream().toArray(n -> new String[n]);
+                        try (final InputStream stream = Files.newInputStream(path);
+                                final OPCPackage opcpackage = OPCPackage.open(stream)) {
+                            final List<String> sheetNames = POIUtils.getSheetNames(new XSSFReader(opcpackage));
+                            sheetNames.add(0, FIRST_SHEET);
+                            return sheetNames.stream().toArray(n -> new String[n]);
+                        }
                     }
                 } else {
                     m_previewMsg.setText("No input file available");
