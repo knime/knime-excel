@@ -29,9 +29,39 @@
             not possible to determine whether this location already exists. If no extension is specified, the
             file will be written in the .xlsx format.</p>
         </intro>
-        <option name="Output location"> Enter a valid file name or URL. You can also choose a previously selected 
-        	location from the drop-down list, or select a file from the &quot;Browse...&quot; dialog.
+        
+        <option name="Write to">
+            Select a file system which shall store the file you want to write. There are
+            three default file system options to choose from:
+            <br />
+            <ul>
+                <li><i>Local File System:</i> Allows you to select a file/folder from your
+                    local system.
+                </li>
+                <li><i>Mountpoint:</i> Allows you to choose a mountpoint. When
+                    selected, a new drop-down menu appears to choose the
+                    mountpoint.
+                </li>
+                <li><i>Custom URL:</i> Allows to specify a URL (e.g. file://, http://
+                    or knime:// protocol). Browsing is disabled for this option.
+                </li>
+            </ul>
+            To write to other file systems, click on
+            <b>...</b> in the bottom left corner of the node icon followed by
+            <i>Add File System Connection port</i>. Afterwards, connect the desired file system connection
+            node to the newly added input port. The file system connection will then be shown in the drop
+            down menu.
         </option>
+        <option name="File or URL">
+            Enter a URL when writing to the <i>Custom URL</i> file system, otherwise enter a path to a file. The
+            required syntax of a path depends on the chosen file system, such as &quot;C:\path\to\file&quot; (Local
+            File System on Windows) or  &quot;/path/to/file&quot; (Local
+            File System on Linux/MacOS and Mountpoint). For file systems connected via input port, the node
+            description of the respective connector node describes the required path format.
+            You can also choose a previously selected file from the drop-down list, or select a destination
+            from the &quot;Browse...&quot; dialog (browsing is not available for the Custom URL file system).
+        </option>
+        
         <option name="Overwrite existing file"> Existing files will be overwritten if this option is enabled. Otherwise 
         	the node will fail during execution to retain the original file and to avoid unintentional overwrite. 
         	Remote locations will always be overwritten.
