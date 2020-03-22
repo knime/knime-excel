@@ -6,6 +6,10 @@
       <node
             category-path="/io/write"
             deprecated="true"
+            factory-class="org.knime.ext.poi.node.write.XLSWriterNodeFactory"/>
+      <node
+            category-path="/io/write"
+            deprecated="true"
             factory-class="org.knime.ext.poi.node.write2.XLSWriter2NodeFactory"/>
       <node
             category-path="/io/write"
