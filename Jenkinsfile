@@ -16,7 +16,7 @@ try {
 
     workflowTests.runTests(
         dependencies: [
-            repositories: ["knime-excel", "knime-timeseries", "knime-filehandling"]
+            repositories: ["knime-excel", "knime-timeseries", "knime-filehandling", "knime-jfreechart"]
         ]
     )
 
