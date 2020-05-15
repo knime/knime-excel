@@ -48,6 +48,7 @@
 package org.knime.ext.poi2.node.write3;
 
 import java.awt.Dimension;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -446,8 +447,10 @@ class XLSWriter2 {
         }
 
         // Write the output to a file
-        try (final OutputStream os = Files.newOutputStream(m_destination)) {
+        try (final OutputStream os =
+            new BufferedOutputStream(Files.newOutputStream(m_destination, openOptions.toArray(new OpenOption[0])))) {
             wb.write(os);
+            os.flush();
         } catch (FileAlreadyExistsException e) {
             throw new InvalidSettingsException(
                 "Output file '" + m_destination + "' exists and must not be overwritten due to user settings");
