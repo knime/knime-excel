@@ -188,6 +188,11 @@ class ExcelTableReader implements FilesToDataTableReader {
         if (m_firstTable != null) {
             return m_firstTable.getDataTableSpec();
         }
+
+        if (paths.isEmpty()) {
+            throw new InvalidSettingsException("No files to read");
+        }
+
         try {
             return createDataTable(paths.get(0), exec).getDataTableSpec();
         } catch (final Exception e) {
