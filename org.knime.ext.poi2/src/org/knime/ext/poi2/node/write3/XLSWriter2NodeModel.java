@@ -50,7 +50,9 @@ package org.knime.ext.poi2.node.write3;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Optional;
 
 import javax.swing.filechooser.FileSystemView;
@@ -249,13 +251,16 @@ final class XLSWriter2NodeModel extends NodeModel {
     }
 
     private static String checkDestinationFile(final Path path, final boolean allowOverwrite,
-        final boolean mustExistForAppend) throws InvalidSettingsException {
+        final boolean mustExistForAppend) throws IOException, InvalidSettingsException {
+
         if ((path == null) || path.toString().isEmpty()) {
             throw new InvalidSettingsException("No destination location provided! Please enter a valid location.");
         }
 
-        if (Files.exists(path)) {
-            if (Files.isDirectory(path)) {
+        try {
+            final BasicFileAttributes fileAttrs = Files.readAttributes(path, BasicFileAttributes.class);
+
+            if (fileAttrs.isDirectory()) {
                 throw new InvalidSettingsException("Output location '" + path + "' is a directory");
             } else if (!Files.isWritable(path) && !(looksLikeUNC(path) || isWindowsNetworkMount(path))) {
                 throw new InvalidSettingsException("Output file '" + path + "' is not writable");
@@ -267,16 +272,18 @@ final class XLSWriter2NodeModel extends NodeModel {
                 throw new InvalidSettingsException(
                     "Output file '" + path + "' exists and must not be overwritten due to user settings");
             }
-        } else if (mustExistForAppend) {
-            throw new InvalidSettingsException("Output location '" + path + "' does not exist, append not possible");
-        } else {
-            final Path parent = path.getParent();
-            if (parent != null) {
-                if (!Files.exists(parent)) {
-                    throw new InvalidSettingsException("Directory '" + parent + "' of output file does not exist");
-                } else if (!Files.isWritable(path.getParent())
-                    && !(looksLikeUNC(path.getParent()) || isWindowsNetworkMount(path))) {
-                    throw new InvalidSettingsException("Directory '" + parent + "' is not writable");
+        } catch (NoSuchFileException e) {
+            if (mustExistForAppend) {
+                throw new InvalidSettingsException("Output location '" + path + "' does not exist, append not possible");
+            } else {
+                final Path parent = path.getParent();
+                if (parent != null) {
+                    if (!Files.exists(parent)) {
+                        throw new InvalidSettingsException("Directory '" + parent + "' of output file does not exist");
+                    } else if (!Files.isWritable(path.getParent())
+                        && !(looksLikeUNC(path.getParent()) || isWindowsNetworkMount(path))) {
+                        throw new InvalidSettingsException("Directory '" + parent + "' is not writable");
+                    }
                 }
             }
         }
