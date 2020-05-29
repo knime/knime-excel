@@ -19,7 +19,7 @@ try {
     workflowTests.runTests(
         dependencies: [
             repositories: ["knime-excel", "knime-timeseries", "knime-jep", "knime-datageneration",
-            "knime-filehandling", "knime-jfreechart", "knime-distance"]
+            "knime-filehandling", "knime-jfreechart", "knime-distance", "knime-exttool", "knime-chemistry"]
         ],
         sidecarContainers: [
             [ image: SSHD_IMAGE, namePrefix: "SSHD", port: 22 ] 
