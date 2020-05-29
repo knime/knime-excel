@@ -11,12 +11,17 @@ properties([
     disableConcurrentBuilds()
 ])
 
+SSHD_IMAGE = "${dockerTools.ECR}/knime/sshd:alpine3.10"
+
 try {
     knimetools.defaultTychoBuild('org.knime.update.ext.poi')
 
     workflowTests.runTests(
         dependencies: [
             repositories: ["knime-excel", "knime-timeseries", "knime-filehandling", "knime-jfreechart", "knime-distance"]
+        ],
+        sidecarContainers: [
+            [ image: SSHD_IMAGE, namePrefix: "SSHD", port: 22 ] 
         ]
     )
 
