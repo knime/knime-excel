@@ -7,7 +7,7 @@
 
 	<parent>
 		<groupId>org.knime</groupId>
-		<artifactId>knime-poi</artifactId>
+		<artifactId>knime-excel</artifactId>
   		<version>${revision}${changelist}</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
