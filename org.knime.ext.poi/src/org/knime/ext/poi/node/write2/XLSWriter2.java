@@ -398,7 +398,7 @@ public class XLSWriter2 {
         if (localPath != null) {
             return new BufferedOutputStream(Files.newOutputStream(localPath));
         } else {
-            return new BufferedOutputStream(FileUtil.openOutputConnection(destination, "PUT").getOutputStream());
+            return new BufferedOutputStream(FileUtil.openOutputStream(destination, "PUT"));
         }
     }
 
