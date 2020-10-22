@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.0"?>
+<plugin>
+   <extension
+         point="org.knime.workbench.repository.nodes">
+      <node
+            category-path="/labs/file-handling-prototype/file-handling-IO/file-handling-Read"
+            deprecated="false"
+            factory-class="org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderNodeFactory">
+      </node>
+      
+   </extension>
+</plugin>

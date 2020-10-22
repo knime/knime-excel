@@ -38,11 +38,6 @@
             deprecated="false"
             factory-class="org.knime.ext.poi2.node.read4.XLSReaderNodeFactory">
       </node>
-      <node
-            category-path="/labs/file-handling-prototype/file-handling-IO/file-handling-Read"
-            deprecated="false"
-            factory-class="org.knime.ext.poi2.node.io.filehandling.excel.reader.ExcelTableReaderNodeFactory">
-      </node>
       
    </extension>
      <extension

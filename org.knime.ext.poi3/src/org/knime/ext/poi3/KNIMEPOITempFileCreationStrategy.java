@@ -44,70 +44,73 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Oct 13, 2020 (Simon Schmid, KNIME GmbH, Konstanz, Germany): created
+ *   Feb 19, 2018 (ferry): created
  */
-package org.knime.ext.poi2.node.io.filehandling.excel.reader;
+package org.knime.ext.poi3;
 
-import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.NodeSettingsRO;
-import org.knime.core.node.NodeSettingsWO;
-import org.knime.core.node.NotConfigurableException;
-import org.knime.core.node.port.PortObjectSpec;
-import org.knime.filehandling.core.node.table.reader.config.ConfigSerializer;
-import org.knime.filehandling.core.node.table.reader.config.DefaultMultiTableReadConfig;
-import org.knime.filehandling.core.node.table.reader.config.DefaultTableReadConfig;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import org.apache.poi.util.DefaultTempFileCreationStrategy;
+import org.apache.poi.util.TempFileCreationStrategy;
+import org.knime.core.util.PathUtils;
 
 /**
- * TODO implement once dialog is extended with more settings
+ * Temp file creation strategy that ensures that the temp directory always exists (which is a problem in
+ * {@link DefaultTempFileCreationStrategy}).
  *
- * {@link ConfigSerializer} for the Excel reader node.
- *
- * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
+ * @author Ferry Abt, KNIME GmbH, Konstanz, Germany
  */
-enum ExcelMultiTableReadConfigSerializer implements
-    ConfigSerializer<DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>>> {
+final class KNIMEPOITempFileCreationStrategy implements TempFileCreationStrategy {
+    private final Path m_dir;
 
-        /**
-         * Singleton instance.
-         */
-        INSTANCE;
-
-    @Override
-    public void loadInDialog(
-        final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> config,
-        final NodeSettingsRO settings, final PortObjectSpec[] specs) throws NotConfigurableException {
-        // TODO add settings to dialog
+    /**
+     * Creates the strategy allowing to set the
+     *
+     * @param dir The directory where the temporary files will be created
+     */
+    KNIMEPOITempFileCreationStrategy(final Path dir) {
+        if (dir == null) {
+            throw new IllegalArgumentException("Apache POI temp directory must not be null!");
+        }
+        m_dir = dir;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public void loadInModel(
-        final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> config,
-        final NodeSettingsRO settings) throws InvalidSettingsException {
-        // TODO add settings to dialog, for now hard-coded
-        final DefaultTableReadConfig<?> tc = config.getTableReadConfig();
-        tc.setAllowShortRows(true);
-        tc.setUseColumnHeaderIdx(true);
-        tc.setColumnHeaderIdx(0);
-        tc.setLimitRowsForSpec(false);
+    public File createTempFile(final String prefix, final String suffix) throws IOException {
+        Files.createDirectories(m_dir);
+
+        Path newFile;
+        // Set the delete on exit flag, unless explicitly disabled
+        if (System.getProperty("poi.keep.tmp.files") == null) {
+            newFile = PathUtils.createTempFile(m_dir, prefix, suffix);
+        } else {
+            newFile = Files.createTempFile(m_dir, prefix, suffix);
+        }
+
+        return newFile.toFile();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public void saveInModel(
-        final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> config,
-        final NodeSettingsWO settings) {
-        // TODO add settings to dialog
-    }
+    public File createTempDirectory(final String prefix) throws IOException {
+        Files.createDirectories(m_dir);
 
-    @Override
-    public void validate(final NodeSettingsRO settings) throws InvalidSettingsException {
-        // TODO add settings to dialog
-    }
+        Path newDirectory;
+        // Set the delete on exit flag, unless explicitly disabled
+        if (System.getProperty("poi.keep.tmp.files") == null) {
+            newDirectory = PathUtils.createTempDir(prefix, m_dir);
+        } else {
+            newDirectory = Files.createTempDirectory(m_dir, prefix);
+        }
 
-    @Override
-    public void saveInDialog(
-        final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> config,
-        final NodeSettingsWO settings) throws InvalidSettingsException {
-        saveInModel(config, settings);
+        return newDirectory.toFile();
     }
-
 }

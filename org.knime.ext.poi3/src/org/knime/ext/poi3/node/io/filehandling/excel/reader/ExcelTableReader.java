@@ -46,7 +46,7 @@
  * History
  *   Oct 13, 2020 (Simon Schmid, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.ext.poi2.node.io.filehandling.excel.reader;
+package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -55,7 +55,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.knime.core.node.ExecutionMonitor;
-import org.knime.ext.poi2.node.io.filehandling.excel.reader.read.XLSXRead;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.XLSXRead;
 import org.knime.filehandling.core.node.table.reader.TableReader;
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
 import org.knime.filehandling.core.node.table.reader.read.Read;

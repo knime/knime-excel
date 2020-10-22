@@ -1,6 +1,5 @@
 /*
  * ------------------------------------------------------------------------
- *
  *  Copyright by KNIME AG, Zurich, Switzerland
  *  Website: http://www.knime.com; Email: contact@knime.com
  *
@@ -41,32 +40,32 @@
  *  propagated with or for interoperation with KNIME.  The owner of a Node
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
- * ---------------------------------------------------------------------
- *
- * History
- *   Oct 13, 2020 (Simon Schmid, KNIME GmbH, Konstanz, Germany): created
+ * -------------------------------------------------------------------
  */
-package org.knime.ext.poi2.node.io.filehandling.excel.reader;
+package org.knime.ext.poi3;
 
-import org.knime.filehandling.core.node.table.reader.config.ReaderSpecificConfig;
+import org.apache.poi.util.TempFile;
+import org.eclipse.core.runtime.Plugin;
+import org.knime.core.node.KNIMEConstants;
+import org.knime.core.util.PathUtils;
+import org.osgi.framework.BundleContext;
 
 /**
- * TODO implement config
+ * The activator class controls the plug-in life cycle.
  */
-public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelTableReaderConfig> {
-
+public class POIActivator extends Plugin {
     /**
-     * Constructor.
+     * {@inheritDoc}
      */
-    ExcelTableReaderConfig() {
-    }
-
-    private ExcelTableReaderConfig(final ExcelTableReaderConfig toCopy) {
-    }
-
     @Override
-    public ExcelTableReaderConfig copy() {
-        return new ExcelTableReaderConfig(this);
-    }
+    public void start(final BundleContext context) throws Exception {
+        super.start(context);
+        // disable logging of POI. To speed it up.
+        System.setProperty("org.apache.poi.util.POILogger", "org.apache.poi.util.NullLogger");
 
+        // We must explicitly use the standard temp dir here, otherwise it may end up in a workflow-specific temp
+        // directory and be removed when the workflow is closed.
+        TempFile.setTempFileCreationStrategy(new KNIMEPOITempFileCreationStrategy(
+            PathUtils.createTempDir("poifiles", KNIMEConstants.getKNIMETempPath())));
+    }
 }

@@ -46,7 +46,7 @@
  * History
  *   Oct 13, 2020 (Simon Schmid, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.ext.poi2.node.io.filehandling.excel.reader;
+package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 
 import java.util.function.Supplier;
 

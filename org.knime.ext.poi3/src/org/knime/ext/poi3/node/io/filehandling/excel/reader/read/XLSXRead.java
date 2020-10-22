@@ -46,7 +46,7 @@
  * History
  *   Oct 20, 2020 (Simon Schmid, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.ext.poi2.node.io.filehandling.excel.reader.read;
+package org.knime.ext.poi3.node.io.filehandling.excel.reader.read;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -74,7 +74,7 @@ import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.util.CellAddress;
 import org.apache.poi.ss.util.CellReference;
-import org.apache.poi.util.SAXHelper;
+import org.apache.poi.util.XMLHelper;
 import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
 import org.apache.poi.xssf.eventusermodel.XSSFReader;
 import org.apache.poi.xssf.eventusermodel.XSSFReader.SheetIterator;
@@ -83,7 +83,7 @@ import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler.SheetContentsHandl
 import org.apache.poi.xssf.usermodel.XSSFComment;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.util.ThreadUtils;
-import org.knime.ext.poi2.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
 import org.knime.filehandling.core.connections.FSFiles;
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
 import org.knime.filehandling.core.node.table.reader.randomaccess.RandomAccessible;
@@ -164,7 +164,7 @@ public final class XLSXRead implements Read<String> {
             m_sheetSize = m_countingSheetStream.available();
 
             // create the parser
-            final XMLReader sheetParser = SAXHelper.newXMLReader(); // TODO replace SAXHelper with XMLHelper when using POI v4
+            final XMLReader sheetParser = XMLHelper.newXMLReader();
             final ReadOnlySharedStringsTable sharedStringsTable = new ReadOnlySharedStringsTable(m_opc, false);
             final ExcelTableReaderSheetContentsHandler sheetContentsHandler =
                 new ExcelTableReaderSheetContentsHandler();

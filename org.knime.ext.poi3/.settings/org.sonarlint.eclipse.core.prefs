@@ -1,0 +1,6 @@
+autoEnabled=true
+eclipse.preferences.version=1
+idePrefixKey=
+projectKey=org.knime\:knime-poi
+serverId=sonar.knime.com
+sqPrefixKey=org.knime.ext.poi3
