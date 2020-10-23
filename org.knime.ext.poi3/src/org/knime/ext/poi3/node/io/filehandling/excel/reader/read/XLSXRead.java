@@ -52,23 +52,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.NoSuchElementException;
-import java.util.Optional;
 import java.util.OptionalLong;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-
-import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.commons.io.input.CountingInputStream;
-import org.apache.poi.openxml4j.exceptions.InvalidOperationException;
+import org.apache.poi.UnsupportedFileFormatException;
+import org.apache.poi.openxml4j.exceptions.OLE2NotOfficeXmlFileException;
 import org.apache.poi.openxml4j.exceptions.OpenXML4JException;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.ss.usermodel.DataFormatter;
@@ -80,15 +68,11 @@ import org.apache.poi.xssf.eventusermodel.XSSFReader;
 import org.apache.poi.xssf.eventusermodel.XSSFReader.SheetIterator;
 import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler;
 import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler.SheetContentsHandler;
+import org.apache.poi.xssf.model.SharedStrings;
 import org.apache.poi.xssf.usermodel.XSSFComment;
-import org.knime.core.node.NodeLogger;
-import org.knime.core.util.ThreadUtils;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
-import org.knime.filehandling.core.connections.FSFiles;
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
-import org.knime.filehandling.core.node.table.reader.randomaccess.RandomAccessible;
 import org.knime.filehandling.core.node.table.reader.randomaccess.RandomAccessibleUtils;
-import org.knime.filehandling.core.node.table.reader.read.Read;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
@@ -99,61 +83,30 @@ import org.xml.sax.XMLReader;
  *
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
  */
-public final class XLSXRead implements Read<String> {
-
-    private static final NodeLogger LOGGER = NodeLogger.getLogger(XLSXRead.class);
-
-    private static final int BLOCKING_QUEUE_SIZE = 100;
-
-    private static final AtomicLong CACHED_THREAD_POOL_INDEX = new AtomicLong();
-
-    /** Threadpool that can be used to parse new sheets. */
-    private static final ExecutorService CACHED_THREAD_POOL = Executors.newCachedThreadPool(
-        r -> ThreadUtils.threadWithContext(r, "KNIME-XLSX-Parser-" + CACHED_THREAD_POOL_INDEX.getAndIncrement()));
-
-    /** The poison pill put into the blocking to indicate end of parsing. */
-    private static final RandomAccessible<String> POISON_PILL = RandomAccessibleUtils.createFromArray("POISON");
-
-    /** The path of the underlying source. */
-    private final Path m_path;
-
-    /** Queue that uses the TRF to consume rows produced by the parser thread. */
-    private final BlockingQueue<RandomAccessible<String>> m_queueRandomAccessibles =
-        new ArrayBlockingQueue<>(BLOCKING_QUEUE_SIZE);
-
-    /** The thread running the parser. */
-    private final Future<?> m_parserThread;
-
-    /** Atomic reference used to communicate exceptions between parser thread and main thread. */
-    private final AtomicReference<Throwable> m_throwableDuringParsing = new AtomicReference<>();
-
-    /** Iterator collecting RandomAccessibles from the parser thread. */
-    private final RandomAccessibleIterator m_randomAccessibleIterator;
-
-    private final long m_sheetSize;
-
-    private final OPCPackage m_opc;
-
-    private final InputStream m_inputStream;
-
-    private final CountingInputStream m_countingSheetStream;
+public final class XLSXRead extends ExcelRead {
 
     /**
-     * Constructor
+     * Constructor.
      *
      * @param path the path of the file to read
-     * @param config the Excel table reader configuration.
-     * @throws IOException if a stream can not be created from the provided file.
+     * @param config the Excel table read config
+     * @throws IOException if an I/O exception occurs
      */
-    @SuppressWarnings("resource") // we are going to close all the resources in #close
     public XLSXRead(final Path path, final TableReadConfig<ExcelTableReaderConfig> config) throws IOException {
-        m_path = path;
-        m_randomAccessibleIterator = new RandomAccessibleIterator();
+        super(path, config);
+    }
 
-        m_inputStream = FSFiles.newInputStream(path);
+    private OPCPackage m_opc;
+
+    private CountingInputStream m_countingSheetStream;
+
+    private long m_sheetSize;
+
+    @Override
+    @SuppressWarnings("resource") // we are going to close all the resources in #close
+    public ExcelParserRunnable createParser(final InputStream inputStream) throws IOException {
         try {
-            m_opc = OPCPackage.open(m_inputStream);
-
+            m_opc = OPCPackage.open(inputStream);
             // take the first sheet
             final XSSFReader xssfReader = new XSSFReader(m_opc);
             final SheetIterator sheetsData = (SheetIterator)xssfReader.getSheetsData();
@@ -164,54 +117,22 @@ public final class XLSXRead implements Read<String> {
             m_sheetSize = m_countingSheetStream.available();
 
             // create the parser
-            final XMLReader sheetParser = XMLHelper.newXMLReader();
             final ReadOnlySharedStringsTable sharedStringsTable = new ReadOnlySharedStringsTable(m_opc, false);
-            final ExcelTableReaderSheetContentsHandler sheetContentsHandler =
-                new ExcelTableReaderSheetContentsHandler();
-            final DataFormatter dataFormatter = new DataFormatter();
-
-            sheetParser.setContentHandler(new XSSFSheetXMLHandler(xssfReader.getStylesTable(), null, sharedStringsTable,
-                sheetContentsHandler, dataFormatter, false));
-
-            // create the runnable that will execute the parsing
-            final Runnable runnable = () -> {
-                try {
-                    sheetParser.parse(new InputSource(m_countingSheetStream));
-                    m_queueRandomAccessibles.put(POISON_PILL);
-                    LOGGER.debug("Thread parsing an xlsx sheet finished successfully.");
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    closeAndSwallowExceptions();
-                } catch (Throwable e) { // NOSONAR we want to catch any Throwable
-                    m_throwableDuringParsing.set(e);
-                    // cannot do anything with the IO exceptions besides logging
-                    closeAndSwallowExceptions();
-                }
-            };
-
-            // create and start the thread
-            m_parserThread = CACHED_THREAD_POOL.submit(ThreadUtils.runnableWithContext(runnable));
-            LOGGER.debug("Thread parsing an xlsx sheet started.");
-        } catch (InvalidOperationException | OpenXML4JException | SAXException | ParserConfigurationException e) {
+            return new XLSXParserRunnable(this, xssfReader, sharedStringsTable);
+        } catch (OLE2NotOfficeXmlFileException e) {
+            // re-throw, will be caught and processed by the ExcelTableReader
+            throw e;
+        } catch (UnsupportedFileFormatException e) {
+            throw unsupportedFileFormatException(e);
+        } catch (SAXException | OpenXML4JException e) {
             throw new IllegalStateException(e.getMessage(), e);
         }
     }
 
-    private void closeAndSwallowExceptions() {
-        try {
-            close();
-        } catch (IOException ioe) {
-            LOGGER.debug(ioe);
-        }
-    }
-
     @Override
-    public RandomAccessible<String> next() throws IOException {
-        final boolean hasNext = m_randomAccessibleIterator.hasNext();
-        if (m_throwableDuringParsing.get() != null) {
-            close();
-        }
-        return hasNext ? m_randomAccessibleIterator.next() : null;
+    public void closeResources() throws IOException {
+        m_countingSheetStream.close();
+        m_opc.close();
     }
 
     @Override
@@ -224,162 +145,88 @@ public final class XLSXRead implements Read<String> {
         return m_countingSheetStream.getByteCount();
     }
 
-    @Override
-    public Optional<Path> getPath() {
-        return Optional.ofNullable(m_path);
-    }
+    private class XLSXParserRunnable extends ExcelParserRunnable {
 
-    @Override
-    public void close() throws IOException {
-        // cancel the thread
-        m_parserThread.cancel(true);
-        // free the queue so that any put call by the canceled thread is not blocking the cancellation
-        m_queueRandomAccessibles.clear();
-        // as we just cleared the queue, we can use #add to insert the poison pill
-        m_queueRandomAccessibles.add(POISON_PILL);
+        private final XSSFReader m_xssfReader;
 
-        final Throwable throwable = m_throwableDuringParsing.get();
-        // close resources
-        try {
-            m_countingSheetStream.close();
-            m_inputStream.close();
-            m_opc.close();
-        } catch (IOException e) {
-            // an exception during parsing has priority
-            if (throwable == null) {
-                throw e;
-            }
+        private final SharedStrings m_sharedStringsTable;
+
+        XLSXParserRunnable(final ExcelRead read, final XSSFReader xssfReader, final SharedStrings sharedStringsTable) {
+            super(read);
+            m_xssfReader = xssfReader;
+            m_sharedStringsTable = sharedStringsTable;
         }
-
-        // if an exception occurred during parsing, throw it
-        if (throwable != null) {
-            if (throwable instanceof RuntimeException) {
-                throw (RuntimeException)throwable;
-            } else if (throwable instanceof Error) {
-                throw (Error)throwable;
-            }
-            throw new IllegalStateException(throwable.getMessage(), throwable);
-        }
-    }
-
-    /**
-     * Iterator that collects all parsed rows. If an exception occurred during parsing or the parsing is finished,
-     * {@link #hasNext()} will return {@code false}. Otherwise, it will wait for more rows becoming available to iterate
-     * over.
-     */
-    private class RandomAccessibleIterator implements Iterator<RandomAccessible<String>> {
-
-        private final LinkedList<RandomAccessible<String>> m_randomAccessibles = new LinkedList<>();
-
-        private boolean m_encounteredPoisonPill = false;
 
         @Override
-        public boolean hasNext() {
-            if (m_encounteredPoisonPill || m_throwableDuringParsing.get() != null) {
-                return false;
-            }
-            // TODO in my experiments, the size of the queue was never bigger than 1 -> wouldn't a simple #take be faster?
-            // -> check that once we have more features implemented with different xlsx files
-            if (m_randomAccessibles.isEmpty()) {
-                try {
-                    m_randomAccessibles.add(m_queueRandomAccessibles.take());
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    return false;
+        protected void parse() throws Exception {
+            final XMLReader xmlReader = XMLHelper.newXMLReader();
+            final ExcelTableReaderSheetContentsHandler sheetContentsHandler =
+                new ExcelTableReaderSheetContentsHandler();
+            xmlReader.setContentHandler(new XSSFSheetXMLHandler(m_xssfReader.getStylesTable(), null,
+                m_sharedStringsTable, sheetContentsHandler, new DataFormatter(), false));
+            xmlReader.parse(new InputSource(m_countingSheetStream));
+        }
+
+        class ExcelTableReaderSheetContentsHandler implements SheetContentsHandler {
+
+            private int m_currentRow = -1;
+
+            private int m_currentCol = -1;
+
+            private final ArrayList<String> m_row = new ArrayList<>();
+
+            /*
+             *  TODO this works only if short rows are allowed which is right now always enabled (old behavior as well).
+             *  if we want to offer short rows as a setting, we need to revise the below method.
+             */
+            private void outputEmptyRows(final int numMissingsRows) {
+                for (int i = 0; i < numMissingsRows; i++) {
+                    m_currentRow++;
+                    endRow(m_currentRow);
                 }
-                // add all elements of the queue into the iterator's list
-                m_queueRandomAccessibles.drainTo(m_randomAccessibles);
             }
-            m_encounteredPoisonPill = m_randomAccessibles.peek() == POISON_PILL;
-            return !m_encounteredPoisonPill;
-        }
 
-        @Override
-        public RandomAccessible<String> next() {
-            if (!hasNext()) {
-                throw new NoSuchElementException("No more RandomAccessible available.");
+            @Override
+            public void startRow(final int rowNum) {
+                // If there were empty rows, output these
+                outputEmptyRows(rowNum - m_currentRow - 1);
+
+                m_currentRow = rowNum;
+                m_currentCol = -1;
             }
-            return m_randomAccessibles.poll();
-        }
 
+            @Override
+            public void endRow(final int rowNum) {
+                addToQueue(RandomAccessibleUtils.createFromArrayUnsafe(m_row.toArray(new String[0])));
+                m_row.clear();
+            }
+
+            @Override
+            public void cell(String cellReference, final String formattedValue, final XSSFComment comment) {
+                m_currentCol++;
+                // gracefully handle missing CellRef here in a similar way as XSSFCell does
+                if (cellReference == null) {
+                    cellReference = new CellAddress(m_currentRow, m_currentCol).formatAsString();
+                }
+
+                // check if cells were missing and insert null if so
+                int thisCol = new CellReference(cellReference).getCol();
+                int missedCols = thisCol - m_currentCol;
+                for (int i = 0; i < missedCols; i++) {
+                    m_row.add(null);
+                }
+                m_currentCol += missedCols;
+
+                // add the cell value to the row
+                m_row.add(formattedValue);
+            }
+
+            @Override
+            public void headerFooter(final String text, final boolean isHeader, final String tagName) {
+                // TODO do nothing? (that's at least old behavior) -> we will see later
+            }
+
+        }
     }
 
-    private class ExcelTableReaderSheetContentsHandler implements SheetContentsHandler {
-
-        private int m_currentRow = -1;
-
-        private int m_currentCol = -1;
-
-        private final ArrayList<String> m_row = new ArrayList<>();
-
-        /*
-         *  TODO this works only if short rows are allowed which is right now always enabled (old behavior as well).
-         *  if we want to offer short rows as a setting, we need to revise the below method.
-         */
-        private void outputEmptyRows(final int numMissingsRows) {
-            for (int i = 0; i < numMissingsRows; i++) {
-                m_currentRow++;
-                endRow(m_currentRow);
-            }
-        }
-
-        @Override
-        public void startRow(final int rowNum) {
-            // If there were empty rows, output these
-            outputEmptyRows(rowNum - m_currentRow - 1);
-
-            m_currentRow = rowNum;
-            m_currentCol = -1;
-        }
-
-        @Override
-        public void endRow(final int rowNum) {
-            try {
-                m_queueRandomAccessibles.put(RandomAccessibleUtils.createFromArrayUnsafe(m_row.toArray(new String[0])));
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                LOGGER.debug("Thread parsing an xlsx sheet interrupted.");
-                // throw a runtime exception as the interrupting the thread does not stop it
-                throw new ParsingInterruptedException();
-            }
-            m_row.clear();
-        }
-
-        @Override
-        public void cell(String cellReference, final String formattedValue, final XSSFComment comment) {
-            m_currentCol++;
-            // gracefully handle missing CellRef here in a similar way as XSSFCell does
-            if (cellReference == null) {
-                cellReference = new CellAddress(m_currentRow, m_currentCol).formatAsString();
-            }
-
-            // check if cells were missing and insert null if so
-            int thisCol = new CellReference(cellReference).getCol();
-            int missedCols = thisCol - m_currentCol;
-            for (int i = 0; i < missedCols; i++) {
-                m_row.add(null);
-            }
-            m_currentCol += missedCols;
-
-            // add the cell value to the row
-            m_row.add(formattedValue);
-        }
-
-        @Override
-        public void headerFooter(final String text, final boolean isHeader, final String tagName) {
-            // TODO do nothing? (that's at least old behavior) -> we will see later
-        }
-
-    }
-
-    /**
-     * Exception to be thrown when the thread that parses the sheet should be interrupted.
-     *
-     * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
-     */
-    private static class ParsingInterruptedException extends RuntimeException {
-
-        private static final long serialVersionUID = 1L;
-
-    }
 }

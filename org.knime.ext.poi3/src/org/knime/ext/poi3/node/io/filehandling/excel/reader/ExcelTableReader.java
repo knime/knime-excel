@@ -54,7 +54,10 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import org.apache.poi.openxml4j.exceptions.OLE2NotOfficeXmlFileException;
 import org.knime.core.node.ExecutionMonitor;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelRead;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.XLSRead;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.XLSXRead;
 import org.knime.filehandling.core.node.table.reader.TableReader;
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
@@ -76,16 +79,30 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, Clas
 
     @Override
     public Read<String> read(final Path path, final TableReadConfig<ExcelTableReaderConfig> config) throws IOException {
-        return new XLSXRead(path, config);
+        return getExcelRead(path, config);
     }
 
     @Override
     public TypedReaderTableSpec<Class<?>> readSpec(final Path path,
         final TableReadConfig<ExcelTableReaderConfig> config, final ExecutionMonitor exec) throws IOException {
         final TableSpecGuesser<Class<?>, String> guesser = createGuesser();
-        try (final XLSXRead read = new XLSXRead(path, config)) {
+        try (final ExcelRead read = getExcelRead(path, config)) {
             return guesser.guessSpec(read, config, exec);
         }
+    }
+
+    private static ExcelRead getExcelRead(final Path path, final TableReadConfig<ExcelTableReaderConfig> config)
+        throws IOException {
+        try {
+            final String pathLowerCase = path.toString().toLowerCase();
+            if (pathLowerCase.endsWith(".xlsx") || pathLowerCase.endsWith(".xlsm")) {
+                return new XLSXRead(path, config);
+            }
+        } catch (OLE2NotOfficeXmlFileException e) { // NOSONAR
+            // Happens if an xls file has been specified that ends with xlsx or xlsm.
+            // We do not fail but simply use the XLSParser instead.
+        }
+        return new XLSRead(path, config);
     }
 
     private static TableSpecGuesser<Class<?>, String> createGuesser() {

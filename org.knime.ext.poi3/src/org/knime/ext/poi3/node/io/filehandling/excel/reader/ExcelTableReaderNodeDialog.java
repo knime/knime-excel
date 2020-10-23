@@ -121,11 +121,6 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
 
     @Override
     protected void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
-        final String pathLowerCase = m_settingsModelFilePanel.getPath().toLowerCase();
-        if (m_settingsModelFilePanel.getFilterMode() == FilterMode.FILE
-            && !(pathLowerCase.endsWith(".xlsx") || pathLowerCase.endsWith(".xlsm"))) {
-            throw new InvalidSettingsException("Invalid file. Select an xlsx or xlsm file.");
-        }
         m_filePanel.saveSettingsTo(SettingsUtils.getOrAdd(settings, SettingsUtils.CFG_SETTINGS_TAB));
         saveTableReadSettings();
         m_config.saveInDialog(settings);
