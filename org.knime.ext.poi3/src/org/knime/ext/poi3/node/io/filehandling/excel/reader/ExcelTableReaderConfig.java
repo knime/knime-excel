@@ -51,9 +51,13 @@ package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 import org.knime.filehandling.core.node.table.reader.config.ReaderSpecificConfig;
 
 /**
- * TODO implement config
+ * An implementation of {@link ReaderSpecificConfig} class for Excel table reader.
+ *
+ * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
  */
 public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelTableReaderConfig> {
+
+    private boolean m_use15DigitsPrecision = true;
 
     /**
      * Constructor.
@@ -62,11 +66,26 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     }
 
     private ExcelTableReaderConfig(final ExcelTableReaderConfig toCopy) {
+        setUse15DigitsPrecision(toCopy.isUse15DigitsPrecision());
     }
 
     @Override
     public ExcelTableReaderConfig copy() {
         return new ExcelTableReaderConfig(this);
+    }
+
+    /**
+     * @return the use15DigitsPrecision
+     */
+    public boolean isUse15DigitsPrecision() {
+        return m_use15DigitsPrecision;
+    }
+
+    /**
+     * @param use15DigitsPrecision the use15DigitsPrecision to set
+     */
+    public void setUse15DigitsPrecision(final boolean use15DigitsPrecision) {
+        m_use15DigitsPrecision = use15DigitsPrecision;
     }
 
 }

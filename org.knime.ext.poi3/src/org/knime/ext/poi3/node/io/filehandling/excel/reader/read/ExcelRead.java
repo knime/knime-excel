@@ -66,6 +66,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.poi.openxml4j.exceptions.InvalidOperationException;
 import org.knime.core.util.ThreadUtils;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
 import org.knime.filehandling.core.connections.FSFiles;
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
 import org.knime.filehandling.core.node.table.reader.randomaccess.RandomAccessible;
@@ -77,7 +78,10 @@ import org.knime.filehandling.core.node.table.reader.read.Read;
  *
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
  */
-public abstract class ExcelRead implements Read<String> {
+public abstract class ExcelRead implements Read<ExcelCell> {
+
+    /** The String to be inserted when an error cell is encountered. */
+    protected static final String XL_EVAL_ERROR = "#XL_EVAL_ERROR#";
 
     private static final int BLOCKING_QUEUE_SIZE = 100;
 
@@ -88,10 +92,11 @@ public abstract class ExcelRead implements Read<String> {
         r -> ThreadUtils.threadWithContext(r, "KNIME-Excel-Parser-" + CACHED_THREAD_POOL_INDEX.getAndIncrement()));
 
     /** The poison pill put into the blocking to indicate end of parsing. */
-    static final RandomAccessible<String> POISON_PILL = RandomAccessibleUtils.createFromArray("POISON");
+    static final RandomAccessible<ExcelCell> POISON_PILL =
+        RandomAccessibleUtils.createFromArray(new ExcelCell(KNIMECellType.STRING, "POISON"));
 
     /** Queue that uses the TRF to consume rows produced by the parser thread. */
-    private final BlockingQueue<RandomAccessible<String>> m_queueRandomAccessibles =
+    private final BlockingQueue<RandomAccessible<ExcelCell>> m_queueRandomAccessibles =
         new ArrayBlockingQueue<>(BLOCKING_QUEUE_SIZE);
 
     /** The thread running the parser. */
@@ -107,7 +112,7 @@ public abstract class ExcelRead implements Read<String> {
     private final Path m_path;
 
     /** The Excel table read config. */
-    protected final TableReadConfig<ExcelTableReaderConfig> m_config; // not yet used but later
+    protected final TableReadConfig<ExcelTableReaderConfig> m_config;
 
     /** The input stream of the file. */
     private final InputStream m_inputStream;
@@ -143,7 +148,7 @@ public abstract class ExcelRead implements Read<String> {
     protected abstract void closeResources() throws IOException;
 
     @Override
-    public final RandomAccessible<String> next() throws IOException {
+    public final RandomAccessible<ExcelCell> next() throws IOException {
         // check and return next element
         final boolean hasNext = m_randomAccessibleIterator.hasNext();
         if (m_throwableDuringParsing.get() != null) {
@@ -164,13 +169,15 @@ public abstract class ExcelRead implements Read<String> {
 
     @Override
     public final Optional<Path> getPath() {
-        return Optional.ofNullable(m_path);
+        return Optional.of(m_path);
     }
 
     @Override
     public final void close() throws IOException {
         // cancel the thread
-        m_parserThread.cancel(true);
+        if (m_parserThread != null) {
+            m_parserThread.cancel(true);
+        }
         // free the queue so that any put call by the canceled thread is not blocking the cancellation
         m_queueRandomAccessibles.clear();
         // as we just cleared the queue, we can use #add to insert the poison pill
@@ -180,7 +187,9 @@ public abstract class ExcelRead implements Read<String> {
         // close resources
         try {
             closeResources();
-            m_inputStream.close();
+            if (m_inputStream != null) {
+                m_inputStream.close();
+            }
         } catch (IOException e) {
             // an exception during parsing has priority
             if (throwable == null) {
@@ -205,7 +214,7 @@ public abstract class ExcelRead implements Read<String> {
      * @param randomAccessible the {@link RandomAccessible} to add
      * @throws InterruptedException if {@link ArrayBlockingQueue#put(Object)} is interrupted while waiting
      */
-    protected void addToQueue(final RandomAccessible<String> randomAccessible) throws InterruptedException {
+    protected void addToQueue(final RandomAccessible<ExcelCell> randomAccessible) throws InterruptedException {
         m_queueRandomAccessibles.put(randomAccessible);
     }
 
@@ -219,28 +228,13 @@ public abstract class ExcelRead implements Read<String> {
     }
 
     /**
-     * Creates an {@link IllegalArgumentException} with a user-friendly message explaining that the specified file does
-     * not have a supported format. The passed exception will be set to the created {@link IllegalArgumentException}.
-     *
-     * @param e the exception to set, can be {@code null}
-     * @return the created {@link IllegalArgumentException}
-     */
-    protected IllegalArgumentException unsupportedFileFormatException(final Exception e) {
-        final Optional<Path> path = getPath();
-        if (path.isPresent()) {
-            throw new IllegalArgumentException("The format of the file '" + path.get() + "' is not supported.", e);
-        }
-        throw new IllegalArgumentException("The format of the specified file is not supported.", e);
-    }
-
-    /**
      * Iterator that collects all parsed rows. If an exception occurred during parsing or the parsing is finished,
      * {@link #hasNext()} will return {@code false}. Otherwise, it will wait for more rows becoming available to iterate
      * over.
      */
-    private class RandomAccessibleIterator implements Iterator<RandomAccessible<String>> {
+    private class RandomAccessibleIterator implements Iterator<RandomAccessible<ExcelCell>> {
 
-        private final LinkedList<RandomAccessible<String>> m_randomAccessibles = new LinkedList<>();
+        private final LinkedList<RandomAccessible<ExcelCell>> m_randomAccessibles = new LinkedList<>();
 
         private boolean m_encounteredPoisonPill = false;
 
@@ -266,9 +260,9 @@ public abstract class ExcelRead implements Read<String> {
         }
 
         @Override
-        public RandomAccessible<String> next() {
+        public RandomAccessible<ExcelCell> next() {
             if (!hasNext()) {
-                throw new NoSuchElementException("No more RandomAccessible available.");
+                throw new NoSuchElementException("No more rows available.");
             }
             return m_randomAccessibles.poll();
         }

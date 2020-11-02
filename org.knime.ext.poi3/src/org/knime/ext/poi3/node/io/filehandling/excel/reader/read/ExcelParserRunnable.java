@@ -51,7 +51,10 @@ package org.knime.ext.poi3.node.io.filehandling.excel.reader.read;
 import java.io.IOException;
 
 import org.knime.core.node.NodeLogger;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
+import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
 import org.knime.filehandling.core.node.table.reader.randomaccess.RandomAccessible;
+import org.knime.filehandling.core.node.table.reader.randomaccess.RandomAccessibleUtils;
 
 /**
  * Abstract implementation of a {@link Runnable} that parses Excel files and adds the parsed rows as
@@ -59,14 +62,24 @@ import org.knime.filehandling.core.node.table.reader.randomaccess.RandomAccessib
  *
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
  */
-abstract class ExcelParserRunnable implements Runnable {
+public abstract class ExcelParserRunnable implements Runnable {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(ExcelParserRunnable.class);
 
     private final ExcelRead m_read;
 
-    ExcelParserRunnable(final ExcelRead read) {
+    /** True if 15 digits precision is used (that's what Excel is using). */
+    protected final boolean m_use15DigitsPrecision;
+
+    /**
+     * Constructor.
+     *
+     * @param read the {@link ExcelRead}
+     * @param config the config
+     */
+    public ExcelParserRunnable(final ExcelRead read, final TableReadConfig<ExcelTableReaderConfig> config) {
         m_read = read;
+        m_use15DigitsPrecision = config.getReaderSpecificConfig().isUse15DigitsPrecision();
     }
 
     @Override
@@ -106,7 +119,7 @@ abstract class ExcelParserRunnable implements Runnable {
      *
      * @param randomAccessible the {@link RandomAccessible}
      */
-    protected void addToQueue(final RandomAccessible<String> randomAccessible) {
+    protected void addToQueue(final RandomAccessible<ExcelCell> randomAccessible) {
         try {
             m_read.addToQueue(randomAccessible);
         } catch (InterruptedException e) {
@@ -114,6 +127,17 @@ abstract class ExcelParserRunnable implements Runnable {
             LOGGER.debug("Thread parsing an Excel spreadsheet interrupted.");
             // throw a runtime exception as the interrupting the thread does not stop it
             throw new ParsingInterruptedException();
+        }
+    }
+
+    /**
+     * Adds the given number of empty {@link RandomAccessible}s to the blocking queue of the runnable.
+     *
+     * @param numMissingsRows the number of missing rows to add
+     */
+    protected void outputEmptyRows(final int numMissingsRows) {
+        for (int i = 0; i < numMissingsRows; i++) {
+            addToQueue(RandomAccessibleUtils.createFromArrayUnsafe());
         }
     }
 

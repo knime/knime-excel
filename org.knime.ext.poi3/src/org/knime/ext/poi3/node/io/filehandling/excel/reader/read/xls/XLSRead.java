@@ -46,7 +46,7 @@
  * History
  *   Oct 20, 2020 (Simon Schmid, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.reader.read;
+package org.knime.ext.poi3.node.io.filehandling.excel.reader.read.xls;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -55,15 +55,15 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.OptionalLong;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.openxml4j.exceptions.InvalidOperationException;
+import org.apache.poi.openxml4j.exceptions.NotOfficeXmlFileException;
 import org.apache.poi.poifs.filesystem.FileMagic;
 import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CellType;
-import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Row.MissingCellPolicy;
@@ -73,6 +73,11 @@ import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCellUtils;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelParserRunnable;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelRead;
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
 import org.knime.filehandling.core.node.table.reader.randomaccess.RandomAccessibleUtils;
 
@@ -100,32 +105,31 @@ public final class XLSRead extends ExcelRead {
      */
     public XLSRead(final Path path, final TableReadConfig<ExcelTableReaderConfig> config) throws IOException {
         super(path, config);
+        // don't do any initializations here, super constructor will call #createParser(InputStream)
     }
 
     @Override
     public ExcelParserRunnable createParser(final InputStream inputStream) throws IOException {
         try {
             final BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream);
-            checkFileFormat(bufferedInputStream);
-            m_workbook = WorkbookFactory.create(bufferedInputStream);
+            m_workbook = checkFileFormatAndCreateWorkbook(bufferedInputStream);
             if (m_workbook.getNumberOfSheets() < 1) {
-                throw new IOException("Selected file does not have any sheet.");
+                throw new IOException("Selected file does not contain any sheet.");
             }
             // take first sheet
             final Sheet sheet = m_workbook.getSheetAt(0);
             m_numMaxRows = sheet.getLastRowNum() + 1L;
 
-            return new XLSParserRunnable(this, sheet, getTimeOnlyYearIdentifier(m_workbook));
+            return new XLSParserRunnable(this, m_config, sheet, use1904Windowing(m_workbook));
         } catch (InvalidOperationException e) {
             throw new IllegalStateException(e.getMessage(), e);
         }
     }
 
     /**
-     * Cells with only time but no date value have date set to 1899-12-31 or 1904-01-01 depending on if the date is
-     * using 1904 windowing.
+     * Excel dates are encoded as a numeric offset of either 1900 or 1904.
      */
-    private static int getTimeOnlyYearIdentifier(final Workbook workbook) {
+    private static boolean use1904Windowing(final Workbook workbook) {
         boolean date1904;
         if (workbook instanceof XSSFWorkbook) {
             final XSSFWorkbook xssfWorkbook = (XSSFWorkbook)workbook;
@@ -134,10 +138,10 @@ public final class XLSRead extends ExcelRead {
             final HSSFWorkbook hssfWorkbook = (HSSFWorkbook)workbook;
             date1904 = hssfWorkbook.getInternalWorkbook().isUsing1904DateWindowing();
         } else {
-            //Probably unsupported
+            // Probably unsupported
             date1904 = false;
         }
-        return date1904 ? 1904 : 1899;
+        return date1904;
     }
 
     /**
@@ -145,15 +149,16 @@ public final class XLSRead extends ExcelRead {
      * need to parse the message of the exception thrown there, we check ourselves and provide a more user-friendly
      * error message.
      */
-    private void checkFileFormat(final BufferedInputStream inputStream) throws IOException {
+    private static Workbook checkFileFormatAndCreateWorkbook(final BufferedInputStream inputStream) throws IOException {
         switch (FileMagic.valueOf(inputStream)) {
             case OLE2:
-                break;
             case OOXML:
                 break;
             default:
-                throw unsupportedFileFormatException(null);
+                // will be caught and output with a user-friendly error message
+                throw new NotOfficeXmlFileException("");
         }
+        return WorkbookFactory.create(inputStream);
     }
 
     @Override
@@ -168,101 +173,127 @@ public final class XLSRead extends ExcelRead {
 
     @Override
     public void closeResources() throws IOException {
-        m_workbook.close();
+        if (m_workbook != null) {
+            m_workbook.close();
+        }
     }
 
     private static class XLSParserRunnable extends ExcelParserRunnable {
 
         private Sheet m_sheet;
 
-        private final DataFormatter m_dataFormatter = new DataFormatter();
+        private final boolean m_use1904Windowing;
 
-        private final int m_timeOnlyYearIdentifier;
-
-        XLSParserRunnable(final ExcelRead read, final Sheet sheet, final int timeOnlyYearIdentifier) {
-            super(read);
+        XLSParserRunnable(final ExcelRead read, final TableReadConfig<ExcelTableReaderConfig> config, final Sheet sheet,
+            final boolean use1904Windowing) {
+            super(read, config);
             m_sheet = sheet;
-            m_timeOnlyYearIdentifier = timeOnlyYearIdentifier;
+            m_use1904Windowing = use1904Windowing;
         }
 
         @Override
         protected void parse() throws Exception {
+            int numEmptyRows = 0;
             for (int i = 0; i <= m_sheet.getLastRowNum(); i++) {
                 final Row row = m_sheet.getRow(i);
                 if (row == null) {
                     // empty row
-                    addToQueue(RandomAccessibleUtils.createFromArrayUnsafe());
+                    numEmptyRows++;
                     continue;
                 }
-                final List<String> cells = new ArrayList<>();
+                // parse the row
+                final List<ExcelCell> cells = new ArrayList<>();
+                int numEmptyCells = 0;
                 for (int j = 0; j < row.getLastCellNum(); j++) {
-                    final Cell cell = row.getCell(j, MissingCellPolicy.CREATE_NULL_AS_BLANK);
-                    cells.add(parseCell(cell, cell.getCellType()));
+                    final Cell cell = row.getCell(j, MissingCellPolicy.RETURN_BLANK_AS_NULL);
+                    if (cell == null) {
+                        // by not adding null directly to the list but waiting for the next non-empty cell, we prevent
+                        // columns with only "empty-but-formatted/styled" cells being appended (cells which had content
+                        // before and were set to empty later might still be counted as cells by Excel and Apache POI)
+                        numEmptyCells++;
+                    } else {
+                        addNullsToList(numEmptyCells, cells);
+                        numEmptyCells = 0;
+                        cells.add(parseCell(cell, cell.getCellType()));
+                    }
                 }
-                addToQueue(RandomAccessibleUtils.createFromArrayUnsafe(cells.toArray(new String[0])));
+                // check if all cells of the row are which means the row is empty
+                if (cells.stream().noneMatch(Objects::nonNull)) {
+                    // by not adding empty rows directly to the queue but waiting for the next non-empty row, we prevent
+                    // rows with only "empty-but-formatted/styled" cells being added (cells which had content
+                    // before and were set to empty later might still be counted as cells by Excel and Apache POI)
+                    numEmptyRows++;
+                } else {
+                    outputEmptyRows(numEmptyRows);
+                    numEmptyRows = 0;
+                    addToQueue(RandomAccessibleUtils.createFromArrayUnsafe(cells.toArray(new ExcelCell[0])));
+                }
             }
         }
 
-        private String parseCell(final Cell cell, final CellType cellType) {
-            final String stringValue;
+        private static void addNullsToList(final int n, final List<?> list) {
+            for (int i = 0; i < n; i++) {
+                list.add(null);
+            }
+        }
+
+        private ExcelCell parseCell(final Cell cell, final CellType cellType) {
+            final ExcelCell excelCell;
             switch (cellType) {
                 case NUMERIC:
-                    stringValue = parseNumericCell(cell);
-                    break;
-                case BLANK:
-                    stringValue = null;
+                    excelCell = parseNumericOrDateCell(cell);
                     break;
                 case BOOLEAN:
-                    final boolean booleanCellValue = cell.getBooleanCellValue();
-                    stringValue = String.valueOf(booleanCellValue);
+                    excelCell = new ExcelCell(KNIMECellType.BOOLEAN, cell.getBooleanCellValue());
                     break;
                 case STRING:
-                    stringValue = cell.getStringCellValue();
+                    excelCell = new ExcelCell(KNIMECellType.STRING, cell.getStringCellValue());
                     break;
                 case FORMULA:
-                    final CellType formulaResultCellType = cell.getCachedFormulaResultType();
-                    CheckUtils.checkState(formulaResultCellType != CellType.FORMULA,
-                        "A formula cannot create another formula.");
-                    return parseCell(cell, formulaResultCellType);
+                    excelCell = parseFormulaCell(cell);
+                    break;
                 case ERROR:
                     // TODO default behavior of the old reader is to return "#XL_EVAL_ERROR#", treat later in AP-15398
-                    if (cell.getCellType() == CellType.FORMULA) {
-                        stringValue = "#XL_EVAL_ERROR#";
-                    } else {
-                        stringValue = "ERROR:" + m_dataFormatter.formatCellValue(cell);
-                    }
+                    excelCell = new ExcelCell(KNIMECellType.STRING, XL_EVAL_ERROR);
                     break;
+                case BLANK:
+                    // as we use MissingCellPolicy.RETURN_BLANK_AS_NULL, we should never get a BLANK
                 default:
                     throw new IllegalStateException("Unexpected cell type: " + cellType.toString());
             }
-            return stringValue;
+            return excelCell;
         }
 
-        private String parseNumericCell(final Cell cell) {
-            final String stringValue;
+        private ExcelCell parseNumericOrDateCell(final Cell cell) {
+            final ExcelCell excelCell;
             if (DateUtil.isCellDateFormatted(cell)) {
                 final LocalDateTime localDateTimeCellValue = cell.getLocalDateTimeCellValue();
-                if (localDateTimeCellValue.getYear() == m_timeOnlyYearIdentifier) {
-                    stringValue = localDateTimeCellValue.toLocalTime().toString();
-                } else {
-                    // We cannot know if only a date or date&time is set. Only-date values have time set
-                    // to 00:00 which could be midnight for date&time.
-                    // TODO if all values in a column have 00:00, we can assume date-only -> part of type hierarchy?
-                    stringValue = localDateTimeCellValue.toString();
-                }
+                return ExcelCellUtils.createDateTimeExcelCell(localDateTimeCellValue, m_use1904Windowing);
             } else {
+                final ExcelCell numericExcelCell = m_use15DigitsPrecision
+                    ? ExcelCellUtils.createNumericExcelCellUsing15DigitsPrecision(cell.getNumericCellValue())
+                    : ExcelCellUtils.createNumericExcelCell(cell.getNumericCellValue());
                 if (cell.getCellType() == CellType.FORMULA) {
-                    // format as raw cell in order to apply the formatter to cached formula result and not on the
-                    // formula itself
-                    final CellStyle cellStyle = cell.getCellStyle();
-                    stringValue = m_dataFormatter.formatRawCellContents(cell.getNumericCellValue(),
-                        cellStyle.getDataFormat(), cellStyle.getDataFormatString());
+                    if (ExcelCellUtils.canBeBoolean(numericExcelCell)) {
+                        excelCell = ExcelCellUtils.getIntOrBooleanCell(numericExcelCell, cell.toString());
+                    } else {
+                        excelCell = numericExcelCell;
+                    }
                 } else {
-                    stringValue = m_dataFormatter.formatCellValue(cell);
+                    excelCell = numericExcelCell;
                 }
             }
-            return stringValue;
+            return excelCell;
         }
+
+        private ExcelCell parseFormulaCell(final Cell cell) {
+            // get the type of the cached result and do a recursive call
+            final CellType formulaResultCellType = cell.getCachedFormulaResultType();
+            CheckUtils.checkState(formulaResultCellType != CellType.FORMULA,
+                "A formula cannot create another formula.");
+            return parseCell(cell, formulaResultCellType);
+        }
+
     }
 
 }

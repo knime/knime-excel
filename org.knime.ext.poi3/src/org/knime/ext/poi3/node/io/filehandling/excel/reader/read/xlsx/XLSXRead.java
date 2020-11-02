@@ -46,7 +46,7 @@
  * History
  *   Oct 20, 2020 (Simon Schmid, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.reader.read;
+package org.knime.ext.poi3.node.io.filehandling.excel.reader.read.xlsx;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -55,24 +55,27 @@ import java.util.ArrayList;
 import java.util.OptionalLong;
 
 import org.apache.commons.io.input.CountingInputStream;
-import org.apache.poi.UnsupportedFileFormatException;
-import org.apache.poi.openxml4j.exceptions.OLE2NotOfficeXmlFileException;
 import org.apache.poi.openxml4j.exceptions.OpenXML4JException;
 import org.apache.poi.openxml4j.opc.OPCPackage;
-import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.util.CellAddress;
 import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.util.XMLHelper;
 import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
 import org.apache.poi.xssf.eventusermodel.XSSFReader;
 import org.apache.poi.xssf.eventusermodel.XSSFReader.SheetIterator;
-import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler;
-import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler.SheetContentsHandler;
-import org.apache.poi.xssf.model.SharedStrings;
 import org.apache.poi.xssf.usermodel.XSSFComment;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelParserRunnable;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelRead;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.xlsx.KNIMEXSSFSheetXMLHandler.AbstractKNIMESheetContentsHandler;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.xlsx.KNIMEXSSFSheetXMLHandler.KNIMEXSSFDataType;
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
 import org.knime.filehandling.core.node.table.reader.randomaccess.RandomAccessibleUtils;
+import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTWorkbook;
+import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTWorkbookPr;
+import org.openxmlformats.schemas.spreadsheetml.x2006.main.WorkbookDocument;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
@@ -94,6 +97,7 @@ public final class XLSXRead extends ExcelRead {
      */
     public XLSXRead(final Path path, final TableReadConfig<ExcelTableReaderConfig> config) throws IOException {
         super(path, config);
+        // don't do any initializations here, super constructor will call #createParser(InputStream)
     }
 
     private OPCPackage m_opc;
@@ -109,30 +113,42 @@ public final class XLSXRead extends ExcelRead {
             m_opc = OPCPackage.open(inputStream);
             // take the first sheet
             final XSSFReader xssfReader = new XSSFReader(m_opc);
+
             final SheetIterator sheetsData = (SheetIterator)xssfReader.getSheetsData();
             if (!sheetsData.hasNext()) {
-                throw new IOException("Selected file does not have any sheet.");
+                throw new IOException("Selected file does not contain any sheet.");
             }
             m_countingSheetStream = new CountingInputStream(sheetsData.next());
             m_sheetSize = m_countingSheetStream.available();
 
             // create the parser
             final ReadOnlySharedStringsTable sharedStringsTable = new ReadOnlySharedStringsTable(m_opc, false);
-            return new XLSXParserRunnable(this, xssfReader, sharedStringsTable);
-        } catch (OLE2NotOfficeXmlFileException e) {
-            // re-throw, will be caught and processed by the ExcelTableReader
-            throw e;
-        } catch (UnsupportedFileFormatException e) {
-            throw unsupportedFileFormatException(e);
+            return new XLSXParserRunnable(this, m_config, xssfReader, sharedStringsTable, use1904Windowing(xssfReader));
         } catch (SAXException | OpenXML4JException e) {
             throw new IllegalStateException(e.getMessage(), e);
         }
     }
 
+    private static boolean use1904Windowing(final XSSFReader xssfReader) {
+        try (final InputStream workbookXml = xssfReader.getWorkbookData()) {
+            final WorkbookDocument doc = WorkbookDocument.Factory.parse(workbookXml);
+            final CTWorkbook wb = doc.getWorkbook();
+            final CTWorkbookPr prefix = wb.getWorkbookPr();
+            return prefix.getDate1904();
+        } catch (Exception e) { // NOSONAR
+            // if anything goes wrong, we just assume false
+            return false;
+        }
+    }
+
     @Override
     public void closeResources() throws IOException {
-        m_countingSheetStream.close();
-        m_opc.close();
+        if (m_countingSheetStream != null) {
+            m_countingSheetStream.close();
+        }
+        if (m_opc != null) {
+            m_opc.close();
+        }
     }
 
     @Override
@@ -149,12 +165,17 @@ public final class XLSXRead extends ExcelRead {
 
         private final XSSFReader m_xssfReader;
 
-        private final SharedStrings m_sharedStringsTable;
+        private final ReadOnlySharedStringsTable m_sharedStringsTable;
 
-        XLSXParserRunnable(final ExcelRead read, final XSSFReader xssfReader, final SharedStrings sharedStringsTable) {
-            super(read);
+        private final KNIMEDataFormatter m_dataFormatter;
+
+        XLSXParserRunnable(final ExcelRead read, final TableReadConfig<ExcelTableReaderConfig> config,
+            final XSSFReader xssfReader, final ReadOnlySharedStringsTable sharedStringsTable,
+            final boolean use1904Windowing) {
+            super(read, config);
             m_xssfReader = xssfReader;
             m_sharedStringsTable = sharedStringsTable;
+            m_dataFormatter = new KNIMEDataFormatter(use1904Windowing, m_use15DigitsPrecision);
         }
 
         @Override
@@ -162,50 +183,47 @@ public final class XLSXRead extends ExcelRead {
             final XMLReader xmlReader = XMLHelper.newXMLReader();
             final ExcelTableReaderSheetContentsHandler sheetContentsHandler =
                 new ExcelTableReaderSheetContentsHandler();
-            xmlReader.setContentHandler(new XSSFSheetXMLHandler(m_xssfReader.getStylesTable(), null,
-                m_sharedStringsTable, sheetContentsHandler, new DataFormatter(), false));
+            xmlReader.setContentHandler(new KNIMEXSSFSheetXMLHandler(m_xssfReader.getStylesTable(),
+                m_sharedStringsTable, sheetContentsHandler, m_dataFormatter, false));
             xmlReader.parse(new InputSource(m_countingSheetStream));
         }
 
-        class ExcelTableReaderSheetContentsHandler implements SheetContentsHandler {
+        class ExcelTableReaderSheetContentsHandler extends AbstractKNIMESheetContentsHandler {
 
             private int m_currentRow = -1;
 
+            private int m_lastNonEmptyRow = 0;
+
             private int m_currentCol = -1;
 
-            private final ArrayList<String> m_row = new ArrayList<>();
-
-            /*
-             *  TODO this works only if short rows are allowed which is right now always enabled (old behavior as well).
-             *  if we want to offer short rows as a setting, we need to revise the below method.
-             */
-            private void outputEmptyRows(final int numMissingsRows) {
-                for (int i = 0; i < numMissingsRows; i++) {
-                    m_currentRow++;
-                    endRow(m_currentRow);
-                }
-            }
+            private final ArrayList<ExcelCell> m_row = new ArrayList<>();
 
             @Override
             public void startRow(final int rowNum) {
-                // If there were empty rows, output these
-                outputEmptyRows(rowNum - m_currentRow - 1);
-
                 m_currentRow = rowNum;
                 m_currentCol = -1;
             }
 
             @Override
             public void endRow(final int rowNum) {
-                addToQueue(RandomAccessibleUtils.createFromArrayUnsafe(m_row.toArray(new String[0])));
-                m_row.clear();
+                if (!m_row.isEmpty()) {
+                    // if there were empty rows in between two non-empty rows, output these (we need to make sure that
+                    // there is a non-empty row after an empty row)
+                    outputEmptyRows(m_currentRow - m_lastNonEmptyRow - 1);
+                    m_lastNonEmptyRow = m_currentRow;
+                    // add the non-empty row the the queue
+                    addToQueue(RandomAccessibleUtils.createFromArrayUnsafe(m_row.toArray(new ExcelCell[0])));
+                    m_row.clear();
+                }
             }
 
             @Override
             public void cell(String cellReference, final String formattedValue, final XSSFComment comment) {
                 m_currentCol++;
-                // gracefully handle missing CellRef here in a similar way as XSSFCell does
                 if (cellReference == null) {
+                    // gracefully handle missing CellRef here in a similar way as XSSFCell does.
+                    // according to the API description the cellReference argument shouldn't be null,
+                    // though it can be for files created by third party software (see e.g. AP-9380)
                     cellReference = new CellAddress(m_currentRow, m_currentCol).formatAsString();
                 }
 
@@ -217,13 +235,35 @@ public final class XLSXRead extends ExcelRead {
                 }
                 m_currentCol += missedCols;
 
-                // add the cell value to the row
-                m_row.add(formattedValue);
+                final ExcelCell numericExcelCell = m_dataFormatter.getAndResetExcelCell();
+                if (numericExcelCell != null) {
+                    m_row.add(numericExcelCell);
+                } else {
+                    final KNIMEXSSFDataType cellType = getCellType();
+                    switch (cellType) {
+                        case BOOLEAN:
+                            m_row.add(new ExcelCell(KNIMECellType.BOOLEAN, formattedValue.equals("TRUE")));
+                            break;
+                        case ERROR:
+                            m_row.add(new ExcelCell(KNIMECellType.STRING, XL_EVAL_ERROR));
+                            break;
+                        case FORMULA:
+                            m_row.add(new ExcelCell(KNIMECellType.STRING, formattedValue));
+                            break;
+                        case STRING:
+                            m_row.add(new ExcelCell(KNIMECellType.STRING, formattedValue));
+                            break;
+                        case NUMBER_OR_DATE:
+                        default:
+                            throw new IllegalStateException("Unexpected data type: " + cellType);
+
+                    }
+                }
             }
 
             @Override
             public void headerFooter(final String text, final boolean isHeader, final String tagName) {
-                // TODO do nothing? (that's at least old behavior) -> we will see later
+                // do nothing, we do not treat header and footer
             }
 
         }

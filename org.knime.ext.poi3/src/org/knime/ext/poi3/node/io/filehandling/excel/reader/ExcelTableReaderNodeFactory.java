@@ -49,17 +49,19 @@
 package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 
 import java.util.Optional;
-import java.util.function.Function;
 
-import org.knime.core.data.convert.map.ProductionPath;
 import org.knime.core.node.context.NodeCreationConfiguration;
 import org.knime.core.node.context.url.URLConfiguration;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelReadAdapterFactory;
 import org.knime.filehandling.core.connections.FSCategory;
 import org.knime.filehandling.core.connections.FSLocation;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.reader.SettingsModelReaderFileChooser;
 import org.knime.filehandling.core.defaultnodesettings.filtermode.SettingsModelFilterMode.FilterMode;
 import org.knime.filehandling.core.node.table.reader.AbstractTableReaderNodeFactory;
 import org.knime.filehandling.core.node.table.reader.MultiTableReadFactory;
+import org.knime.filehandling.core.node.table.reader.ProductionPathProvider;
 import org.knime.filehandling.core.node.table.reader.ReadAdapterFactory;
 import org.knime.filehandling.core.node.table.reader.TableReader;
 import org.knime.filehandling.core.node.table.reader.config.DefaultMultiTableReadConfig;
@@ -72,15 +74,16 @@ import org.knime.filehandling.core.node.table.reader.type.hierarchy.TypeHierarch
  *
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
  */
-public final class ExcelTableReaderNodeFactory extends AbstractTableReaderNodeFactory<ExcelTableReaderConfig, Class<?>, String> {
+public final class ExcelTableReaderNodeFactory
+    extends AbstractTableReaderNodeFactory<ExcelTableReaderConfig, KNIMECellType, ExcelCell> {
 
     private static final String[] FILE_SUFFIXES = new String[]{".xlsx", ".xlsm", ".xls"};
 
     @Override
-    protected AbstractTableReaderNodeDialog<ExcelTableReaderConfig, Class<?>> createNodeDialogPane(
+    protected AbstractTableReaderNodeDialog<ExcelTableReaderConfig, KNIMECellType> createNodeDialogPane(
         final NodeCreationConfiguration creationConfig,
-        final MultiTableReadFactory<ExcelTableReaderConfig, Class<?>> readFactory,
-        final Function<Class<?>, ProductionPath> defaultProductionPathFn) {
+        final MultiTableReadFactory<ExcelTableReaderConfig, KNIMECellType> readFactory,
+        final ProductionPathProvider<KNIMECellType> defaultProductionPathFn) {
         return new ExcelTableReaderNodeDialog(createPathSettings(creationConfig), createConfig(), readFactory,
             defaultProductionPathFn);
     }
@@ -99,23 +102,22 @@ public final class ExcelTableReaderNodeFactory extends AbstractTableReaderNodeFa
     }
 
     @Override
-    protected ReadAdapterFactory<Class<?>, String> getReadAdapterFactory() {
-
+    protected ReadAdapterFactory<KNIMECellType, ExcelCell> getReadAdapterFactory() {
         return ExcelReadAdapterFactory.INSTANCE;
     }
 
     @Override
-    protected TableReader<ExcelTableReaderConfig, Class<?>, String> createReader() {
+    protected TableReader<ExcelTableReaderConfig, KNIMECellType, ExcelCell> createReader() {
         return new ExcelTableReader();
     }
 
     @Override
-    protected String extractRowKey(final String value) {
-        return value;
+    protected String extractRowKey(final ExcelCell value) {
+        return value.getStringValue();
     }
 
     @Override
-    protected TypeHierarchy<Class<?>, Class<?>> getTypeHierarchy() {
+    protected TypeHierarchy<KNIMECellType, KNIMECellType> getTypeHierarchy() {
         return ExcelTableReader.TYPE_HIERARCHY.createTypeFocusedHierarchy();
     }
 

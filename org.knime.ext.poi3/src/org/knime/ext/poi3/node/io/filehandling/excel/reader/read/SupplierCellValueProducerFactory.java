@@ -46,16 +46,69 @@
  * History
  *   Oct 13, 2020 (Simon Schmid, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.reader;
+package org.knime.ext.poi3.node.io.filehandling.excel.reader.read;
 
-import org.knime.filehandling.core.node.table.reader.ReadAdapter;
+import java.util.function.Supplier;
+
+import org.knime.core.data.convert.map.AbstractCellValueProducerFactory;
+import org.knime.core.data.convert.map.CellValueProducer;
+import org.knime.core.data.convert.map.Source;
+import org.knime.core.data.convert.map.Source.ProducerParameters;
+import org.knime.core.data.convert.map.TypedCellValueProducerFactory;
 
 /**
- * {@link ReadAdapter} implementation that uses {@link Class} objects as data type identifiers and Strings as value
- * type.
- *
- * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
+ * TODO move to core and re-use in csv and excel reader
  */
-final class ExcelReadAdapter extends ReadAdapter<Class<?>, String> {
-    // yes this class needs to be empty
+final class SupplierCellValueProducerFactory<S extends Source<ET>, ET, T, PP extends ProducerParameters<S>>
+    extends AbstractCellValueProducerFactory<S, ET, T, PP>
+    implements TypedCellValueProducerFactory<S, ET, T, PP, CellValueProducer<S, T, PP>> {
+
+    private final ET m_externalType;
+
+    private final Class<?> m_destType;
+
+    private final Supplier<CellValueProducer<S, T, PP>> m_producerSupplier;
+
+    /**
+     * Constructor
+     *
+     * @param externalType Identifier of the external type this producer reads
+     * @param destType Target Java type
+     * @param producerSupplier a supplier of producer functions
+     */
+    SupplierCellValueProducerFactory(final ET externalType, final Class<?> destType,
+        final Supplier<CellValueProducer<S, T, PP>> producerSupplier) {
+        m_externalType = externalType;
+        m_destType = destType;
+        m_producerSupplier = producerSupplier;
+    }
+
+    @Override
+    public String getIdentifier() {
+        return m_externalType + "->" + m_destType.getName();
+    }
+
+    @Override
+    public Class<?> getDestinationType() {
+        return m_destType;
+    }
+
+    @Override
+    public ET getSourceType() {
+        return m_externalType;
+    }
+
+    @Override
+    public Class<CellValueProducer<S, T, PP>> getProducerType() {
+        @SuppressWarnings("unchecked")
+        Class<CellValueProducer<S, T, PP>> producerType =
+            (Class<CellValueProducer<S, T, PP>>)m_producerSupplier.getClass();
+        return producerType;
+    }
+
+    @Override
+    public CellValueProducer<S, T, PP> create() {
+        return m_producerSupplier.get();
+    }
+
 }

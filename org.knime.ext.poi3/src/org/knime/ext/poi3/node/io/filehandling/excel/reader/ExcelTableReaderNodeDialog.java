@@ -50,27 +50,28 @@ package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 
 import java.awt.Dimension;
 import java.util.Arrays;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.JCheckBox;
 import javax.swing.JPanel;
 
-import org.knime.core.data.convert.map.ProductionPath;
 import org.knime.core.node.FlowVariableModel;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.port.PortObjectSpec;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
 import org.knime.filehandling.core.data.location.variable.FSLocationVariableType;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.reader.DialogComponentReaderFileChooser;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.reader.ReadPathAccessor;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.reader.SettingsModelReaderFileChooser;
 import org.knime.filehandling.core.defaultnodesettings.filtermode.SettingsModelFilterMode.FilterMode;
 import org.knime.filehandling.core.node.table.reader.MultiTableReadFactory;
+import org.knime.filehandling.core.node.table.reader.ProductionPathProvider;
 import org.knime.filehandling.core.node.table.reader.config.DefaultMultiTableReadConfig;
 import org.knime.filehandling.core.node.table.reader.config.DefaultTableReadConfig;
 import org.knime.filehandling.core.node.table.reader.config.MultiTableReadConfig;
@@ -83,7 +84,7 @@ import org.knime.filehandling.core.util.SettingsUtils;
  *
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
  */
-final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<ExcelTableReaderConfig, Class<?>> {
+final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<ExcelTableReaderConfig, KNIMECellType> {
 
     private final DialogComponentReaderFileChooser m_filePanel;
 
@@ -91,11 +92,13 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
 
     private final SettingsModelReaderFileChooser m_settingsModelFilePanel;
 
+    private final JCheckBox m_use15DigitsPrecision = new JCheckBox("Use Excel 15 digits precision");
+
     ExcelTableReaderNodeDialog(final SettingsModelReaderFileChooser settingsModelReaderFileChooser,
         final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> config,
-        final MultiTableReadFactory<ExcelTableReaderConfig, Class<?>> readFactory,
-        final Function<Class<?>, ProductionPath> defaultProductionPathProvider) {
-        super(readFactory, defaultProductionPathProvider);
+        final MultiTableReadFactory<ExcelTableReaderConfig, KNIMECellType> readFactory,
+        final ProductionPathProvider<KNIMECellType> defaultProductionPathProvider) {
+        super(readFactory, defaultProductionPathProvider, true);
         m_settingsModelFilePanel = settingsModelReaderFileChooser;
         m_config = config;
         final String[] keyChain =
@@ -106,6 +109,7 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
             FilterMode.FILE, FilterMode.FILES_IN_FOLDERS);
 
         addTab("Settings", createFilePanel());
+        addTab("Advanced", createAdvancedSettingsPanel());
     }
 
     private JPanel createFilePanel() {
@@ -119,10 +123,20 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         return filePanel;
     }
 
+    private JPanel createAdvancedSettingsPanel() {
+        final JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.X_AXIS));
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, m_use15DigitsPrecision.getPreferredSize().height));
+        panel.add(m_use15DigitsPrecision);
+        panel.add(Box.createHorizontalGlue());
+        return panel;
+    }
+
     @Override
     protected void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
         m_filePanel.saveSettingsTo(SettingsUtils.getOrAdd(settings, SettingsUtils.CFG_SETTINGS_TAB));
         saveTableReadSettings();
+        saveExcelReadSettings();
         m_config.saveInDialog(settings);
     }
 
@@ -132,6 +146,8 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         // FIXME: loading should be handled by the config (AP-14460 & AP-14462)
         m_filePanel.loadSettingsFrom(SettingsUtils.getOrEmpty(settings, SettingsUtils.CFG_SETTINGS_TAB), specs);
         m_config.loadInDialog(settings, specs);
+        loadTableReadSettings();
+        loadExcelSettings();
     }
 
     /**
@@ -139,11 +155,32 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
      */
     private void saveTableReadSettings() {
         final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = m_config.getTableReadConfig();
-
         tableReadConfig.setUseRowIDIdx(false);
-
         tableReadConfig.setUseColumnHeaderIdx(true);
         tableReadConfig.setColumnHeaderIdx(0);
+    }
+
+    /**
+     * Fill in the setting values in {@link ExcelTableReaderConfig} using values from dialog.
+     */
+    private void saveExcelReadSettings() {
+        final ExcelTableReaderConfig excelConfig = m_config.getReaderSpecificConfig();
+        excelConfig.setUse15DigitsPrecision(m_use15DigitsPrecision.isSelected());
+    }
+
+    /**
+     * Fill in dialog components with {@link TableReadConfig} values.
+     */
+    private static void loadTableReadSettings() {
+        // TODO options are added later
+    }
+
+    /**
+     * Fill in dialog components with {@link ExcelTableReaderConfig} values.
+     */
+    private void loadExcelSettings() {
+        final ExcelTableReaderConfig excelConfig = m_config.getReaderSpecificConfig();
+        m_use15DigitsPrecision.setSelected(excelConfig.isUse15DigitsPrecision());
     }
 
     @Override
