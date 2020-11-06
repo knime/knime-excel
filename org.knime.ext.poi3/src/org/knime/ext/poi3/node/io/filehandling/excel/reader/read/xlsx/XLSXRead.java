@@ -152,12 +152,12 @@ public final class XLSXRead extends ExcelRead {
     }
 
     @Override
-    public OptionalLong getEstimatedSizeInBytes() {
+    public OptionalLong getMaxProgress() {
         return m_sheetSize < 0 ? OptionalLong.empty() : OptionalLong.of(m_sheetSize);
     }
 
     @Override
-    public long readBytes() {
+    public long getProgress() {
         return m_countingSheetStream.getByteCount();
     }
 
