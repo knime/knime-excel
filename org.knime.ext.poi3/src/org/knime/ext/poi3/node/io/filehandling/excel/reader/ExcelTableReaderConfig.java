@@ -59,6 +59,12 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
 
     private boolean m_use15DigitsPrecision = true;
 
+    private SheetSelection m_sheetSelection = SheetSelection.FIRST;
+
+    private String m_sheetName = "";
+
+    private int m_sheetIdx = 1;
+
     /**
      * Constructor.
      */
@@ -67,6 +73,9 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
 
     private ExcelTableReaderConfig(final ExcelTableReaderConfig toCopy) {
         setUse15DigitsPrecision(toCopy.isUse15DigitsPrecision());
+        setSheetSelection(toCopy.getSheetSelection());
+        setSheetName(toCopy.getSheetName());
+        setSheetIdx(toCopy.getSheetIdx());
     }
 
     @Override
@@ -84,8 +93,50 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param use15DigitsPrecision the use15DigitsPrecision to set
      */
-    public void setUse15DigitsPrecision(final boolean use15DigitsPrecision) {
+    void setUse15DigitsPrecision(final boolean use15DigitsPrecision) {
         m_use15DigitsPrecision = use15DigitsPrecision;
+    }
+
+    /**
+     * @return the sheetSelection
+     */
+    public SheetSelection getSheetSelection() {
+        return m_sheetSelection;
+    }
+
+    /**
+     * @param sheetSelection the sheetSelection to set
+     */
+    void setSheetSelection(final SheetSelection sheetSelection) {
+        m_sheetSelection = sheetSelection;
+    }
+
+    /**
+     * @return the selectedSheetName
+     */
+    public String getSheetName() {
+        return m_sheetName;
+    }
+
+    /**
+     * @param selectedSheetName the selectedSheetName to set
+     */
+    void setSheetName(final String selectedSheetName) {
+        m_sheetName = selectedSheetName;
+    }
+
+    /**
+     * @return the selectedSheetIdx
+     */
+    public int getSheetIdx() {
+        return m_sheetIdx;
+    }
+
+    /**
+     * @param selectedSheetIdx the selectedSheetIdx to set
+     */
+    void setSheetIdx(final int selectedSheetIdx) {
+        m_sheetIdx = selectedSheetIdx;
     }
 
 }

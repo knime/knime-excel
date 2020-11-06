@@ -52,10 +52,14 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NotConfigurableException;
+import org.knime.core.node.defaultnodesettings.SettingsModel;
 import org.knime.core.node.port.PortObjectSpec;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelReadAdapterFactory;
 import org.knime.filehandling.core.node.table.reader.config.ConfigSerializer;
 import org.knime.filehandling.core.node.table.reader.config.DefaultMultiTableReadConfig;
 import org.knime.filehandling.core.node.table.reader.config.DefaultTableReadConfig;
+import org.knime.filehandling.core.node.table.reader.config.DefaultTableSpecConfig;
 import org.knime.filehandling.core.util.SettingsUtils;
 
 /**
@@ -73,6 +77,18 @@ enum ExcelMultiTableReadConfigSerializer implements
          */
         INSTANCE;
 
+    private static final KNIMECellType MOST_GENERIC_EXTERNAL_TYPE = KNIMECellType.STRING;
+
+    private static final String CFG_TABLE_SPEC_CONFIG = "table_spec_config" + SettingsModel.CFGKEY_INTERNAL;
+
+    private static final String CFG_SETTINGS_TAB = "settings";
+
+    private static final String CGF_SHEET_SELECTION = "sheet_selection";
+
+    private static final String CGF_SHEET_NAME = "sheet_name";
+
+    private static final String CGF_SHEET_INDEX = "sheet_index";
+
     private static final String CFG_ADVANCED_SETTINGS_TAB = "advanced_settings";
 
     private static final String CGF_USE_15_DIGITS_PRECISION = "use_15_digits_precision";
@@ -81,13 +97,28 @@ enum ExcelMultiTableReadConfigSerializer implements
     public void loadInDialog(
         final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> config,
         final NodeSettingsRO settings, final PortObjectSpec[] specs) throws NotConfigurableException {
+        loadSettingsTabInDialog(config, SettingsUtils.getOrEmpty(settings, CFG_SETTINGS_TAB));
         loadAdvancedSettingsTabInDialog(config, SettingsUtils.getOrEmpty(settings, CFG_ADVANCED_SETTINGS_TAB));
+        if (settings.containsKey(CFG_TABLE_SPEC_CONFIG)) {
+            try {
+                config.setTableSpecConfig(DefaultTableSpecConfig.load(settings.getNodeSettings(CFG_TABLE_SPEC_CONFIG),
+                    ExcelReadAdapterFactory.INSTANCE.getProducerRegistry(), MOST_GENERIC_EXTERNAL_TYPE, null));
+            } catch (InvalidSettingsException ex) { // NOSONAR
+                /* Can only happen in TableSpecConfig#load, since we checked #NodeSettingsRO#getNodeSettings(String)
+                 * before. The framework takes care that #validate is called before load so we can assume that this
+                 * exception does not occur.
+                 */
+            }
+        } else {
+            config.setTableSpecConfig(null);
+        }
     }
 
     @Override
     public void loadInModel(
         final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> config,
         final NodeSettingsRO settings) throws InvalidSettingsException {
+        loadSettingsTabInModel(config, SettingsUtils.getOrEmpty(settings, CFG_SETTINGS_TAB));
         loadAdvancedSettingsTabInModel(config, settings.getNodeSettings(CFG_ADVANCED_SETTINGS_TAB));
         // TODO add settings to dialog, for now hard-coded
         final DefaultTableReadConfig<?> tc = config.getTableReadConfig();
@@ -95,17 +126,28 @@ enum ExcelMultiTableReadConfigSerializer implements
         tc.setUseColumnHeaderIdx(true);
         tc.setColumnHeaderIdx(0);
         tc.setLimitRowsForSpec(false);
+        if (settings.containsKey(CFG_TABLE_SPEC_CONFIG)) {
+            config.setTableSpecConfig(DefaultTableSpecConfig.load(settings.getNodeSettings(CFG_TABLE_SPEC_CONFIG),
+                ExcelReadAdapterFactory.INSTANCE.getProducerRegistry(), MOST_GENERIC_EXTERNAL_TYPE, null));
+        } else {
+            config.setTableSpecConfig(null);
+        }
     }
 
     @Override
     public void saveInModel(
         final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> config,
         final NodeSettingsWO settings) {
+        if (config.hasTableSpecConfig()) {
+            config.getTableSpecConfig().save(settings.addNodeSettings(CFG_TABLE_SPEC_CONFIG));
+        }
+        saveSettingsTab(config, SettingsUtils.getOrAdd(settings, CFG_SETTINGS_TAB));
         saveAdvancedSettingsTab(config, settings.addNodeSettings(CFG_ADVANCED_SETTINGS_TAB));
     }
 
     @Override
     public void validate(final NodeSettingsRO settings) throws InvalidSettingsException {
+        validateSettingsTab(settings.getNodeSettings(CFG_SETTINGS_TAB));
         validateAdvancedSettingsTab(settings.getNodeSettings(CFG_ADVANCED_SETTINGS_TAB));
     }
 
@@ -113,7 +155,41 @@ enum ExcelMultiTableReadConfigSerializer implements
     public void saveInDialog(
         final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> config,
         final NodeSettingsWO settings) throws InvalidSettingsException {
-        saveAdvancedSettingsTab(config, settings.addNodeSettings(CFG_ADVANCED_SETTINGS_TAB));
+        saveInModel(config, settings);
+    }
+
+    private static void loadSettingsTabInDialog(
+        final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> config,
+        final NodeSettingsRO settings) {
+        final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
+        excelConfig.setSheetSelection(
+            SheetSelection.valueOf(settings.getString(CGF_SHEET_SELECTION, SheetSelection.FIRST.name())));
+        excelConfig.setSheetName(settings.getString(CGF_SHEET_NAME, ""));
+        excelConfig.setSheetIdx(settings.getInt(CGF_SHEET_INDEX, 1));
+    }
+
+    private static void loadSettingsTabInModel(
+        final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> config,
+        final NodeSettingsRO settings) throws InvalidSettingsException {
+        final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
+        excelConfig.setSheetSelection(SheetSelection.loadValueInModel(settings.getString(CGF_SHEET_SELECTION)));
+        excelConfig.setSheetName(settings.getString(CGF_SHEET_NAME));
+        excelConfig.setSheetIdx(settings.getInt(CGF_SHEET_INDEX));
+    }
+
+    private static void saveSettingsTab(
+        final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> config,
+        final NodeSettingsWO settings) {
+        final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
+        settings.addString(CGF_SHEET_SELECTION, excelConfig.getSheetSelection().name());
+        settings.addString(CGF_SHEET_NAME, excelConfig.getSheetName());
+        settings.addInt(CGF_SHEET_INDEX, excelConfig.getSheetIdx());
+    }
+
+    public static void validateSettingsTab(final NodeSettingsRO settings) throws InvalidSettingsException {
+        settings.getString(CGF_SHEET_SELECTION);
+        settings.getString(CGF_SHEET_NAME);
+        settings.getInt(CGF_SHEET_INDEX);
     }
 
     private static void loadAdvancedSettingsTabInDialog(

@@ -55,6 +55,7 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalLong;
 
@@ -78,6 +79,7 @@ import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIME
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCellUtils;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelParserRunnable;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelRead;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelUtils;
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
 import org.knime.filehandling.core.node.table.reader.randomaccess.RandomAccessibleUtils;
 
@@ -96,6 +98,8 @@ public final class XLSRead extends ExcelRead {
 
     private Workbook m_workbook;
 
+    private Map<String, Boolean> m_sheetNames;
+
     /**
      * Constructor.
      *
@@ -113,11 +117,8 @@ public final class XLSRead extends ExcelRead {
         try {
             final BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream);
             m_workbook = checkFileFormatAndCreateWorkbook(bufferedInputStream);
-            if (m_workbook.getNumberOfSheets() < 1) {
-                throw new IOException("Selected file does not contain any sheet.");
-            }
-            // take first sheet
-            final Sheet sheet = m_workbook.getSheetAt(0);
+            m_sheetNames = ExcelUtils.getSheetNames(m_workbook);
+            final Sheet sheet = m_workbook.getSheet(getSelectedSheet());
             m_numMaxRows = sheet.getLastRowNum() + 1L;
 
             return new XLSParserRunnable(this, m_config, sheet, use1904Windowing(m_workbook));
@@ -142,6 +143,11 @@ public final class XLSRead extends ExcelRead {
             date1904 = false;
         }
         return date1904;
+    }
+
+    @Override
+    public Map<String, Boolean> getSheetNames() {
+        return m_sheetNames;
     }
 
     /**

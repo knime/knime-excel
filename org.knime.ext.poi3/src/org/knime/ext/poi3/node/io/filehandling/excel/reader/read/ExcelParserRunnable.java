@@ -52,6 +52,7 @@ import java.io.IOException;
 
 import org.knime.core.node.NodeLogger;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelUtils.ParsingInterruptedException;
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
 import org.knime.filehandling.core.node.table.reader.randomaccess.RandomAccessible;
 import org.knime.filehandling.core.node.table.reader.randomaccess.RandomAccessibleUtils;
@@ -91,6 +92,8 @@ public abstract class ExcelParserRunnable implements Runnable {
             LOGGER.debug("Thread parsing an Excel spreadsheet finished successfully.");
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            closeAndSwallowExceptions();
+        } catch (ParsingInterruptedException e) { // NOSONAR ignore ParsingInterruptedException, they are thrown by us
             closeAndSwallowExceptions();
         } catch (Throwable e) { // NOSONAR we want to catch any Throwable
             m_read.setThrowable(e);
@@ -139,17 +142,6 @@ public abstract class ExcelParserRunnable implements Runnable {
         for (int i = 0; i < numMissingsRows; i++) {
             addToQueue(RandomAccessibleUtils.createFromArrayUnsafe());
         }
-    }
-
-    /**
-     * Exception to be thrown when the thread that parses the sheet should be interrupted.
-     *
-     * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
-     */
-    private static class ParsingInterruptedException extends RuntimeException {
-
-        private static final long serialVersionUID = 1L;
-
     }
 
 }

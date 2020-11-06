@@ -53,6 +53,7 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -267,6 +268,25 @@ public abstract class ExcelRead implements Read<ExcelCell> {
             return m_randomAccessibles.poll();
         }
 
+    }
+
+    /**
+     * Returns a map that contains the names of the sheets as keys and whether it is the first non-empty sheet as value.
+     *
+     * @return the map of sheet names with names as keys being in the same order as in the workbook
+     */
+    public abstract Map<String, Boolean> getSheetNames();
+
+    /**
+     * Returns the name of the selected sheet based on the configuration.
+     *
+     * @return the name of the selected sheet
+     * @throws IOException if the configured sheet is not available
+     */
+    protected String getSelectedSheet() throws IOException {
+        final Map<String, Boolean> sheetNames = getSheetNames();
+        final ExcelTableReaderConfig excelConfig = m_config.getReaderSpecificConfig();
+        return excelConfig.getSheetSelection().getSelectedSheet(sheetNames, excelConfig, m_path);
     }
 
 }

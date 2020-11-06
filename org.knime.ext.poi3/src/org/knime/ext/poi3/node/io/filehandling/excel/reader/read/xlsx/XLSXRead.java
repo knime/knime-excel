@@ -52,7 +52,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.OptionalLong;
+
+import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.commons.io.input.CountingInputStream;
 import org.apache.poi.openxml4j.exceptions.OpenXML4JException;
@@ -69,6 +72,7 @@ import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelParserRunnable;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelRead;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelUtils;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.xlsx.KNIMEXSSFSheetXMLHandler.AbstractKNIMESheetContentsHandler;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.xlsx.KNIMEXSSFSheetXMLHandler.KNIMEXSSFDataType;
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
@@ -106,27 +110,46 @@ public final class XLSXRead extends ExcelRead {
 
     private long m_sheetSize;
 
+    private Map<String, Boolean> m_sheetNames;
+
     @Override
-    @SuppressWarnings("resource") // we are going to close all the resources in #close
     public ExcelParserRunnable createParser(final InputStream inputStream) throws IOException {
         try {
             m_opc = OPCPackage.open(inputStream);
-            // take the first sheet
             final XSSFReader xssfReader = new XSSFReader(m_opc);
+            final XMLReader xmlReader = XMLHelper.newXMLReader();
+            final ReadOnlySharedStringsTable sharedStringsTable = new ReadOnlySharedStringsTable(m_opc, false);
 
+            m_sheetNames = ExcelUtils.getSheetNames(xmlReader, xssfReader, sharedStringsTable);
             final SheetIterator sheetsData = (SheetIterator)xssfReader.getSheetsData();
-            if (!sheetsData.hasNext()) {
-                throw new IOException("Selected file does not contain any sheet.");
-            }
-            m_countingSheetStream = new CountingInputStream(sheetsData.next());
+            m_countingSheetStream = getSheetStreamWithSheetName(sheetsData, getSelectedSheet());
             m_sheetSize = m_countingSheetStream.available();
 
             // create the parser
-            final ReadOnlySharedStringsTable sharedStringsTable = new ReadOnlySharedStringsTable(m_opc, false);
-            return new XLSXParserRunnable(this, m_config, xssfReader, sharedStringsTable, use1904Windowing(xssfReader));
-        } catch (SAXException | OpenXML4JException e) {
+            return new XLSXParserRunnable(this, m_config, xmlReader, xssfReader, sharedStringsTable,
+                use1904Windowing(xssfReader));
+        } catch (SAXException | OpenXML4JException | ParserConfigurationException e) {
             throw new IllegalStateException(e.getMessage(), e);
         }
+    }
+
+    private static CountingInputStream getSheetStreamWithSheetName(final SheetIterator sheetsData,
+        final String selectedSheet) throws IOException {
+        while (sheetsData.hasNext()) {
+            @SuppressWarnings("resource") // manually closed
+            final InputStream sheetIterator = sheetsData.next();
+            try {
+                if (sheetsData.getSheetName().equals(selectedSheet)) {
+                    return new CountingInputStream(sheetIterator);
+                } else {
+                    sheetIterator.close();
+                }
+            } catch (Exception e) { // NOSONAR catch anything to make sure the stream is closed
+                sheetIterator.close();
+            }
+        }
+        // should never happen as we checked for it already
+        throw new IllegalStateException("No sheet with name '" + selectedSheet + "' found.");
     }
 
     private static boolean use1904Windowing(final XSSFReader xssfReader) {
@@ -139,6 +162,11 @@ public final class XLSXRead extends ExcelRead {
             // if anything goes wrong, we just assume false
             return false;
         }
+    }
+
+    @Override
+    public Map<String, Boolean> getSheetNames() {
+        return m_sheetNames;
     }
 
     @Override
@@ -169,10 +197,13 @@ public final class XLSXRead extends ExcelRead {
 
         private final KNIMEDataFormatter m_dataFormatter;
 
+        private final XMLReader m_xmlReader;
+
         XLSXParserRunnable(final ExcelRead read, final TableReadConfig<ExcelTableReaderConfig> config,
-            final XSSFReader xssfReader, final ReadOnlySharedStringsTable sharedStringsTable,
+            final XMLReader xmlReader, final XSSFReader xssfReader, final ReadOnlySharedStringsTable sharedStringsTable,
             final boolean use1904Windowing) {
             super(read, config);
+            m_xmlReader = xmlReader;
             m_xssfReader = xssfReader;
             m_sharedStringsTable = sharedStringsTable;
             m_dataFormatter = new KNIMEDataFormatter(use1904Windowing, m_use15DigitsPrecision);
@@ -180,12 +211,11 @@ public final class XLSXRead extends ExcelRead {
 
         @Override
         protected void parse() throws Exception {
-            final XMLReader xmlReader = XMLHelper.newXMLReader();
             final ExcelTableReaderSheetContentsHandler sheetContentsHandler =
                 new ExcelTableReaderSheetContentsHandler();
-            xmlReader.setContentHandler(new KNIMEXSSFSheetXMLHandler(m_xssfReader.getStylesTable(),
+            m_xmlReader.setContentHandler(new KNIMEXSSFSheetXMLHandler(m_xssfReader.getStylesTable(),
                 m_sharedStringsTable, sheetContentsHandler, m_dataFormatter, false));
-            xmlReader.parse(new InputSource(m_countingSheetStream));
+            m_xmlReader.parse(new InputSource(m_countingSheetStream));
         }
 
         class ExcelTableReaderSheetContentsHandler extends AbstractKNIMESheetContentsHandler {

@@ -51,6 +51,11 @@ package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
+
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import org.apache.poi.UnsupportedFileFormatException;
 import org.apache.poi.openxml4j.exceptions.ODFNotOfficeXmlFileException;
@@ -80,6 +85,12 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
 
     static final TypeFocusableTypeHierarchy<KNIMECellType, ExcelCell> TYPE_HIERARCHY = createHierarchy();
 
+    /** The change listener that is set by the dialog to get notified once sheet names are retrieved. */
+    private ChangeListener m_listener;
+
+    /** Contains the names of the sheets as keys and whether it is the first non-empty sheet as value. */
+    private Map<String, Boolean> m_sheetNames;
+
     @Override
     public Read<ExcelCell> read(final Path path, final TableReadConfig<ExcelTableReaderConfig> config)
         throws IOException {
@@ -90,7 +101,10 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
     public TypedReaderTableSpec<KNIMECellType> readSpec(final Path path,
         final TableReadConfig<ExcelTableReaderConfig> config, final ExecutionMonitor exec) throws IOException {
         final TableSpecGuesser<KNIMECellType, ExcelCell> guesser = createGuesser();
-        try (final ExcelRead read = getExcelRead(path, config)) {
+        try (ExcelRead read = getExcelRead(path, config)) {
+            // sheet names are already retrieved, notify a potential listener from the dialog
+            m_sheetNames = read.getSheetNames();
+            notifyChangeListener();
             return guesser.guessSpec(read, config, exec);
         }
     }
@@ -139,7 +153,7 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
     private static IllegalArgumentException createUnsupportedFileFormatException(final Exception e, final Path path,
         final String fileFormat) {
         final String formatString = fileFormat != null ? String.format(" (%s)", fileFormat) : "";
-        throw new IllegalArgumentException(
+        return new IllegalArgumentException(
             String.format("The format%s of the file '%s' is not supported. Please select an XLSX, XLSM, or XLS file.",
                 formatString, path),
             e); // TODO add XLSB with AP-15391
@@ -165,6 +179,23 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
         final KNIMECellType... compatibleTypes) {
         return TypeTester.createTypeTester(type,
             e -> type == e.getType() || Arrays.binarySearch(compatibleTypes, e.getType()) >= 0);
+    }
+
+    void setChangeListener(final ChangeListener l) {
+        m_listener = l;
+    }
+
+    private void notifyChangeListener() {
+        if (m_listener != null) {
+            m_listener.stateChanged(new ChangeEvent(this));
+        }
+    }
+
+    Map<String, Boolean> getSheetNames() {
+        if (m_sheetNames == null) {
+            return Collections.emptyMap();
+        }
+        return m_sheetNames;
     }
 
 }

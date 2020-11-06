@@ -50,6 +50,7 @@ package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 
 import java.util.Optional;
 
+import org.knime.core.node.NodeDialogPane;
 import org.knime.core.node.context.NodeCreationConfiguration;
 import org.knime.core.node.context.url.URLConfiguration;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell;
@@ -60,10 +61,10 @@ import org.knime.filehandling.core.connections.FSLocation;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.reader.SettingsModelReaderFileChooser;
 import org.knime.filehandling.core.defaultnodesettings.filtermode.SettingsModelFilterMode.FilterMode;
 import org.knime.filehandling.core.node.table.reader.AbstractTableReaderNodeFactory;
+import org.knime.filehandling.core.node.table.reader.DefaultProductionPathProvider;
 import org.knime.filehandling.core.node.table.reader.MultiTableReadFactory;
 import org.knime.filehandling.core.node.table.reader.ProductionPathProvider;
 import org.knime.filehandling.core.node.table.reader.ReadAdapterFactory;
-import org.knime.filehandling.core.node.table.reader.TableReader;
 import org.knime.filehandling.core.node.table.reader.config.DefaultMultiTableReadConfig;
 import org.knime.filehandling.core.node.table.reader.config.DefaultTableReadConfig;
 import org.knime.filehandling.core.node.table.reader.preview.dialog.AbstractTableReaderNodeDialog;
@@ -84,8 +85,20 @@ public final class ExcelTableReaderNodeFactory
         final NodeCreationConfiguration creationConfig,
         final MultiTableReadFactory<ExcelTableReaderConfig, KNIMECellType> readFactory,
         final ProductionPathProvider<KNIMECellType> defaultProductionPathFn) {
-        return new ExcelTableReaderNodeDialog(createPathSettings(creationConfig), createConfig(), readFactory,
-            defaultProductionPathFn);
+        // we overwrite #createNodeDialogPane(NodeCreationConfiguration) directly to be able to pass a reference of the
+        // ExcelTableReader to the dialog; this reference will be used to fetch sheet name information during spec
+        // guessing
+        return null;
+    }
+
+    @Override
+    protected NodeDialogPane createNodeDialogPane(final NodeCreationConfiguration creationConfig) {
+        final ExcelTableReader tableReader = createReader();
+        final MultiTableReadFactory<ExcelTableReaderConfig, KNIMECellType> readFactory =
+            createMultiTableReadFactory(tableReader);
+        final DefaultProductionPathProvider<KNIMECellType> productionPathProvider = createProductionPathProvider();
+        return new ExcelTableReaderNodeDialog(createPathSettings(creationConfig), createConfig(), tableReader,
+            readFactory, productionPathProvider);
     }
 
     @Override
@@ -107,7 +120,7 @@ public final class ExcelTableReaderNodeFactory
     }
 
     @Override
-    protected TableReader<ExcelTableReaderConfig, KNIMECellType, ExcelCell> createReader() {
+    protected ExcelTableReader createReader() {
         return new ExcelTableReader();
     }
 
