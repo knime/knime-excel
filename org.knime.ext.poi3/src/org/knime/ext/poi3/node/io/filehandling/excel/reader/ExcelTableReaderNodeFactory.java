@@ -139,6 +139,7 @@ public final class ExcelTableReaderNodeFactory
         createConfig() {
         final DefaultTableReadConfig<ExcelTableReaderConfig> tc =
             new DefaultTableReadConfig<>(new ExcelTableReaderConfig());
+        tc.setColumnHeaderIdx(0);
         return new DefaultMultiTableReadConfig<>(tc, ExcelMultiTableReadConfigSerializer.INSTANCE);
     }
 

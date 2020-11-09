@@ -89,6 +89,10 @@ enum ExcelMultiTableReadConfigSerializer implements
 
     private static final String CGF_SHEET_INDEX = "sheet_index";
 
+    private static final String CFG_HAS_COLUMN_HEADER = "table_contains_column_names";
+
+    private static final String CFG_COLUMN_HEADER_ROW_IDX = "column_names_row_number";
+
     private static final String CFG_ADVANCED_SETTINGS_TAB = "advanced_settings";
 
     private static final String CGF_USE_15_DIGITS_PRECISION = "use_15_digits_precision";
@@ -120,12 +124,6 @@ enum ExcelMultiTableReadConfigSerializer implements
         final NodeSettingsRO settings) throws InvalidSettingsException {
         loadSettingsTabInModel(config, SettingsUtils.getOrEmpty(settings, CFG_SETTINGS_TAB));
         loadAdvancedSettingsTabInModel(config, settings.getNodeSettings(CFG_ADVANCED_SETTINGS_TAB));
-        // TODO add settings to dialog, for now hard-coded
-        final DefaultTableReadConfig<?> tc = config.getTableReadConfig();
-        tc.setAllowShortRows(true);
-        tc.setUseColumnHeaderIdx(true);
-        tc.setColumnHeaderIdx(0);
-        tc.setLimitRowsForSpec(false);
         if (settings.containsKey(CFG_TABLE_SPEC_CONFIG)) {
             config.setTableSpecConfig(DefaultTableSpecConfig.load(settings.getNodeSettings(CFG_TABLE_SPEC_CONFIG),
                 ExcelReadAdapterFactory.INSTANCE.getProducerRegistry(), MOST_GENERIC_EXTERNAL_TYPE, null));
@@ -166,6 +164,11 @@ enum ExcelMultiTableReadConfigSerializer implements
             SheetSelection.valueOf(settings.getString(CGF_SHEET_SELECTION, SheetSelection.FIRST.name())));
         excelConfig.setSheetName(settings.getString(CGF_SHEET_NAME, ""));
         excelConfig.setSheetIdx(settings.getInt(CGF_SHEET_INDEX, 1));
+        final DefaultTableReadConfig<?> tableReadConfig = config.getTableReadConfig();
+        tableReadConfig.setAllowShortRows(true);
+        tableReadConfig.setLimitRowsForSpec(false);
+        tableReadConfig.setUseColumnHeaderIdx(settings.getBoolean(CFG_HAS_COLUMN_HEADER, true));
+        tableReadConfig.setColumnHeaderIdx(settings.getLong(CFG_COLUMN_HEADER_ROW_IDX, 1) - 1);
     }
 
     private static void loadSettingsTabInModel(
@@ -175,6 +178,11 @@ enum ExcelMultiTableReadConfigSerializer implements
         excelConfig.setSheetSelection(SheetSelection.loadValueInModel(settings.getString(CGF_SHEET_SELECTION)));
         excelConfig.setSheetName(settings.getString(CGF_SHEET_NAME));
         excelConfig.setSheetIdx(settings.getInt(CGF_SHEET_INDEX));
+        final DefaultTableReadConfig<?> tableReadConfig = config.getTableReadConfig();
+        tableReadConfig.setAllowShortRows(true);
+        tableReadConfig.setLimitRowsForSpec(false);
+        tableReadConfig.setUseColumnHeaderIdx(settings.getBoolean(CFG_HAS_COLUMN_HEADER));
+        tableReadConfig.setColumnHeaderIdx(settings.getLong(CFG_COLUMN_HEADER_ROW_IDX) - 1);
     }
 
     private static void saveSettingsTab(
@@ -184,12 +192,17 @@ enum ExcelMultiTableReadConfigSerializer implements
         settings.addString(CGF_SHEET_SELECTION, excelConfig.getSheetSelection().name());
         settings.addString(CGF_SHEET_NAME, excelConfig.getSheetName());
         settings.addInt(CGF_SHEET_INDEX, excelConfig.getSheetIdx());
+        final DefaultTableReadConfig<?> tableReadConfig = config.getTableReadConfig();
+        settings.addBoolean(CFG_HAS_COLUMN_HEADER, tableReadConfig.useColumnHeaderIdx());
+        settings.addLong(CFG_COLUMN_HEADER_ROW_IDX, tableReadConfig.getColumnHeaderIdx() + 1);
     }
 
     public static void validateSettingsTab(final NodeSettingsRO settings) throws InvalidSettingsException {
         settings.getString(CGF_SHEET_SELECTION);
         settings.getString(CGF_SHEET_NAME);
         settings.getInt(CGF_SHEET_INDEX);
+        settings.getBoolean(CFG_HAS_COLUMN_HEADER);
+        settings.getLong(CFG_COLUMN_HEADER_ROW_IDX);
     }
 
     private static void loadAdvancedSettingsTabInDialog(

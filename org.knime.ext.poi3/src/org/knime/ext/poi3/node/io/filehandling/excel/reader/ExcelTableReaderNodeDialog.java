@@ -128,6 +128,14 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
 
     private JCheckBox m_failOnDifferingSpecs = new JCheckBox("Fail if specs differ");
 
+    private final JCheckBox m_columnHeaderCheckBox = new JCheckBox("Table contains column names in row number", true);
+
+    private final JSpinner m_columnHeaderSpinner = new JSpinner(
+        new SpinnerNumberModel(Long.valueOf(1), Long.valueOf(1), Long.valueOf(Long.MAX_VALUE), Long.valueOf(1)));
+
+    private final JLabel m_columnHeaderNoteLabel =
+        new JLabel("(Row numbers start with 1. Mouse over Row ID to see row number.)");
+
     private boolean m_updatingSheetSelection = false;
 
     ExcelTableReaderNodeDialog(final SettingsModelReaderFileChooser settingsModelReaderFileChooser,
@@ -146,8 +154,10 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         m_filePanel = new DialogComponentReaderFileChooser(m_settingsModelFilePanel, "excel_reader_writer", readFvm,
             FilterMode.FILE, FilterMode.FILES_IN_FOLDERS);
 
-        m_firstSheetWithDataLabel.setFont(new Font(m_firstSheetWithDataLabel.getFont().getName(), Font.ITALIC,
-            m_firstSheetWithDataLabel.getFont().getSize()));
+        final Font italicFont = new Font(m_firstSheetWithDataLabel.getFont().getName(), Font.ITALIC,
+            m_firstSheetWithDataLabel.getFont().getSize());
+        m_firstSheetWithDataLabel.setFont(italicFont);
+        m_columnHeaderNoteLabel.setFont(italicFont);
         m_sheetSelectionButtonGroup.add(m_radioButtonFirstSheetWithData);
         m_sheetSelectionButtonGroup.add(m_radioButtonSheetByName);
         m_sheetSelectionButtonGroup.add(m_radioButtonSheetByIndex);
@@ -167,6 +177,10 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
 
         m_filePanel.getSettingsModel().getFilterModeModel().addChangeListener(l -> toggleFailOnDifferingCheckBox());
 
+        m_columnHeaderCheckBox.addChangeListener(l -> {
+            m_columnHeaderSpinner.setEnabled(m_columnHeaderCheckBox.isSelected());
+            m_columnHeaderNoteLabel.setEnabled(m_columnHeaderCheckBox.isSelected());
+        });
     }
 
     private void configChanged(final boolean updateSheets) {
@@ -241,7 +255,23 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         final double smallDouble = 1E-10; // spinner should only fill up space of the combo box, rest is for label
         panel.add(m_sheetIndexSelection, gbcBuilder.incX().setWeightX(smallDouble).fillHorizontal().build());
         panel.add(new JLabel(), gbcBuilder.incX().setWeightX(1 - smallDouble).build());
+        return panel;
+    }
 
+    private JPanel createColumnHeaderPanel() {
+        final JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Column header"));
+        final Insets insets = new Insets(5, 5, 0, 0);
+        final GBCBuilder gbcBuilder = new GBCBuilder(insets).resetPos().anchorFirstLineStart();
+
+        m_columnHeaderNoteLabel
+            .setPreferredSize(new Dimension((int)m_columnHeaderNoteLabel.getPreferredSize().getWidth(),
+                (int)m_columnHeaderCheckBox.getPreferredSize().getHeight()));
+        panel.add(m_columnHeaderCheckBox, gbcBuilder.build());
+        m_columnHeaderSpinner
+            .setPreferredSize(new Dimension(75, (int)m_columnHeaderSpinner.getPreferredSize().getHeight()));
+        panel.add(m_columnHeaderSpinner, gbcBuilder.incX().build());
+        panel.add(m_columnHeaderNoteLabel, gbcBuilder.incX().setWeightX(1).build());
         return panel;
     }
 
@@ -250,6 +280,7 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         final GBCBuilder gbcBuilder = new GBCBuilder().resetPos().anchorFirstLineStart().setWeightX(1).fillHorizontal();
         panel.add(createFilePanel(), gbcBuilder.build());
         panel.add(createSheetSelectionPanel(), gbcBuilder.incY().build());
+        panel.add(createColumnHeaderPanel(), gbcBuilder.incY().build());
         panel.add(createPreview(), gbcBuilder.incY().fillBoth().setWeightY(1).build());
         return panel;
     }
@@ -296,8 +327,10 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         m_radioButtonSheetByName.addActionListener(actionListener);
         m_radioButtonSheetByIndex.addActionListener(actionListener);
         m_sheetNameSelection.addActionListener(actionListener);
+        m_columnHeaderCheckBox.addActionListener(actionListener);
         final ChangeListener changeListener = l -> configChanged(false);
         m_sheetIndexSelection.addChangeListener(changeListener);
+        m_columnHeaderSpinner.addChangeListener(changeListener);
     }
 
     @Override
@@ -330,9 +363,8 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         m_config.setFailOnDifferingSpecs(m_failOnDifferingSpecs.isSelected());
         final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = m_config.getTableReadConfig();
         tableReadConfig.setUseRowIDIdx(false);
-        tableReadConfig.setUseColumnHeaderIdx(true);
-        tableReadConfig.setColumnHeaderIdx(0);
-        tableReadConfig.setAllowShortRows(true);
+        tableReadConfig.setUseColumnHeaderIdx(m_columnHeaderCheckBox.isSelected());
+        tableReadConfig.setColumnHeaderIdx((long)m_columnHeaderSpinner.getValue() - 1);
         tableReadConfig.setLimitRowsForSpec(false);
     }
 
@@ -358,6 +390,9 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
      */
     private void loadTableReadSettings() {
         m_failOnDifferingSpecs.setSelected(m_config.failOnDifferingSpecs());
+        final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = m_config.getTableReadConfig();
+        m_columnHeaderCheckBox.setSelected(tableReadConfig.useColumnHeaderIdx());
+        m_columnHeaderSpinner.setValue(Long.valueOf(tableReadConfig.getColumnHeaderIdx() + 1));
     }
 
     /**
