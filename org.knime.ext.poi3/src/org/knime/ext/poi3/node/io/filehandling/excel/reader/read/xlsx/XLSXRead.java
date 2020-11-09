@@ -53,6 +53,7 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Optional;
 import java.util.OptionalLong;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -258,42 +259,57 @@ public final class XLSXRead extends ExcelRead {
                 }
 
                 // check if cells were missing and insert null if so
-                int thisCol = new CellReference(cellReference).getCol();
-                int missedCols = thisCol - m_currentCol;
-                for (int i = 0; i < missedCols; i++) {
-                    m_row.add(null);
-                }
-                m_currentCol += missedCols;
+                m_currentCol = handleMissingCells(cellReference);
 
-                final ExcelCell numericExcelCell = m_dataFormatter.getAndResetExcelCell();
-                if (numericExcelCell != null) {
-                    m_row.add(numericExcelCell);
+                // check if column is hidden and if such columns should be skipped
+                if (m_skipHiddenCols && getHiddenCols().contains(m_currentCol)) {
+                    // reset the data formatter's excel cell
+                    m_dataFormatter.getAndResetExcelCell();
                 } else {
-                    final KNIMEXSSFDataType cellType = getCellType();
-                    switch (cellType) {
-                        case BOOLEAN:
-                            m_row.add(new ExcelCell(KNIMECellType.BOOLEAN, formattedValue.equals("TRUE")));
-                            break;
-                        case ERROR:
-                            m_row.add(new ExcelCell(KNIMECellType.STRING, XL_EVAL_ERROR));
-                            break;
-                        case FORMULA:
-                            m_row.add(new ExcelCell(KNIMECellType.STRING, formattedValue));
-                            break;
-                        case STRING:
-                            m_row.add(new ExcelCell(KNIMECellType.STRING, formattedValue));
-                            break;
-                        case NUMBER_OR_DATE:
-                        default:
-                            throw new IllegalStateException("Unexpected data type: " + cellType);
-
-                    }
+                    final Optional<ExcelCell> numericCell = m_dataFormatter.getAndResetExcelCell();
+                    m_row.add(numericCell.orElseGet(() -> createExcelCellFromStringValue(formattedValue)));
                 }
+            }
+
+            private ExcelCell createExcelCellFromStringValue(final String formattedValue) {
+                final ExcelCell excelCell;
+                final KNIMEXSSFDataType cellType = getCellType();
+                switch (cellType) {
+                    case BOOLEAN:
+                        excelCell = new ExcelCell(KNIMECellType.BOOLEAN, formattedValue.equals("TRUE"));
+                        break;
+                    case ERROR:
+                        excelCell = new ExcelCell(KNIMECellType.STRING, XL_EVAL_ERROR);
+                        break;
+                    case FORMULA:
+                        excelCell = new ExcelCell(KNIMECellType.STRING, formattedValue);
+                        break;
+                    case STRING:
+                        excelCell = new ExcelCell(KNIMECellType.STRING, formattedValue);
+                        break;
+                    case NUMBER_OR_DATE:
+                    default:
+                        throw new IllegalStateException("Unexpected data type: " + cellType);
+                }
+                return excelCell;
             }
 
             @Override
             public void headerFooter(final String text, final boolean isHeader, final String tagName) {
                 // do nothing, we do not treat header and footer
+            }
+
+            private int handleMissingCells(final String cellReference) {
+                final int thisCol = new CellReference(cellReference).getCol();
+                final int missedCols = thisCol - m_currentCol;
+                int currentCol = m_currentCol;
+                for (int i = 0; i < missedCols; i++) {
+                    currentCol++;
+                    if (!(m_skipHiddenCols && getHiddenCols().contains(currentCol))) {
+                        m_row.add(null);
+                    }
+                }
+                return thisCol;
             }
 
         }

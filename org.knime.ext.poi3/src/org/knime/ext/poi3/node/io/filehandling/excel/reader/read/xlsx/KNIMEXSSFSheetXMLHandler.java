@@ -48,6 +48,10 @@
  */
 package org.knime.ext.poi3.node.io.filehandling.excel.reader.read.xlsx;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.IntStream;
+
 import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
 import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler;
 import org.apache.poi.xssf.model.StylesTable;
@@ -84,6 +88,8 @@ final class KNIMEXSSFSheetXMLHandler extends XSSFSheetXMLHandler {
 
         private KNIMEXSSFDataType m_dataType;
 
+        private Set<Integer> m_hiddenCols;
+
         void nextCellType(final KNIMEXSSFDataType type) {
             m_dataType = type;
         }
@@ -92,11 +98,21 @@ final class KNIMEXSSFSheetXMLHandler extends XSSFSheetXMLHandler {
             return m_dataType;
         }
 
+        void hiddenCols(final Set<Integer> hiddenColsToSkip) {
+            m_hiddenCols = hiddenColsToSkip;
+        }
+
+        protected Set<Integer> getHiddenCols() {
+            return m_hiddenCols;
+        }
+
     }
 
     private final AbstractKNIMESheetContentsHandler m_output;
 
     private KNIMEXSSFDataType m_nextDataType;
+
+    private Set<Integer> m_hiddenCols = new HashSet<>();
 
     /**
      * @param styles The styles to use.
@@ -134,12 +150,22 @@ final class KNIMEXSSFSheetXMLHandler extends XSSFSheetXMLHandler {
                 m_nextDataType = KNIMEXSSFDataType.FORMULA;
             }
         }
+        if ("col".equals(localName) && isHidden(attributes.getValue("hidden"))) {
+            int min = Integer.parseInt(attributes.getValue("min"));
+            int max = Integer.parseInt(attributes.getValue("max"));
+            IntStream.range(min - 1, max).forEach(m_hiddenCols::add);
+        }
         super.startElement(uri, localName, qName, attributes);
+    }
+
+    private static boolean isHidden(final String hidden) {
+        return "true".equalsIgnoreCase(hidden) || "1".equals(hidden);
     }
 
     @Override
     public void endElement(final String uri, final String localName, final String qName) throws SAXException {
         m_output.nextCellType(m_nextDataType);
+        m_output.hiddenCols(m_hiddenCols);
         super.endElement(uri, localName, qName);
     }
 

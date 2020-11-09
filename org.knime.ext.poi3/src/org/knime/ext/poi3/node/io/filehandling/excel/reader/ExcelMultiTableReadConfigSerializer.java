@@ -97,6 +97,8 @@ enum ExcelMultiTableReadConfigSerializer implements
 
     private static final String CGF_USE_15_DIGITS_PRECISION = "use_15_digits_precision";
 
+    private static final String CGF_SKIP_HIDDEN_COLS = "skip_hidden_columns";
+
     @Override
     public void loadInDialog(
         final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> config,
@@ -210,6 +212,7 @@ enum ExcelMultiTableReadConfigSerializer implements
         final NodeSettingsRO settings) {
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
         excelConfig.setUse15DigitsPrecision(settings.getBoolean(CGF_USE_15_DIGITS_PRECISION, true));
+        excelConfig.setSkipHiddenCols(settings.getBoolean(CGF_SKIP_HIDDEN_COLS, true));
     }
 
     private static void loadAdvancedSettingsTabInModel(
@@ -217,6 +220,7 @@ enum ExcelMultiTableReadConfigSerializer implements
         final NodeSettingsRO settings) throws InvalidSettingsException {
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
         excelConfig.setUse15DigitsPrecision(settings.getBoolean(CGF_USE_15_DIGITS_PRECISION));
+        excelConfig.setSkipHiddenCols(settings.getBoolean(CGF_SKIP_HIDDEN_COLS));
     }
 
     private static void saveAdvancedSettingsTab(
@@ -224,10 +228,12 @@ enum ExcelMultiTableReadConfigSerializer implements
         final NodeSettingsWO settings) {
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
         settings.addBoolean(CGF_USE_15_DIGITS_PRECISION, excelConfig.isUse15DigitsPrecision());
+        settings.addBoolean(CGF_SKIP_HIDDEN_COLS, excelConfig.isSkipHiddenCols());
     }
 
     public static void validateAdvancedSettingsTab(final NodeSettingsRO settings) throws InvalidSettingsException {
         settings.getBoolean(CGF_USE_15_DIGITS_PRECISION);
+        settings.getBoolean(CGF_SKIP_HIDDEN_COLS);
     }
 
 }

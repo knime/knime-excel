@@ -72,6 +72,9 @@ public abstract class ExcelParserRunnable implements Runnable {
     /** True if 15 digits precision is used (that's what Excel is using). */
     protected final boolean m_use15DigitsPrecision;
 
+    /** True if hidden columns should be skipped. */
+    protected final boolean m_skipHiddenCols;
+
     /**
      * Constructor.
      *
@@ -80,7 +83,9 @@ public abstract class ExcelParserRunnable implements Runnable {
      */
     public ExcelParserRunnable(final ExcelRead read, final TableReadConfig<ExcelTableReaderConfig> config) {
         m_read = read;
-        m_use15DigitsPrecision = config.getReaderSpecificConfig().isUse15DigitsPrecision();
+        final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
+        m_use15DigitsPrecision = excelConfig.isUse15DigitsPrecision();
+        m_skipHiddenCols = excelConfig.isSkipHiddenCols();
     }
 
     @Override

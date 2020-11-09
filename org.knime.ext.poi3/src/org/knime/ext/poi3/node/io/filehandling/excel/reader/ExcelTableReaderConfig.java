@@ -65,6 +65,8 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
 
     private int m_sheetIdx = 0;
 
+    private boolean m_skipHiddenCols;
+
     /**
      * Constructor.
      */
@@ -76,6 +78,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
         setSheetSelection(toCopy.getSheetSelection());
         setSheetName(toCopy.getSheetName());
         setSheetIdx(toCopy.getSheetIdx());
+        setSkipHiddenCols(toCopy.isSkipHiddenCols());
     }
 
     @Override
@@ -137,6 +140,20 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
      */
     void setSheetIdx(final int selectedSheetIdx) {
         m_sheetIdx = selectedSheetIdx;
+    }
+
+    /**
+     * @return the skipHiddenCols
+     */
+    public boolean isSkipHiddenCols() {
+        return m_skipHiddenCols;
+    }
+
+    /**
+     * @param skipHiddenCols the skipHiddenCols to set
+     */
+    public void setSkipHiddenCols(final boolean skipHiddenCols) {
+        m_skipHiddenCols = skipHiddenCols;
     }
 
 }

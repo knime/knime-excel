@@ -49,6 +49,7 @@
 package org.knime.ext.poi3.node.io.filehandling.excel.reader.read.xlsx;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.DateUtil;
@@ -115,11 +116,11 @@ final class KNIMEDataFormatter extends DataFormatter {
     }
 
     /**
-     * Returns the last created {@link ExcelCell} or {@code null} if there is none. Also, sets the {@link ExcelCell} to
-     * {@code null}.
+     * Returns an {@link Optional} holding the last created {@link ExcelCell} or being empty if there is none. Also,
+     * sets the {@link ExcelCell} to {@code null}.
      */
-    ExcelCell getAndResetExcelCell() {
-        final ExcelCell excelCell = m_excelCell;
+    Optional<ExcelCell> getAndResetExcelCell() {
+        final Optional<ExcelCell> excelCell = Optional.ofNullable(m_excelCell);
         m_excelCell = null;
         return excelCell;
     }

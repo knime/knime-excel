@@ -138,6 +138,8 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
     private final JLabel m_columnHeaderNoteLabel =
         new JLabel("(Row numbers start with 1. Mouse over Row ID to see row number.)");
 
+    private final JCheckBox m_skipHiddenCols = new JCheckBox("Skip hidden columns", true);
+
     private boolean m_updatingSheetSelection = false;
 
     ExcelTableReaderNodeDialog(final SettingsModelReaderFileChooser settingsModelReaderFileChooser,
@@ -303,8 +305,9 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         final JPanel panel = new JPanel(new GridBagLayout());
         panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Reading options"));
         final GBCBuilder gbcBuilder =
-            new GBCBuilder(new Insets(5, 5, 5, 5)).resetPos().anchorFirstLineStart().setWeightX(1).fillHorizontal();
-        panel.add(m_use15DigitsPrecision, gbcBuilder.build());
+            new GBCBuilder(new Insets(5, 5, 0, 5)).resetPos().anchorFirstLineStart().setWeightX(1).fillHorizontal();
+        panel.add(m_skipHiddenCols, gbcBuilder.build());
+        panel.add(m_use15DigitsPrecision, gbcBuilder.incY().setInsets(new Insets(5, 5, 5, 5)).build());
         return panel;
     }
 
@@ -333,6 +336,7 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         m_radioButtonSheetByIndex.addActionListener(actionListener);
         m_sheetNameSelection.addActionListener(actionListener);
         m_columnHeaderCheckBox.addActionListener(actionListener);
+        m_skipHiddenCols.addActionListener(actionListener);
         final ChangeListener changeListener = l -> configChanged(false);
         m_sheetIndexSelection.addChangeListener(changeListener);
         m_columnHeaderSpinner.addChangeListener(changeListener);
@@ -388,6 +392,7 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         }
         excelConfig.setSheetName((String)m_sheetNameSelection.getSelectedItem());
         excelConfig.setSheetIdx((int)m_sheetIndexSelection.getValue());
+        excelConfig.setSkipHiddenCols(m_skipHiddenCols.isSelected());
     }
 
     /**
@@ -421,6 +426,7 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         m_sheetNameSelection.addItem(excelConfig.getSheetName());
         m_sheetNameSelection.setSelectedItem(excelConfig.getSheetName());
         m_sheetIndexSelection.setValue(excelConfig.getSheetIdx());
+        m_skipHiddenCols.setSelected(excelConfig.isSkipHiddenCols());
     }
 
     @Override

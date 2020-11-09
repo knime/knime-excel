@@ -205,12 +205,29 @@ public final class XLSRead extends ExcelRead {
                 if (row == null) {
                     // empty row
                     numEmptyRows++;
-                    continue;
+                } else {
+                    // parse the row
+                    final List<ExcelCell> cells = parseRow(row);
+                    // if all cells of the row are null, the row is empty
+                    if (cells.stream().noneMatch(Objects::nonNull)) {
+                        // by not adding empty rows directly to the queue but waiting for the next non-empty row, we prevent
+                        // rows with only "empty-but-formatted/styled" cells being added (cells which had content
+                        // before and were set to empty later might still be counted as cells by Excel and Apache POI)
+                        numEmptyRows++;
+                    } else {
+                        outputEmptyRows(numEmptyRows);
+                        numEmptyRows = 0;
+                        addToQueue(RandomAccessibleUtils.createFromArrayUnsafe(cells.toArray(new ExcelCell[0])));
+                    }
                 }
-                // parse the row
-                final List<ExcelCell> cells = new ArrayList<>();
-                int numEmptyCells = 0;
-                for (int j = 0; j < row.getLastCellNum(); j++) {
+            }
+        }
+
+        private List<ExcelCell> parseRow(final Row row) {
+            final List<ExcelCell> cells = new ArrayList<>();
+            int numEmptyCells = 0;
+            for (int j = 0; j < row.getLastCellNum(); j++) {
+                if (!(m_skipHiddenCols && m_sheet.isColumnHidden(j))) {
                     final Cell cell = row.getCell(j, MissingCellPolicy.RETURN_BLANK_AS_NULL);
                     if (cell == null) {
                         // by not adding null directly to the list but waiting for the next non-empty cell, we prevent
@@ -223,18 +240,8 @@ public final class XLSRead extends ExcelRead {
                         cells.add(parseCell(cell, cell.getCellType()));
                     }
                 }
-                // check if all cells of the row are which means the row is empty
-                if (cells.stream().noneMatch(Objects::nonNull)) {
-                    // by not adding empty rows directly to the queue but waiting for the next non-empty row, we prevent
-                    // rows with only "empty-but-formatted/styled" cells being added (cells which had content
-                    // before and were set to empty later might still be counted as cells by Excel and Apache POI)
-                    numEmptyRows++;
-                } else {
-                    outputEmptyRows(numEmptyRows);
-                    numEmptyRows = 0;
-                    addToQueue(RandomAccessibleUtils.createFromArrayUnsafe(cells.toArray(new ExcelCell[0])));
-                }
             }
+            return cells;
         }
 
         private static void addNullsToList(final int n, final List<?> list) {
