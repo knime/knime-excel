@@ -90,6 +90,8 @@ final class KNIMEXSSFSheetXMLHandler extends XSSFSheetXMLHandler {
 
         private Set<Integer> m_hiddenCols;
 
+        private boolean m_isHiddenRow;
+
         void nextCellType(final KNIMEXSSFDataType type) {
             m_dataType = type;
         }
@@ -104,6 +106,14 @@ final class KNIMEXSSFSheetXMLHandler extends XSSFSheetXMLHandler {
 
         protected Set<Integer> getHiddenCols() {
             return m_hiddenCols;
+        }
+
+        void hiddenRow(final boolean isHiddenRow) {
+            m_isHiddenRow = isHiddenRow;
+        }
+
+        protected boolean isHiddenRow() {
+            return m_isHiddenRow;
         }
 
     }
@@ -149,6 +159,9 @@ final class KNIMEXSSFSheetXMLHandler extends XSSFSheetXMLHandler {
             } else if ("str".equals(cellType)) {
                 m_nextDataType = KNIMEXSSFDataType.FORMULA;
             }
+        }
+        if ("row".equals(localName)) {
+            m_output.hiddenRow(isHidden(attributes.getValue("hidden")));
         }
         if ("col".equals(localName) && isHidden(attributes.getValue("hidden"))) {
             int min = Integer.parseInt(attributes.getValue("min"));

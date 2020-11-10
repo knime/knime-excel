@@ -75,6 +75,9 @@ public abstract class ExcelParserRunnable implements Runnable {
     /** True if hidden columns should be skipped. */
     protected final boolean m_skipHiddenCols;
 
+    /** True if hidden rows should be skipped. */
+    protected final boolean m_skipHiddenRows;
+
     /**
      * Constructor.
      *
@@ -86,6 +89,7 @@ public abstract class ExcelParserRunnable implements Runnable {
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
         m_use15DigitsPrecision = excelConfig.isUse15DigitsPrecision();
         m_skipHiddenCols = excelConfig.isSkipHiddenCols();
+        m_skipHiddenRows = excelConfig.isSkipHiddenRows();
     }
 
     @Override

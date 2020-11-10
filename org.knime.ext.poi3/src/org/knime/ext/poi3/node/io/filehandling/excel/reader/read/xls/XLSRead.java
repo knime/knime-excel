@@ -205,7 +205,7 @@ public final class XLSRead extends ExcelRead {
                 if (row == null) {
                     // empty row
                     numEmptyRows++;
-                } else {
+                } else if (!(m_skipHiddenRows && row.getZeroHeight())) {
                     // parse the row
                     final List<ExcelCell> cells = parseRow(row);
                     // if all cells of the row are null, the row is empty

@@ -227,20 +227,28 @@ public final class XLSXRead extends ExcelRead {
 
             private int m_currentCol = -1;
 
+            private boolean m_currentRowIsHiddenAndSkipped;
+
+            private int m_numHiddenRowsEncountered = 0;
+
             private final ArrayList<ExcelCell> m_row = new ArrayList<>();
 
             @Override
             public void startRow(final int rowNum) {
+                m_currentRowIsHiddenAndSkipped = m_skipHiddenRows && isHiddenRow();
                 m_currentRow = rowNum;
                 m_currentCol = -1;
             }
 
             @Override
             public void endRow(final int rowNum) {
-                if (!m_row.isEmpty()) {
+                if (m_currentRowIsHiddenAndSkipped) {
+                    m_numHiddenRowsEncountered++;
+                } else if (!m_row.isEmpty()) {
                     // if there were empty rows in between two non-empty rows, output these (we need to make sure that
-                    // there is a non-empty row after an empty row)
-                    outputEmptyRows(m_currentRow - m_lastNonEmptyRow - 1);
+                    // there is a non-empty row after an empty row); subtract potential hidden rows
+                    outputEmptyRows(m_currentRow - m_lastNonEmptyRow - m_numHiddenRowsEncountered - 1);
+                    m_numHiddenRowsEncountered = 0;
                     m_lastNonEmptyRow = m_currentRow;
                     // add the non-empty row the the queue
                     addToQueue(RandomAccessibleUtils.createFromArrayUnsafe(m_row.toArray(new ExcelCell[0])));
@@ -250,24 +258,26 @@ public final class XLSXRead extends ExcelRead {
 
             @Override
             public void cell(String cellReference, final String formattedValue, final XSSFComment comment) {
-                m_currentCol++;
-                if (cellReference == null) {
-                    // gracefully handle missing CellRef here in a similar way as XSSFCell does.
-                    // according to the API description the cellReference argument shouldn't be null,
-                    // though it can be for files created by third party software (see e.g. AP-9380)
-                    cellReference = new CellAddress(m_currentRow, m_currentCol).formatAsString();
-                }
+                if (!m_currentRowIsHiddenAndSkipped) {
+                    m_currentCol++;
+                    if (cellReference == null) {
+                        // gracefully handle missing CellRef here in a similar way as XSSFCell does.
+                        // according to the API description the cellReference argument shouldn't be null,
+                        // though it can be for files created by third party software (see e.g. AP-9380)
+                        cellReference = new CellAddress(m_currentRow, m_currentCol).formatAsString();
+                    }
 
-                // check if cells were missing and insert null if so
-                m_currentCol = handleMissingCells(cellReference);
+                    // check if cells were missing and insert null if so
+                    m_currentCol = handleMissingCells(cellReference);
 
-                // check if column is hidden and if such columns should be skipped
-                if (m_skipHiddenCols && getHiddenCols().contains(m_currentCol)) {
-                    // reset the data formatter's excel cell
-                    m_dataFormatter.getAndResetExcelCell();
-                } else {
-                    final Optional<ExcelCell> numericCell = m_dataFormatter.getAndResetExcelCell();
-                    m_row.add(numericCell.orElseGet(() -> createExcelCellFromStringValue(formattedValue)));
+                    // check if column is hidden and if such columns should be skipped
+                    if (m_skipHiddenCols && getHiddenCols().contains(m_currentCol)) {
+                        // reset the data formatter's excel cell
+                        m_dataFormatter.getAndResetExcelCell();
+                    } else {
+                        final Optional<ExcelCell> numericCell = m_dataFormatter.getAndResetExcelCell();
+                        m_row.add(numericCell.orElseGet(() -> createExcelCellFromStringValue(formattedValue)));
+                    }
                 }
             }
 

@@ -140,6 +140,8 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
 
     private final JCheckBox m_skipHiddenCols = new JCheckBox("Skip hidden columns", true);
 
+    private final JCheckBox m_skipHiddenRows = new JCheckBox("Skip hidden rows", true);
+
     private boolean m_updatingSheetSelection = false;
 
     ExcelTableReaderNodeDialog(final SettingsModelReaderFileChooser settingsModelReaderFileChooser,
@@ -307,6 +309,7 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         final GBCBuilder gbcBuilder =
             new GBCBuilder(new Insets(5, 5, 0, 5)).resetPos().anchorFirstLineStart().setWeightX(1).fillHorizontal();
         panel.add(m_skipHiddenCols, gbcBuilder.build());
+        panel.add(m_skipHiddenRows, gbcBuilder.incY().build());
         panel.add(m_use15DigitsPrecision, gbcBuilder.incY().setInsets(new Insets(5, 5, 5, 5)).build());
         return panel;
     }
@@ -337,6 +340,7 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         m_sheetNameSelection.addActionListener(actionListener);
         m_columnHeaderCheckBox.addActionListener(actionListener);
         m_skipHiddenCols.addActionListener(actionListener);
+        m_skipHiddenRows.addActionListener(actionListener);
         final ChangeListener changeListener = l -> configChanged(false);
         m_sheetIndexSelection.addChangeListener(changeListener);
         m_columnHeaderSpinner.addChangeListener(changeListener);
@@ -393,6 +397,7 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         excelConfig.setSheetName((String)m_sheetNameSelection.getSelectedItem());
         excelConfig.setSheetIdx((int)m_sheetIndexSelection.getValue());
         excelConfig.setSkipHiddenCols(m_skipHiddenCols.isSelected());
+        excelConfig.setSkipHiddenRows(m_skipHiddenRows.isSelected());
     }
 
     /**
@@ -427,6 +432,7 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         m_sheetNameSelection.setSelectedItem(excelConfig.getSheetName());
         m_sheetIndexSelection.setValue(excelConfig.getSheetIdx());
         m_skipHiddenCols.setSelected(excelConfig.isSkipHiddenCols());
+        m_skipHiddenRows.setSelected(excelConfig.isSkipHiddenRows());
     }
 
     @Override
