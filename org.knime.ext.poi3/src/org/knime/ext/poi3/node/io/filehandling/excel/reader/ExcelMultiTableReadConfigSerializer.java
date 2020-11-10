@@ -101,6 +101,8 @@ enum ExcelMultiTableReadConfigSerializer implements
 
     private static final String CGF_SKIP_HIDDEN_ROWS = "skip_hidden_rows";
 
+    private static final String CGF_SKIP_EMPTY_ROWS = "skip_empty_rows";
+
     @Override
     public void loadInDialog(
         final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> config,
@@ -212,6 +214,8 @@ enum ExcelMultiTableReadConfigSerializer implements
     private static void loadAdvancedSettingsTabInDialog(
         final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> config,
         final NodeSettingsRO settings) {
+        final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = config.getTableReadConfig();
+        tableReadConfig.setSkipEmptyRows(settings.getBoolean(CGF_SKIP_EMPTY_ROWS, true));
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
         excelConfig.setUse15DigitsPrecision(settings.getBoolean(CGF_USE_15_DIGITS_PRECISION, true));
         excelConfig.setSkipHiddenCols(settings.getBoolean(CGF_SKIP_HIDDEN_COLS, true));
@@ -221,6 +225,8 @@ enum ExcelMultiTableReadConfigSerializer implements
     private static void loadAdvancedSettingsTabInModel(
         final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> config,
         final NodeSettingsRO settings) throws InvalidSettingsException {
+        final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = config.getTableReadConfig();
+        tableReadConfig.setSkipEmptyRows(settings.getBoolean(CGF_SKIP_EMPTY_ROWS));
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
         excelConfig.setUse15DigitsPrecision(settings.getBoolean(CGF_USE_15_DIGITS_PRECISION));
         excelConfig.setSkipHiddenCols(settings.getBoolean(CGF_SKIP_HIDDEN_COLS));
@@ -230,6 +236,8 @@ enum ExcelMultiTableReadConfigSerializer implements
     private static void saveAdvancedSettingsTab(
         final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> config,
         final NodeSettingsWO settings) {
+        final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = config.getTableReadConfig();
+        settings.addBoolean(CGF_SKIP_EMPTY_ROWS, tableReadConfig.skipEmptyRows());
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
         settings.addBoolean(CGF_USE_15_DIGITS_PRECISION, excelConfig.isUse15DigitsPrecision());
         settings.addBoolean(CGF_SKIP_HIDDEN_COLS, excelConfig.isSkipHiddenCols());
@@ -240,6 +248,7 @@ enum ExcelMultiTableReadConfigSerializer implements
         settings.getBoolean(CGF_USE_15_DIGITS_PRECISION);
         settings.getBoolean(CGF_SKIP_HIDDEN_COLS);
         settings.getBoolean(CGF_SKIP_HIDDEN_ROWS);
+        settings.getBoolean(CGF_SKIP_EMPTY_ROWS);
     }
 
 }

@@ -142,6 +142,8 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
 
     private final JCheckBox m_skipHiddenRows = new JCheckBox("Skip hidden rows", true);
 
+    private final JCheckBox m_skipEmptyRows = new JCheckBox("Skip empty rows", true);
+
     private boolean m_updatingSheetSelection = false;
 
     ExcelTableReaderNodeDialog(final SettingsModelReaderFileChooser settingsModelReaderFileChooser,
@@ -309,6 +311,7 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         final GBCBuilder gbcBuilder =
             new GBCBuilder(new Insets(5, 5, 0, 5)).resetPos().anchorFirstLineStart().setWeightX(1).fillHorizontal();
         panel.add(m_skipHiddenCols, gbcBuilder.build());
+        panel.add(m_skipEmptyRows, gbcBuilder.incY().build());
         panel.add(m_skipHiddenRows, gbcBuilder.incY().build());
         panel.add(m_use15DigitsPrecision, gbcBuilder.incY().setInsets(new Insets(5, 5, 5, 5)).build());
         return panel;
@@ -341,6 +344,8 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         m_columnHeaderCheckBox.addActionListener(actionListener);
         m_skipHiddenCols.addActionListener(actionListener);
         m_skipHiddenRows.addActionListener(actionListener);
+        m_skipEmptyRows.addActionListener(actionListener);
+        m_use15DigitsPrecision.addActionListener(actionListener);
         final ChangeListener changeListener = l -> configChanged(false);
         m_sheetIndexSelection.addChangeListener(changeListener);
         m_columnHeaderSpinner.addChangeListener(changeListener);
@@ -379,6 +384,7 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         tableReadConfig.setUseColumnHeaderIdx(m_columnHeaderCheckBox.isSelected());
         tableReadConfig.setColumnHeaderIdx((long)m_columnHeaderSpinner.getValue() - 1);
         tableReadConfig.setLimitRowsForSpec(false);
+        tableReadConfig.setSkipEmptyRows(m_skipEmptyRows.isSelected());
     }
 
     /**
@@ -408,6 +414,7 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = m_config.getTableReadConfig();
         m_columnHeaderCheckBox.setSelected(tableReadConfig.useColumnHeaderIdx());
         m_columnHeaderSpinner.setValue(Long.valueOf(tableReadConfig.getColumnHeaderIdx() + 1));
+        m_skipEmptyRows.setSelected(tableReadConfig.skipEmptyRows());
     }
 
     /**
