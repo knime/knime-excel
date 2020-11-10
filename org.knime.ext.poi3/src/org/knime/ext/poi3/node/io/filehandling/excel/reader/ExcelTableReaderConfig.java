@@ -63,7 +63,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
 
     private String m_sheetName = "";
 
-    private int m_sheetIdx = 1;
+    private int m_sheetIdx = 0;
 
     /**
      * Constructor.

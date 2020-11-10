@@ -124,7 +124,9 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
 
     private JComboBox<String> m_sheetNameSelection = new JComboBox<>();
 
-    private JSpinner m_sheetIndexSelection = new JSpinner(new SpinnerNumberModel(1, 1, Integer.MAX_VALUE, 1));
+    private JSpinner m_sheetIndexSelection = new JSpinner(new SpinnerNumberModel(0, 0, Integer.MAX_VALUE, 1));
+
+    private final JLabel m_sheetIdxNoteLabel = new JLabel("(Sheet indexes start with 0.)");
 
     private JCheckBox m_failOnDifferingSpecs = new JCheckBox("Fail if specs differ");
 
@@ -158,6 +160,7 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
             m_firstSheetWithDataLabel.getFont().getSize());
         m_firstSheetWithDataLabel.setFont(italicFont);
         m_columnHeaderNoteLabel.setFont(italicFont);
+        m_sheetIdxNoteLabel.setFont(italicFont);
         m_sheetSelectionButtonGroup.add(m_radioButtonFirstSheetWithData);
         m_sheetSelectionButtonGroup.add(m_radioButtonSheetByName);
         m_sheetSelectionButtonGroup.add(m_radioButtonSheetByIndex);
@@ -222,8 +225,8 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         m_firstSheetWithDataLabel.setPreferredSize(new Dimension((int)new JLabel(text).getPreferredSize().getWidth(),
             (int)m_radioButtonFirstSheetWithData.getPreferredSize().getHeight()));
         final int selectedIndex = (int)m_sheetIndexSelection.getValue();
-        m_sheetIndexSelection.setModel(
-            new SpinnerNumberModel(selectedIndex > sheetNames.size() ? 1 : selectedIndex, 1, sheetNames.size(), 1));
+        m_sheetIndexSelection.setModel(new SpinnerNumberModel(
+            selectedIndex > (sheetNames.size() - 1) ? 0 : selectedIndex, 0, sheetNames.size() - 1, 1));
 
         m_radioButtonSheetByIndex.setEnabled(true);
         m_radioButtonSheetByName.setEnabled(true);
@@ -254,7 +257,9 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         panel.add(m_radioButtonSheetByIndex, gbcBuilder.incY().resetX().build());
         final double smallDouble = 1E-10; // spinner should only fill up space of the combo box, rest is for label
         panel.add(m_sheetIndexSelection, gbcBuilder.incX().setWeightX(smallDouble).fillHorizontal().build());
-        panel.add(new JLabel(), gbcBuilder.incX().setWeightX(1 - smallDouble).build());
+        m_sheetIdxNoteLabel.setPreferredSize(new Dimension((int)m_sheetIdxNoteLabel.getPreferredSize().getWidth(),
+            (int)m_sheetIndexSelection.getPreferredSize().getHeight()));
+        panel.add(m_sheetIdxNoteLabel, gbcBuilder.incX().setWeightX(1 - smallDouble).build());
         return panel;
     }
 

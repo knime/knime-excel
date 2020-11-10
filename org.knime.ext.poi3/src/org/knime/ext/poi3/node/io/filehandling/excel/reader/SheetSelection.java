@@ -127,10 +127,10 @@ public enum SheetSelection implements ButtonGroupEnumInterface {
     private static String getSheetByIdx(final Map<String, Boolean> sheetNames, final ExcelTableReaderConfig excelConfig,
         final Path path) throws IOException {
         final int sheetIdx = excelConfig.getSheetIdx();
-        if (sheetIdx < 1 || sheetIdx > sheetNames.size()) {
+        if (sheetIdx < 0 || sheetIdx >= (sheetNames.size())) {
             throw new IOException("The file '" + path + "' does not contain a sheet at index " + sheetIdx + ".");
         }
-        return sheetNames.keySet().toArray(new String[0])[sheetIdx - 1];
+        return sheetNames.keySet().toArray(new String[0])[sheetIdx];
     }
 
     private static String getSheetByName(final Map<String, Boolean> sheetNames,

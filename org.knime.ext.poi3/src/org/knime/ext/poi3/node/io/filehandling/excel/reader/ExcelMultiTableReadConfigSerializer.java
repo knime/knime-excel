@@ -163,7 +163,7 @@ enum ExcelMultiTableReadConfigSerializer implements
         excelConfig.setSheetSelection(
             SheetSelection.valueOf(settings.getString(CGF_SHEET_SELECTION, SheetSelection.FIRST.name())));
         excelConfig.setSheetName(settings.getString(CGF_SHEET_NAME, ""));
-        excelConfig.setSheetIdx(settings.getInt(CGF_SHEET_INDEX, 1));
+        excelConfig.setSheetIdx(settings.getInt(CGF_SHEET_INDEX, 0));
         final DefaultTableReadConfig<?> tableReadConfig = config.getTableReadConfig();
         tableReadConfig.setAllowShortRows(true);
         tableReadConfig.setLimitRowsForSpec(false);
