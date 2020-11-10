@@ -58,6 +58,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import org.apache.poi.UnsupportedFileFormatException;
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.openxml4j.exceptions.ODFNotOfficeXmlFileException;
 import org.apache.poi.openxml4j.exceptions.OLE2NotOfficeXmlFileException;
 import org.apache.poi.xssf.XLSBUnsupportedException;
@@ -126,6 +127,12 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
             throw createUnsupportedFileFormatException(e, path, "XLSB");
         } catch (UnsupportedFileFormatException e) {
             throw createUnsupportedFileFormatException(e, path, null);
+        } catch (IOException e) {
+            // happens, e.g., with .table files
+            if (e.getCause() instanceof InvalidFormatException) {
+                throw createUnsupportedFileFormatException(e, path, null);
+            }
+            throw e;
         }
     }
 
