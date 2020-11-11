@@ -63,8 +63,6 @@ import org.knime.filehandling.core.node.table.reader.config.DefaultTableSpecConf
 import org.knime.filehandling.core.util.SettingsUtils;
 
 /**
- * TODO implement once dialog is extended with more settings
- *
  * {@link ConfigSerializer} for the Excel reader node.
  *
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
@@ -81,13 +79,15 @@ enum ExcelMultiTableReadConfigSerializer implements
 
     private static final String CFG_TABLE_SPEC_CONFIG = "table_spec_config" + SettingsModel.CFGKEY_INTERNAL;
 
+    private static final String CFG_FAIL_ON_DIFFERING_SPECS = "fail_on_differing_specs";
+
     private static final String CFG_SETTINGS_TAB = "settings";
 
-    private static final String CGF_SHEET_SELECTION = "sheet_selection";
+    private static final String CFG_SHEET_SELECTION = "sheet_selection";
 
-    private static final String CGF_SHEET_NAME = "sheet_name";
+    private static final String CFG_SHEET_NAME = "sheet_name";
 
-    private static final String CGF_SHEET_INDEX = "sheet_index";
+    private static final String CFG_SHEET_INDEX = "sheet_index";
 
     private static final String CFG_HAS_COLUMN_HEADER = "table_contains_column_names";
 
@@ -95,13 +95,13 @@ enum ExcelMultiTableReadConfigSerializer implements
 
     private static final String CFG_ADVANCED_SETTINGS_TAB = "advanced_settings";
 
-    private static final String CGF_USE_15_DIGITS_PRECISION = "use_15_digits_precision";
+    private static final String CFG_USE_15_DIGITS_PRECISION = "use_15_digits_precision";
 
-    private static final String CGF_SKIP_HIDDEN_COLS = "skip_hidden_columns";
+    private static final String CFG_SKIP_HIDDEN_COLS = "skip_hidden_columns";
 
-    private static final String CGF_SKIP_HIDDEN_ROWS = "skip_hidden_rows";
+    private static final String CFG_SKIP_HIDDEN_ROWS = "skip_hidden_rows";
 
-    private static final String CGF_SKIP_EMPTY_ROWS = "skip_empty_rows";
+    private static final String CFG_SKIP_EMPTY_ROWS = "skip_empty_rows";
 
     @Override
     public void loadInDialog(
@@ -167,9 +167,9 @@ enum ExcelMultiTableReadConfigSerializer implements
         final NodeSettingsRO settings) {
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
         excelConfig.setSheetSelection(
-            SheetSelection.valueOf(settings.getString(CGF_SHEET_SELECTION, SheetSelection.FIRST.name())));
-        excelConfig.setSheetName(settings.getString(CGF_SHEET_NAME, ""));
-        excelConfig.setSheetIdx(settings.getInt(CGF_SHEET_INDEX, 0));
+            SheetSelection.valueOf(settings.getString(CFG_SHEET_SELECTION, SheetSelection.FIRST.name())));
+        excelConfig.setSheetName(settings.getString(CFG_SHEET_NAME, ""));
+        excelConfig.setSheetIdx(settings.getInt(CFG_SHEET_INDEX, 0));
         final DefaultTableReadConfig<?> tableReadConfig = config.getTableReadConfig();
         tableReadConfig.setAllowShortRows(true);
         tableReadConfig.setLimitRowsForSpec(false);
@@ -181,9 +181,9 @@ enum ExcelMultiTableReadConfigSerializer implements
         final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> config,
         final NodeSettingsRO settings) throws InvalidSettingsException {
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
-        excelConfig.setSheetSelection(SheetSelection.loadValueInModel(settings.getString(CGF_SHEET_SELECTION)));
-        excelConfig.setSheetName(settings.getString(CGF_SHEET_NAME));
-        excelConfig.setSheetIdx(settings.getInt(CGF_SHEET_INDEX));
+        excelConfig.setSheetSelection(SheetSelection.loadValueInModel(settings.getString(CFG_SHEET_SELECTION)));
+        excelConfig.setSheetName(settings.getString(CFG_SHEET_NAME));
+        excelConfig.setSheetIdx(settings.getInt(CFG_SHEET_INDEX));
         final DefaultTableReadConfig<?> tableReadConfig = config.getTableReadConfig();
         tableReadConfig.setAllowShortRows(true);
         tableReadConfig.setLimitRowsForSpec(false);
@@ -195,18 +195,18 @@ enum ExcelMultiTableReadConfigSerializer implements
         final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> config,
         final NodeSettingsWO settings) {
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
-        settings.addString(CGF_SHEET_SELECTION, excelConfig.getSheetSelection().name());
-        settings.addString(CGF_SHEET_NAME, excelConfig.getSheetName());
-        settings.addInt(CGF_SHEET_INDEX, excelConfig.getSheetIdx());
+        settings.addString(CFG_SHEET_SELECTION, excelConfig.getSheetSelection().name());
+        settings.addString(CFG_SHEET_NAME, excelConfig.getSheetName());
+        settings.addInt(CFG_SHEET_INDEX, excelConfig.getSheetIdx());
         final DefaultTableReadConfig<?> tableReadConfig = config.getTableReadConfig();
         settings.addBoolean(CFG_HAS_COLUMN_HEADER, tableReadConfig.useColumnHeaderIdx());
         settings.addLong(CFG_COLUMN_HEADER_ROW_IDX, tableReadConfig.getColumnHeaderIdx() + 1);
     }
 
     public static void validateSettingsTab(final NodeSettingsRO settings) throws InvalidSettingsException {
-        settings.getString(CGF_SHEET_SELECTION);
-        settings.getString(CGF_SHEET_NAME);
-        settings.getInt(CGF_SHEET_INDEX);
+        settings.getString(CFG_SHEET_SELECTION);
+        settings.getString(CFG_SHEET_NAME);
+        settings.getInt(CFG_SHEET_INDEX);
         settings.getBoolean(CFG_HAS_COLUMN_HEADER);
         settings.getLong(CFG_COLUMN_HEADER_ROW_IDX);
     }
@@ -214,41 +214,45 @@ enum ExcelMultiTableReadConfigSerializer implements
     private static void loadAdvancedSettingsTabInDialog(
         final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> config,
         final NodeSettingsRO settings) {
+        config.setFailOnDifferingSpecs(settings.getBoolean(CFG_FAIL_ON_DIFFERING_SPECS, true));
         final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = config.getTableReadConfig();
-        tableReadConfig.setSkipEmptyRows(settings.getBoolean(CGF_SKIP_EMPTY_ROWS, true));
+        tableReadConfig.setSkipEmptyRows(settings.getBoolean(CFG_SKIP_EMPTY_ROWS, true));
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
-        excelConfig.setUse15DigitsPrecision(settings.getBoolean(CGF_USE_15_DIGITS_PRECISION, true));
-        excelConfig.setSkipHiddenCols(settings.getBoolean(CGF_SKIP_HIDDEN_COLS, true));
-        excelConfig.setSkipHiddenRows(settings.getBoolean(CGF_SKIP_HIDDEN_ROWS, true));
+        excelConfig.setUse15DigitsPrecision(settings.getBoolean(CFG_USE_15_DIGITS_PRECISION, true));
+        excelConfig.setSkipHiddenCols(settings.getBoolean(CFG_SKIP_HIDDEN_COLS, true));
+        excelConfig.setSkipHiddenRows(settings.getBoolean(CFG_SKIP_HIDDEN_ROWS, true));
     }
 
     private static void loadAdvancedSettingsTabInModel(
         final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> config,
         final NodeSettingsRO settings) throws InvalidSettingsException {
+        config.setFailOnDifferingSpecs(settings.getBoolean(CFG_FAIL_ON_DIFFERING_SPECS));
         final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = config.getTableReadConfig();
-        tableReadConfig.setSkipEmptyRows(settings.getBoolean(CGF_SKIP_EMPTY_ROWS));
+        tableReadConfig.setSkipEmptyRows(settings.getBoolean(CFG_SKIP_EMPTY_ROWS));
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
-        excelConfig.setUse15DigitsPrecision(settings.getBoolean(CGF_USE_15_DIGITS_PRECISION));
-        excelConfig.setSkipHiddenCols(settings.getBoolean(CGF_SKIP_HIDDEN_COLS));
-        excelConfig.setSkipHiddenRows(settings.getBoolean(CGF_SKIP_HIDDEN_ROWS));
+        excelConfig.setUse15DigitsPrecision(settings.getBoolean(CFG_USE_15_DIGITS_PRECISION));
+        excelConfig.setSkipHiddenCols(settings.getBoolean(CFG_SKIP_HIDDEN_COLS));
+        excelConfig.setSkipHiddenRows(settings.getBoolean(CFG_SKIP_HIDDEN_ROWS));
     }
 
     private static void saveAdvancedSettingsTab(
         final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> config,
         final NodeSettingsWO settings) {
+        settings.addBoolean(CFG_FAIL_ON_DIFFERING_SPECS, config.failOnDifferingSpecs());
         final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = config.getTableReadConfig();
-        settings.addBoolean(CGF_SKIP_EMPTY_ROWS, tableReadConfig.skipEmptyRows());
+        settings.addBoolean(CFG_SKIP_EMPTY_ROWS, tableReadConfig.skipEmptyRows());
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
-        settings.addBoolean(CGF_USE_15_DIGITS_PRECISION, excelConfig.isUse15DigitsPrecision());
-        settings.addBoolean(CGF_SKIP_HIDDEN_COLS, excelConfig.isSkipHiddenCols());
-        settings.addBoolean(CGF_SKIP_HIDDEN_ROWS, excelConfig.isSkipHiddenRows());
+        settings.addBoolean(CFG_USE_15_DIGITS_PRECISION, excelConfig.isUse15DigitsPrecision());
+        settings.addBoolean(CFG_SKIP_HIDDEN_COLS, excelConfig.isSkipHiddenCols());
+        settings.addBoolean(CFG_SKIP_HIDDEN_ROWS, excelConfig.isSkipHiddenRows());
     }
 
     public static void validateAdvancedSettingsTab(final NodeSettingsRO settings) throws InvalidSettingsException {
-        settings.getBoolean(CGF_USE_15_DIGITS_PRECISION);
-        settings.getBoolean(CGF_SKIP_HIDDEN_COLS);
-        settings.getBoolean(CGF_SKIP_HIDDEN_ROWS);
-        settings.getBoolean(CGF_SKIP_EMPTY_ROWS);
+        settings.getBoolean(CFG_FAIL_ON_DIFFERING_SPECS);
+        settings.getBoolean(CFG_USE_15_DIGITS_PRECISION);
+        settings.getBoolean(CFG_SKIP_HIDDEN_COLS);
+        settings.getBoolean(CFG_SKIP_HIDDEN_ROWS);
+        settings.getBoolean(CFG_SKIP_EMPTY_ROWS);
     }
 
 }
