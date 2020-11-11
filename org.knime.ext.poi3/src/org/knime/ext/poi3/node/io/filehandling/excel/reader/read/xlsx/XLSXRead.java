@@ -71,6 +71,7 @@ import org.apache.poi.xssf.usermodel.XSSFComment;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCellUtils;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelParserRunnable;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelRead;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelUtils;
@@ -289,7 +290,7 @@ public final class XLSXRead extends ExcelRead {
                         excelCell = new ExcelCell(KNIMECellType.BOOLEAN, formattedValue.equals("TRUE"));
                         break;
                     case ERROR:
-                        excelCell = new ExcelCell(KNIMECellType.STRING, XL_EVAL_ERROR);
+                        excelCell = ExcelCellUtils.createErrorCell(m_config);
                         break;
                     case FORMULA:
                         excelCell = new ExcelCell(KNIMECellType.STRING, formattedValue);

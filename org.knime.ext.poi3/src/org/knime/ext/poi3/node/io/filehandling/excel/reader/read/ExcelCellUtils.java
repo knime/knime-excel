@@ -53,7 +53,10 @@ import java.math.MathContext;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.FormulaErrorHandling;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
+import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
 
 import com.google.common.math.DoubleMath;
 
@@ -189,5 +192,20 @@ public final class ExcelCellUtils {
         } else {
             return excelCell;
         }
+    }
+
+    /**
+     * Creates and returns the proper error cell or {@code null} depending the on the {@link ExcelTableReaderConfig}
+     * that is passed via the {@link TableReadConfig}.
+     *
+     * @param config the config
+     * @return the proper {@link ExcelCell} or {@code null}
+     */
+    public static ExcelCell createErrorCell(final TableReadConfig<ExcelTableReaderConfig> config) {
+        final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
+        if (excelConfig.getFormulaErrorHandling() == FormulaErrorHandling.PATTERN) {
+            return new ExcelCell(KNIMECellType.STRING, excelConfig.getErrorPattern());
+        }
+        return null;
     }
 }

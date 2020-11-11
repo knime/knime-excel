@@ -68,8 +68,11 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JSpinner;
+import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeListener;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
 import org.knime.core.node.FlowVariableModel;
 import org.knime.core.node.InvalidSettingsException;
@@ -146,6 +149,19 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
 
     private boolean m_updatingSheetSelection = false;
 
+    private final JCheckBox m_reevaluateFormulas =
+        new JCheckBox("Reevaluate formulas (leave unchecked if uncertain; see node description for details)");
+
+    private final JRadioButton m_radioButtonInsertErrorPattern =
+        new JRadioButton(FormulaErrorHandling.PATTERN.getText(), true);
+
+    private final JRadioButton m_radioButtonInsertMissingCell =
+        new JRadioButton(FormulaErrorHandling.MISSING.getText());
+
+    private final ButtonGroup m_buttonGroupFormulaError = new ButtonGroup();
+
+    private final JTextField m_formulaErrorPattern = new JTextField();
+
     ExcelTableReaderNodeDialog(final SettingsModelReaderFileChooser settingsModelReaderFileChooser,
         final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> config,
         final ExcelTableReader tableReader,
@@ -170,6 +186,8 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         m_sheetSelectionButtonGroup.add(m_radioButtonFirstSheetWithData);
         m_sheetSelectionButtonGroup.add(m_radioButtonSheetByName);
         m_sheetSelectionButtonGroup.add(m_radioButtonSheetByIndex);
+        m_buttonGroupFormulaError.add(m_radioButtonInsertErrorPattern);
+        m_buttonGroupFormulaError.add(m_radioButtonInsertMissingCell);
 
         addTab("Settings", createGeneralSettingsTab());
         addTab("Transformation", createTransformationTab());
@@ -190,6 +208,9 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
             m_columnHeaderSpinner.setEnabled(m_columnHeaderCheckBox.isSelected());
             m_columnHeaderNoteLabel.setEnabled(m_columnHeaderCheckBox.isSelected());
         });
+
+        m_radioButtonInsertErrorPattern
+            .addChangeListener(l -> m_formulaErrorPattern.setEnabled(m_radioButtonInsertErrorPattern.isEnabled()));
     }
 
     private void configChanged(final boolean updateSheets) {
@@ -300,6 +321,7 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         final JPanel panel = new JPanel(new GridBagLayout());
         final GBCBuilder gbcBuilder = new GBCBuilder().resetPos().anchorFirstLineStart().setWeightX(1).fillHorizontal();
         panel.add(createAdvancedReaderOptionsPanel(), gbcBuilder.build());
+        panel.add(createFormulaEvaluationErrorOptionsPanel(), gbcBuilder.incY().build());
         panel.add(createSpecFailingOptionsPanel(), gbcBuilder.incY().build());
         panel.add(createPreview(), gbcBuilder.incY().fillBoth().setWeightY(1).build());
         return panel;
@@ -313,7 +335,21 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         panel.add(m_skipHiddenCols, gbcBuilder.build());
         panel.add(m_skipEmptyRows, gbcBuilder.incY().build());
         panel.add(m_skipHiddenRows, gbcBuilder.incY().build());
-        panel.add(m_use15DigitsPrecision, gbcBuilder.incY().setInsets(new Insets(5, 5, 5, 5)).build());
+        panel.add(m_use15DigitsPrecision, gbcBuilder.incY().build());
+        panel.add(m_reevaluateFormulas, gbcBuilder.incY().setInsets(new Insets(5, 5, 5, 5)).build());
+        return panel;
+    }
+
+    private JPanel createFormulaEvaluationErrorOptionsPanel() {
+        final JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Formula error handling"));
+        final GBCBuilder gbcBuilder = new GBCBuilder(new Insets(5, 5, 0, 5)).resetPos().anchorFirstLineStart();
+        panel.add(m_radioButtonInsertErrorPattern, gbcBuilder.build());
+        m_formulaErrorPattern
+            .setPreferredSize(new Dimension(150, (int)m_formulaErrorPattern.getPreferredSize().getHeight()));
+        panel.add(m_formulaErrorPattern, gbcBuilder.incX().setWeightX(1).setInsets(new Insets(7, 0, 0, 5)).build());
+        panel.add(m_radioButtonInsertMissingCell,
+            gbcBuilder.setWeightX(0).resetX().incY().setInsets(new Insets(5, 5, 5, 5)).build());
         return panel;
     }
 
@@ -346,9 +382,31 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         m_skipHiddenRows.addActionListener(actionListener);
         m_skipEmptyRows.addActionListener(actionListener);
         m_use15DigitsPrecision.addActionListener(actionListener);
+        m_reevaluateFormulas.addActionListener(actionListener);
+        m_radioButtonInsertErrorPattern.addActionListener(actionListener);
+        m_radioButtonInsertMissingCell.addActionListener(actionListener);
         final ChangeListener changeListener = l -> configChanged(false);
         m_sheetIndexSelection.addChangeListener(changeListener);
         m_columnHeaderSpinner.addChangeListener(changeListener);
+
+        final DocumentListener documentListener = new DocumentListener() {
+
+            @Override
+            public void removeUpdate(final DocumentEvent e) {
+                configChanged();
+            }
+
+            @Override
+            public void insertUpdate(final DocumentEvent e) {
+                configChanged();
+            }
+
+            @Override
+            public void changedUpdate(final DocumentEvent e) {
+                configChanged();
+            }
+        };
+        m_formulaErrorPattern.getDocument().addDocumentListener(documentListener);
     }
 
     @Override
@@ -404,6 +462,13 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         excelConfig.setSheetIdx((int)m_sheetIndexSelection.getValue());
         excelConfig.setSkipHiddenCols(m_skipHiddenCols.isSelected());
         excelConfig.setSkipHiddenRows(m_skipHiddenRows.isSelected());
+        excelConfig.setReevaluateFormulas(m_reevaluateFormulas.isSelected());
+        if (m_radioButtonInsertMissingCell.isSelected()) {
+            excelConfig.setFormulaErrorHandling(FormulaErrorHandling.MISSING);
+        } else {
+            excelConfig.setFormulaErrorHandling(FormulaErrorHandling.PATTERN);
+        }
+        excelConfig.setErrorPattern(m_formulaErrorPattern.getText());
     }
 
     /**
@@ -440,6 +505,17 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         m_sheetIndexSelection.setValue(excelConfig.getSheetIdx());
         m_skipHiddenCols.setSelected(excelConfig.isSkipHiddenCols());
         m_skipHiddenRows.setSelected(excelConfig.isSkipHiddenRows());
+        m_reevaluateFormulas.setSelected(excelConfig.isReevaluateFormulas());
+        switch (excelConfig.getFormulaErrorHandling()) {
+            case MISSING:
+                m_radioButtonInsertMissingCell.setSelected(true);
+                break;
+            case PATTERN:
+            default:
+                m_radioButtonInsertErrorPattern.setSelected(true);
+                break;
+        }
+        m_formulaErrorPattern.setText(excelConfig.getErrorPattern());
     }
 
     @Override

@@ -103,6 +103,12 @@ enum ExcelMultiTableReadConfigSerializer implements
 
     private static final String CFG_SKIP_EMPTY_ROWS = "skip_empty_rows";
 
+    private static final String CFG_REEVALUATE_FORMULAS = "reevaluate_formulas";
+
+    private static final String CFG_FORMULA_ERROR_HANDLING = "formula_error_handling";
+
+    private static final String CFG_FORMULA_ERROR_PATTERN = "formula_error_pattern";
+
     @Override
     public void loadInDialog(
         final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> config,
@@ -221,6 +227,11 @@ enum ExcelMultiTableReadConfigSerializer implements
         excelConfig.setUse15DigitsPrecision(settings.getBoolean(CFG_USE_15_DIGITS_PRECISION, true));
         excelConfig.setSkipHiddenCols(settings.getBoolean(CFG_SKIP_HIDDEN_COLS, true));
         excelConfig.setSkipHiddenRows(settings.getBoolean(CFG_SKIP_HIDDEN_ROWS, true));
+        excelConfig.setReevaluateFormulas(settings.getBoolean(CFG_REEVALUATE_FORMULAS, false));
+        excelConfig.setFormulaErrorHandling(FormulaErrorHandling
+            .valueOf(settings.getString(CFG_FORMULA_ERROR_HANDLING, FormulaErrorHandling.PATTERN.name())));
+        excelConfig.setErrorPattern(
+            settings.getString(CFG_FORMULA_ERROR_PATTERN, ExcelTableReaderConfig.DEFAULT_FORMULA_ERROR_PATTERN));
     }
 
     private static void loadAdvancedSettingsTabInModel(
@@ -233,6 +244,10 @@ enum ExcelMultiTableReadConfigSerializer implements
         excelConfig.setUse15DigitsPrecision(settings.getBoolean(CFG_USE_15_DIGITS_PRECISION));
         excelConfig.setSkipHiddenCols(settings.getBoolean(CFG_SKIP_HIDDEN_COLS));
         excelConfig.setSkipHiddenRows(settings.getBoolean(CFG_SKIP_HIDDEN_ROWS));
+        excelConfig.setReevaluateFormulas(settings.getBoolean(CFG_REEVALUATE_FORMULAS));
+        excelConfig
+            .setFormulaErrorHandling(FormulaErrorHandling.valueOf(settings.getString(CFG_FORMULA_ERROR_HANDLING)));
+        excelConfig.setErrorPattern(settings.getString(CFG_FORMULA_ERROR_PATTERN));
     }
 
     private static void saveAdvancedSettingsTab(
@@ -245,6 +260,9 @@ enum ExcelMultiTableReadConfigSerializer implements
         settings.addBoolean(CFG_USE_15_DIGITS_PRECISION, excelConfig.isUse15DigitsPrecision());
         settings.addBoolean(CFG_SKIP_HIDDEN_COLS, excelConfig.isSkipHiddenCols());
         settings.addBoolean(CFG_SKIP_HIDDEN_ROWS, excelConfig.isSkipHiddenRows());
+        settings.addBoolean(CFG_REEVALUATE_FORMULAS, excelConfig.isReevaluateFormulas());
+        settings.addString(CFG_FORMULA_ERROR_HANDLING, excelConfig.getFormulaErrorHandling().name());
+        settings.addString(CFG_FORMULA_ERROR_PATTERN, excelConfig.getErrorPattern());
     }
 
     public static void validateAdvancedSettingsTab(final NodeSettingsRO settings) throws InvalidSettingsException {
@@ -253,6 +271,9 @@ enum ExcelMultiTableReadConfigSerializer implements
         settings.getBoolean(CFG_SKIP_HIDDEN_COLS);
         settings.getBoolean(CFG_SKIP_HIDDEN_ROWS);
         settings.getBoolean(CFG_SKIP_EMPTY_ROWS);
+        settings.getBoolean(CFG_REEVALUATE_FORMULAS);
+        settings.getString(CFG_FORMULA_ERROR_HANDLING);
+        settings.getString(CFG_FORMULA_ERROR_PATTERN);
     }
 
 }

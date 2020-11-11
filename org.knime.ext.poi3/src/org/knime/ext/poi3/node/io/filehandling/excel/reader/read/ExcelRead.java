@@ -81,9 +81,6 @@ import org.knime.filehandling.core.node.table.reader.read.Read;
  */
 public abstract class ExcelRead implements Read<ExcelCell> {
 
-    /** The String to be inserted when an error cell is encountered. */
-    protected static final String XL_EVAL_ERROR = "#XL_EVAL_ERROR#";
-
     private static final int BLOCKING_QUEUE_SIZE = 100;
 
     private static final AtomicLong CACHED_THREAD_POOL_INDEX = new AtomicLong();

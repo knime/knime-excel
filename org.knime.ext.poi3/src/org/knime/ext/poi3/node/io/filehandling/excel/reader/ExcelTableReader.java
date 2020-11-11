@@ -113,8 +113,9 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
     private static ExcelRead getExcelRead(final Path path, final TableReadConfig<ExcelTableReaderConfig> config)
         throws IOException {
         try {
+            final boolean reevaluateFormulas = config.getReaderSpecificConfig().isReevaluateFormulas();
             final String pathLowerCase = path.toString().toLowerCase();
-            if (pathLowerCase.endsWith(".xlsx") || pathLowerCase.endsWith(".xlsm")) {
+            if (!reevaluateFormulas && (pathLowerCase.endsWith(".xlsx") || pathLowerCase.endsWith(".xlsm"))) {
                 return createXLSXRead(path, config);
             }
             return new XLSRead(path, config);

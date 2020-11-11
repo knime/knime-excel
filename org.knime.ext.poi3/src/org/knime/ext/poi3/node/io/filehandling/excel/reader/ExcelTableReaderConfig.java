@@ -57,6 +57,9 @@ import org.knime.filehandling.core.node.table.reader.config.ReaderSpecificConfig
  */
 public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelTableReaderConfig> {
 
+    /** The default String to be inserted when an error cell is encountered. */
+    static final String DEFAULT_FORMULA_ERROR_PATTERN = "#XL_EVAL_ERROR#";
+
     private boolean m_use15DigitsPrecision = true;
 
     private SheetSelection m_sheetSelection = SheetSelection.FIRST;
@@ -68,6 +71,12 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     private boolean m_skipHiddenCols = true;
 
     private boolean m_skipHiddenRows = true;
+
+    private boolean m_reevaluateFormulas = false;
+
+    private FormulaErrorHandling m_formulaErrorHandling = FormulaErrorHandling.PATTERN;
+
+    private String m_errorPattern = DEFAULT_FORMULA_ERROR_PATTERN;
 
     /**
      * Constructor.
@@ -82,6 +91,9 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
         setSheetIdx(toCopy.getSheetIdx());
         setSkipHiddenCols(toCopy.isSkipHiddenCols());
         setSkipHiddenRows(toCopy.isSkipHiddenRows());
+        setReevaluateFormulas(toCopy.isReevaluateFormulas());
+        setFormulaErrorHandling(toCopy.getFormulaErrorHandling());
+        setErrorPattern(toCopy.getErrorPattern());
     }
 
     @Override
@@ -155,7 +167,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param skipHiddenCols the skipHiddenCols to set
      */
-    public void setSkipHiddenCols(final boolean skipHiddenCols) {
+    void setSkipHiddenCols(final boolean skipHiddenCols) {
         m_skipHiddenCols = skipHiddenCols;
     }
 
@@ -169,8 +181,50 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param skipHiddenRows the skipHiddenRows to set
      */
-    public void setSkipHiddenRows(final boolean skipHiddenRows) {
+    void setSkipHiddenRows(final boolean skipHiddenRows) {
         m_skipHiddenRows = skipHiddenRows;
+    }
+
+    /**
+     * @return the reevaluateFormulas
+     */
+    public boolean isReevaluateFormulas() {
+        return m_reevaluateFormulas;
+    }
+
+    /**
+     * @param reevaluateFormulas the reevaluateFormulas to set
+     */
+    void setReevaluateFormulas(final boolean reevaluateFormulas) {
+        m_reevaluateFormulas = reevaluateFormulas;
+    }
+
+    /**
+     * @return the formulaErrorHandling
+     */
+    public FormulaErrorHandling getFormulaErrorHandling() {
+        return m_formulaErrorHandling;
+    }
+
+    /**
+     * @param formulaErrorHandling the formulaErrorHandling to set
+     */
+    void setFormulaErrorHandling(final FormulaErrorHandling formulaErrorHandling) {
+        m_formulaErrorHandling = formulaErrorHandling;
+    }
+
+    /**
+     * @return the errorPattern
+     */
+    public String getErrorPattern() {
+        return m_errorPattern;
+    }
+
+    /**
+     * @param errorPattern the errorPattern to set
+     */
+    void setErrorPattern(final String errorPattern) {
+        m_errorPattern = errorPattern;
     }
 
 }

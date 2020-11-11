@@ -65,7 +65,9 @@ import org.apache.poi.openxml4j.exceptions.NotOfficeXmlFileException;
 import org.apache.poi.poifs.filesystem.FileMagic;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.CellValue;
 import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Row.MissingCellPolicy;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -120,8 +122,10 @@ public final class XLSRead extends ExcelRead {
             m_sheetNames = ExcelUtils.getSheetNames(m_workbook);
             final Sheet sheet = m_workbook.getSheet(getSelectedSheet());
             m_numMaxRows = sheet.getLastRowNum() + 1L;
+            final FormulaEvaluator formulaEvaluator = m_config.getReaderSpecificConfig().isReevaluateFormulas()
+                ? m_workbook.getCreationHelper().createFormulaEvaluator() : null;
 
-            return new XLSParserRunnable(this, m_config, sheet, use1904Windowing(m_workbook));
+            return new XLSParserRunnable(this, m_config, sheet, use1904Windowing(m_workbook), formulaEvaluator);
         } catch (InvalidOperationException e) {
             throw new IllegalStateException(e.getMessage(), e);
         }
@@ -184,17 +188,20 @@ public final class XLSRead extends ExcelRead {
         }
     }
 
-    private static class XLSParserRunnable extends ExcelParserRunnable {
+    private class XLSParserRunnable extends ExcelParserRunnable {
 
         private Sheet m_sheet;
 
         private final boolean m_use1904Windowing;
 
+        private final FormulaEvaluator m_formulaEvaluator;
+
         XLSParserRunnable(final ExcelRead read, final TableReadConfig<ExcelTableReaderConfig> config, final Sheet sheet,
-            final boolean use1904Windowing) {
+            final boolean use1904Windowing, final FormulaEvaluator formulaEvaluator) {
             super(read, config);
             m_sheet = sheet;
             m_use1904Windowing = use1904Windowing;
+            m_formulaEvaluator = formulaEvaluator;
         }
 
         @Override
@@ -244,7 +251,7 @@ public final class XLSRead extends ExcelRead {
             return cells;
         }
 
-        private static void addNullsToList(final int n, final List<?> list) {
+        private void addNullsToList(final int n, final List<?> list) {
             for (int i = 0; i < n; i++) {
                 list.add(null);
             }
@@ -266,8 +273,7 @@ public final class XLSRead extends ExcelRead {
                     excelCell = parseFormulaCell(cell);
                     break;
                 case ERROR:
-                    // TODO default behavior of the old reader is to return "#XL_EVAL_ERROR#", treat later in AP-15398
-                    excelCell = new ExcelCell(KNIMECellType.STRING, XL_EVAL_ERROR);
+                    excelCell = ExcelCellUtils.createErrorCell(m_config);
                     break;
                 case BLANK:
                     // as we use MissingCellPolicy.RETURN_BLANK_AS_NULL, we should never get a BLANK
@@ -299,12 +305,64 @@ public final class XLSRead extends ExcelRead {
             return excelCell;
         }
 
+        private ExcelCell parseEvaluatedNumericOrDateCellValue(final Cell cell, final CellValue cellValue) {
+            final ExcelCell excelCell;
+            if (DateUtil.isCellDateFormatted(cell)) {
+                final LocalDateTime localDateTimeCellValue = DateUtil.getLocalDateTime(cellValue.getNumberValue());
+                return ExcelCellUtils.createDateTimeExcelCell(localDateTimeCellValue, m_use1904Windowing);
+            } else {
+                excelCell = m_use15DigitsPrecision
+                    ? ExcelCellUtils.createNumericExcelCellUsing15DigitsPrecision(cellValue.getNumberValue())
+                    : ExcelCellUtils.createNumericExcelCell(cellValue.getNumberValue());
+            }
+            return excelCell;
+        }
+
         private ExcelCell parseFormulaCell(final Cell cell) {
-            // get the type of the cached result and do a recursive call
-            final CellType formulaResultCellType = cell.getCachedFormulaResultType();
-            CheckUtils.checkState(formulaResultCellType != CellType.FORMULA,
-                "A formula cannot create another formula.");
-            return parseCell(cell, formulaResultCellType);
+            final ExcelCell excelCell;
+            if (m_formulaEvaluator != null) {
+                excelCell = reevaluateAndParseFormulaCell(cell);
+            } else {
+                // get the type of the cached result and do a recursive call
+                final CellType formulaResultCellType = cell.getCachedFormulaResultType();
+                CheckUtils.checkState(formulaResultCellType != CellType.FORMULA,
+                    "A formula cannot create another formula.");
+                excelCell = parseCell(cell, formulaResultCellType);
+            }
+            return excelCell;
+        }
+
+        private ExcelCell reevaluateAndParseFormulaCell(final Cell cell) {
+            final ExcelCell excelCell;
+            final CellValue cellValue;
+            try {
+                cellValue = m_formulaEvaluator.evaluate(cell);
+            } catch (Exception e) { // NOSONAR
+                // as old node was catching for all Exceptions and I could not find documentation about the type of
+                // exceptions thrown by FormulaEvaluator#evaluate, we do the same to avoid running into unexpected
+                // exceptions (I encountered FormulaParseException and NotImplementedException)
+                return ExcelCellUtils.createErrorCell(m_config);
+            }
+            final CellType cellType = cellValue.getCellType();
+            switch (cellType) {
+                case NUMERIC:
+                    excelCell = parseEvaluatedNumericOrDateCellValue(cell, cellValue);
+                    break;
+                case BOOLEAN:
+                    excelCell = new ExcelCell(KNIMECellType.BOOLEAN, cellValue.getBooleanValue());
+                    break;
+                case STRING:
+                    excelCell = new ExcelCell(KNIMECellType.STRING, cellValue.getStringValue());
+                    break;
+                case ERROR:
+                    excelCell = ExcelCellUtils.createErrorCell(m_config);
+                    break;
+                case BLANK:
+                    // as we use MissingCellPolicy.RETURN_BLANK_AS_NULL, we should never get a BLANK
+                default:
+                    throw new IllegalStateException("Unexpected cell type: " + cellType.toString());
+            }
+            return excelCell;
         }
 
     }
