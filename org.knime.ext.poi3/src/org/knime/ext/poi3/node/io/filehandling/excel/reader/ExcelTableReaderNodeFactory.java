@@ -140,6 +140,7 @@ public final class ExcelTableReaderNodeFactory
         final DefaultTableReadConfig<ExcelTableReaderConfig> tc =
             new DefaultTableReadConfig<>(new ExcelTableReaderConfig());
         tc.setColumnHeaderIdx(0);
+        tc.setSkipEmptyRows(true);
         return new DefaultMultiTableReadConfig<>(tc, ExcelMultiTableReadConfigSerializer.INSTANCE);
     }
 

@@ -65,9 +65,9 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
 
     private int m_sheetIdx = 0;
 
-    private boolean m_skipHiddenCols;
+    private boolean m_skipHiddenCols = true;
 
-    private boolean m_skipHiddenRows;
+    private boolean m_skipHiddenRows = true;
 
     /**
      * Constructor.
