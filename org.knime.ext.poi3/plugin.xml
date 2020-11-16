@@ -18,5 +18,10 @@
             deprecated="false"
             factory-class="org.knime.ext.poi3.node.io.filehandling.excel.writer.appender.ExcelTableAppenderNodeFactory">
       </node>
+      <node
+            category-path="/labs/file-handling-prototype/file-handling-IO/file-handling-Read"
+            deprecated="false"
+            factory-class="org.knime.ext.poi3.node.io.filehandling.excel.sheets.ExcelSheetReaderNodeFactory">
+      </node>
    </extension>
 </plugin>
