@@ -46,36 +46,77 @@
  * History
  *   Nov 9, 2020 (Mark Ortmann, KNIME GmbH, Berlin, Germany): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.writer.table;
+package org.knime.ext.poi3.node.io.filehandling.excel.writer.config;
 
-import org.knime.core.data.DataTableSpec;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.cell.ExcelCellWriterFactory;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.config.ExcelTableConfig;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.image.XlsxImageWriter;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.sheet.ExcelSheetWriter;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelConstants;
+import java.util.Optional;
 
 /**
- * {@link ExcelTableWriter} for xlsx files.
+ * The excel table configuration interface.
  *
  * @author Mark Ortmann, KNIME GmbH, Berlin, Germany
  */
-public final class XlsxTableWriter extends AbstractExcelTableWriter {
+public interface ExcelTableConfig {
 
     /**
-     * Constructor.
+     * Returns the sheet names.
      *
-     * @param cfg the {@link ExcelTableConfig}
-     * @param cellWriterFactory the {@link ExcelCellWriterFactory}
+     * @return the sheet names
      */
-    public XlsxTableWriter(final ExcelTableConfig cfg, final ExcelCellWriterFactory cellWriterFactory) {
-        super(cfg, cellWriterFactory, ExcelConstants.XLSX_MAX_NUM_OF_ROWS);
-    }
+    public String[] getSheetNames();
 
-    @Override
-    ExcelSheetWriter createSheetWriter(final DataTableSpec spec, final ExcelCellWriterFactory cellWriterFactory,
-        final boolean writeRowKey) {
-        return new ExcelSheetWriter(spec, new XlsxImageWriter(spec), cellWriterFactory, writeRowKey);
-    }
+    /**
+     * Returns the missing value pattern if selected.
+     *
+     * @return the missing value pattern if selected
+     */
+    public Optional<String> getMissingValPattern();
 
+    /**
+     * Flag indicating whether or not the sheet's columns have to be auto sized.
+     *
+     * @return {@code true} if the sheet's columns have to be auto sized and {@code false} otherwise
+     */
+    public boolean useAutoSize();
+
+    /**
+     * Flag indicating whether or not the sheet uses the landscape layout.
+     *
+     * @return {@code true} if the sheet's layout has to be set to landscape and {@code false} otherwise
+     */
+    public boolean useLandscape();
+
+    /**
+     * Returns the paper size.
+     *
+     * @return the paper size
+     */
+    public short getPaperSize();
+
+    /**
+     * Flag indicating whether or not row keys must be written to the sheet.
+     *
+     * @return {@code true} if the row keys must be written to the sheet and {@code false} otherwise
+     */
+    public boolean writeRowKey();
+
+    /**
+     * Flag indicating whether or not column headers must be written to the sheet.
+     *
+     * @return {@code true} if the column headers must be written to the sheet and {@code false} otherwise
+     */
+    public boolean writeColHeaders();
+
+    /**
+     * Flag indicating whether or not overwriting sheets is allowed.
+     *
+     * @return {@code true} overwriting sheets is forbidden and the execution must be stopped otherwise
+     */
+    public boolean abortIfSheetExists();
+
+    /**
+     * Flag indicating whether or not formulas have to be (re-)evaluated after all sheets have been written.
+     *
+     * @return {@code true} if the sheets need to be (re-)evaluated and {@code false} otherwise
+     */
+    public boolean evaluate();
 }

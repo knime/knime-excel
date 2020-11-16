@@ -44,38 +44,66 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Nov 9, 2020 (Mark Ortmann, KNIME GmbH, Berlin, Germany): created
+ *   Nov 6, 2020 (Mark Ortmann, KNIME GmbH, Berlin, Germany): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.writer.table;
+package org.knime.ext.poi3.node.io.filehandling.excel.writer.appender;
 
-import org.knime.core.data.DataTableSpec;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.cell.ExcelCellWriterFactory;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.config.ExcelTableConfig;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.image.XlsxImageWriter;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.sheet.ExcelSheetWriter;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelConstants;
+import java.util.Optional;
+
+import org.knime.core.node.BufferedDataTable;
+import org.knime.core.node.ConfigurableNodeFactory;
+import org.knime.core.node.NodeDialogPane;
+import org.knime.core.node.NodeFactory;
+import org.knime.core.node.NodeView;
+import org.knime.core.node.context.NodeCreationConfiguration;
+import org.knime.core.node.port.PortType;
+import org.knime.filehandling.core.port.FileSystemPortObject;
 
 /**
- * {@link ExcelTableWriter} for xlsx files.
+ * {@link NodeFactory} creating the 'Excel Table Appender' node.
  *
  * @author Mark Ortmann, KNIME GmbH, Berlin, Germany
  */
-public final class XlsxTableWriter extends AbstractExcelTableWriter {
+public final class ExcelTableAppenderNodeFactory extends ConfigurableNodeFactory<ExcelTableAppenderNodeModel> {
 
-    /**
-     * Constructor.
-     *
-     * @param cfg the {@link ExcelTableConfig}
-     * @param cellWriterFactory the {@link ExcelCellWriterFactory}
-     */
-    public XlsxTableWriter(final ExcelTableConfig cfg, final ExcelCellWriterFactory cellWriterFactory) {
-        super(cfg, cellWriterFactory, ExcelConstants.XLSX_MAX_NUM_OF_ROWS);
+    /** The file system ports group id. */
+    static final String FS_CONNECT_GRP_ID = "File System Connection";
+
+    /** The sheet ports group id. */
+    static final String SHEET_GRP_ID = "Sheet Input Ports";
+
+    @Override
+    protected Optional<PortsConfigurationBuilder> createPortsConfigBuilder() {
+        final PortsConfigurationBuilder b = new PortsConfigurationBuilder();
+        b.addOptionalInputPortGroup(FS_CONNECT_GRP_ID, FileSystemPortObject.TYPE);
+        b.addExtendableInputPortGroup(SHEET_GRP_ID, new PortType[]{BufferedDataTable.TYPE}, BufferedDataTable.TYPE);
+        return Optional.of(b);
     }
 
     @Override
-    ExcelSheetWriter createSheetWriter(final DataTableSpec spec, final ExcelCellWriterFactory cellWriterFactory,
-        final boolean writeRowKey) {
-        return new ExcelSheetWriter(spec, new XlsxImageWriter(spec), cellWriterFactory, writeRowKey);
+    protected ExcelTableAppenderNodeModel createNodeModel(final NodeCreationConfiguration creationConfig) {
+        return new ExcelTableAppenderNodeModel(creationConfig.getPortConfig().orElseThrow(IllegalStateException::new));
+    }
+
+    @Override
+    protected NodeDialogPane createNodeDialogPane(final NodeCreationConfiguration creationConfig) {
+        return new ExcelTableAppenderNodeDialog(creationConfig.getPortConfig().orElseThrow(IllegalStateException::new));
+    }
+
+    @Override
+    protected int getNrNodeViews() {
+        return 0;
+    }
+
+    @Override
+    public NodeView<ExcelTableAppenderNodeModel> createNodeView(final int viewIndex,
+        final ExcelTableAppenderNodeModel nodeModel) {
+        return null;
+    }
+
+    @Override
+    protected boolean hasDialog() {
+        return true;
     }
 
 }

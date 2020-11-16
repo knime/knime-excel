@@ -49,10 +49,11 @@
 package org.knime.ext.poi3.node.io.filehandling.excel.writer.table;
 
 import org.knime.core.data.DataTableSpec;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.ExcelTableWriterConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.cell.ExcelCellWriterFactory;
+import org.knime.ext.poi3.node.io.filehandling.excel.writer.config.ExcelTableConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.image.XlsImageWriter;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.sheet.ExcelSheetWriter;
+import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelConstants;
 
 /**
  * {@link ExcelTableWriter} for xls files.
@@ -64,11 +65,11 @@ public final class XlsTableWriter extends AbstractExcelTableWriter {
     /**
      * Constructor.
      *
-     * @param cfg the {@link ExcelTableWriterConfig}
+     * @param cfg the {@link ExcelTableConfig}
      * @param cellWriterFactory the {@link ExcelCellWriterFactory}
      */
-    public XlsTableWriter(final ExcelTableWriterConfig cfg, final ExcelCellWriterFactory cellWriterFactory) {
-        super(cfg, cellWriterFactory);
+    public XlsTableWriter(final ExcelTableConfig cfg, final ExcelCellWriterFactory cellWriterFactory) {
+        super(cfg, cellWriterFactory, ExcelConstants.XLS_MAX_NUM_OF_ROWS);
     }
 
     @Override

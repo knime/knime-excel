@@ -54,15 +54,15 @@ import java.io.OutputStream;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 
+import org.apache.poi.ss.usermodel.CreationHelper;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.streamable.RowInput;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.ExcelTableWriterConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.cell.ExcelCellWriterFactory;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelFormat;
+import org.knime.ext.poi3.node.io.filehandling.excel.writer.config.ExcelTableConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelProgressMonitor;
 import org.knime.filehandling.core.connections.FSFiles;
 
@@ -73,17 +73,17 @@ import org.knime.filehandling.core.connections.FSFiles;
  */
 public class ExcelMultiTableWriter {
 
-    private final ExcelTableWriterConfig m_cfg;
+    private final ExcelTableConfig m_cfg;
 
     private final OpenOption[] m_openOptions;
 
     /**
      * Constructor.
      *
-     * @param cfg the {@link ExcelTableWriterConfig}
+     * @param cfg the {@link ExcelTableConfig}
      * @param openOptions the {@link OpenOption} for the file to be written
      */
-    public ExcelMultiTableWriter(final ExcelTableWriterConfig cfg, final OpenOption[] openOptions) {
+    public ExcelMultiTableWriter(final ExcelTableConfig cfg, final OpenOption[] openOptions) {
         m_cfg = cfg;
         m_openOptions = openOptions;
     }
@@ -93,7 +93,7 @@ public class ExcelMultiTableWriter {
      *
      * @param outPath the location the excel file has to be written to
      * @param tables the tables to be written to individual sheets
-     * @param sheetNames the individual sheet names
+     * @param wbCreator the {@link WorkbookCreator}
      * @param exec the {@link ExecutionContext}
      * @param m the {@link ExcelProgressMonitor}
      * @throws IOException - If the file could not be written to the output path
@@ -101,20 +101,27 @@ public class ExcelMultiTableWriter {
      * @throws CanceledExecutionException - If the execution was canceled by the user
      * @throws InterruptedException - If the execution was canceled by the user
      */
-    public void writeTables(final Path outPath, final RowInput[] tables, final String[] sheetNames,
+    public void writeTables(final Path outPath, final RowInput[] tables, final WorkbookCreator wbCreator,
         final ExecutionContext exec, final ExcelProgressMonitor m)
         throws IOException, InvalidSettingsException, CanceledExecutionException, InterruptedException {
-        ExcelFormat excelFormat = m_cfg.getExcelFormat();
         @SuppressWarnings("resource") // try-with-resources does not work in case of SXSSFWorkbooks
-        final Workbook wb = excelFormat.getWorkbook();
+        final Workbook wb = wbCreator.createWorkbook();
+        final CreationHelper creationHelper = wb.getCreationHelper();
         try {
             final ExcelCellWriterFactory cellWriterFactory =
                 ExcelCellWriterFactory.createFactory(wb, m_cfg.getMissingValPattern().orElse(null));
+            final String[] sheetNames = m_cfg.getSheetNames();
             for (int i = 0; i < tables.length; i++) {
                 exec.checkCanceled();
                 final RowInput rowInput = tables[i];
-                final ExcelTableWriter excelWriter = excelFormat.createWriter(m_cfg, cellWriterFactory);
+                final ExcelTableWriter excelWriter = wbCreator.createTableWriter(m_cfg, cellWriterFactory);
                 excelWriter.writeTable(wb, sheetNames[i], rowInput, m);
+            }
+            if (m_cfg.evaluate()) {
+                ExecutionContext formulaCtx = exec.createSubExecutionContext(0.05);
+                formulaCtx.setMessage("Evaluating formulas");
+                creationHelper.createFormulaEvaluator().evaluateAll();
+                formulaCtx.setProgress(1);
             }
             exec.setMessage(String.format("Saving excel file to '%s'", outPath.toString()));
             try (final OutputStream out = FSFiles.newOutputStream(outPath, m_openOptions);

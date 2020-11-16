@@ -46,7 +46,7 @@
  * History
  *   Nov 6, 2020 (Mark Ortmann, KNIME GmbH, Berlin, Germany): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.writer;
+package org.knime.ext.poi3.node.io.filehandling.excel.writer.creator;
 
 import java.awt.Component;
 import java.awt.GridBagLayout;
@@ -75,6 +75,7 @@ import org.knime.core.node.defaultnodesettings.DialogComponentString;
 import org.knime.core.node.defaultnodesettings.DialogComponentStringSelection;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.core.node.port.PortObjectSpec;
+import org.knime.ext.poi3.node.io.filehandling.excel.writer.config.AbstractExcelTableConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelConstants;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelFormat;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.Orientation;
@@ -87,11 +88,10 @@ import org.knime.filehandling.core.defaultnodesettings.filtermode.SettingsModelF
 import org.knime.filehandling.core.util.GBCBuilder;
 
 /**
- * The dialog of the {@link ExcelTableWriterNodeModel}.
+ * The dialog of the 'Excel Table Writer' node.
  *
  * @author Mark Ortmann, KNIME GmbH, Berlin, Germany
  */
-@SuppressWarnings("javadoc")
 final class ExcelTableWriterNodeDialog extends NodeDialogPane {
 
     private static final Pattern FILE_EXTENSION_PATTERN = Pattern.compile(//
@@ -139,8 +139,8 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
         final SettingsModelWriterFileChooser writerModel = m_cfg.getFileChooserModel();
         final FlowVariableModel writeFvm =
             createFlowVariableModel(writerModel.getKeysForFSLocation(), FSLocationVariableType.INSTANCE);
-        m_fileChooser = new DialogComponentWriterFileChooser(m_cfg.getFileChooserModel(), "excel_reader_writer",
-            writeFvm, FilterMode.FILE);
+        m_fileChooser =
+            new DialogComponentWriterFileChooser(writerModel, "excel_reader_writer", writeFvm, FilterMode.FILE);
 
         m_sheetNames = Stream.generate(() -> new JTextField(23))//
             .limit(portsConfig.getInputPortLocation().get(ExcelTableWriterNodeFactory.SHEET_GRP_ID).length)//
@@ -290,7 +290,7 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
     protected void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
         m_excelType.saveSettingsTo(settings);
         m_fileChooser.saveSettingsTo(settings);
-        ExcelTableWriterConfig.saveSheetNames(settings, Arrays.stream(m_sheetNames)//
+        AbstractExcelTableConfig.saveSheetNames(settings, Arrays.stream(m_sheetNames)//
             .map(JTextField::getText)//
             .map(String::trim)//
             .toArray(String[]::new));

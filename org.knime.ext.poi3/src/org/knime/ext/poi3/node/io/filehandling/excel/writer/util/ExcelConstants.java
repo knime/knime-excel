@@ -82,13 +82,13 @@ public final class ExcelConstants {
     public static final PaperSize DEFAULT_PAPER_SIZE = PaperSize.A4_PAPERSIZE;
 
     /** xls workbooks, the row limit is 65,536 rows (2^16). */
-    static final int XLS_MAX_NUM_OF_ROWS = 65536;
+    public static final int XLS_MAX_NUM_OF_ROWS = 65536;
 
     /** xls workbooks, the column limit is 256 columns (2^8). */
     static final int XLS_MAX_NUM_OF_COLS = 256;
 
     /** xlsx workbooks (and xlsm), the row limit is 1,048,576 rows (2^20). */
-    static final int XLSX_MAX_NUM_OF_ROWS = 1048576;
+    public static final int XLSX_MAX_NUM_OF_ROWS = 1048576;
 
     /** xlsx workbooks (and xlsm), the column limit is 16,384 columns (2^14). */
     static final int XLSX_MAX_NUM_OF_COLS = 16384;

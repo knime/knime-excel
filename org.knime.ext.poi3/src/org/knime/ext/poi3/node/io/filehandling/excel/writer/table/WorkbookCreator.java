@@ -44,38 +44,40 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Nov 9, 2020 (Mark Ortmann, KNIME GmbH, Berlin, Germany): created
+ *   Nov 16, 2020 (Mark Ortmann, KNIME GmbH, Berlin, Germany): created
  */
 package org.knime.ext.poi3.node.io.filehandling.excel.writer.table;
 
-import org.knime.core.data.DataTableSpec;
+import java.io.IOException;
+
+import org.apache.poi.ss.usermodel.Workbook;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.cell.ExcelCellWriterFactory;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.config.ExcelTableConfig;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.image.XlsxImageWriter;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.sheet.ExcelSheetWriter;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelConstants;
 
 /**
- * {@link ExcelTableWriter} for xlsx files.
+ * Interface class allowing to create {@link Workbook}s and the {@link ExcelTableWriter}. It must be ensured that the
+ * {@link ExcelTableWriter} fits with the created {@link Workbook}.
  *
  * @author Mark Ortmann, KNIME GmbH, Berlin, Germany
  */
-public final class XlsxTableWriter extends AbstractExcelTableWriter {
+public interface WorkbookCreator {
 
     /**
-     * Constructor.
+     * Creates the {@link Workbook}.
      *
-     * @param cfg the {@link ExcelTableConfig}
-     * @param cellWriterFactory the {@link ExcelCellWriterFactory}
+     * @return the workbook
+     * @throws IOException - If the workbook could not be created
      */
-    public XlsxTableWriter(final ExcelTableConfig cfg, final ExcelCellWriterFactory cellWriterFactory) {
-        super(cfg, cellWriterFactory, ExcelConstants.XLSX_MAX_NUM_OF_ROWS);
-    }
+    Workbook createWorkbook() throws IOException;
 
-    @Override
-    ExcelSheetWriter createSheetWriter(final DataTableSpec spec, final ExcelCellWriterFactory cellWriterFactory,
-        final boolean writeRowKey) {
-        return new ExcelSheetWriter(spec, new XlsxImageWriter(spec), cellWriterFactory, writeRowKey);
-    }
+    /**
+     * Creates the {@link ExcelTableWriter} associated with the created workbook.
+     *
+     * @param cfg the {@link ExcelTableConfig} config
+     * @param cellWriterFactory the {@link ExcelCellWriterFactory}
+     * @return an instance of {@link ExcelTableWriter} that fits with the {@link Workbook} created by
+     *         {@link #createWorkbook()}
+     */
+    ExcelTableWriter createTableWriter(final ExcelTableConfig cfg, final ExcelCellWriterFactory cellWriterFactory);
 
 }

@@ -46,7 +46,7 @@
  * History
  *   Nov 6, 2020 (Mark Ortmann, KNIME GmbH, Berlin, Germany): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.writer;
+package org.knime.ext.poi3.node.io.filehandling.excel.writer.creator;
 
 import java.util.Optional;
 
@@ -69,6 +69,7 @@ public final class ExcelTableWriterNodeFactory extends ConfigurableNodeFactory<E
     /** The file system ports group id. */
     static final String FS_CONNECT_GRP_ID = "File System Connection";
 
+    /** The sheet ports group id. */
     static final String SHEET_GRP_ID = "Sheet Input Ports";
 
     @Override

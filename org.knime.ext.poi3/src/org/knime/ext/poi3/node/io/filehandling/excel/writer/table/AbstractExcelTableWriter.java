@@ -59,8 +59,8 @@ import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.streamable.RowInput;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.ExcelTableWriterConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.cell.ExcelCellWriterFactory;
+import org.knime.ext.poi3.node.io.filehandling.excel.writer.config.ExcelTableConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.sheet.ExcelSheetWriter;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelProgressMonitor;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.SheetUtils;
@@ -75,13 +75,17 @@ abstract class AbstractExcelTableWriter implements ExcelTableWriter {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(AbstractExcelTableWriter.class);
 
-    private final ExcelTableWriterConfig m_cfg;
+    private final ExcelTableConfig m_cfg;
 
     private final ExcelCellWriterFactory m_cellWriterFactory;
 
-    AbstractExcelTableWriter(final ExcelTableWriterConfig cfg, final ExcelCellWriterFactory cellWriterFactory) {
+    private final int m_maxNumRowsPerSheet;
+
+    AbstractExcelTableWriter(final ExcelTableConfig cfg, final ExcelCellWriterFactory cellWriterFactory,
+        final int maxNumRowsPerSheet) {
         m_cfg = cfg;
         m_cellWriterFactory = cellWriterFactory;
+        m_maxNumRowsPerSheet = maxNumRowsPerSheet;
     }
 
     @Override
@@ -94,12 +98,11 @@ abstract class AbstractExcelTableWriter implements ExcelTableWriter {
         Sheet curSheet = createSheet(workbook, curSheetName);
         long sheetIdx = 0;
         long rowIdx = writeColHeaderIfRequired(sheetWriter, curSheet, rowInput.getDataTableSpec());
-        final int maxNumRows = m_cfg.getExcelFormat().getMaxNumRowsPerSheet();
 
         DataRow row;
         while ((row = rowInput.poll()) != null) {
             monitor.checkCanceled();
-            if (rowIdx == maxNumRows) {
+            if (rowIdx == m_maxNumRowsPerSheet) {
                 // inform the sheet writer that a new sheet is going to come
                 finalizeSheet(sheetWriter, curSheet);
                 sheetWriter.reset();
@@ -128,7 +131,6 @@ abstract class AbstractExcelTableWriter implements ExcelTableWriter {
     abstract ExcelSheetWriter createSheetWriter(final DataTableSpec spec,
         final ExcelCellWriterFactory cellWriterFactory, final boolean writeRowKey);
 
-
     private void finalizeSheet(final ExcelSheetWriter sheetWriter, final Sheet curSheet) {
         sheetWriter.setColWidth(curSheet);
         if (m_cfg.useAutoSize()) {
@@ -137,6 +139,7 @@ abstract class AbstractExcelTableWriter implements ExcelTableWriter {
     }
 
     private Sheet createSheet(final Workbook workbook, final String curSheetName) {
+        overwriteSheet(workbook, curSheetName);
         Sheet sheet = workbook.createSheet(curSheetName);
         if (m_cfg.useAutoSize() && sheet instanceof SXSSFSheet) {
             ((SXSSFSheet)sheet).trackAllColumnsForAutoSizing();
@@ -144,6 +147,13 @@ abstract class AbstractExcelTableWriter implements ExcelTableWriter {
         sheet.getPrintSetup().setLandscape(m_cfg.useLandscape());
         sheet.getPrintSetup().setPaperSize(m_cfg.getPaperSize());
         return sheet;
+    }
+
+    private void overwriteSheet(final Workbook workbook, final String curSheetName) {
+        final int sheetIdx = workbook.getSheetIndex(curSheetName);
+        if (sheetIdx >= 0 && !m_cfg.abortIfSheetExists()) {
+            workbook.removeSheetAt(sheetIdx);
+        }
     }
 
     private long writeColHeaderIfRequired(final ExcelSheetWriter sheetWriter, final Sheet sheet,

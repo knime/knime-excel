@@ -44,99 +44,27 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Nov 9, 2020 (Mark Ortmann, KNIME GmbH, Berlin, Germany): created
+ *   Nov 16, 2020 (Mark Ortmann, KNIME GmbH, Berlin, Germany): created
  */
 package org.knime.ext.poi3.node.io.filehandling.excel.writer.util;
 
-import java.util.function.Supplier;
-
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.cell.ExcelCellWriterFactory;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.config.ExcelTableConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.ExcelTableWriter;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.XlsTableWriter;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.XlsxTableWriter;
 
 /**
- * The support excel formats by the 'Excel table writer' node.
+ * Interface to create {@link ExcelTableWriter}.
  *
  * @author Mark Ortmann, KNIME GmbH, Berlin, Germany
  */
-public enum ExcelFormat {
-
-        /** Type reffering to an xls excel file. */
-        XLS(HSSFWorkbook::new, XlsTableWriter::new, ".xls", ExcelConstants.XLS_MAX_NUM_OF_ROWS,
-            ExcelConstants.XLS_MAX_NUM_OF_COLS),
-
-        /** Type referring to a xlsx/xlsm excel file. */
-        XLSX(SXSSFWorkbook::new, XlsxTableWriter::new, ".xlsx", ExcelConstants.XLSX_MAX_NUM_OF_ROWS,
-            ExcelConstants.XLSX_MAX_NUM_OF_COLS);
-
-    private final Supplier<Workbook> m_workbookSupplier;
-
-    private final TableWriterFunction m_createWriter;
-
-    private final String m_fileExtension;
-
-    private final int m_maxRowsPerSheet;
-
-    private final int m_maxColsPerSheet;
-
-    private ExcelFormat(final Supplier<Workbook> workbookSupplier, final TableWriterFunction createWriter,
-        final String fileExtension, final int maxRowsPerSheet, final int maxColsPerSheet) {
-        m_workbookSupplier = workbookSupplier;
-        m_createWriter = createWriter;
-        m_fileExtension = fileExtension;
-        m_maxRowsPerSheet = maxRowsPerSheet;
-        m_maxColsPerSheet = maxColsPerSheet;
-    }
+interface TableWriterFunction {
 
     /**
-     * Creates the associated {@link ExcelTableWriter} instance.
+     * Creates an {@link ExcelTableWriter}.
      *
      * @param cfg the {@link ExcelTableConfig}
      * @param cellWriterFactory the {@link ExcelCellWriterFactory}
-     * @return the associated {@link ExcelTableWriter}
+     * @return an instance of {@link ExcelTableWriter}
      */
-    public ExcelTableWriter createWriter(final ExcelTableConfig cfg, final ExcelCellWriterFactory cellWriterFactory) {
-        return m_createWriter.createTableWriter(cfg, cellWriterFactory);
-    }
-
-    /**
-     * Returns the {@link Workbook} associated with this format.
-     *
-     * @return the {@link Workbook} associated with this format
-     */
-    public Workbook getWorkbook() {
-        return m_workbookSupplier.get();
-    }
-
-    /**
-     * Returns the file extension associated with this format.
-     *
-     * @return the file extension associated with this format
-     */
-    public String getFileExtension() {
-        return m_fileExtension;
-    }
-
-    /**
-     * Returns the maximum number of columns associated with this format.
-     *
-     * @return the maximum number of columns associated with this format
-     */
-    public int getMaxNumCols() {
-        return m_maxColsPerSheet;
-    }
-
-    /**
-     * Returns the maximum number of rows per sheet associated with this format.
-     *
-     * @return the maximum number of rows per sheet associated with this format
-     */
-    public int getMaxNumRowsPerSheet() {
-        return m_maxRowsPerSheet;
-    }
+    ExcelTableWriter createTableWriter(final ExcelTableConfig cfg, final ExcelCellWriterFactory cellWriterFactory);
 }

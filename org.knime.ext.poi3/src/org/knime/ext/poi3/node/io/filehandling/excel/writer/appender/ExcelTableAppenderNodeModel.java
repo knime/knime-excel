@@ -46,11 +46,10 @@
  * History
  *   Nov 6, 2020 (Mark Ortmann, KNIME GmbH, Berlin, Germany): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.writer;
+package org.knime.ext.poi3.node.io.filehandling.excel.writer.appender;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.EnumSet;
 
@@ -73,29 +72,26 @@ import org.knime.core.node.streamable.PortInput;
 import org.knime.core.node.streamable.PortOutput;
 import org.knime.core.node.streamable.RowInput;
 import org.knime.core.node.streamable.StreamableOperator;
-import org.knime.core.node.util.CheckUtils;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.ExcelMultiTableWriter;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelFormat;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelProgressMonitor;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.SheetUtils;
-import org.knime.filehandling.core.connections.FSFiles;
+import org.knime.filehandling.core.connections.FSPath;
+import org.knime.filehandling.core.defaultnodesettings.filechooser.reader.ReadPathAccessor;
+import org.knime.filehandling.core.defaultnodesettings.filechooser.reader.SettingsModelReaderFileChooser;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.FileOverwritePolicy;
-import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.SettingsModelWriterFileChooser;
-import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.WritePathAccessor;
 import org.knime.filehandling.core.defaultnodesettings.status.NodeModelStatusConsumer;
 import org.knime.filehandling.core.defaultnodesettings.status.StatusMessage.MessageType;
 
 /**
- * {@link NodeModel} writing tables to individual sheets of an excel file.
+ * {@link NodeModel} writing tables to individual sheets of an existing excel file.
  *
  * @author Mark Ortmann, KNIME GmbH, Berlin, Germany
  */
-final class ExcelTableWriterNodeModel extends NodeModel {
+final class ExcelTableAppenderNodeModel extends NodeModel {
 
     /** The maximum progress for creating the excel file. */
     private static final double MAX_EXCEL_PROGRESS = 0.75;
 
-    private final ExcelTableWriterConfig m_cfg;
+    private final ExcelTableAppenderConfig m_cfg;
 
     private final int[] m_dataPortIndices;
 
@@ -104,10 +100,10 @@ final class ExcelTableWriterNodeModel extends NodeModel {
     /**
      * Constructor.
      */
-    ExcelTableWriterNodeModel(final PortsConfiguration portsConfig) {
+    ExcelTableAppenderNodeModel(final PortsConfiguration portsConfig) {
         super(portsConfig.getInputPorts(), portsConfig.getOutputPorts());
-        m_cfg = new ExcelTableWriterConfig(portsConfig);
-        m_dataPortIndices = portsConfig.getInputPortLocation().get(ExcelTableWriterNodeFactory.SHEET_GRP_ID);
+        m_cfg = new ExcelTableAppenderConfig(portsConfig);
+        m_dataPortIndices = portsConfig.getInputPortLocation().get(ExcelTableAppenderNodeFactory.SHEET_GRP_ID);
         m_statusConsumer = new NodeModelStatusConsumer(EnumSet.of(MessageType.ERROR, MessageType.WARNING));
     }
 
@@ -123,13 +119,9 @@ final class ExcelTableWriterNodeModel extends NodeModel {
         final BufferedDataTable[] bufferedTables = Arrays.stream(m_dataPortIndices)//
             .mapToObj(i -> (BufferedDataTable)inObjects[i])//
             .toArray(BufferedDataTable[]::new);
-        final long[] tableSizes = Arrays.stream(bufferedTables)//
-            .mapToLong(BufferedDataTable::size)//
-            .toArray();
-        // validate sheet names
-        validateSheetNames(tableSizes);
-        final ExcelProgressMonitor m =
-            new ExcelProgressMonitor(getExcelWriteSubProgress(exec), Arrays.stream(tableSizes)//
+        final ExcelProgressMonitor m = new ExcelProgressMonitor(getExcelWriteSubProgress(exec),
+            Arrays.stream(bufferedTables)//
+                .mapToLong(BufferedDataTable::size)//
                 .sum());
         final RowInput[] tables = Arrays.stream(bufferedTables)//
             .map(DataTableRowInput::new)//
@@ -138,72 +130,20 @@ final class ExcelTableWriterNodeModel extends NodeModel {
         return new PortObject[]{};
     }
 
-    private void validateSheetNames(final long[] tableSizes) throws InvalidSettingsException {
-        final long maxRowsPerSheet = m_cfg.getExcelFormat().getMaxNumRowsPerSheet();
-        final String[] sheetNames = m_cfg.getSheetNames();
-        for (int i = 0; i < tableSizes.length; i++) {
-            final long rowsToWrite = getRowsToWrite(tableSizes[i], maxRowsPerSheet);
-            if (rowsToWrite > maxRowsPerSheet) {
-                long numAdditionalSheets = rowsToWrite / maxRowsPerSheet;
-                SheetUtils.createUniqueSheetName(sheetNames[i], numAdditionalSheets);
-            }
-        }
-    }
-
-    private long getRowsToWrite(final long tableSize, final long maxRowsPerSheet) {
-        final int headerOffset = m_cfg.writeColHeaders() ? 1 : 0;
-        final long sheetsToWrite = Math.max(1, tableSize / maxRowsPerSheet);
-        return tableSize + sheetsToWrite * headerOffset;
-    }
-
     private void write(final ExecutionContext exec, final ExcelProgressMonitor m, final RowInput[] tables)
         throws InvalidSettingsException, IOException, CanceledExecutionException, InterruptedException {
-        validateColumnCount(tables);
-        final SettingsModelWriterFileChooser fileChooser = m_cfg.getFileChooserModel();
-        try (final WritePathAccessor accessor = fileChooser.createWritePathAccessor()) {
-            final Path outputPath = accessor.getOutputPath(m_statusConsumer);
+        final SettingsModelReaderFileChooser fileChooser = m_cfg.getFileChooserModel();
+        try (final ReadPathAccessor accessor = fileChooser.createReadPathAccessor()) {
+            final FSPath inputPath = accessor.getFSPaths(m_statusConsumer).get(0);
             m_statusConsumer.setWarningsIfRequired(this::setWarningMessage);
-            createOutputFoldersIfMissing(outputPath.getParent(), fileChooser.isCreateMissingFolders());
-            checkOverwritePolicy(fileChooser, outputPath);
             final ExcelMultiTableWriter writer =
-                new ExcelMultiTableWriter(m_cfg, fileChooser.getFileOverwritePolicy().getOpenOptions());
-            writer.writeTables(outputPath, tables, m_cfg.getSheetNames(), exec, m);
-        }
-    }
-
-    private void validateColumnCount(final RowInput[] tables) {
-        final ExcelFormat excelFormat = m_cfg.getExcelFormat();
-        final int maxCols = excelFormat.getMaxNumCols();
-        final int rowIdxColOffset = m_cfg.writeRowKey() ? 1 : 0;
-        for (int i = 0; i < tables.length; i++) {
-            CheckUtils.checkArgument(tables[i].getDataTableSpec().getNumColumns() + rowIdxColOffset <= maxCols,
-                "The input table at port %d contains exeeds the column limit (%d) for %s.", m_dataPortIndices[i],
-                maxCols, excelFormat.name());
+                new ExcelMultiTableWriter(m_cfg, FileOverwritePolicy.OVERWRITE.getOpenOptions());
+            writer.writeTables(inputPath, tables, ExcelTableAppenderConfig.getWorkbookCreator(inputPath), exec, m);
         }
     }
 
     private static ExecutionContext getExcelWriteSubProgress(final ExecutionContext exec) {
         return exec.createSubExecutionContext(MAX_EXCEL_PROGRESS);
-    }
-
-    private static void checkOverwritePolicy(final SettingsModelWriterFileChooser fileChooser, final Path outputPath)
-        throws IOException {
-        if (fileChooser.getFileOverwritePolicy() == FileOverwritePolicy.FAIL && FSFiles.exists(outputPath)) {
-            throw new IOException(String.format(
-                "Output file '%s' exists and must not be overwritten due to user settings.", outputPath.toString()));
-        }
-    }
-
-    private static void createOutputFoldersIfMissing(final Path outputFolder, final boolean createMissingFolders)
-        throws IOException {
-        if (!FSFiles.exists(outputFolder)) {
-            if (createMissingFolders) {
-                FSFiles.createDirectories(outputFolder);
-            } else {
-                throw new IOException(String.format(
-                    "The directory '%s' does not exist and must not be created due to user settings.", outputFolder));
-            }
-        }
     }
 
     @Override
