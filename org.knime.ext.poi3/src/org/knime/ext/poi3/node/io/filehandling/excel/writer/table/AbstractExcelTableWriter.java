@@ -60,7 +60,6 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.streamable.RowInput;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.cell.ExcelCellWriterFactory;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.config.ExcelTableConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.sheet.ExcelSheetWriter;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelProgressMonitor;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.SheetUtils;

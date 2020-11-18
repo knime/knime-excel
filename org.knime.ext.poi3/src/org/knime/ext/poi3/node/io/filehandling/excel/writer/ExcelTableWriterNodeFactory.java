@@ -44,79 +44,66 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Nov 9, 2020 (Mark Ortmann, KNIME GmbH, Berlin, Germany): created
+ *   Nov 6, 2020 (Mark Ortmann, KNIME GmbH, Berlin, Germany): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.writer.config;
+package org.knime.ext.poi3.node.io.filehandling.excel.writer;
 
 import java.util.Optional;
 
+import org.knime.core.node.BufferedDataTable;
+import org.knime.core.node.ConfigurableNodeFactory;
+import org.knime.core.node.NodeDialogPane;
+import org.knime.core.node.NodeFactory;
+import org.knime.core.node.NodeView;
+import org.knime.core.node.context.NodeCreationConfiguration;
+import org.knime.core.node.port.PortType;
+import org.knime.filehandling.core.port.FileSystemPortObject;
+
 /**
- * The excel table configuration interface.
+ * {@link NodeFactory} creating the 'Excel Table Writer' node.
  *
  * @author Mark Ortmann, KNIME GmbH, Berlin, Germany
  */
-public interface ExcelTableConfig {
+public final class ExcelTableWriterNodeFactory extends ConfigurableNodeFactory<ExcelTableWriterNodeModel> {
 
-    /**
-     * Returns the sheet names.
-     *
-     * @return the sheet names
-     */
-    public String[] getSheetNames();
+    /** The file system ports group id. */
+    static final String FS_CONNECT_GRP_ID = "File System Connection";
 
-    /**
-     * Returns the missing value pattern if selected.
-     *
-     * @return the missing value pattern if selected
-     */
-    public Optional<String> getMissingValPattern();
+    /** The sheet ports group id. */
+    static final String SHEET_GRP_ID = "Sheet Input Ports";
 
-    /**
-     * Flag indicating whether or not the sheet's columns have to be auto sized.
-     *
-     * @return {@code true} if the sheet's columns have to be auto sized and {@code false} otherwise
-     */
-    public boolean useAutoSize();
+    @Override
+    protected Optional<PortsConfigurationBuilder> createPortsConfigBuilder() {
+        final PortsConfigurationBuilder b = new PortsConfigurationBuilder();
+        b.addOptionalInputPortGroup(FS_CONNECT_GRP_ID, FileSystemPortObject.TYPE);
+        b.addExtendableInputPortGroup(SHEET_GRP_ID, new PortType[]{BufferedDataTable.TYPE}, BufferedDataTable.TYPE);
+        return Optional.of(b);
+    }
 
-    /**
-     * Flag indicating whether or not the sheet uses the landscape layout.
-     *
-     * @return {@code true} if the sheet's layout has to be set to landscape and {@code false} otherwise
-     */
-    public boolean useLandscape();
+    @Override
+    protected ExcelTableWriterNodeModel createNodeModel(final NodeCreationConfiguration creationConfig) {
+        return new ExcelTableWriterNodeModel(creationConfig.getPortConfig().orElseThrow(IllegalStateException::new));
+    }
 
-    /**
-     * Returns the paper size.
-     *
-     * @return the paper size
-     */
-    public short getPaperSize();
+    @Override
+    protected NodeDialogPane createNodeDialogPane(final NodeCreationConfiguration creationConfig) {
+        return new ExcelTableWriterNodeDialog(creationConfig.getPortConfig().orElseThrow(IllegalStateException::new));
+    }
 
-    /**
-     * Flag indicating whether or not row keys must be written to the sheet.
-     *
-     * @return {@code true} if the row keys must be written to the sheet and {@code false} otherwise
-     */
-    public boolean writeRowKey();
+    @Override
+    protected int getNrNodeViews() {
+        return 0;
+    }
 
-    /**
-     * Flag indicating whether or not column headers must be written to the sheet.
-     *
-     * @return {@code true} if the column headers must be written to the sheet and {@code false} otherwise
-     */
-    public boolean writeColHeaders();
+    @Override
+    public NodeView<ExcelTableWriterNodeModel> createNodeView(final int viewIndex,
+        final ExcelTableWriterNodeModel nodeModel) {
+        return null;
+    }
 
-    /**
-     * Flag indicating whether or not overwriting sheets is allowed.
-     *
-     * @return {@code true} overwriting sheets is forbidden and the execution must be stopped otherwise
-     */
-    public boolean abortIfSheetExists();
+    @Override
+    protected boolean hasDialog() {
+        return true;
+    }
 
-    /**
-     * Flag indicating whether or not formulas have to be (re-)evaluated after all sheets have been written.
-     *
-     * @return {@code true} if the sheets need to be (re-)evaluated and {@code false} otherwise
-     */
-    public boolean evaluate();
 }

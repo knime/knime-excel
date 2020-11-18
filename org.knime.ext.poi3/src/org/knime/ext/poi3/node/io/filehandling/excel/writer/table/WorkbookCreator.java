@@ -52,7 +52,6 @@ import java.io.IOException;
 
 import org.apache.poi.ss.usermodel.Workbook;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.cell.ExcelCellWriterFactory;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.config.ExcelTableConfig;
 
 /**
  * Interface class allowing to create {@link Workbook}s and the {@link ExcelTableWriter}. It must be ensured that the

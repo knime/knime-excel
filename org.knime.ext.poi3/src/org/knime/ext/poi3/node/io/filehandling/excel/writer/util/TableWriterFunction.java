@@ -49,7 +49,7 @@
 package org.knime.ext.poi3.node.io.filehandling.excel.writer.util;
 
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.cell.ExcelCellWriterFactory;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.config.ExcelTableConfig;
+import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.ExcelTableConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.ExcelTableWriter;
 
 /**

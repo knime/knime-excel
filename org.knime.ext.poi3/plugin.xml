@@ -11,12 +11,7 @@
       <node
             category-path="/labs/file-handling-prototype/file-handling-IO/file-handling-Write"
             deprecated="false"
-            factory-class="org.knime.ext.poi3.node.io.filehandling.excel.writer.creator.ExcelTableWriterNodeFactory">
-      </node>
-      <node
-            category-path="/labs/file-handling-prototype/file-handling-IO/file-handling-Write"
-            deprecated="false"
-            factory-class="org.knime.ext.poi3.node.io.filehandling.excel.writer.appender.ExcelTableAppenderNodeFactory">
+            factory-class="org.knime.ext.poi3.node.io.filehandling.excel.writer.ExcelTableWriterNodeFactory">
       </node>
       <node
             category-path="/labs/file-handling-prototype/file-handling-IO/file-handling-Read"

@@ -74,8 +74,8 @@ public final class SheetUtils {
     public static String createUniqueSheetName(final String prefix, final long idx) throws InvalidSettingsException {
         final String uniqueName = String.format("%s (%d)", prefix, idx);
         CheckUtils.checkSetting(uniqueName.length() <= ExcelConstants.MAX_SHEET_NAME_LENGTH,
-            "Table spans over multiple sheets. Appending unique suffix '%s' to '%s' results in a too long sheet name. "
-                + "Please provide a shorter sheet name.",
+            "Table spans over multiple sheets. Appending unique suffix '%s' to '%s' results in a too long sheet name "
+                + "(max 31 characters). Please provide a shorter sheet name.",
             uniqueName.substring(prefix.length(), uniqueName.length()), prefix);
         return uniqueName;
     }

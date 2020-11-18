@@ -98,6 +98,8 @@
 			<ul>
 				<li><i>Overwrite:</i> Will replace any existing file.
 				</li>
+				<li><i>Append:</i> Will append the input tables to the existent excel file.
+				</li>
 				<li><i>Fail:</i> Will issue an error during the node's execution (to prevent unintentional overwrite).
 				</li>
 			</ul>
@@ -105,6 +107,10 @@
         <option name="Sheet name"> 
         	Name of the spreadsheets that will be created.
         </option>
+        <option name="If sheet exists">
+			Fail will abort the execution if a sheet with the given file name already exists, otherwise the sheet will 
+			be replaced. This option is only relevant if the append option is selected.
+		</option>
         <option name="Write row key">
         	If checked, the row IDs are added to the output, in the first column of the spreadsheet.
         </option>
@@ -113,6 +119,11 @@
         </option>
         <option name="Replaces missing values by"> 
         	If selected missing values will be replaced by the specified value, otherwise a blank cell is being created.
+        </option>
+        <option name="Evaluate formulas">
+            If checked, all formulas in the file will be evaluated after the sheet has been written. This is useful
+            if other sheets in the file refer to the data just written and their content needs updating. This option is
+            only relevant if the append option is selected.
         </option>
         <option name="Autosize columns">
         	Fits each column's width to its content.

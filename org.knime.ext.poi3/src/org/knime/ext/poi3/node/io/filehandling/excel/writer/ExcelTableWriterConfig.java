@@ -46,8 +46,9 @@
  * History
  *   Nov 16, 2020 (Mark Ortmann, KNIME GmbH, Berlin, Germany): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.writer.config;
+package org.knime.ext.poi3.node.io.filehandling.excel.writer;
 
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -62,31 +63,42 @@ import org.knime.core.node.context.ports.PortsConfiguration;
 import org.knime.core.node.defaultnodesettings.SettingsModelBoolean;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.core.node.util.CheckUtils;
+import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.ExcelTableConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelConstants;
+import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelFormat;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.Orientation;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.PaperSize;
-import org.knime.filehandling.core.defaultnodesettings.filechooser.AbstractSettingsModelFileChooser;
+import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.SheetNameExistsHandling;
+import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.FileOverwritePolicy;
+import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.SettingsModelWriterFileChooser;
+import org.knime.filehandling.core.defaultnodesettings.filtermode.SettingsModelFilterMode.FilterMode;
 
 /**
- * Abstract implementation of the {@link ExcelTableConfig}. This class contains all settings that the writer and
- * appender node have in common.
+ * {@link ExcelTableConfig} of the 'Excel Table Writer' node.
  *
  * @author Mark Ortmann, KNIME GmbH, Berlin, Germany
- * @param <T> an instance of {@link AbstractSettingsModelFileChooser}
  */
-public abstract class AbstractExcelTableConfig<T extends AbstractSettingsModelFileChooser<?>>
-    implements ExcelTableConfig {
+final class ExcelTableWriterConfig implements ExcelTableConfig {
 
-    /** Settings key of the file chooser. */
-    protected static final String CFG_FILE_CHOOSER = "file_selection";
+    private static final ExcelFormat DEFAULT_EXCEL_FORMAT = ExcelFormat.XLSX;
+
+    private static final SheetNameExistsHandling DEFAULT_SHEET_EXISTS_HANDLING = SheetNameExistsHandling.FAIL;
+
+    private static final String CFG_EXCEL_FORMAT = "excel_format";
+
+    private static final String CFG_FILE_CHOOSER = "file_selection";
 
     private static final String DEFAULT_SHEET_NAME_PREFIX = "default_";
 
-    private static final String CFG_MISSING_VALUE_PATTERN = "missing_value_pattern";
+    private static final String CFG_SHEET_NAMES = "sheet_names";
+
+    private static final String CFG_SHEET_EXISTS = "if_sheet_exists";
 
     private static final String CFG_WRITE_ROW_KEY = "write_row_key";
 
     private static final String CFG_WRITE_COLUMN_HEADER = "write_column_header";
+
+    private static final String CFG_MISSING_VALUE_PATTERN = "missing_value_pattern";
 
     private static final String CFG_REPLACE_MISSINGS = "replace_missings";
 
@@ -96,9 +108,15 @@ public abstract class AbstractExcelTableConfig<T extends AbstractSettingsModelFi
 
     private static final String CFG_PAPER_SIZE = "paper_size";
 
-    private static final String CFG_SHEET_NAMES = "sheet_names";
+    private static final String CFG_EVALUATE_FORMULAS = "evaluate_formulas";
 
-    private final T m_fileChooser;
+    private final SettingsModelString m_excelFormat;
+
+    private final SettingsModelWriterFileChooser m_fileChooser;
+
+    private String[] m_sheetNames;
+
+    private final SettingsModelString m_sheetExistsHandling;
 
     private final SettingsModelBoolean m_replaceMissings;
 
@@ -108,27 +126,47 @@ public abstract class AbstractExcelTableConfig<T extends AbstractSettingsModelFi
 
     private final SettingsModelBoolean m_writeColHeader;
 
+    private final SettingsModelBoolean m_evaluateFormulas;
+
     private final SettingsModelBoolean m_autoSize;
 
     private final SettingsModelString m_paperSize;
 
     private final SettingsModelString m_landscape;
 
-    private String[] m_sheetNames;
-
     /**
      * Constructor.
      *
      * @param portsCfg the {@link PortsConfiguration}
-     * @param fileChooser instance of {@link AbstractSettingsModelFileChooser}
-     * @param sheetGrpID the ID of the sheet group
      */
-    protected AbstractExcelTableConfig(final PortsConfiguration portsCfg, final T fileChooser,
-        final String sheetGrpID) {
-        m_fileChooser = fileChooser;
+    ExcelTableWriterConfig(final PortsConfiguration portsCfg) {
+        m_excelFormat = new SettingsModelString(CFG_EXCEL_FORMAT, DEFAULT_EXCEL_FORMAT.name());
+        m_fileChooser = new SettingsModelWriterFileChooser(CFG_FILE_CHOOSER, portsCfg,
+            ExcelTableWriterNodeFactory.FS_CONNECT_GRP_ID, FilterMode.FILE, FileOverwritePolicy.FAIL,
+            EnumSet.of(FileOverwritePolicy.FAIL, FileOverwritePolicy.OVERWRITE, FileOverwritePolicy.APPEND),
+            DEFAULT_EXCEL_FORMAT.getFileExtension());
+        m_sheetNames =
+            IntStream.range(0, portsCfg.getInputPortLocation().get(ExcelTableWriterNodeFactory.SHEET_GRP_ID).length)//
+                .mapToObj(ExcelTableWriterConfig::createDefaultSheetName)//
+                .toArray(String[]::new);
+        m_sheetExistsHandling = new SettingsModelString(CFG_SHEET_EXISTS, DEFAULT_SHEET_EXISTS_HANDLING.name()) {
+
+            @Override
+            protected void validateSettingsForModel(final NodeSettingsRO settings) throws InvalidSettingsException {
+                super.validateSettingsForModel(settings);
+                final String setting = settings.getString(getConfigName());
+                try {
+                    SheetNameExistsHandling.valueOf(setting);
+                } catch (final IllegalArgumentException e) {
+                    throw new InvalidSettingsException(
+                        String.format("No if sheet exists option associated with '%s'", setting));
+                }
+            }
+        };
         m_missingValPattern = new SettingsModelString(CFG_MISSING_VALUE_PATTERN, "");
         m_writeRowKey = new SettingsModelBoolean(CFG_WRITE_ROW_KEY, false);
         m_writeColHeader = new SettingsModelBoolean(CFG_WRITE_COLUMN_HEADER, true);
+        m_evaluateFormulas = new SettingsModelBoolean(CFG_EVALUATE_FORMULAS, false);
         m_replaceMissings = new SettingsModelBoolean(CFG_REPLACE_MISSINGS, false);
         m_autoSize = new SettingsModelBoolean(CFG_AUTOSIZE, false);
         m_landscape = new SettingsModelString(CFG_LANDSCAPE, Orientation.PORTRAIT.name()) {
@@ -140,14 +178,11 @@ public abstract class AbstractExcelTableConfig<T extends AbstractSettingsModelFi
                 try {
                     Orientation.valueOf(setting);
                 } catch (final IllegalArgumentException e) {
-                    throw new InvalidSettingsException(String.format("No orientation associated with %s", setting));
+                    throw new InvalidSettingsException(String.format("No orientation associated with '%s'", setting));
                 }
             }
         };
         m_paperSize = new SettingsModelString(CFG_PAPER_SIZE, ExcelConstants.DEFAULT_PAPER_SIZE.name());
-        m_sheetNames = IntStream.range(0, portsCfg.getInputPortLocation().get(sheetGrpID).length)//
-            .mapToObj(AbstractExcelTableConfig::createDefaultSheetName)//
-            .toArray(String[]::new);
     }
 
     private static String createDefaultSheetName(final int idx) {
@@ -159,17 +194,35 @@ public abstract class AbstractExcelTableConfig<T extends AbstractSettingsModelFi
     }
 
     /**
-     * Returns the concrete instance of {@link AbstractSettingsModelFileChooser}.
+     * Returns the {@link SettingsModelString} storing the {@link ExcelFormat}.
      *
-     * @return the concrete instance of {@link AbstractSettingsModelFileChooser}
+     * @return the {@link SettingsModelString} storing the {@link ExcelFormat}
      */
-    public final T getFileChooserModel() {
+    SettingsModelString getExcelFormatModel() {
+        return m_excelFormat;
+    }
+
+    /**
+     * Returns the {@link SettingsModelWriterFileChooser}.
+     *
+     * @return the {@link SettingsModelWriterFileChooser}
+     */
+    SettingsModelWriterFileChooser getFileChooserModel() {
         return m_fileChooser;
     }
 
     @Override
-    public final String[] getSheetNames() {
+    public String[] getSheetNames() {
         return m_sheetNames;
+    }
+
+    /**
+     * Returns the sheet exists handling model.
+     *
+     * @return the sheet exists handling model
+     */
+    SettingsModelString getSheetExistsHandlingModel() {
+        return m_sheetExistsHandling;
     }
 
     /**
@@ -177,7 +230,7 @@ public abstract class AbstractExcelTableConfig<T extends AbstractSettingsModelFi
      *
      * @return the write column header settings model
      */
-    public final SettingsModelBoolean getWriteColHeaderModel() {
+    SettingsModelBoolean getWriteColHeaderModel() {
         return m_writeColHeader;
     }
 
@@ -186,7 +239,7 @@ public abstract class AbstractExcelTableConfig<T extends AbstractSettingsModelFi
      *
      * @return the write row key settings model
      */
-    public final SettingsModelBoolean getWriteRowKeyModel() {
+    SettingsModelBoolean getWriteRowKeyModel() {
         return m_writeRowKey;
     }
 
@@ -195,7 +248,7 @@ public abstract class AbstractExcelTableConfig<T extends AbstractSettingsModelFi
      *
      * @return the replace missings model
      */
-    public final SettingsModelBoolean getReplaceMissingsModel() {
+    SettingsModelBoolean getReplaceMissingsModel() {
         return m_replaceMissings;
     }
 
@@ -204,8 +257,17 @@ public abstract class AbstractExcelTableConfig<T extends AbstractSettingsModelFi
      *
      * @return the missing value pattern model
      */
-    public final SettingsModelString getMissingValPatternModel() {
+    SettingsModelString getMissingValPatternModel() {
         return m_missingValPattern;
+    }
+
+    /**
+     * Returns the evaluate formulas model.
+     *
+     * @return the evaluate formulas model
+     */
+    SettingsModelBoolean getEvaluateFormulasModel() {
+        return m_evaluateFormulas;
     }
 
     /**
@@ -213,7 +275,7 @@ public abstract class AbstractExcelTableConfig<T extends AbstractSettingsModelFi
      *
      * @return the auto size model
      */
-    public final SettingsModelBoolean getAutoSizeModel() {
+    SettingsModelBoolean getAutoSizeModel() {
         return m_autoSize;
     }
 
@@ -222,7 +284,7 @@ public abstract class AbstractExcelTableConfig<T extends AbstractSettingsModelFi
      *
      * @return the landscape model
      */
-    public final SettingsModelString getLandscapeModel() {
+    SettingsModelString getLandscapeModel() {
         return m_landscape;
     }
 
@@ -231,12 +293,16 @@ public abstract class AbstractExcelTableConfig<T extends AbstractSettingsModelFi
      *
      * @return the paper size model
      */
-    public final SettingsModelString getPaperSizeModel() {
+    SettingsModelString getPaperSizeModel() {
         return m_paperSize;
     }
 
+    ExcelFormat getExcelFormat() {
+        return ExcelFormat.valueOf(m_excelFormat.getStringValue());
+    }
+
     @Override
-    public final Optional<String> getMissingValPattern() {
+    public Optional<String> getMissingValPattern() {
         if (m_replaceMissings.getBooleanValue()) {
             return Optional.of(m_missingValPattern.getStringValue());
         } else {
@@ -245,28 +311,38 @@ public abstract class AbstractExcelTableConfig<T extends AbstractSettingsModelFi
     }
 
     @Override
-    public final boolean useAutoSize() {
+    public boolean useAutoSize() {
         return m_autoSize.getBooleanValue();
     }
 
     @Override
-    public final boolean useLandscape() {
+    public boolean useLandscape() {
         return Orientation.valueOf(m_landscape.getStringValue()).useLandscape();
     }
 
     @Override
-    public final short getPaperSize() {
+    public short getPaperSize() {
         return PaperSize.valueOf(m_paperSize.getStringValue()).getPrintSetup();
     }
 
     @Override
-    public final boolean writeRowKey() {
+    public boolean writeRowKey() {
         return m_writeRowKey.getBooleanValue();
     }
 
     @Override
-    public final boolean writeColHeaders() {
+    public boolean writeColHeaders() {
         return m_writeColHeader.getBooleanValue();
+    }
+
+    @Override
+    public boolean evaluate() {
+        return m_evaluateFormulas.getBooleanValue();
+    }
+
+    @Override
+    public boolean abortIfSheetExists() {
+        return SheetNameExistsHandling.valueOf(m_sheetExistsHandling.getStringValue()) == SheetNameExistsHandling.FAIL;
     }
 
     /**
@@ -275,27 +351,20 @@ public abstract class AbstractExcelTableConfig<T extends AbstractSettingsModelFi
      * @param settings the {@link NodeSettingsRO} to validate
      * @throws InvalidSettingsException - If the validation failed
      */
-    public final void validateSettingsForModel(final NodeSettingsRO settings) throws InvalidSettingsException {
+    void validateSettingsForModel(final NodeSettingsRO settings) throws InvalidSettingsException {
+        m_excelFormat.validateSettings(settings);
         m_fileChooser.validateSettings(settings);
+        validateSheets(settings);
+        m_sheetExistsHandling.validateSettings(settings);
         m_writeRowKey.validateSettings(settings);
         m_writeColHeader.validateSettings(settings);
         m_replaceMissings.validateSettings(settings);
         m_missingValPattern.validateSettings(settings);
+        m_evaluateFormulas.validateSettings(settings);
         m_autoSize.validateSettings(settings);
         m_landscape.validateSettings(settings);
         m_paperSize.validateSettings(settings);
-        validateSheets(settings);
-        validateAdditionalSettingsForModel(settings);
     }
-
-    /**
-     * Validates any additional settings that are specific to the extending class.
-     *
-     * @param settings the {@link NodeSettingsRO} to validated
-     * @throws InvalidSettingsException - If the settings are invalid
-     */
-    protected abstract void validateAdditionalSettingsForModel(final NodeSettingsRO settings)
-        throws InvalidSettingsException;
 
     private void validateSheets(final NodeSettingsRO settings) throws InvalidSettingsException {
         final String[] sheetNames = settings.getStringArray(CFG_SHEET_NAMES);
@@ -328,27 +397,20 @@ public abstract class AbstractExcelTableConfig<T extends AbstractSettingsModelFi
      * @param settings the {@link NodeSettingsRO} to be loaded
      * @throws InvalidSettingsException - If loading the settings failed
      */
-    public final void loadSettingsForModel(final NodeSettingsRO settings) throws InvalidSettingsException {
+    void loadSettingsForModel(final NodeSettingsRO settings) throws InvalidSettingsException {
+        m_excelFormat.loadSettingsFrom(settings);
         m_fileChooser.loadSettingsFrom(settings);
         loadSheetNamesForModel(settings);
+        m_sheetExistsHandling.loadSettingsFrom(settings);
         m_writeRowKey.loadSettingsFrom(settings);
         m_writeColHeader.loadSettingsFrom(settings);
         m_replaceMissings.loadSettingsFrom(settings);
         m_missingValPattern.loadSettingsFrom(settings);
+        m_evaluateFormulas.loadSettingsFrom(settings);
         m_autoSize.loadSettingsFrom(settings);
         m_landscape.loadSettingsFrom(settings);
         m_paperSize.loadSettingsFrom(settings);
-        loadAdditionalSettingsForModel(settings);
     }
-
-    /**
-     * Loads any additional settings that are specific to the extending class.
-     *
-     * @param settings the {@link NodeSettingsRO} to read from
-     * @throws InvalidSettingsException - If the settings could not be loaded
-     */
-    protected abstract void loadAdditionalSettingsForModel(final NodeSettingsRO settings)
-        throws InvalidSettingsException;
 
     private void loadSheetNamesForModel(final NodeSettingsRO settings) throws InvalidSettingsException {
         final String[] sheetNames = settings.getStringArray(CFG_SHEET_NAMES);
@@ -361,25 +423,20 @@ public abstract class AbstractExcelTableConfig<T extends AbstractSettingsModelFi
      *
      * @param settings the {@link NodeSettingsWO} to save to
      */
-    public final void saveSettingsForModel(final NodeSettingsWO settings) {
+    void saveSettingsForModel(final NodeSettingsWO settings) {
+        m_excelFormat.saveSettingsTo(settings);
         m_fileChooser.saveSettingsTo(settings);
         saveSheetNames(settings, m_sheetNames);
+        m_sheetExistsHandling.saveSettingsTo(settings);
         m_writeRowKey.saveSettingsTo(settings);
         m_writeColHeader.saveSettingsTo(settings);
         m_replaceMissings.saveSettingsTo(settings);
         m_missingValPattern.saveSettingsTo(settings);
+        m_evaluateFormulas.saveSettingsTo(settings);
         m_autoSize.saveSettingsTo(settings);
         m_landscape.saveSettingsTo(settings);
         m_paperSize.saveSettingsTo(settings);
-        saveAdditionalSettingsForModel(settings);
     }
-
-    /**
-     * Saves any additional settings that are specific to the extending class.
-     *
-     * @param settings the {@link NodeSettingsWO} to write to
-     */
-    protected abstract void saveAdditionalSettingsForModel(final NodeSettingsWO settings);
 
     /**
      * Saves the sheet names.
@@ -387,7 +444,7 @@ public abstract class AbstractExcelTableConfig<T extends AbstractSettingsModelFi
      * @param settings the {@link NodeSettingsWO} to write the sheet names to
      * @param array the array to write
      */
-    public static void saveSheetNames(final NodeSettingsWO settings, final String[] array) {
+    static void saveSheetNames(final NodeSettingsWO settings, final String[] array) {
         settings.addStringArray(CFG_SHEET_NAMES, array);
     }
 
@@ -396,12 +453,12 @@ public abstract class AbstractExcelTableConfig<T extends AbstractSettingsModelFi
      *
      * @param settings the {@link NodeSettingsRO} containing the sheet names
      */
-    public final void loadSheetsInDialog(final NodeSettingsRO settings) {
+    void loadSheetsInDialog(final NodeSettingsRO settings) {
         try {
             loadSheetNamesForModel(settings);
         } catch (final InvalidSettingsException e) { // NOSONAR we want to use defaults
             final String[] defaultSheets = IntStream.range(0, m_sheetNames.length)//
-                .mapToObj(AbstractExcelTableConfig::createDefaultSheetName)//
+                .mapToObj(ExcelTableWriterConfig::createDefaultSheetName)//
                 .toArray(String[]::new);
             setSheetNames(settings.getStringArray(CFG_SHEET_NAMES, defaultSheets));
         }

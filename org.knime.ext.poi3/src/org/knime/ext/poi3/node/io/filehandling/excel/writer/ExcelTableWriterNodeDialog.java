@@ -46,7 +46,7 @@
  * History
  *   Nov 6, 2020 (Mark Ortmann, KNIME GmbH, Berlin, Germany): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.writer.creator;
+package org.knime.ext.poi3.node.io.filehandling.excel.writer;
 
 import java.awt.Component;
 import java.awt.GridBagLayout;
@@ -75,14 +75,15 @@ import org.knime.core.node.defaultnodesettings.DialogComponentString;
 import org.knime.core.node.defaultnodesettings.DialogComponentStringSelection;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.core.node.port.PortObjectSpec;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.config.AbstractExcelTableConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelConstants;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelFormat;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.Orientation;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.PaperSize;
+import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.SheetNameExistsHandling;
 import org.knime.filehandling.core.connections.FSLocation;
 import org.knime.filehandling.core.data.location.variable.FSLocationVariableType;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.DialogComponentWriterFileChooser;
+import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.FileOverwritePolicy;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.SettingsModelWriterFileChooser;
 import org.knime.filehandling.core.defaultnodesettings.filtermode.SettingsModelFilterMode.FilterMode;
 import org.knime.filehandling.core.util.GBCBuilder;
@@ -108,6 +109,8 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
 
     private final JTextField[] m_sheetNames;
 
+    private final DialogComponentButtonGroup m_sheetNameCollisionHandling;
+
     private final DialogComponentBoolean m_writeRowKey;
 
     private final DialogComponentBoolean m_writeColHeader;
@@ -115,6 +118,8 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
     private final DialogComponentBoolean m_replaceMissings;
 
     private final DialogComponentString m_missingValPattern;
+
+    private final DialogComponentBoolean m_evaluateFormulas;
 
     private final DialogComponentButtonGroup m_landscape;
 
@@ -145,19 +150,30 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
         m_sheetNames = Stream.generate(() -> new JTextField(23))//
             .limit(portsConfig.getInputPortLocation().get(ExcelTableWriterNodeFactory.SHEET_GRP_ID).length)//
             .toArray(JTextField[]::new);
+        m_sheetNameCollisionHandling = new DialogComponentButtonGroup(m_cfg.getSheetExistsHandlingModel(), null, false,
+            SheetNameExistsHandling.values());
 
         m_writeColHeader = new DialogComponentBoolean(m_cfg.getWriteColHeaderModel(), "Write column headers");
         m_writeRowKey = new DialogComponentBoolean(m_cfg.getWriteRowKeyModel(), "Write row key");
         m_replaceMissings = new DialogComponentBoolean(m_cfg.getReplaceMissingsModel(), "Replace missing values by");
         m_missingValPattern = new DialogComponentString(m_cfg.getMissingValPatternModel(), null);
 
+        m_evaluateFormulas = new DialogComponentBoolean(m_cfg.getEvaluateFormulasModel(), "Evaluate formulas");
+
         m_autoSize = new DialogComponentBoolean(m_cfg.getAutoSizeModel(), "Autosize columns");
         m_landscape = new DialogComponentButtonGroup(m_cfg.getLandscapeModel(), null, false, Orientation.values());
         m_paperSize = new JComboBox<>(PaperSize.values());
 
+        writerModel.addChangeListener(l -> toggleAppendRelatedOptions());
         excelFormatModel.addChangeListener(l -> updateLocation());
 
         addTab("Settings", createSettings());
+    }
+
+    private void toggleAppendRelatedOptions() {
+        final boolean enabled = m_fileChooser.getSettingsModel().getFileOverwritePolicy() == FileOverwritePolicy.APPEND;
+        m_evaluateFormulas.getModel().setEnabled(enabled);
+        m_sheetNameCollisionHandling.getModel().setEnabled(enabled);
     }
 
     private void updateLocation() {
@@ -175,6 +191,8 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
         writerModel.setFileExtensions(format.getFileExtension());
     }
 
+
+
     private Component createSettings() {
         final JPanel p = new JPanel(new GridBagLayout());
         final GBCBuilder gbc = new GBCBuilder().resetX().resetY().anchorLineStart().setWeightX(1).fillHorizontal();
@@ -188,6 +206,9 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
 
         gbc.incY();
         p.add(createMissingsPanel(), gbc.build());
+
+        gbc.incY();
+        p.add(createFormulasPanel(), gbc.build());
 
         gbc.incY();
         p.add(createSizePanel(), gbc.build());
@@ -222,12 +243,19 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
             gbc.resetX().incY().insetLeft(4);
             p.add(new JLabel((i + 1) + ". sheet name"), gbc.build());
 
-            gbc.incX().insetLeft(10);
+            gbc.incX().insetLeft(15);
             p.add(m_sheetNames[i], gbc.build());
+            gbc.insetTop(3);
 
         }
 
-        gbc.setWeightX(1).setWidth(2).incY().insetLeft(0).fillHorizontal();
+        gbc.incY().resetX().insetLeft(4);
+        p.add(new JLabel("If sheet exists"), gbc.build());
+
+        gbc.incX().insetLeft(5);
+        p.add(m_sheetNameCollisionHandling.getComponentPanel(), gbc.build());
+
+        gbc.resetX().setWeightX(1).setWidth(2).incY().insetLeft(0).insetTop(0).fillHorizontal();
         p.add(new JPanel(), gbc.build());
 
         return p;
@@ -266,6 +294,20 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
         return p;
     }
 
+    private Component createFormulasPanel() {
+        final JPanel p = new JPanel(new GridBagLayout());
+        p.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Formulas"));
+
+        final GBCBuilder gbc =
+            new GBCBuilder().resetX().resetY().anchorLineStart().setWeightX(0).setWeightY(0).fillNone().insetLeft(-3);
+        p.add(m_evaluateFormulas.getComponentPanel(), gbc.build());
+
+        gbc.incY().setWeightX(1).fillHorizontal().insetTop(-10);
+        p.add(new JPanel(), gbc.build());
+
+        return p;
+    }
+
     private Component createSizePanel() {
         final JPanel p = new JPanel(new GridBagLayout());
         p.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Layout"));
@@ -290,14 +332,16 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
     protected void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
         m_excelType.saveSettingsTo(settings);
         m_fileChooser.saveSettingsTo(settings);
-        AbstractExcelTableConfig.saveSheetNames(settings, Arrays.stream(m_sheetNames)//
+        ExcelTableWriterConfig.saveSheetNames(settings, Arrays.stream(m_sheetNames)//
             .map(JTextField::getText)//
             .map(String::trim)//
             .toArray(String[]::new));
+        m_sheetNameCollisionHandling.saveSettingsTo(settings);
         m_writeRowKey.saveSettingsTo(settings);
         m_writeColHeader.saveSettingsTo(settings);
         m_replaceMissings.saveSettingsTo(settings);
         m_missingValPattern.saveSettingsTo(settings);
+        m_evaluateFormulas.saveSettingsTo(settings);
         m_autoSize.saveSettingsTo(settings);
         m_landscape.saveSettingsTo(settings);
         final SettingsModelString paperSizeModel = m_cfg.getPaperSizeModel();
@@ -313,10 +357,12 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
         m_cfg.loadSheetsInDialog(settings);
         IntStream.range(0, m_sheetNames.length)//
             .forEach(i -> m_sheetNames[i].setText(m_cfg.getSheetNames()[i]));
+        m_sheetNameCollisionHandling.loadSettingsFrom(settings, specs);
         m_writeRowKey.loadSettingsFrom(settings, specs);
         m_writeColHeader.loadSettingsFrom(settings, specs);
         m_replaceMissings.loadSettingsFrom(settings, specs);
         m_missingValPattern.loadSettingsFrom(settings, specs);
+        m_evaluateFormulas.loadSettingsFrom(settings, specs);
         m_autoSize.loadSettingsFrom(settings, specs);
         m_landscape.loadSettingsFrom(settings, specs);
 
@@ -327,6 +373,8 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
             paperSizeModel.setStringValue(ExcelConstants.DEFAULT_PAPER_SIZE.name());
         }
         m_paperSize.setSelectedItem(PaperSize.valueOf(paperSizeModel.getStringValue()));
+        toggleAppendRelatedOptions();
+        updateLocation();
     }
 
 }

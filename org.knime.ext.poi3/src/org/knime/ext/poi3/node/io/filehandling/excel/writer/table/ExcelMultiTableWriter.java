@@ -51,8 +51,9 @@ package org.knime.ext.poi3.node.io.filehandling.excel.writer.table;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.file.OpenOption;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 import org.apache.poi.ss.usermodel.CreationHelper;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -62,9 +63,9 @@ import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.streamable.RowInput;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.cell.ExcelCellWriterFactory;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.config.ExcelTableConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelProgressMonitor;
 import org.knime.filehandling.core.connections.FSFiles;
+import org.knime.filehandling.core.connections.FSPath;
 
 /**
  * This writer writes {@link RowInput} to individual sheets of an excel file and finally stores this excel file to disc.
@@ -75,17 +76,13 @@ public class ExcelMultiTableWriter {
 
     private final ExcelTableConfig m_cfg;
 
-    private final OpenOption[] m_openOptions;
-
     /**
      * Constructor.
      *
      * @param cfg the {@link ExcelTableConfig}
-     * @param openOptions the {@link OpenOption} for the file to be written
      */
-    public ExcelMultiTableWriter(final ExcelTableConfig cfg, final OpenOption[] openOptions) {
+    public ExcelMultiTableWriter(final ExcelTableConfig cfg) {
         m_cfg = cfg;
-        m_openOptions = openOptions;
     }
 
     /**
@@ -101,7 +98,7 @@ public class ExcelMultiTableWriter {
      * @throws CanceledExecutionException - If the execution was canceled by the user
      * @throws InterruptedException - If the execution was canceled by the user
      */
-    public void writeTables(final Path outPath, final RowInput[] tables, final WorkbookCreator wbCreator,
+    public void writeTables(final FSPath outPath, final RowInput[] tables, final WorkbookCreator wbCreator,
         final ExecutionContext exec, final ExcelProgressMonitor m)
         throws IOException, InvalidSettingsException, CanceledExecutionException, InterruptedException {
         @SuppressWarnings("resource") // try-with-resources does not work in case of SXSSFWorkbooks
@@ -124,10 +121,12 @@ public class ExcelMultiTableWriter {
                 formulaCtx.setProgress(1);
             }
             exec.setMessage(String.format("Saving excel file to '%s'", outPath.toString()));
-            try (final OutputStream out = FSFiles.newOutputStream(outPath, m_openOptions);
+            final Path tmpFile = FSFiles.createTempFile((FSPath)outPath.toAbsolutePath().getParent());
+            try (final OutputStream out = FSFiles.newOutputStream(tmpFile);
                     final BufferedOutputStream buffer = new BufferedOutputStream(out)) {
                 wb.write(buffer);
             }
+            Files.move(tmpFile, outPath, StandardCopyOption.REPLACE_EXISTING);
             exec.setProgress(1);
         } finally {
             if (wb instanceof SXSSFWorkbook) {

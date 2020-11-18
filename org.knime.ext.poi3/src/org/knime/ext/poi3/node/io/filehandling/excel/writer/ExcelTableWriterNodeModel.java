@@ -46,13 +46,20 @@
  * History
  *   Nov 6, 2020 (Mark Ortmann, KNIME GmbH, Berlin, Germany): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.writer.appender;
+package org.knime.ext.poi3.node.io.filehandling.excel.writer;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.EnumSet;
 
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
@@ -72,26 +79,34 @@ import org.knime.core.node.streamable.PortInput;
 import org.knime.core.node.streamable.PortOutput;
 import org.knime.core.node.streamable.RowInput;
 import org.knime.core.node.streamable.StreamableOperator;
+import org.knime.core.node.util.CheckUtils;
+import org.knime.ext.poi3.node.io.filehandling.excel.writer.cell.ExcelCellWriterFactory;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.ExcelMultiTableWriter;
+import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.ExcelTableConfig;
+import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.ExcelTableWriter;
+import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.WorkbookCreator;
+import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelFormat;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelProgressMonitor;
+import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.SheetUtils;
+import org.knime.filehandling.core.connections.FSFiles;
 import org.knime.filehandling.core.connections.FSPath;
-import org.knime.filehandling.core.defaultnodesettings.filechooser.reader.ReadPathAccessor;
-import org.knime.filehandling.core.defaultnodesettings.filechooser.reader.SettingsModelReaderFileChooser;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.FileOverwritePolicy;
+import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.SettingsModelWriterFileChooser;
+import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.WritePathAccessor;
 import org.knime.filehandling.core.defaultnodesettings.status.NodeModelStatusConsumer;
 import org.knime.filehandling.core.defaultnodesettings.status.StatusMessage.MessageType;
 
 /**
- * {@link NodeModel} writing tables to individual sheets of an existing excel file.
+ * {@link NodeModel} writing tables to individual sheets of an excel file.
  *
  * @author Mark Ortmann, KNIME GmbH, Berlin, Germany
  */
-final class ExcelTableAppenderNodeModel extends NodeModel {
+final class ExcelTableWriterNodeModel extends NodeModel {
 
     /** The maximum progress for creating the excel file. */
     private static final double MAX_EXCEL_PROGRESS = 0.75;
 
-    private final ExcelTableAppenderConfig m_cfg;
+    private final ExcelTableWriterConfig m_cfg;
 
     private final int[] m_dataPortIndices;
 
@@ -100,10 +115,10 @@ final class ExcelTableAppenderNodeModel extends NodeModel {
     /**
      * Constructor.
      */
-    ExcelTableAppenderNodeModel(final PortsConfiguration portsConfig) {
+    ExcelTableWriterNodeModel(final PortsConfiguration portsConfig) {
         super(portsConfig.getInputPorts(), portsConfig.getOutputPorts());
-        m_cfg = new ExcelTableAppenderConfig(portsConfig);
-        m_dataPortIndices = portsConfig.getInputPortLocation().get(ExcelTableAppenderNodeFactory.SHEET_GRP_ID);
+        m_cfg = new ExcelTableWriterConfig(portsConfig);
+        m_dataPortIndices = portsConfig.getInputPortLocation().get(ExcelTableWriterNodeFactory.SHEET_GRP_ID);
         m_statusConsumer = new NodeModelStatusConsumer(EnumSet.of(MessageType.ERROR, MessageType.WARNING));
     }
 
@@ -119,9 +134,13 @@ final class ExcelTableAppenderNodeModel extends NodeModel {
         final BufferedDataTable[] bufferedTables = Arrays.stream(m_dataPortIndices)//
             .mapToObj(i -> (BufferedDataTable)inObjects[i])//
             .toArray(BufferedDataTable[]::new);
-        final ExcelProgressMonitor m = new ExcelProgressMonitor(getExcelWriteSubProgress(exec),
-            Arrays.stream(bufferedTables)//
-                .mapToLong(BufferedDataTable::size)//
+        final long[] tableSizes = Arrays.stream(bufferedTables)//
+            .mapToLong(BufferedDataTable::size)//
+            .toArray();
+        // validate sheet names
+        validateSheetNames(tableSizes);
+        final ExcelProgressMonitor m =
+            new ExcelProgressMonitor(getExcelWriteSubProgress(exec), Arrays.stream(tableSizes)//
                 .sum());
         final RowInput[] tables = Arrays.stream(bufferedTables)//
             .map(DataTableRowInput::new)//
@@ -130,20 +149,79 @@ final class ExcelTableAppenderNodeModel extends NodeModel {
         return new PortObject[]{};
     }
 
+    private void validateSheetNames(final long[] tableSizes) throws InvalidSettingsException {
+        final long maxRowsPerSheet = m_cfg.getExcelFormat().getMaxNumRowsPerSheet();
+        final String[] sheetNames = m_cfg.getSheetNames();
+        for (int i = 0; i < tableSizes.length; i++) {
+            final long rowsToWrite = getRowsToWrite(tableSizes[i], maxRowsPerSheet);
+            if (rowsToWrite > maxRowsPerSheet) {
+                long numAdditionalSheets = rowsToWrite / maxRowsPerSheet;
+                SheetUtils.createUniqueSheetName(sheetNames[i], numAdditionalSheets);
+            }
+        }
+    }
+
+    private long getRowsToWrite(final long tableSize, final long maxRowsPerSheet) {
+        final int headerOffset = m_cfg.writeColHeaders() ? 1 : 0;
+        final long sheetsToWrite = Math.max(1, tableSize / maxRowsPerSheet);
+        return tableSize + sheetsToWrite * headerOffset;
+    }
+
     private void write(final ExecutionContext exec, final ExcelProgressMonitor m, final RowInput[] tables)
         throws InvalidSettingsException, IOException, CanceledExecutionException, InterruptedException {
-        final SettingsModelReaderFileChooser fileChooser = m_cfg.getFileChooserModel();
-        try (final ReadPathAccessor accessor = fileChooser.createReadPathAccessor()) {
-            final FSPath inputPath = accessor.getFSPaths(m_statusConsumer).get(0);
+        validateColumnCount(tables);
+        final SettingsModelWriterFileChooser fileChooser = m_cfg.getFileChooserModel();
+        try (final WritePathAccessor accessor = fileChooser.createWritePathAccessor()) {
+            final FSPath outputPath = accessor.getOutputPath(m_statusConsumer);
             m_statusConsumer.setWarningsIfRequired(this::setWarningMessage);
-            final ExcelMultiTableWriter writer =
-                new ExcelMultiTableWriter(m_cfg, FileOverwritePolicy.OVERWRITE.getOpenOptions());
-            writer.writeTables(inputPath, tables, ExcelTableAppenderConfig.getWorkbookCreator(inputPath), exec, m);
+            createOutputFoldersIfMissing(outputPath.toAbsolutePath().getParent(), fileChooser.isCreateMissingFolders());
+            exec.setMessage("Opening excel file");
+            final WorkbookCreator wbCreator = getWorkbookCreator(fileChooser.getFileOverwritePolicy(), outputPath);
+            final ExcelMultiTableWriter writer = new ExcelMultiTableWriter(m_cfg);
+            writer.writeTables(outputPath, tables, wbCreator, exec, m);
+        }
+    }
+
+    private void validateColumnCount(final RowInput[] tables) {
+        final ExcelFormat excelFormat = m_cfg.getExcelFormat();
+        final int maxCols = excelFormat.getMaxNumCols();
+        final int rowIdxColOffset = m_cfg.writeRowKey() ? 1 : 0;
+        for (int i = 0; i < tables.length; i++) {
+            CheckUtils.checkArgument(tables[i].getDataTableSpec().getNumColumns() + rowIdxColOffset <= maxCols,
+                "The input table at port %d contains exeeds the column limit (%d) for %s.", m_dataPortIndices[i],
+                maxCols, excelFormat.name());
         }
     }
 
     private static ExecutionContext getExcelWriteSubProgress(final ExecutionContext exec) {
         return exec.createSubExecutionContext(MAX_EXCEL_PROGRESS);
+    }
+
+    private WorkbookCreator getWorkbookCreator(final FileOverwritePolicy fileOverwritePolicy, final Path path)
+        throws IOException {
+        final boolean fileExists = FSFiles.exists(path);
+        final ExcelFormat format = m_cfg.getExcelFormat();
+        if (fileExists && fileOverwritePolicy == FileOverwritePolicy.APPEND) {
+            return new WriteWorkbookCreator(format, path);
+        } else {
+            if (fileExists && fileOverwritePolicy == FileOverwritePolicy.FAIL) {
+                throw new IOException(String.format(
+                    "Output file '%s' exists and must not be overwritten due to user settings.", path.toString()));
+            }
+            return new WriteWorkbookCreator(format);
+        }
+    }
+
+    private static void createOutputFoldersIfMissing(final Path outputFolder, final boolean createMissingFolders)
+        throws IOException {
+        if (!FSFiles.exists(outputFolder)) {
+            if (createMissingFolders) {
+                FSFiles.createDirectories(outputFolder);
+            } else {
+                throw new IOException(String.format(
+                    "The directory '%s' does not exist and must not be created due to user settings.", outputFolder));
+            }
+        }
     }
 
     @Override
@@ -210,5 +288,72 @@ final class ExcelTableAppenderNodeModel extends NodeModel {
             }
 
         };
+    }
+
+    /**
+     * {@link WorkbookCreator} for existing excel files.
+     *
+     * @author Mark Ortmann, KNIME GmbH, Berlin, Germany
+     */
+    private static class WriteWorkbookCreator implements WorkbookCreator {
+
+        private final ExcelFormat m_format;
+
+        private final Path m_path;
+
+        /**
+         * Constructor.
+         *
+         * @param path path to the excel file
+         */
+        WriteWorkbookCreator(final ExcelFormat format) {
+            this(format, null);
+        }
+
+        WriteWorkbookCreator(final ExcelFormat format, final Path path) {
+            m_format = format;
+            m_path = path;
+        }
+
+        @Override
+        @SuppressWarnings("resource")
+        public Workbook createWorkbook() throws IOException {
+            if (m_path == null) {
+                return m_format.getWorkbook();
+            }
+            // if create fails the input stream gets closed otherwise it's closed when invoking close on the workbook
+            BufferedInputStream inp = new BufferedInputStream(Files.newInputStream(m_path));
+            final Workbook wb = WorkbookFactory.create(inp);
+            if (wb instanceof HSSFWorkbook) {
+                if (m_format != ExcelFormat.XLS) {
+                    wb.close();
+                    throw new IOException(String.format(
+                        "Wrong format: The file '%s' is xls instead of xlsx or xlsm formatted. Please adapt the "
+                            + "configuration",
+                        m_path));
+                }
+            } else if (wb instanceof XSSFWorkbook) {
+                if (m_format == ExcelFormat.XLS) {
+                    wb.close();
+                    throw new IOException(String.format(
+                        "Wrong format: The file '%s' is xlsx or xlsm instead of xls formatted. Please adapt the "
+                            + "configuration",
+                        m_path));
+                }
+            } else {
+                wb.close();
+                throw new IOException(
+                    String.format("Unsupported format: Unable to append spreadsheets to %s", m_path.toString()));
+            }
+            return wb;
+        }
+
+        @Override
+        public ExcelTableWriter createTableWriter(final ExcelTableConfig cfg,
+            final ExcelCellWriterFactory cellWriterFactory) {
+            CheckUtils.checkState(m_format != null, "Cannot create a table writer before creating a workbook");
+            return m_format.createWriter(cfg, cellWriterFactory);
+        }
+
     }
 }

@@ -44,66 +44,49 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Nov 6, 2020 (Mark Ortmann, KNIME GmbH, Berlin, Germany): created
+ *   Nov 18, 2020 (Mark Ortmann, KNIME GmbH, Berlin, Germany): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.writer.creator;
+package org.knime.ext.poi3.node.io.filehandling.excel.writer.util;
 
-import java.util.Optional;
-
-import org.knime.core.node.BufferedDataTable;
-import org.knime.core.node.ConfigurableNodeFactory;
-import org.knime.core.node.NodeDialogPane;
-import org.knime.core.node.NodeFactory;
-import org.knime.core.node.NodeView;
-import org.knime.core.node.context.NodeCreationConfiguration;
-import org.knime.core.node.port.PortType;
-import org.knime.filehandling.core.port.FileSystemPortObject;
+import org.knime.core.node.util.ButtonGroupEnumInterface;
 
 /**
- * {@link NodeFactory} creating the 'Excel Table Writer' node.
+ * Enum encoding how to handle sheet name collisions by the 'Excel table writer' node.
  *
  * @author Mark Ortmann, KNIME GmbH, Berlin, Germany
  */
-public final class ExcelTableWriterNodeFactory extends ConfigurableNodeFactory<ExcelTableWriterNodeModel> {
+public enum SheetNameExistsHandling implements ButtonGroupEnumInterface {
 
-    /** The file system ports group id. */
-    static final String FS_CONNECT_GRP_ID = "File System Connection";
+        /** Overwrite sheets. */
+        OVERWRITE("overwrite"),
 
-    /** The sheet ports group id. */
-    static final String SHEET_GRP_ID = "Sheet Input Ports";
+        /** Fails if the sheet name is already taken. */
+        FAIL("fail");
 
-    @Override
-    protected Optional<PortsConfigurationBuilder> createPortsConfigBuilder() {
-        final PortsConfigurationBuilder b = new PortsConfigurationBuilder();
-        b.addOptionalInputPortGroup(FS_CONNECT_GRP_ID, FileSystemPortObject.TYPE);
-        b.addExtendableInputPortGroup(SHEET_GRP_ID, new PortType[]{BufferedDataTable.TYPE}, BufferedDataTable.TYPE);
-        return Optional.of(b);
+    private final String m_text;
+
+    private SheetNameExistsHandling(final String text) {
+        m_text = text;
     }
 
     @Override
-    protected ExcelTableWriterNodeModel createNodeModel(final NodeCreationConfiguration creationConfig) {
-        return new ExcelTableWriterNodeModel(creationConfig.getPortConfig().orElseThrow(IllegalStateException::new));
+    public String getText() {
+        return m_text;
     }
 
     @Override
-    protected NodeDialogPane createNodeDialogPane(final NodeCreationConfiguration creationConfig) {
-        return new ExcelTableWriterNodeDialog(creationConfig.getPortConfig().orElseThrow(IllegalStateException::new));
+    public String getActionCommand() {
+        return name();
     }
 
     @Override
-    protected int getNrNodeViews() {
-        return 0;
+    public String getToolTip() {
+        return "";
     }
 
     @Override
-    public NodeView<ExcelTableWriterNodeModel> createNodeView(final int viewIndex,
-        final ExcelTableWriterNodeModel nodeModel) {
-        return null;
-    }
-
-    @Override
-    protected boolean hasDialog() {
-        return true;
+    public boolean isDefault() {
+        return this == FAIL;
     }
 
 }

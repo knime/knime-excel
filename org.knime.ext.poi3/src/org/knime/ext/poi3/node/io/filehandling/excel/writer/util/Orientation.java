@@ -58,14 +58,20 @@ import org.knime.core.node.util.ButtonGroupEnumInterface;
 public enum Orientation implements ButtonGroupEnumInterface {
 
         /** Portrait orientation. */
-        PORTRAIT,
+        PORTRAIT("Portrait"),
 
         /** Landscape orientation. */
-        LANDSCAPE;
+        LANDSCAPE("Landscape");
+
+    private final String m_text;
+
+    private Orientation(final String text) {
+        m_text = text;
+    }
 
     @Override
     public String getText() {
-        return name();
+        return m_text;
     }
 
     @Override

@@ -196,7 +196,7 @@ final class DoubleCellWriter extends NumericCellWriters {
     void fill(final DataCell dataCell, final Cell cell) throws IOException {
         final double val = ((DoubleValue)dataCell).getDoubleValue();
         if (Double.isInfinite(val)) {
-            throw new IOException("Excel does not support inifinity");
+            throw new IOException("Excel does not support infinity");
         }
         cell.setCellValue(val);
     }

@@ -141,8 +141,9 @@ public class ExcelCellWriterFactory {
         } else if (type.isCompatible(StringValue.class)) {
             return new StringCellWriter(m_missingValPattern);
         }
-        throw new IllegalArgumentException(String.format(
-            "Unsupported column '%s'. Please remove corresponding columns from the input table.", type.getName()));
+        throw new IllegalArgumentException(
+            String.format("Unsupported column type '%s'. Please remove corresponding column(s) from the input table.",
+                type.getName()));
     }
 
 }

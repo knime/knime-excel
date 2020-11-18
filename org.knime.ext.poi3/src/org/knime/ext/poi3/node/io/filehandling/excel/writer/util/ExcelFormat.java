@@ -54,7 +54,7 @@ import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.cell.ExcelCellWriterFactory;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.config.ExcelTableConfig;
+import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.ExcelTableConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.ExcelTableWriter;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.XlsTableWriter;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.XlsxTableWriter;
