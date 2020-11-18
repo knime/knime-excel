@@ -56,6 +56,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -285,5 +286,12 @@ public abstract class ExcelRead implements Read<ExcelCell> {
         final ExcelTableReaderConfig excelConfig = m_config.getReaderSpecificConfig();
         return excelConfig.getSheetSelection().getSelectedSheet(sheetNames, excelConfig, m_path);
     }
+
+    /**
+     * Returns the indexes of the hidden columns.
+     *
+     * @return the indexes of the hidden columns in a {@link Set}
+     */
+    public abstract Set<Integer> getHiddenColumns();
 
 }

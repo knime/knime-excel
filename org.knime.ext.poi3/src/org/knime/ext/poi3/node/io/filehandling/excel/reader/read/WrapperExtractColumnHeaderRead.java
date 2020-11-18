@@ -44,58 +44,79 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Nov 5, 2020 (Simon Schmid, KNIME GmbH, Konstanz, Germany): created
+ *   Nov 16, 2020 (Simon Schmid, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.reader;
+package org.knime.ext.poi3.node.io.filehandling.excel.reader.read;
 
-import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.util.ButtonGroupEnumInterface;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Optional;
+import java.util.OptionalLong;
+import java.util.function.Supplier;
+
+import org.knime.filehandling.core.node.table.reader.randomaccess.RandomAccessible;
+import org.knime.filehandling.core.node.table.reader.randomaccess.RandomAccessibleUtils;
+import org.knime.filehandling.core.node.table.reader.read.Read;
+import org.knime.filehandling.core.node.table.reader.spec.ExtractColumnHeaderRead;
+import org.knime.filehandling.core.util.CheckedExceptionSupplier;
 
 /**
- * Enumeration of formula error handling settings.
+ * A {@link Read} that wraps another {@link Read} as an {@link ExtractColumnHeaderRead} that does nothing besides
+ * passing the column headers.
  *
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
+ * @param <V> the type of tokens making up a row in the read
  */
-public enum FormulaErrorHandling implements ButtonGroupEnumInterface {
+public final class WrapperExtractColumnHeaderRead<V> implements ExtractColumnHeaderRead<V> {
 
-        /** Insert an error pattern. */
-        PATTERN("Insert an error pattern"),
-        /** Insert a missing cell. */
-        MISSING("Insert a missing cell");
+    /** The underlying read. */
+    private final Read<V> m_read;
 
-    private final String m_text;
+    private CheckedExceptionSupplier<Optional<RandomAccessible<V>>, IOException> m_columnHeadersSupplier;
 
-    private FormulaErrorHandling(final String text) {
-        m_text = text;
+    /**
+     * @param source the source {@link Read}
+     * @param columnHeadersSupplier a {@link Supplier} that supplies the column headers and can throw
+     *            {@link IOException}s
+     */
+    public WrapperExtractColumnHeaderRead(final Read<V> source,
+        final CheckedExceptionSupplier<Optional<RandomAccessible<V>>, IOException> columnHeadersSupplier) {
+        m_read = source;
+        m_columnHeadersSupplier = columnHeadersSupplier;
     }
 
     @Override
-    public String getText() {
-        return m_text;
+    public RandomAccessible<V> next() throws IOException {
+        return m_read.next();
     }
 
     @Override
-    public String getActionCommand() {
-        return name();
+    public OptionalLong getMaxProgress() {
+        return m_read.getMaxProgress();
     }
 
     @Override
-    public String getToolTip() {
-        return null;
+    public long getProgress() {
+        return m_read.getProgress();
     }
 
     @Override
-    public boolean isDefault() {
-        return this == PATTERN;
+    public void close() throws IOException {
+        m_read.close();
     }
 
-    static FormulaErrorHandling loadValueInModel(final String s) throws InvalidSettingsException {
-        try {
-            return valueOf(s);
-        } catch (IllegalArgumentException e) {
-            throw new InvalidSettingsException(
-                "No formula error handling setting '" + s + "' available. See node description.");
+    @Override
+    public Optional<RandomAccessible<V>> getColumnHeaders() throws IOException {
+        final Optional<RandomAccessible<V>> headers = m_columnHeadersSupplier.get();
+        if (headers.isPresent()) {
+            return headers;
         }
+        return Optional.of(RandomAccessibleUtils.createFromArrayUnsafe());
+    }
+
+    @Override
+    public Optional<Path> getPath() {
+        return m_read.getPath();
     }
 
 }

@@ -78,6 +78,20 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
 
     private String m_errorPattern = DEFAULT_FORMULA_ERROR_PATTERN;
 
+    private AreaOfSheetToRead m_areaOfSheetToRead = AreaOfSheetToRead.ENTIRE;
+
+    private String m_readFromCol = "A";
+
+    private String m_readToCol = "";
+
+    private String m_readFromRow = "1";
+
+    private String m_readToRow = "";
+
+    private RowIDGeneration m_rowIdGeneration = RowIDGeneration.GENERATE;
+
+    private String m_rowIDCol = "A";
+
     /**
      * Constructor.
      */
@@ -94,6 +108,13 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
         setReevaluateFormulas(toCopy.isReevaluateFormulas());
         setFormulaErrorHandling(toCopy.getFormulaErrorHandling());
         setErrorPattern(toCopy.getErrorPattern());
+        setAreaOfSheetToRead(toCopy.getAreaOfSheetToRead());
+        setReadFromCol(toCopy.getReadFromCol());
+        setReadToCol(toCopy.getReadToCol());
+        setReadFromRow(toCopy.getReadFromRow());
+        setReadToRow(toCopy.getReadToRow());
+        setRowIdGeneration(toCopy.getRowIdGeneration());
+        setRowIDCol(toCopy.getRowIDCol());
     }
 
     @Override
@@ -225,6 +246,104 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
      */
     void setErrorPattern(final String errorPattern) {
         m_errorPattern = errorPattern;
+    }
+
+    /**
+     * @return the readFromCol
+     */
+    public String getReadFromCol() {
+        return m_readFromCol;
+    }
+
+    /**
+     * @param readFromCol the readFromCol to set
+     */
+    void setReadFromCol(final String readFromCol) {
+        m_readFromCol = readFromCol;
+    }
+
+    /**
+     * @return the readToCol
+     */
+    public String getReadToCol() {
+        return m_readToCol;
+    }
+
+    /**
+     * @param readToCol the readToCol to set
+     */
+    void setReadToCol(final String readToCol) {
+        m_readToCol = readToCol;
+    }
+
+    /**
+     * @return the readFromRow
+     */
+    public String getReadFromRow() {
+        return m_readFromRow;
+    }
+
+    /**
+     * @param readFromRow the readFromRow to set
+     */
+    void setReadFromRow(final String readFromRow) {
+        m_readFromRow = readFromRow;
+    }
+
+    /**
+     * @return the readToRow
+     */
+    public String getReadToRow() {
+        return m_readToRow;
+    }
+
+    /**
+     * @param readToRow the readToRow to set
+     */
+    void setReadToRow(final String readToRow) {
+        m_readToRow = readToRow;
+    }
+
+    /**
+     * @return the areaOfSheetToRead
+     */
+    public AreaOfSheetToRead getAreaOfSheetToRead() {
+        return m_areaOfSheetToRead;
+    }
+
+    /**
+     * @param areaOfSheetToRead the areaOfSheetToRead to set
+     */
+    void setAreaOfSheetToRead(final AreaOfSheetToRead areaOfSheetToRead) {
+        m_areaOfSheetToRead = areaOfSheetToRead;
+    }
+
+    /**
+     * @return the rowIDCol
+     */
+    public String getRowIDCol() {
+        return m_rowIDCol;
+    }
+
+    /**
+     * @param rowIDCol the rowIDCol to set
+     */
+    void setRowIDCol(final String rowIDCol) {
+        m_rowIDCol = rowIDCol;
+    }
+
+    /**
+     * @return the rowIdGeneration
+     */
+    public RowIDGeneration getRowIdGeneration() {
+        return m_rowIdGeneration;
+    }
+
+    /**
+     * @param rowIdGeneration the rowIdGeneration to set
+     */
+    void setRowIdGeneration(final RowIDGeneration rowIdGeneration) {
+        m_rowIdGeneration = rowIdGeneration;
     }
 
 }

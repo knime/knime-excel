@@ -54,10 +54,11 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.OptionalLong;
+import java.util.Set;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.openxml4j.exceptions.InvalidOperationException;
@@ -82,6 +83,7 @@ import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCellUtils;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelParserRunnable;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelRead;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelUtils;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.VisibilityAwareRandomAccessible;
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
 import org.knime.filehandling.core.node.table.reader.randomaccess.RandomAccessibleUtils;
 
@@ -101,6 +103,8 @@ public final class XLSRead extends ExcelRead {
     private Workbook m_workbook;
 
     private Map<String, Boolean> m_sheetNames;
+
+    private Set<Integer> m_hiddenColumns;
 
     /**
      * Constructor.
@@ -182,6 +186,11 @@ public final class XLSRead extends ExcelRead {
     }
 
     @Override
+    public Set<Integer> getHiddenColumns() {
+        return m_hiddenColumns;
+    }
+
+    @Override
     public void closeResources() throws IOException {
         if (m_workbook != null) {
             m_workbook.close();
@@ -196,27 +205,32 @@ public final class XLSRead extends ExcelRead {
 
         private final FormulaEvaluator m_formulaEvaluator;
 
+        private ExcelCell m_rowId;
+
         XLSParserRunnable(final ExcelRead read, final TableReadConfig<ExcelTableReaderConfig> config, final Sheet sheet,
             final boolean use1904Windowing, final FormulaEvaluator formulaEvaluator) {
             super(read, config);
             m_sheet = sheet;
             m_use1904Windowing = use1904Windowing;
             m_formulaEvaluator = formulaEvaluator;
+            m_hiddenColumns = new HashSet<>();
         }
 
         @Override
         protected void parse() throws Exception {
             int numEmptyRows = 0;
             for (int i = 0; i <= m_sheet.getLastRowNum(); i++) {
+                m_rowId = null;
                 final Row row = m_sheet.getRow(i);
                 if (row == null) {
                     // empty row
                     numEmptyRows++;
-                } else if (!(m_skipHiddenRows && row.getZeroHeight())) {
+                } else {
+                    final boolean isHiddenRow = m_skipHiddenRows && row.getZeroHeight();
                     // parse the row
                     final List<ExcelCell> cells = parseRow(row);
                     // if all cells of the row are null, the row is empty
-                    if (cells.stream().noneMatch(Objects::nonNull)) {
+                    if (isRowEmpty(cells)) {
                         // by not adding empty rows directly to the queue but waiting for the next non-empty row, we prevent
                         // rows with only "empty-but-formatted/styled" cells being added (cells which had content
                         // before and were set to empty later might still be counted as cells by Excel and Apache POI)
@@ -224,7 +238,10 @@ public final class XLSRead extends ExcelRead {
                     } else {
                         outputEmptyRows(numEmptyRows);
                         numEmptyRows = 0;
-                        addToQueue(RandomAccessibleUtils.createFromArrayUnsafe(cells.toArray(new ExcelCell[0])));
+                        // insert the row id at the beginning
+                        insertRowIDAtBeginning(cells, m_rowId);
+                        addToQueue(VisibilityAwareRandomAccessible.createUnsafe(
+                            RandomAccessibleUtils.createFromArrayUnsafe(cells.toArray(new ExcelCell[0])), isHiddenRow));
                     }
                 }
             }
@@ -234,8 +251,15 @@ public final class XLSRead extends ExcelRead {
             final List<ExcelCell> cells = new ArrayList<>();
             int numEmptyCells = 0;
             for (int j = 0; j < row.getLastCellNum(); j++) {
-                if (!(m_skipHiddenCols && m_sheet.isColumnHidden(j))) {
-                    final Cell cell = row.getCell(j, MissingCellPolicy.RETURN_BLANK_AS_NULL);
+                final Cell cell = row.getCell(j, MissingCellPolicy.RETURN_BLANK_AS_NULL);
+                final boolean isColRowID = isColRowID(j);
+                if (isColRowID) {
+                    m_rowId = cell == null ? null : parseCell(cell, cell.getCellType());
+                }
+                if (m_skipHiddenCols && m_sheet.isColumnHidden(j)) {
+                    // we always need to add, not only for the first row, as a later row could have more columns
+                    m_hiddenColumns.add(j);
+                } else if (!isColRowID && isColIncluded(j)) {
                     if (cell == null) {
                         // by not adding null directly to the list but waiting for the next non-empty cell, we prevent
                         // columns with only "empty-but-formatted/styled" cells being appended (cells which had content
@@ -341,8 +365,13 @@ public final class XLSRead extends ExcelRead {
                 // as old node was catching for all Exceptions and I could not find documentation about the type of
                 // exceptions thrown by FormulaEvaluator#evaluate, we do the same to avoid running into unexpected
                 // exceptions (I encountered FormulaParseException and NotImplementedException)
+                if (e.getClass() == RuntimeException.class
+                    && e.getMessage().equals("Unexpected eval class (org.apache.poi.ss.formula.eval.BlankEval)")) {
+                    return null;
+                }
                 return ExcelCellUtils.createErrorCell(m_config);
             }
+
             final CellType cellType = cellValue.getCellType();
             switch (cellType) {
                 case NUMERIC:

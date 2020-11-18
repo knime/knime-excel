@@ -49,8 +49,11 @@
 package org.knime.ext.poi3.node.io.filehandling.excel.reader.read;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Objects;
 
 import org.knime.core.node.NodeLogger;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.AreaOfSheetToRead;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelUtils.ParsingInterruptedException;
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
@@ -78,6 +81,15 @@ public abstract class ExcelParserRunnable implements Runnable {
     /** True if hidden rows should be skipped. */
     protected final boolean m_skipHiddenRows;
 
+    /** The index of the row ID or -1 if no row ID column is set. */
+    protected final int m_rowIdIdx;
+
+    /** The index of the fist included column. */
+    protected final int m_firstCol;
+
+    /** The index of the last included column or -1 if there is no max limit. */
+    protected final int m_lastCol;
+
     /**
      * Constructor.
      *
@@ -90,6 +102,11 @@ public abstract class ExcelParserRunnable implements Runnable {
         m_use15DigitsPrecision = excelConfig.isUse15DigitsPrecision();
         m_skipHiddenCols = excelConfig.isSkipHiddenCols();
         m_skipHiddenRows = excelConfig.isSkipHiddenRows();
+        m_rowIdIdx = config.useRowIDIdx() ? ExcelUtils.getRowIdColIdx(excelConfig.getRowIDCol()) : -1;
+        m_firstCol = excelConfig.getAreaOfSheetToRead() == AreaOfSheetToRead.PARTIAL
+            ? ExcelUtils.getFirstColumnIdx(excelConfig.getReadFromCol()) : 0;
+        m_lastCol = excelConfig.getAreaOfSheetToRead() == AreaOfSheetToRead.PARTIAL
+            ? ExcelUtils.getLastColumnIdx(excelConfig.getReadToCol()) : -1;
     }
 
     @Override
@@ -149,8 +166,58 @@ public abstract class ExcelParserRunnable implements Runnable {
      */
     protected void outputEmptyRows(final int numMissingsRows) {
         for (int i = 0; i < numMissingsRows; i++) {
-            addToQueue(RandomAccessibleUtils.createFromArrayUnsafe());
+            if (m_rowIdIdx < 0) {
+                addToQueue(
+                    VisibilityAwareRandomAccessible.createUnsafe(RandomAccessibleUtils.createFromArrayUnsafe(), false));
+            } else {
+                // make sure the empty row ID is added
+                final ExcelCell cell = null;
+                addToQueue(VisibilityAwareRandomAccessible
+                    .createUnsafe(RandomAccessibleUtils.createFromArrayUnsafe(cell), false));
+            }
         }
+    }
+
+    /**
+     * Inserts a row ID to the beginning of a row.
+     *
+     * @param row the row
+     * @param rowId the row ID
+     */
+    protected void insertRowIDAtBeginning(final List<ExcelCell> row, final ExcelCell rowId) {
+        if (m_rowIdIdx >= 0) {
+            row.add(0, rowId);
+        }
+    }
+
+    /**
+     * Returns true if the row is empty, i.e., it contains only nulls or no elements.
+     *
+     * @param row the row
+     * @return whether the row is empty
+     */
+    protected boolean isRowEmpty(final List<ExcelCell> row) {
+        return row.isEmpty() || row.stream().allMatch(Objects::isNull);
+    }
+
+    /**
+     * Returns true if the column is included.
+     *
+     * @param col the column index
+     * @return whether the column is included
+     */
+    protected boolean isColIncluded(final int col) {
+        return col >= m_firstCol && (m_lastCol < 0 || col <= m_lastCol);
+    }
+
+    /**
+     * Returns true if the column is the row id.
+     *
+     * @param col the column index
+     * @return whether the column is the row id
+     */
+    protected boolean isColRowID(final int col) {
+        return col == m_rowIdIdx;
     }
 
 }

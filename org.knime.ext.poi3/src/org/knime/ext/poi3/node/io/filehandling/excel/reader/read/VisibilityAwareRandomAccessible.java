@@ -44,58 +44,63 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Nov 5, 2020 (Simon Schmid, KNIME GmbH, Konstanz, Germany): created
+ *   Nov 16, 2020 (Simon Schmid, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.reader;
+package org.knime.ext.poi3.node.io.filehandling.excel.reader.read;
 
-import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.util.ButtonGroupEnumInterface;
+import org.knime.filehandling.core.node.table.reader.randomaccess.AbstractRandomAccessible;
+import org.knime.filehandling.core.node.table.reader.randomaccess.RandomAccessible;
 
 /**
- * Enumeration of formula error handling settings.
+ * Implementation of {@link AbstractRandomAccessible} that is aware of its visibility.
  *
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
+ * @param <V> the type of values returned by this {@link RandomAccessible}
  */
-public enum FormulaErrorHandling implements ButtonGroupEnumInterface {
+public final class VisibilityAwareRandomAccessible<V> extends AbstractRandomAccessible<V> {
 
-        /** Insert an error pattern. */
-        PATTERN("Insert an error pattern"),
-        /** Insert a missing cell. */
-        MISSING("Insert a missing cell");
+    private final RandomAccessible<V> m_randomAccessible;
 
-    private final String m_text;
+    // true if the row is hidden in Excel
+    private final boolean m_isHidden;
 
-    private FormulaErrorHandling(final String text) {
-        m_text = text;
+    /**
+     * @param randomAccessible
+     * @param isRowHidden
+     */
+    private VisibilityAwareRandomAccessible(final RandomAccessible<V> randomAccessible, final boolean isRowHidden) {
+        m_randomAccessible = randomAccessible;
+        m_isHidden = isRowHidden;
+    }
+
+    /**
+     * Creates a new instance using <b>data</b> directly. Consequently, any changes to <b>data</b> will also change the
+     * RandomAccessible. Use with caution.
+     *
+     * @param randomAccessible the underlying {@link RandomAccessible}
+     * @param isHidden if whether is hidden or not
+     * @return a new instance of VisibilityAwareRandomAccessible
+     */
+    public static <V> VisibilityAwareRandomAccessible<V> createUnsafe(final RandomAccessible<V> randomAccessible,
+        final boolean isHidden) {
+        return new VisibilityAwareRandomAccessible<>(randomAccessible, isHidden);
     }
 
     @Override
-    public String getText() {
-        return m_text;
+    public int size() {
+        return m_randomAccessible.size();
     }
 
     @Override
-    public String getActionCommand() {
-        return name();
+    public V get(final int idx) {
+        return m_randomAccessible.get(idx);
     }
 
-    @Override
-    public String getToolTip() {
-        return null;
-    }
-
-    @Override
-    public boolean isDefault() {
-        return this == PATTERN;
-    }
-
-    static FormulaErrorHandling loadValueInModel(final String s) throws InvalidSettingsException {
-        try {
-            return valueOf(s);
-        } catch (IllegalArgumentException e) {
-            throw new InvalidSettingsException(
-                "No formula error handling setting '" + s + "' available. See node description.");
-        }
+    /**
+     * @return the isRowHidden
+     */
+    boolean isHidden() {
+        return m_isHidden;
     }
 
 }

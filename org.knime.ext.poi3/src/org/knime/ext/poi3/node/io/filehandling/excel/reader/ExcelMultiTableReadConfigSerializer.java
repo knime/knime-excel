@@ -91,7 +91,7 @@ enum ExcelMultiTableReadConfigSerializer implements
 
     private static final String CFG_HAS_COLUMN_HEADER = "table_contains_column_names";
 
-    private static final String CFG_COLUMN_HEADER_ROW_IDX = "column_names_row_number";
+    private static final String CFG_COLUMN_HEADER_ROW_NUMBER = "column_names_row_number";
 
     private static final String CFG_ADVANCED_SETTINGS_TAB = "advanced_settings";
 
@@ -108,6 +108,20 @@ enum ExcelMultiTableReadConfigSerializer implements
     private static final String CFG_FORMULA_ERROR_HANDLING = "formula_error_handling";
 
     private static final String CFG_FORMULA_ERROR_PATTERN = "formula_error_pattern";
+
+    private static final String CFG_AREA_OF_SHEET_TO_READ = "sheet_area";
+
+    private static final String CFG_READ_FROM_COL = "read_from_column";
+
+    private static final String CFG_READ_TO_COL = "read_to_column";
+
+    private static final String CFG_READ_FROM_ROW = "read_from_row";
+
+    private static final String CFG_READ_TO_ROW = "read_to_row";
+
+    private static final String CFG_ROW_ID_GENERATION = "row_id";
+
+    private static final String CFG_ROW_ID_COL = "row_id_column";
 
     @Override
     public void loadInDialog(
@@ -176,11 +190,20 @@ enum ExcelMultiTableReadConfigSerializer implements
             SheetSelection.valueOf(settings.getString(CFG_SHEET_SELECTION, SheetSelection.FIRST.name())));
         excelConfig.setSheetName(settings.getString(CFG_SHEET_NAME, ""));
         excelConfig.setSheetIdx(settings.getInt(CFG_SHEET_INDEX, 0));
-        final DefaultTableReadConfig<?> tableReadConfig = config.getTableReadConfig();
+        excelConfig.setRowIdGeneration(
+            RowIDGeneration.valueOf(settings.getString(CFG_ROW_ID_GENERATION, RowIDGeneration.GENERATE.name())));
+        excelConfig.setRowIDCol(settings.getString(CFG_ROW_ID_COL, "A"));
+        excelConfig.setAreaOfSheetToRead(
+            AreaOfSheetToRead.valueOf(settings.getString(CFG_AREA_OF_SHEET_TO_READ, AreaOfSheetToRead.ENTIRE.name())));
+        excelConfig.setReadFromCol(settings.getString(CFG_READ_FROM_COL, "A"));
+        excelConfig.setReadToCol(settings.getString(CFG_READ_TO_COL, ""));
+        excelConfig.setReadFromRow(settings.getString(CFG_READ_FROM_ROW, "1"));
+        excelConfig.setReadToRow(settings.getString(CFG_READ_TO_ROW, ""));
+        final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = config.getTableReadConfig();
+        tableReadConfig.setUseColumnHeaderIdx(settings.getBoolean(CFG_HAS_COLUMN_HEADER, true));
+        tableReadConfig.setColumnHeaderIdx(settings.getLong(CFG_COLUMN_HEADER_ROW_NUMBER, 1) - 1);
         tableReadConfig.setAllowShortRows(true);
         tableReadConfig.setLimitRowsForSpec(false);
-        tableReadConfig.setUseColumnHeaderIdx(settings.getBoolean(CFG_HAS_COLUMN_HEADER, true));
-        tableReadConfig.setColumnHeaderIdx(settings.getLong(CFG_COLUMN_HEADER_ROW_IDX, 1) - 1);
     }
 
     private static void loadSettingsTabInModel(
@@ -190,31 +213,56 @@ enum ExcelMultiTableReadConfigSerializer implements
         excelConfig.setSheetSelection(SheetSelection.loadValueInModel(settings.getString(CFG_SHEET_SELECTION)));
         excelConfig.setSheetName(settings.getString(CFG_SHEET_NAME));
         excelConfig.setSheetIdx(settings.getInt(CFG_SHEET_INDEX));
-        final DefaultTableReadConfig<?> tableReadConfig = config.getTableReadConfig();
-        tableReadConfig.setAllowShortRows(true);
-        tableReadConfig.setLimitRowsForSpec(false);
+        excelConfig
+            .setAreaOfSheetToRead(AreaOfSheetToRead.loadValueInModel(settings.getString(CFG_AREA_OF_SHEET_TO_READ)));
+        excelConfig.setRowIdGeneration(RowIDGeneration.valueOf(settings.getString(CFG_ROW_ID_GENERATION)));
+        excelConfig.setRowIDCol(settings.getString(CFG_ROW_ID_COL));
+        excelConfig.setReadFromCol(settings.getString(CFG_READ_FROM_COL));
+        excelConfig.setReadToCol(settings.getString(CFG_READ_TO_COL));
+        excelConfig.setReadFromRow(settings.getString(CFG_READ_FROM_ROW));
+        excelConfig.setReadToRow(settings.getString(CFG_READ_TO_ROW));
+        final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = config.getTableReadConfig();
         tableReadConfig.setUseColumnHeaderIdx(settings.getBoolean(CFG_HAS_COLUMN_HEADER));
-        tableReadConfig.setColumnHeaderIdx(settings.getLong(CFG_COLUMN_HEADER_ROW_IDX) - 1);
+        tableReadConfig.setColumnHeaderIdx(settings.getLong(CFG_COLUMN_HEADER_ROW_NUMBER) - 1);
+        tableReadConfig.setAllowShortRows(true);
+        tableReadConfig.setLimitRowsForSpec(true);
+        tableReadConfig.setUseRowIDIdx(excelConfig.getRowIdGeneration() == RowIDGeneration.COLUMN);
+        tableReadConfig.setRowIDIdx(0);
+        tableReadConfig.setDecorateRead(false);
     }
 
     private static void saveSettingsTab(
         final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> config,
         final NodeSettingsWO settings) {
+        final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = config.getTableReadConfig();
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
         settings.addString(CFG_SHEET_SELECTION, excelConfig.getSheetSelection().name());
         settings.addString(CFG_SHEET_NAME, excelConfig.getSheetName());
         settings.addInt(CFG_SHEET_INDEX, excelConfig.getSheetIdx());
-        final DefaultTableReadConfig<?> tableReadConfig = config.getTableReadConfig();
         settings.addBoolean(CFG_HAS_COLUMN_HEADER, tableReadConfig.useColumnHeaderIdx());
-        settings.addLong(CFG_COLUMN_HEADER_ROW_IDX, tableReadConfig.getColumnHeaderIdx() + 1);
+        settings.addLong(CFG_COLUMN_HEADER_ROW_NUMBER, tableReadConfig.getColumnHeaderIdx() + 1);
+        settings.addString(CFG_ROW_ID_GENERATION, excelConfig.getRowIdGeneration().name());
+        settings.addString(CFG_ROW_ID_COL, excelConfig.getRowIDCol());
+        settings.addString(CFG_AREA_OF_SHEET_TO_READ, excelConfig.getAreaOfSheetToRead().name());
+        settings.addString(CFG_READ_FROM_COL, excelConfig.getReadFromCol());
+        settings.addString(CFG_READ_TO_COL, excelConfig.getReadToCol());
+        settings.addString(CFG_READ_FROM_ROW, excelConfig.getReadFromRow());
+        settings.addString(CFG_READ_TO_ROW, excelConfig.getReadToRow());
     }
 
     public static void validateSettingsTab(final NodeSettingsRO settings) throws InvalidSettingsException {
-        settings.getString(CFG_SHEET_SELECTION);
+        SheetSelection.loadValueInModel(settings.getString(CFG_SHEET_SELECTION));
         settings.getString(CFG_SHEET_NAME);
         settings.getInt(CFG_SHEET_INDEX);
         settings.getBoolean(CFG_HAS_COLUMN_HEADER);
-        settings.getLong(CFG_COLUMN_HEADER_ROW_IDX);
+        settings.getLong(CFG_COLUMN_HEADER_ROW_NUMBER);
+        RowIDGeneration.valueOf(settings.getString(CFG_ROW_ID_GENERATION));
+        settings.getString(CFG_ROW_ID_COL);
+        AreaOfSheetToRead.loadValueInModel(settings.getString(CFG_AREA_OF_SHEET_TO_READ));
+        settings.getString(CFG_READ_FROM_COL);
+        settings.getString(CFG_READ_TO_COL);
+        settings.getString(CFG_READ_FROM_ROW);
+        settings.getString(CFG_READ_TO_ROW);
     }
 
     private static void loadAdvancedSettingsTabInDialog(
@@ -245,8 +293,8 @@ enum ExcelMultiTableReadConfigSerializer implements
         excelConfig.setSkipHiddenCols(settings.getBoolean(CFG_SKIP_HIDDEN_COLS));
         excelConfig.setSkipHiddenRows(settings.getBoolean(CFG_SKIP_HIDDEN_ROWS));
         excelConfig.setReevaluateFormulas(settings.getBoolean(CFG_REEVALUATE_FORMULAS));
-        excelConfig
-            .setFormulaErrorHandling(FormulaErrorHandling.valueOf(settings.getString(CFG_FORMULA_ERROR_HANDLING)));
+        excelConfig.setFormulaErrorHandling(
+            FormulaErrorHandling.loadValueInModel(settings.getString(CFG_FORMULA_ERROR_HANDLING)));
         excelConfig.setErrorPattern(settings.getString(CFG_FORMULA_ERROR_PATTERN));
     }
 

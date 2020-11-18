@@ -66,11 +66,16 @@ import org.knime.core.node.ExecutionMonitor;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelRead;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelUtils;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.WrapperExtractColumnHeaderRead;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.xls.XLSRead;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.xlsx.XLSXRead;
 import org.knime.filehandling.core.node.table.reader.TableReader;
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
 import org.knime.filehandling.core.node.table.reader.read.Read;
+import org.knime.filehandling.core.node.table.reader.read.SkipIdxRead;
+import org.knime.filehandling.core.node.table.reader.spec.DefaultExtractColumnHeaderRead;
+import org.knime.filehandling.core.node.table.reader.spec.ExtractColumnHeaderRead;
 import org.knime.filehandling.core.node.table.reader.spec.TableSpecGuesser;
 import org.knime.filehandling.core.node.table.reader.spec.TypedReaderTableSpec;
 import org.knime.filehandling.core.node.table.reader.type.hierarchy.TreeTypeHierarchy;
@@ -92,12 +97,14 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
     /** Contains the names of the sheets as keys and whether it is the first non-empty sheet as value. */
     private Map<String, Boolean> m_sheetNames;
 
+    @SuppressWarnings("resource") // decorated read will be closed in AbstractReadDecorator#close
     @Override
     public Read<ExcelCell> read(final Path path, final TableReadConfig<ExcelTableReaderConfig> config)
         throws IOException {
-        return getExcelRead(path, config);
+        return decorateRead(getExcelRead(path, config), config);
     }
 
+    @SuppressWarnings("resource") // decorated read will be closed in AbstractReadDecorator#close
     @Override
     public TypedReaderTableSpec<KNIMECellType> readSpec(final Path path,
         final TableReadConfig<ExcelTableReaderConfig> config, final ExecutionMonitor exec) throws IOException {
@@ -106,8 +113,29 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
             // sheet names are already retrieved, notify a potential listener from the dialog
             m_sheetNames = read.getSheetNames();
             notifyChangeListener();
-            return guesser.guessSpec(read, config, exec);
+            return ExcelUtils.assignNamesIfMissing(
+                guesser.guessSpec(decorateReadForSpecGuessing(read, config), config, exec), config,
+                read.getHiddenColumns());
         }
+    }
+
+    @SuppressWarnings("resource") // decorated reads will be closed in AbstractReadDecorator#close
+    private static Read<ExcelCell> decorateRead(final ExcelRead excelRead,
+        final TableReadConfig<ExcelTableReaderConfig> config) {
+        Read<ExcelCell> read = excelRead;
+        if (config.useColumnHeaderIdx()) {
+            read = new SkipIdxRead<>(read, config.getColumnHeaderIdx());
+        }
+        return ExcelUtils.decorateRowFilterReads(read, config);
+    }
+
+    @SuppressWarnings("resource") // decorated reads will be closed in AbstractReadDecorator#close
+    private static ExtractColumnHeaderRead<ExcelCell> decorateReadForSpecGuessing(final ExcelRead excelRead,
+        final TableReadConfig<ExcelTableReaderConfig> config) {
+        final ExtractColumnHeaderRead<ExcelCell> extractColHeaderRead =
+            new DefaultExtractColumnHeaderRead<>(excelRead, config);
+        final Read<ExcelCell> read = ExcelUtils.decorateRowFilterReads(extractColHeaderRead, config);
+        return new WrapperExtractColumnHeaderRead<>(read, extractColHeaderRead::getColumnHeaders);
     }
 
     private static ExcelRead getExcelRead(final Path path, final TableReadConfig<ExcelTableReaderConfig> config)

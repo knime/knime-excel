@@ -64,12 +64,14 @@ import javax.swing.ButtonGroup;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JSpinner;
 import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingConstants;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -162,9 +164,42 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
 
     private final JTextField m_formulaErrorPattern = new JTextField();
 
+    private final JRadioButton m_radioButtonReadEntireSheet =
+        new JRadioButton(AreaOfSheetToRead.ENTIRE.getText(), true);
+
+    private final JRadioButton m_radioButtonReadPartOfSheet = new JRadioButton(AreaOfSheetToRead.PARTIAL.getText());
+
+    private final ButtonGroup m_buttonGroupSheetArea = new ButtonGroup();
+
+    private final JLabel m_fromColLabel = new JLabel("columns from");
+
+    private final JLabel m_toColLabel = new JLabel("to");
+
+    private final JLabel m_andLabel = new JLabel("and");
+
+    private final JLabel m_fromRowLabel = new JLabel("rows from");
+
+    private final JLabel m_toRowLabel = new JLabel("to");
+
+    private final JTextField m_fromCol = new JTextField("A");
+
+    private final JTextField m_toCol = new JTextField();
+
+    private final JTextField m_fromRow = new JTextField("1");
+
+    private final JTextField m_toRow = new JTextField();
+
+    private final JRadioButton m_radioButtonGenerateRowIDs = new JRadioButton(RowIDGeneration.GENERATE.getText(), true);
+
+    private final JRadioButton m_radioButtonReadRowIDsFromCol = new JRadioButton(RowIDGeneration.COLUMN.getText());
+
+    private final ButtonGroup m_buttonGrouprowIDGeneration = new ButtonGroup();
+
+    private final JTextField m_rowIDColumn = new JTextField("A");
+
     ExcelTableReaderNodeDialog(final SettingsModelReaderFileChooser settingsModelReaderFileChooser,
-        final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> config,
-        final ExcelTableReader tableReader,
+        final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> //
+        config, final ExcelTableReader tableReader,
         final MultiTableReadFactory<ExcelTableReaderConfig, KNIMECellType> readFactory,
         final ProductionPathProvider<KNIMECellType> defaultProductionPathProvider) {
         super(readFactory, defaultProductionPathProvider, true);
@@ -188,6 +223,10 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         m_sheetSelectionButtonGroup.add(m_radioButtonSheetByIndex);
         m_buttonGroupFormulaError.add(m_radioButtonInsertErrorPattern);
         m_buttonGroupFormulaError.add(m_radioButtonInsertMissingCell);
+        m_buttonGroupSheetArea.add(m_radioButtonReadEntireSheet);
+        m_buttonGroupSheetArea.add(m_radioButtonReadPartOfSheet);
+        m_buttonGrouprowIDGeneration.add(m_radioButtonGenerateRowIDs);
+        m_buttonGrouprowIDGeneration.add(m_radioButtonReadRowIDsFromCol);
 
         addTab("Settings", createGeneralSettingsTab());
         addTab("Transformation", createTransformationTab());
@@ -209,8 +248,28 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
             m_columnHeaderNoteLabel.setEnabled(m_columnHeaderCheckBox.isSelected());
         });
 
-        m_radioButtonInsertErrorPattern
-            .addChangeListener(l -> m_formulaErrorPattern.setEnabled(m_radioButtonInsertErrorPattern.isEnabled()));
+        m_radioButtonInsertErrorPattern.addChangeListener(l -> {
+            m_formulaErrorPattern.setEnabled(m_radioButtonInsertErrorPattern.isSelected());
+        });
+
+        m_radioButtonReadPartOfSheet.addChangeListener(l -> setEnablednessReadPartOfSheetFields());
+
+        m_radioButtonReadRowIDsFromCol.addChangeListener(l -> {
+            m_rowIDColumn.setEnabled(m_radioButtonReadRowIDsFromCol.isSelected());
+        });
+    }
+
+    private void setEnablednessReadPartOfSheetFields() {
+        final boolean selected = m_radioButtonReadPartOfSheet.isSelected();
+        m_fromColLabel.setEnabled(selected);
+        m_fromCol.setEnabled(selected);
+        m_toColLabel.setEnabled(selected);
+        m_toCol.setEnabled(selected);
+        m_andLabel.setEnabled(selected);
+        m_fromRowLabel.setEnabled(selected);
+        m_fromRow.setEnabled(selected);
+        m_toRowLabel.setEnabled(selected);
+        m_toRow.setEnabled(selected);
     }
 
     private void configChanged(final boolean updateSheets) {
@@ -300,11 +359,67 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
             .setPreferredSize(new Dimension((int)m_columnHeaderNoteLabel.getPreferredSize().getWidth(),
                 (int)m_columnHeaderCheckBox.getPreferredSize().getHeight()));
         panel.add(m_columnHeaderCheckBox, gbcBuilder.build());
-        m_columnHeaderSpinner
-            .setPreferredSize(new Dimension(75, (int)m_columnHeaderSpinner.getPreferredSize().getHeight()));
+        setWidthTo(m_columnHeaderSpinner, 75);
         panel.add(m_columnHeaderSpinner, gbcBuilder.incX().build());
         panel.add(m_columnHeaderNoteLabel, gbcBuilder.incX().setWeightX(1).build());
         return panel;
+    }
+
+    private JPanel createRowIDPanel() {
+        final JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Row ID"));
+        final GBCBuilder gbcBuilder = new GBCBuilder(new Insets(5, 5, 0, 0)).resetPos().anchorFirstLineStart();
+
+        panel.add(m_radioButtonGenerateRowIDs, gbcBuilder.build());
+        panel.add(m_radioButtonReadRowIDsFromCol, gbcBuilder.incY().setInsets(new Insets(5, 5, 5, 0)).build());
+        setWidthTo(m_rowIDColumn, 50);
+        panel.add(m_rowIDColumn, gbcBuilder.incX().setWeightX(1).build());
+        return panel;
+    }
+
+    private JPanel createSheetAreaPanel() {
+        final JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Sheet area"));
+        final Insets insets = new Insets(5, 5, 0, 0);
+        final GBCBuilder gbcBuilder = new GBCBuilder(insets).resetPos().anchorFirstLineStart();
+
+        m_columnHeaderNoteLabel
+            .setPreferredSize(new Dimension((int)m_columnHeaderNoteLabel.getPreferredSize().getWidth(),
+                (int)m_columnHeaderCheckBox.getPreferredSize().getHeight()));
+        panel.add(m_radioButtonReadEntireSheet, gbcBuilder.setWidth(5).build());
+        panel.add(m_radioButtonReadPartOfSheet, gbcBuilder.incY().setWidth(1).build());
+
+        setHeightToComponentHeight(m_fromColLabel, m_radioButtonReadPartOfSheet);
+        setHeightToComponentHeight(m_toColLabel, m_radioButtonReadPartOfSheet);
+        setHeightToComponentHeight(m_andLabel, m_radioButtonReadPartOfSheet);
+        setWidthTo(m_fromCol, 50);
+        setWidthTo(m_toCol, 50);
+        setWidthTo(m_fromRow, 50);
+        setWidthTo(m_toRow, 50);
+
+        panel.add(m_fromColLabel, gbcBuilder.incX().setInsets(new Insets(5, 0, 0, 5)).build());
+        panel.add(m_fromCol, gbcBuilder.incX().build());
+        panel.add(m_toColLabel, gbcBuilder.incX().build());
+        panel.add(m_toCol, gbcBuilder.incX().build());
+        panel.add(m_andLabel, gbcBuilder.incX().setWeightX(1).build());
+        m_fromRowLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+        m_fromRowLabel.setPreferredSize(new Dimension((int)m_fromColLabel.getPreferredSize().getWidth(),
+            (int)m_fromRowLabel.getPreferredSize().getHeight()));
+        panel.add(m_fromRowLabel,
+            gbcBuilder.incY().resetX().incX().setWeightX(0).setInsets(new Insets(5, 0, 5, 5)).build());
+        panel.add(m_fromRow, gbcBuilder.incX().build());
+        panel.add(m_toRowLabel, gbcBuilder.incX().build());
+        panel.add(m_toRow, gbcBuilder.incX().build());
+        return panel;
+    }
+
+    static void setHeightToComponentHeight(final JComponent compHeightToSet, final JComponent refComp) {
+        compHeightToSet.setPreferredSize(new Dimension((int)compHeightToSet.getPreferredSize().getWidth(),
+            (int)refComp.getPreferredSize().getHeight()));
+    }
+
+    static void setWidthTo(final JComponent comp, final int width) {
+        comp.setPreferredSize(new Dimension(width, (int)comp.getPreferredSize().getHeight()));
     }
 
     private final JPanel createGeneralSettingsTab() {
@@ -313,6 +428,8 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         panel.add(createFilePanel(), gbcBuilder.build());
         panel.add(createSheetSelectionPanel(), gbcBuilder.incY().build());
         panel.add(createColumnHeaderPanel(), gbcBuilder.incY().build());
+        panel.add(createRowIDPanel(), gbcBuilder.incY().build());
+        panel.add(createSheetAreaPanel(), gbcBuilder.incY().build());
         panel.add(createPreview(), gbcBuilder.incY().fillBoth().setWeightY(1).build());
         return panel;
     }
@@ -345,8 +462,7 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Formula error handling"));
         final GBCBuilder gbcBuilder = new GBCBuilder(new Insets(5, 5, 0, 5)).resetPos().anchorFirstLineStart();
         panel.add(m_radioButtonInsertErrorPattern, gbcBuilder.build());
-        m_formulaErrorPattern
-            .setPreferredSize(new Dimension(150, (int)m_formulaErrorPattern.getPreferredSize().getHeight()));
+        setWidthTo(m_formulaErrorPattern, 150);
         panel.add(m_formulaErrorPattern, gbcBuilder.incX().setWeightX(1).setInsets(new Insets(7, 0, 0, 5)).build());
         panel.add(m_radioButtonInsertMissingCell,
             gbcBuilder.setWeightX(0).resetX().incY().setInsets(new Insets(5, 5, 5, 5)).build());
@@ -385,6 +501,10 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         m_reevaluateFormulas.addActionListener(actionListener);
         m_radioButtonInsertErrorPattern.addActionListener(actionListener);
         m_radioButtonInsertMissingCell.addActionListener(actionListener);
+        m_radioButtonReadEntireSheet.addActionListener(actionListener);
+        m_radioButtonReadPartOfSheet.addActionListener(actionListener);
+        m_radioButtonGenerateRowIDs.addActionListener(actionListener);
+        m_radioButtonReadRowIDsFromCol.addActionListener(actionListener);
         final ChangeListener changeListener = l -> configChanged(false);
         m_sheetIndexSelection.addChangeListener(changeListener);
         m_columnHeaderSpinner.addChangeListener(changeListener);
@@ -407,6 +527,11 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
             }
         };
         m_formulaErrorPattern.getDocument().addDocumentListener(documentListener);
+        m_fromCol.getDocument().addDocumentListener(documentListener);
+        m_toCol.getDocument().addDocumentListener(documentListener);
+        m_fromRow.getDocument().addDocumentListener(documentListener);
+        m_toRow.getDocument().addDocumentListener(documentListener);
+        m_rowIDColumn.getDocument().addDocumentListener(documentListener);
     }
 
     @Override
@@ -435,20 +560,22 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
     /**
      * Fill in the setting values in {@link TableReadConfig} using values from dialog.
      */
-    private void saveTableReadSettings() {
+    private void saveTableReadSettings() throws InvalidSettingsException {
         m_config.setFailOnDifferingSpecs(m_failOnDifferingSpecs.isSelected());
         final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = m_config.getTableReadConfig();
-        tableReadConfig.setUseRowIDIdx(false);
+        tableReadConfig.setUseRowIDIdx(m_radioButtonReadRowIDsFromCol.isSelected());
+        tableReadConfig.setRowIDIdx(0);
+        tableReadConfig.setSkipEmptyRows(m_skipEmptyRows.isSelected());
         tableReadConfig.setUseColumnHeaderIdx(m_columnHeaderCheckBox.isSelected());
         tableReadConfig.setColumnHeaderIdx((long)m_columnHeaderSpinner.getValue() - 1);
         tableReadConfig.setLimitRowsForSpec(false);
-        tableReadConfig.setSkipEmptyRows(m_skipEmptyRows.isSelected());
+        tableReadConfig.setDecorateRead(false);
     }
 
     /**
      * Fill in the setting values in {@link ExcelTableReaderConfig} using values from dialog.
      */
-    private void saveExcelReadSettings() {
+    private void saveExcelReadSettings() throws InvalidSettingsException {
         final ExcelTableReaderConfig excelConfig = m_config.getReaderSpecificConfig();
         excelConfig.setUse15DigitsPrecision(m_use15DigitsPrecision.isSelected());
         if (m_radioButtonSheetByName.isSelected()) {
@@ -469,6 +596,29 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
             excelConfig.setFormulaErrorHandling(FormulaErrorHandling.PATTERN);
         }
         excelConfig.setErrorPattern(m_formulaErrorPattern.getText());
+        if (m_radioButtonReadPartOfSheet.isSelected()) {
+            excelConfig.setAreaOfSheetToRead(AreaOfSheetToRead.PARTIAL);
+        } else {
+            excelConfig.setAreaOfSheetToRead(AreaOfSheetToRead.ENTIRE);
+        }
+
+        if (m_radioButtonReadRowIDsFromCol.isSelected()) {
+            excelConfig.setRowIdGeneration(RowIDGeneration.COLUMN);
+        } else {
+            excelConfig.setRowIdGeneration(RowIDGeneration.GENERATE);
+        }
+        try {
+            excelConfig.setRowIDCol(m_rowIDColumn.getText());
+            excelConfig.setReadFromCol(m_fromCol.getText());
+            excelConfig.setReadToCol(m_toCol.getText());
+            ExcelUtils.validateColIndexes(excelConfig.getReadFromCol(), excelConfig.getReadToCol());
+            excelConfig.setReadFromRow(m_fromRow.getText());
+            excelConfig.setReadToRow(m_toRow.getText());
+            ExcelUtils.validateRowIndexes(excelConfig.getReadFromRow(), excelConfig.getReadToRow());
+            ExcelUtils.getRowIdColIdx(excelConfig.getRowIDCol());
+        } catch (IllegalArgumentException e) { // NOSONAR re-throw as InvalidSettingsException
+            throw new InvalidSettingsException(e.getMessage());
+        }
     }
 
     /**
@@ -477,9 +627,10 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
     private void loadTableReadSettings() {
         m_failOnDifferingSpecs.setSelected(m_config.failOnDifferingSpecs());
         final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = m_config.getTableReadConfig();
-        m_columnHeaderCheckBox.setSelected(tableReadConfig.useColumnHeaderIdx());
-        m_columnHeaderSpinner.setValue(Long.valueOf(tableReadConfig.getColumnHeaderIdx() + 1));
         m_skipEmptyRows.setSelected(tableReadConfig.skipEmptyRows());
+        m_columnHeaderCheckBox.setSelected(tableReadConfig.useColumnHeaderIdx());
+        m_columnHeaderSpinner.setValue(tableReadConfig.getColumnHeaderIdx() + 1);
+        m_radioButtonReadRowIDsFromCol.setSelected(tableReadConfig.useRowIDIdx());
     }
 
     /**
@@ -516,6 +667,32 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
                 break;
         }
         m_formulaErrorPattern.setText(excelConfig.getErrorPattern());
+        switch (excelConfig.getAreaOfSheetToRead()) {
+            case PARTIAL:
+                m_radioButtonReadPartOfSheet.setSelected(true);
+                break;
+            case ENTIRE:
+            default:
+                m_radioButtonReadEntireSheet.setSelected(true);
+                break;
+        }
+        m_fromCol.setText(excelConfig.getReadFromCol());
+        m_toCol.setText(excelConfig.getReadToCol());
+        m_fromRow.setText(excelConfig.getReadFromRow());
+        m_toRow.setText(excelConfig.getReadToRow());
+        setEnablednessReadPartOfSheetFields();
+
+        switch (excelConfig.getRowIdGeneration()) {
+            case COLUMN:
+                m_radioButtonReadRowIDsFromCol.setSelected(true);
+                break;
+            case GENERATE:
+            default:
+                m_radioButtonGenerateRowIDs.setSelected(true);
+                break;
+        }
+        m_rowIDColumn.setText(excelConfig.getRowIDCol());
+        m_rowIDColumn.setEnabled(m_radioButtonReadRowIDsFromCol.isSelected());
     }
 
     @Override

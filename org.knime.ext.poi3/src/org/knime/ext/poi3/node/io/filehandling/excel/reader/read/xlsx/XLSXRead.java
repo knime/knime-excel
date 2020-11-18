@@ -52,9 +52,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.Set;
 
 import javax.xml.parsers.ParserConfigurationException;
 
@@ -75,6 +77,7 @@ import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCellUtils;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelParserRunnable;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelRead;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelUtils;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.VisibilityAwareRandomAccessible;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.xlsx.KNIMEXSSFSheetXMLHandler.AbstractKNIMESheetContentsHandler;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.xlsx.KNIMEXSSFSheetXMLHandler.KNIMEXSSFDataType;
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
@@ -113,6 +116,8 @@ public final class XLSXRead extends ExcelRead {
     private long m_sheetSize;
 
     private Map<String, Boolean> m_sheetNames;
+
+    private Set<Integer> m_hiddenColumns;
 
     @Override
     public ExcelParserRunnable createParser(final InputStream inputStream) throws IOException {
@@ -172,6 +177,11 @@ public final class XLSXRead extends ExcelRead {
     }
 
     @Override
+    public Set<Integer> getHiddenColumns() {
+        return m_hiddenColumns;
+    }
+
+    @Override
     public void closeResources() throws IOException {
         if (m_countingSheetStream != null) {
             m_countingSheetStream.close();
@@ -222,63 +232,71 @@ public final class XLSXRead extends ExcelRead {
 
         class ExcelTableReaderSheetContentsHandler extends AbstractKNIMESheetContentsHandler {
 
-            private int m_currentRow = -1;
+            private int m_currentRowIdx = -1;
 
-            private int m_lastNonEmptyRow = 0;
+            private int m_lastNonEmptyRowIdx = -1;
 
             private int m_currentCol = -1;
 
             private boolean m_currentRowIsHiddenAndSkipped;
 
-            private int m_numHiddenRowsEncountered = 0;
+            private final List<ExcelCell> m_row = new ArrayList<>();
 
-            private final ArrayList<ExcelCell> m_row = new ArrayList<>();
+            private ExcelCell m_rowId;
 
             @Override
-            public void startRow(final int rowNum) {
+            public void startRow(final int rowIdx) {
                 m_currentRowIsHiddenAndSkipped = m_skipHiddenRows && isHiddenRow();
-                m_currentRow = rowNum;
+                m_currentRowIdx = rowIdx;
                 m_currentCol = -1;
             }
 
             @Override
-            public void endRow(final int rowNum) {
-                if (m_currentRowIsHiddenAndSkipped) {
-                    m_numHiddenRowsEncountered++;
-                } else if (!m_row.isEmpty()) {
+            public void endRow(final int rowIdx) {
+                if (!isRowEmpty(m_row)) {
                     // if there were empty rows in between two non-empty rows, output these (we need to make sure that
-                    // there is a non-empty row after an empty row); subtract potential hidden rows
-                    outputEmptyRows(m_currentRow - m_lastNonEmptyRow - m_numHiddenRowsEncountered - 1);
-                    m_numHiddenRowsEncountered = 0;
-                    m_lastNonEmptyRow = m_currentRow;
+                    // there is a non-empty row after an empty row)
+                    outputEmptyRows(m_currentRowIdx - m_lastNonEmptyRowIdx - 1);
+                    m_lastNonEmptyRowIdx = m_currentRowIdx;
+                    m_hiddenColumns = getHiddenCols();
+                    // insert the row id at the beginning
+                    insertRowIDAtBeginning(m_row, m_rowId);
                     // add the non-empty row the the queue
-                    addToQueue(RandomAccessibleUtils.createFromArrayUnsafe(m_row.toArray(new ExcelCell[0])));
-                    m_row.clear();
+                    addToQueue(VisibilityAwareRandomAccessible.createUnsafe(
+                        RandomAccessibleUtils.createFromArrayUnsafe(m_row.toArray(new ExcelCell[0])),
+                        m_currentRowIsHiddenAndSkipped));
                 }
+                m_rowId = null;
+                m_row.clear();
             }
 
             @Override
             public void cell(String cellReference, final String formattedValue, final XSSFComment comment) {
-                if (!m_currentRowIsHiddenAndSkipped) {
-                    m_currentCol++;
-                    if (cellReference == null) {
-                        // gracefully handle missing CellRef here in a similar way as XSSFCell does.
-                        // according to the API description the cellReference argument shouldn't be null,
-                        // though it can be for files created by third party software (see e.g. AP-9380)
-                        cellReference = new CellAddress(m_currentRow, m_currentCol).formatAsString();
-                    }
+                m_currentCol++;
+                if (cellReference == null) {
+                    // gracefully handle missing CellRef here in a similar way as XSSFCell does.
+                    // according to the API description the cellReference argument shouldn't be null,
+                    // though it can be for files created by third party software (see e.g. AP-9380)
+                    cellReference = new CellAddress(m_currentRowIdx, m_currentCol).formatAsString();
+                }
 
-                    // check if cells were missing and insert null if so
-                    m_currentCol = handleMissingCells(cellReference);
+                final int currentColCount = m_currentCol;
+                m_currentCol = new CellReference(cellReference).getCol();
 
-                    // check if column is hidden and if such columns should be skipped
-                    if (m_skipHiddenCols && getHiddenCols().contains(m_currentCol)) {
-                        // reset the data formatter's excel cell
-                        m_dataFormatter.getAndResetExcelCell();
-                    } else {
-                        final Optional<ExcelCell> numericCell = m_dataFormatter.getAndResetExcelCell();
-                        m_row.add(numericCell.orElseGet(() -> createExcelCellFromStringValue(formattedValue)));
+                final Optional<ExcelCell> numericCell = m_dataFormatter.getAndResetExcelCell();
+                final ExcelCell excelCell = numericCell.orElseGet(() -> createExcelCellFromStringValue(formattedValue));
+                if (!isColHiddenAndSkipped(m_currentCol, getHiddenCols())) {
+                    if (isColRowID(m_currentCol)) {
+                        // check if cells were missing and insert nulls if so
+                        handleMissingCells(cellReference, currentColCount);
+                        m_rowId = excelCell;
+                    } else if (isColIncluded(m_currentCol)) {
+                        // check if cells were missing and insert nulls if so
+                        handleMissingCells(cellReference, currentColCount);
+                        m_row.add(excelCell);
                     }
+                } else if (isColRowID(m_currentCol)) {
+                    m_rowId = excelCell;
                 }
             }
 
@@ -310,19 +328,20 @@ public final class XLSXRead extends ExcelRead {
                 // do nothing, we do not treat header and footer
             }
 
-            private int handleMissingCells(final String cellReference) {
+            private void handleMissingCells(final String cellReference, final int currentColCount) {
                 final int thisCol = new CellReference(cellReference).getCol();
-                final int missedCols = thisCol - m_currentCol;
-                int currentCol = m_currentCol;
-                for (int i = 0; i < missedCols; i++) {
-                    currentCol++;
-                    if (!(m_skipHiddenCols && getHiddenCols().contains(currentCol))) {
+                final int missedCols = thisCol - currentColCount;
+                for (int currentCol = currentColCount; currentCol < currentColCount + missedCols; currentCol++) {
+                    if (isColIncluded(currentCol) && !isColHiddenAndSkipped(currentCol, getHiddenCols())
+                        && !isColRowID(currentCol)) {
                         m_row.add(null);
                     }
                 }
-                return thisCol;
             }
 
+            private boolean isColHiddenAndSkipped(final int col, final Set<Integer> hiddenCols) {
+                return m_skipHiddenCols && hiddenCols.contains(col);
+            }
         }
     }
 

@@ -64,6 +64,7 @@ import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelUtils;
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
  */
 public enum SheetSelection implements ButtonGroupEnumInterface {
+
         /** Select first sheet with data. */
         FIRST("Select first sheet with data", SheetSelection::getFirstSheetWithData),
         /** Select sheet by name. */

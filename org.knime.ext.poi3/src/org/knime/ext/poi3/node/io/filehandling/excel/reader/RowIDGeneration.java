@@ -52,20 +52,20 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.util.ButtonGroupEnumInterface;
 
 /**
- * Enumeration of formula error handling settings.
+ * Enumeration of row ID generation settings.
  *
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
  */
-public enum FormulaErrorHandling implements ButtonGroupEnumInterface {
+public enum RowIDGeneration implements ButtonGroupEnumInterface {
 
-        /** Insert an error pattern. */
-        PATTERN("Insert an error pattern"),
-        /** Insert a missing cell. */
-        MISSING("Insert a missing cell");
+        /** Generate row IDs. */
+        GENERATE("Generate row IDs"),
+        /** Table contains row IDs in column. */
+        COLUMN("Table contains row IDs in column");
 
     private final String m_text;
 
-    private FormulaErrorHandling(final String text) {
+    private RowIDGeneration(final String text) {
         m_text = text;
     }
 
@@ -86,15 +86,15 @@ public enum FormulaErrorHandling implements ButtonGroupEnumInterface {
 
     @Override
     public boolean isDefault() {
-        return this == PATTERN;
+        return this == GENERATE;
     }
 
-    static FormulaErrorHandling loadValueInModel(final String s) throws InvalidSettingsException {
+    static RowIDGeneration loadValueInModel(final String s) throws InvalidSettingsException {
         try {
             return valueOf(s);
         } catch (IllegalArgumentException e) {
             throw new InvalidSettingsException(
-                "No formula error handling setting '" + s + "' available. See node description.");
+                "No row ID generation setting '" + s + "' available. See node description.");
         }
     }
 

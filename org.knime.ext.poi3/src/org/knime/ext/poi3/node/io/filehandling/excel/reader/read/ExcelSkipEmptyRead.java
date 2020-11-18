@@ -44,58 +44,55 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Nov 5, 2020 (Simon Schmid, KNIME GmbH, Konstanz, Germany): created
+ *   Nov 16, 2020 (Simon Schmid, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.reader;
+package org.knime.ext.poi3.node.io.filehandling.excel.reader.read;
 
-import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.util.ButtonGroupEnumInterface;
+import java.io.IOException;
+import java.util.Objects;
+
+import org.knime.filehandling.core.node.table.reader.randomaccess.RandomAccessible;
+import org.knime.filehandling.core.node.table.reader.read.AbstractReadDecorator;
+import org.knime.filehandling.core.node.table.reader.read.Read;
 
 /**
- * Enumeration of formula error handling settings.
+ * Skips calls to {@link Read#next()} if the returned {@link RandomAccessible} is empty. Empty means either no values or
+ * only null values in the {@link RandomAccessible}.
  *
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
+ * @param <V> the type of value
  */
-public enum FormulaErrorHandling implements ButtonGroupEnumInterface {
+final class ExcelSkipEmptyRead<V> extends AbstractReadDecorator<V> {
 
-        /** Insert an error pattern. */
-        PATTERN("Insert an error pattern"),
-        /** Insert a missing cell. */
-        MISSING("Insert a missing cell");
+    private boolean m_useRowIdIdx;
 
-    private final String m_text;
-
-    private FormulaErrorHandling(final String text) {
-        m_text = text;
+    /**
+     * Constructor.
+     *
+     * @param source the {@link Read} to decorate
+     * @param useRowIDIdx if a row ID idx is used
+     */
+    ExcelSkipEmptyRead(final Read<V> source, final boolean useRowIDIdx) {
+        super(source);
+        m_useRowIdIdx = useRowIDIdx;
     }
 
+    @SuppressWarnings("resource") // the source is closed in AbstractReadDecorator#close
     @Override
-    public String getText() {
-        return m_text;
-    }
-
-    @Override
-    public String getActionCommand() {
-        return name();
-    }
-
-    @Override
-    public String getToolTip() {
-        return null;
-    }
-
-    @Override
-    public boolean isDefault() {
-        return this == PATTERN;
-    }
-
-    static FormulaErrorHandling loadValueInModel(final String s) throws InvalidSettingsException {
-        try {
-            return valueOf(s);
-        } catch (IllegalArgumentException e) {
-            throw new InvalidSettingsException(
-                "No formula error handling setting '" + s + "' available. See node description.");
+    public RandomAccessible<V> next() throws IOException {
+        RandomAccessible<V> current;
+        while ((current = getSource().next()) != null) {
+            if (m_useRowIdIdx) {
+                // the first element will be the row ID, ignore that one
+                if (current.size() > 1 && current.stream().skip(1).anyMatch(Objects::nonNull)) {
+                    return current;
+                }
+            } else if (current.size() > 0 && current.stream().anyMatch(Objects::nonNull)) {
+                return current;
+            }
         }
+        // reached if getSource().next() returned null
+        return current;
     }
 
 }

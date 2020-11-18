@@ -44,58 +44,45 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Nov 5, 2020 (Simon Schmid, KNIME GmbH, Konstanz, Germany): created
+ *   Nov 16, 2020 (Simon Schmid, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.reader;
+package org.knime.ext.poi3.node.io.filehandling.excel.reader.read;
 
-import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.util.ButtonGroupEnumInterface;
+import java.io.IOException;
+
+import org.knime.filehandling.core.node.table.reader.randomaccess.RandomAccessible;
+import org.knime.filehandling.core.node.table.reader.read.AbstractReadDecorator;
+import org.knime.filehandling.core.node.table.reader.read.Read;
 
 /**
- * Enumeration of formula error handling settings.
+ * Skips calls to {@link Read#next()} if the returned {@link VisibilityAwareRandomAccessible} is hidden.
  *
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
  */
-public enum FormulaErrorHandling implements ButtonGroupEnumInterface {
+final class SkipHiddenRowsRead extends AbstractReadDecorator<ExcelCell> {
 
-        /** Insert an error pattern. */
-        PATTERN("Insert an error pattern"),
-        /** Insert a missing cell. */
-        MISSING("Insert a missing cell");
-
-    private final String m_text;
-
-    private FormulaErrorHandling(final String text) {
-        m_text = text;
+    /**
+     * Constructor.
+     *
+     * @param source the {@link Read} to decorate
+     */
+    SkipHiddenRowsRead(final Read<ExcelCell> source) {
+        super(source);
     }
 
+    @SuppressWarnings("resource") // the source is closed in AbstractReadDecorator#close
     @Override
-    public String getText() {
-        return m_text;
-    }
-
-    @Override
-    public String getActionCommand() {
-        return name();
-    }
-
-    @Override
-    public String getToolTip() {
-        return null;
-    }
-
-    @Override
-    public boolean isDefault() {
-        return this == PATTERN;
-    }
-
-    static FormulaErrorHandling loadValueInModel(final String s) throws InvalidSettingsException {
-        try {
-            return valueOf(s);
-        } catch (IllegalArgumentException e) {
-            throw new InvalidSettingsException(
-                "No formula error handling setting '" + s + "' available. See node description.");
+    public RandomAccessible<ExcelCell> next() throws IOException {
+        RandomAccessible<ExcelCell> current;
+        while ((current = getSource().next()) != null) {
+            // if we are getting a ClassCastException here, it's clearly implementation error
+            // -> skip the instanceof check for performance
+            if (!((VisibilityAwareRandomAccessible<ExcelCell>)current).isHidden()) {
+                return current;
+            }
         }
+        // reached if getSource().next() returned null
+        return current;
     }
 
 }

@@ -52,20 +52,20 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.util.ButtonGroupEnumInterface;
 
 /**
- * Enumeration of formula error handling settings.
+ * Enumeration of sheet area reading settings.
  *
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
  */
-public enum FormulaErrorHandling implements ButtonGroupEnumInterface {
+public enum AreaOfSheetToRead implements ButtonGroupEnumInterface {
 
-        /** Insert an error pattern. */
-        PATTERN("Insert an error pattern"),
-        /** Insert a missing cell. */
-        MISSING("Insert a missing cell");
+        /** Read entire data of the sheet. */
+        ENTIRE("Read entire data of the sheet"),
+        /** Read only data in the specified column and row ranges. */
+        PARTIAL("Read only data in");
 
     private final String m_text;
 
-    private FormulaErrorHandling(final String text) {
+    private AreaOfSheetToRead(final String text) {
         m_text = text;
     }
 
@@ -86,15 +86,14 @@ public enum FormulaErrorHandling implements ButtonGroupEnumInterface {
 
     @Override
     public boolean isDefault() {
-        return this == PATTERN;
+        return this == ENTIRE;
     }
 
-    static FormulaErrorHandling loadValueInModel(final String s) throws InvalidSettingsException {
+    static AreaOfSheetToRead loadValueInModel(final String s) throws InvalidSettingsException {
         try {
             return valueOf(s);
         } catch (IllegalArgumentException e) {
-            throw new InvalidSettingsException(
-                "No formula error handling setting '" + s + "' available. See node description.");
+            throw new InvalidSettingsException("No sheet area setting '" + s + "' available. See node description.");
         }
     }
 
