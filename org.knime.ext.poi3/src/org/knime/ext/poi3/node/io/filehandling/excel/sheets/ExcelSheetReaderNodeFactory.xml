@@ -6,6 +6,10 @@
 	</shortDescription>
 	<fullDescription>
 		<intro>
+			This node reads an excel file and provides the contained sheet names at its output port.<br />
+			The performance of the reader node is limited (due to the underlying library
+			of the Apache POI project). Reading large files takes a very long time and uses a
+			lot of memory (especially files in xlsx format).
 		</intro>
 		<tab name="Settings">
 		<option name="Read from">
