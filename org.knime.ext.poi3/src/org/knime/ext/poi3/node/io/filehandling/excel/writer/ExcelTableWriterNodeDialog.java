@@ -268,7 +268,7 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
             new GBCBuilder().resetX().resetY().anchorLineStart().setWeightX(0).setWeightY(0).fillNone().insetLeft(-3);
         p.add(m_writeRowKey.getComponentPanel(), gbc.build());
 
-        gbc.incY().insetTop(-10);
+        gbc.incY().insetTop(-5);
         p.add(m_writeColHeader.getComponentPanel(), gbc.build());
 
         gbc.incY().setWeightX(1).fillHorizontal();
@@ -316,7 +316,7 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
             .fillNone().setWidth(2).insetLeft(-3);
         p.add(m_autoSize.getComponentPanel(), gbc.build());
 
-        gbc.incY().insetTop(-10).setWidth(1);
+        gbc.incY().insetTop(-5).setWidth(1);
         p.add(m_landscape.getComponentPanel(), gbc.build());
 
         gbc.incX().insetLeft(12);
