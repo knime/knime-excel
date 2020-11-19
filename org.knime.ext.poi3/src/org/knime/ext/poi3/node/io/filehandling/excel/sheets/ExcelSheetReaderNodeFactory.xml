@@ -89,7 +89,7 @@
 			The file system connection.
 		</dynInPort>
 		<outPort index="0" name="Output table">
-			The sheet names contained in the workbook.
+			The sheet names contained in the workbook and the path to the workbook.
 		</outPort>
 	</ports>
 </knimeNode>
