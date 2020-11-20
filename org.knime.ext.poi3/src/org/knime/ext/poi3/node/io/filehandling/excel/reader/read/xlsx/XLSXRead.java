@@ -77,11 +77,9 @@ import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCellUtils;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelParserRunnable;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelRead;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelUtils;
-import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.VisibilityAwareRandomAccessible;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.xlsx.KNIMEXSSFSheetXMLHandler.AbstractKNIMESheetContentsHandler;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.xlsx.KNIMEXSSFSheetXMLHandler.KNIMEXSSFDataType;
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
-import org.knime.filehandling.core.node.table.reader.randomaccess.RandomAccessibleUtils;
 import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTWorkbook;
 import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTWorkbookPr;
 import org.openxmlformats.schemas.spreadsheetml.x2006.main.WorkbookDocument;
@@ -262,9 +260,7 @@ public final class XLSXRead extends ExcelRead {
                     // insert the row id at the beginning
                     insertRowIDAtBeginning(m_row, m_rowId);
                     // add the non-empty row the the queue
-                    addToQueue(VisibilityAwareRandomAccessible.createUnsafe(
-                        RandomAccessibleUtils.createFromArrayUnsafe(m_row.toArray(new ExcelCell[0])),
-                        m_currentRowIsHiddenAndSkipped));
+                    addToQueue(m_row, m_currentRowIsHiddenAndSkipped);
                 }
                 m_rowId = null;
                 m_row.clear();

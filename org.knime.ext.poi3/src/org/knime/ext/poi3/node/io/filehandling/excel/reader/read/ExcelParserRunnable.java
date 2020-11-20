@@ -49,12 +49,14 @@
 package org.knime.ext.poi3.node.io.filehandling.excel.reader.read;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 import org.knime.core.node.NodeLogger;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.AreaOfSheetToRead;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelUtils.ParsingInterruptedException;
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
 import org.knime.filehandling.core.node.table.reader.randomaccess.RandomAccessible;
@@ -90,6 +92,10 @@ public abstract class ExcelParserRunnable implements Runnable {
     /** The index of the last included column or -1 if there is no max limit. */
     protected final int m_lastCol;
 
+    private final boolean m_rawSettings;
+
+    private int m_rowCount = 0;
+
     /**
      * Constructor.
      *
@@ -107,6 +113,7 @@ public abstract class ExcelParserRunnable implements Runnable {
             ? ExcelUtils.getFirstColumnIdx(excelConfig.getReadFromCol()) : 0;
         m_lastCol = excelConfig.getAreaOfSheetToRead() == AreaOfSheetToRead.PARTIAL
             ? ExcelUtils.getLastColumnIdx(excelConfig.getReadToCol()) : -1;
+        m_rawSettings = excelConfig.isUseRawSettings();
     }
 
     @Override
@@ -146,11 +153,17 @@ public abstract class ExcelParserRunnable implements Runnable {
     /**
      * Adds the {@link RandomAccessible} to the blocking queue of the runnable.
      *
-     * @param randomAccessible the {@link RandomAccessible}
+     * @param cells a list of {@link ExcelCell}s
+     * @param isRowHidden if the row is hidden (and hidden rows should be skipped)
      */
-    protected void addToQueue(final RandomAccessible<ExcelCell> randomAccessible) {
+    protected void addToQueue(final List<ExcelCell> cells, final boolean isRowHidden) {
         try {
-            m_read.addToQueue(randomAccessible);
+            if (m_rawSettings) {
+                m_rowCount++;
+                cells.add(0, new ExcelCell(KNIMECellType.INT, m_rowCount));
+            }
+            m_read.addToQueue(VisibilityAwareRandomAccessible.createUnsafe(
+                RandomAccessibleUtils.createFromArrayUnsafe(cells.toArray(new ExcelCell[0])), isRowHidden));
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             LOGGER.debug("Thread parsing an Excel spreadsheet interrupted.");
@@ -166,15 +179,13 @@ public abstract class ExcelParserRunnable implements Runnable {
      */
     protected void outputEmptyRows(final int numMissingsRows) {
         for (int i = 0; i < numMissingsRows; i++) {
-            if (m_rowIdIdx < 0) {
-                addToQueue(
-                    VisibilityAwareRandomAccessible.createUnsafe(RandomAccessibleUtils.createFromArrayUnsafe(), false));
-            } else {
+            final List<ExcelCell> cells = new ArrayList<>();
+            if (m_rowIdIdx >= 0) {
                 // make sure the empty row ID is added
                 final ExcelCell cell = null;
-                addToQueue(VisibilityAwareRandomAccessible
-                    .createUnsafe(RandomAccessibleUtils.createFromArrayUnsafe(cell), false));
+                cells.add(cell);
             }
+            addToQueue(cells, false);
         }
     }
 

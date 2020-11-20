@@ -53,7 +53,9 @@ import java.awt.Font;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -69,9 +71,11 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JSpinner;
+import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
+import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -97,6 +101,9 @@ import org.knime.filehandling.core.node.table.reader.config.DefaultTableReadConf
 import org.knime.filehandling.core.node.table.reader.config.MultiTableReadConfig;
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
 import org.knime.filehandling.core.node.table.reader.preview.dialog.AbstractTableReaderNodeDialog;
+import org.knime.filehandling.core.node.table.reader.preview.dialog.AnalysisComponentModel;
+import org.knime.filehandling.core.node.table.reader.preview.dialog.TableReaderPreviewModel;
+import org.knime.filehandling.core.node.table.reader.preview.dialog.TableReaderPreviewView;
 import org.knime.filehandling.core.util.GBCBuilder;
 import org.knime.filehandling.core.util.SettingsUtils;
 
@@ -197,6 +204,25 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
 
     private final JTextField m_rowIDColumn = new JTextField("A");
 
+    private final JCheckBox m_limitAnalysisChecker = new JCheckBox("Limit data rows scanned", true);
+
+    private final JSpinner m_limitAnalysisSpinner = new JSpinner(
+        new SpinnerNumberModel(Long.valueOf(50), Long.valueOf(1), Long.valueOf(Long.MAX_VALUE), Long.valueOf(50)));
+
+    private List<JTabbedPane> m_tabbedPreviewPaneList = new ArrayList<>();
+
+    private final FileContentPreviewController<ExcelTableReaderConfig, KNIMECellType> m_fileContentPreviewController;
+
+    private final List<TableReaderPreviewView> m_fileContentPreviews = new ArrayList<>();
+
+    private final TableReaderPreviewModel m_previewModel;
+
+    private boolean m_fileChanged = false;
+
+    private boolean m_configChanged = false;
+
+    private boolean m_switchTabInTabbedPanes = false;
+
     ExcelTableReaderNodeDialog(final SettingsModelReaderFileChooser settingsModelReaderFileChooser,
         final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> //
         config, final ExcelTableReader tableReader,
@@ -228,14 +254,23 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         m_buttonGrouprowIDGeneration.add(m_radioButtonGenerateRowIDs);
         m_buttonGrouprowIDGeneration.add(m_radioButtonReadRowIDsFromCol);
 
+        final AnalysisComponentModel analysisComponentModel = new AnalysisComponentModel();
+        m_previewModel = new TableReaderPreviewModel(analysisComponentModel);
+        m_fileContentPreviewController = new FileContentPreviewController<>(readFactory, analysisComponentModel,
+            m_previewModel, this::createItemAccessor);
+
         addTab("Settings", createGeneralSettingsTab());
         addTab("Transformation", createTransformationTab());
-        addTab("Advanced", createAdvancedSettingsTab());
+        addTab("Advanced Settings", createAdvancedSettingsTab());
         registerDialogChangeListeners();
         registerPreviewChangeListeners();
+        registerTabbedPaneChangeListeners();
     }
 
     private void registerDialogChangeListeners() {
+        m_settingsModelFilePanel.addChangeListener(
+            e -> setReadingMultipleFiles(m_settingsModelFilePanel.getFilterMode() != FilterMode.FILE));
+
         m_radioButtonSheetByName.addChangeListener(l -> m_sheetNameSelection
             .setEnabled(m_radioButtonSheetByName.isEnabled() && m_radioButtonSheetByName.isSelected()));
         m_radioButtonSheetByIndex.addChangeListener(l -> m_sheetIndexSelection
@@ -248,15 +283,16 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
             m_columnHeaderNoteLabel.setEnabled(m_columnHeaderCheckBox.isSelected());
         });
 
-        m_radioButtonInsertErrorPattern.addChangeListener(l -> {
-            m_formulaErrorPattern.setEnabled(m_radioButtonInsertErrorPattern.isSelected());
-        });
+        m_radioButtonInsertErrorPattern
+            .addChangeListener(l -> m_formulaErrorPattern.setEnabled(m_radioButtonInsertErrorPattern.isSelected()));
 
         m_radioButtonReadPartOfSheet.addChangeListener(l -> setEnablednessReadPartOfSheetFields());
 
-        m_radioButtonReadRowIDsFromCol.addChangeListener(l -> {
-            m_rowIDColumn.setEnabled(m_radioButtonReadRowIDsFromCol.isSelected());
-        });
+        m_radioButtonReadRowIDsFromCol
+            .addChangeListener(l -> m_rowIDColumn.setEnabled(m_radioButtonReadRowIDsFromCol.isSelected()));
+
+        m_limitAnalysisChecker
+            .addActionListener(e -> m_limitAnalysisSpinner.setEnabled(m_limitAnalysisChecker.isSelected()));
     }
 
     private void setEnablednessReadPartOfSheetFields() {
@@ -273,6 +309,7 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
     }
 
     private void configChanged(final boolean updateSheets) {
+        m_configChanged = false;
         if (updateSheets) {
             m_updatingSheetSelection = true;
             m_tableReader.setChangeListener(l -> {
@@ -430,8 +467,20 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         panel.add(createColumnHeaderPanel(), gbcBuilder.incY().build());
         panel.add(createRowIDPanel(), gbcBuilder.incY().build());
         panel.add(createSheetAreaPanel(), gbcBuilder.incY().build());
-        panel.add(createPreview(), gbcBuilder.incY().fillBoth().setWeightY(1).build());
+        panel.add(createPreviewComponent(), gbcBuilder.incY().fillBoth().setWeightY(1).build());
         return panel;
+    }
+
+    @Override
+    protected JComponent createPreviewComponent() {
+        final JTabbedPane tabbedPane = new JTabbedPane();
+        final TableReaderPreviewView preview = createPreview();
+        preview.setBorder(
+            BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Preview with current settings"));
+        tabbedPane.add("Preview", preview);
+        tabbedPane.add("File content", createFileContentPreview());
+        m_tabbedPreviewPaneList.add(tabbedPane);
+        return tabbedPane;
     }
 
     private JPanel createAdvancedSettingsTab() {
@@ -439,8 +488,9 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         final GBCBuilder gbcBuilder = new GBCBuilder().resetPos().anchorFirstLineStart().setWeightX(1).fillHorizontal();
         panel.add(createAdvancedReaderOptionsPanel(), gbcBuilder.build());
         panel.add(createFormulaEvaluationErrorOptionsPanel(), gbcBuilder.incY().build());
+        panel.add(createDataRowsSpecLimitPanel(), gbcBuilder.incY().build());
         panel.add(createSpecFailingOptionsPanel(), gbcBuilder.incY().build());
-        panel.add(createPreview(), gbcBuilder.incY().fillBoth().setWeightY(1).build());
+        panel.add(createPreviewComponent(), gbcBuilder.incY().fillBoth().setWeightY(1).build());
         return panel;
     }
 
@@ -454,6 +504,17 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         panel.add(m_skipHiddenRows, gbcBuilder.incY().build());
         panel.add(m_use15DigitsPrecision, gbcBuilder.incY().build());
         panel.add(m_reevaluateFormulas, gbcBuilder.incY().setInsets(new Insets(5, 5, 5, 5)).build());
+        return panel;
+    }
+
+    private JPanel createDataRowsSpecLimitPanel() {
+        final JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Table specification"));
+        final GBCBuilder gbcBuilder =
+            new GBCBuilder(new Insets(5, 5, 0, 5)).resetPos().anchorFirstLineStart().fillHorizontal();
+        panel.add(m_limitAnalysisChecker, gbcBuilder.build());
+        setWidthTo(m_limitAnalysisSpinner, 100);
+        panel.add(m_limitAnalysisSpinner, gbcBuilder.incX().setWeightX(1).fillNone().build());
         return panel;
     }
 
@@ -485,9 +546,9 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
     }
 
     private void registerPreviewChangeListeners() {
-        m_settingsModelFilePanel.addChangeListener(l -> configChanged(true));
+        m_settingsModelFilePanel.addChangeListener(l -> fileChanged());
 
-        final ActionListener actionListener = l -> configChanged(false);
+        final ActionListener actionListener = l -> otherConfigThanFileChanged();
         m_failOnDifferingSpecs.addActionListener(actionListener);
         m_radioButtonFirstSheetWithData.addActionListener(actionListener);
         m_radioButtonSheetByName.addActionListener(actionListener);
@@ -505,25 +566,27 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         m_radioButtonReadPartOfSheet.addActionListener(actionListener);
         m_radioButtonGenerateRowIDs.addActionListener(actionListener);
         m_radioButtonReadRowIDsFromCol.addActionListener(actionListener);
-        final ChangeListener changeListener = l -> configChanged(false);
+        m_limitAnalysisChecker.addActionListener(actionListener);
+        final ChangeListener changeListener = l -> otherConfigThanFileChanged();
         m_sheetIndexSelection.addChangeListener(changeListener);
         m_columnHeaderSpinner.addChangeListener(changeListener);
+        m_limitAnalysisSpinner.addChangeListener(changeListener);
 
         final DocumentListener documentListener = new DocumentListener() {
 
             @Override
             public void removeUpdate(final DocumentEvent e) {
-                configChanged();
+                otherConfigThanFileChanged();
             }
 
             @Override
             public void insertUpdate(final DocumentEvent e) {
-                configChanged();
+                otherConfigThanFileChanged();
             }
 
             @Override
             public void changedUpdate(final DocumentEvent e) {
-                configChanged();
+                otherConfigThanFileChanged();
             }
         };
         m_formulaErrorPattern.getDocument().addDocumentListener(documentListener);
@@ -532,6 +595,85 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         m_fromRow.getDocument().addDocumentListener(documentListener);
         m_toRow.getDocument().addDocumentListener(documentListener);
         m_rowIDColumn.getDocument().addDocumentListener(documentListener);
+    }
+
+    private void registerTabbedPaneChangeListeners() {
+        for (final JTabbedPane tabbedPane : m_tabbedPreviewPaneList) {
+            tabbedPane.addChangeListener(l -> {
+                // we need to catch notifications of the listeners caused by changes done within this listener
+                if (!m_switchTabInTabbedPanes) {
+                    m_switchTabInTabbedPanes = true;
+                    setSelectedIdxToAllTabbedPanes(tabbedPane.getSelectedIndex());
+                    triggerPreviewUpdates();
+                    m_switchTabInTabbedPanes = false;
+                }
+            });
+        }
+    }
+
+    private void triggerPreviewUpdates() {
+        if (isTablePreviewInForeground()) {
+            if (m_configChanged) {
+                configChanged(false);
+            }
+        } else if (!m_previewModel.isDataTableSet() || m_fileChanged) {
+            updateFileContentPreview();
+        }
+    }
+
+    private void setSelectedIdxToAllTabbedPanes(final int selectedIndex) {
+        for (final JTabbedPane tabbedPane2 : m_tabbedPreviewPaneList) {
+            tabbedPane2.setSelectedIndex(selectedIndex);
+        }
+    }
+
+    private void otherConfigThanFileChanged() {
+        m_configChanged = true;
+        if (isTablePreviewInForeground()) {
+            configChanged(false);
+        }
+    }
+
+    private void fileChanged() {
+        m_configChanged = true;
+        m_fileChanged = true;
+        if (isTablePreviewInForeground()) {
+            configChanged(true);
+        } else {
+            updateFileContentPreview();
+        }
+    }
+
+    private void updateFileContentPreview() {
+        m_fileChanged = false;
+        if (areIOComponentsDisabled()) {
+            m_fileContentPreviewController.setDisabledInRemoteJobViewInfo();
+        } else if (!areEventsIgnored()) {
+            m_fileContentPreviewController.configChanged(this::getConfig);
+        }
+    }
+
+    private TableReaderPreviewView createFileContentPreview() {
+        final TableReaderPreviewView preview = new TableReaderPreviewView(m_previewModel);
+        preview.getTableView().getHeaderTable().setColumnName("Row No.");
+        preview.setBorder(
+            BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Content of the selected file"));
+        m_fileContentPreviews.add(preview);
+        preview.addScrollListener(this::updateFileContentScrolling);
+        return preview;
+    }
+
+    private void updateFileContentScrolling(final ChangeEvent changeEvent) {
+        final TableReaderPreviewView updatedView = (TableReaderPreviewView)changeEvent.getSource();
+        for (TableReaderPreviewView preview : m_fileContentPreviews) {
+            if (preview != updatedView) {
+                preview.updateViewport(updatedView);
+            }
+        }
+    }
+
+    private boolean isTablePreviewInForeground() {
+        return m_tabbedPreviewPaneList.isEmpty() || m_tabbedPreviewPaneList.get(0).getSelectedIndex() == 0;
     }
 
     @Override
@@ -560,15 +702,16 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
     /**
      * Fill in the setting values in {@link TableReadConfig} using values from dialog.
      */
-    private void saveTableReadSettings() throws InvalidSettingsException {
-        m_config.setFailOnDifferingSpecs(m_failOnDifferingSpecs.isSelected());
+    private void saveTableReadSettings() {
         final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = m_config.getTableReadConfig();
         tableReadConfig.setUseRowIDIdx(m_radioButtonReadRowIDsFromCol.isSelected());
+        tableReadConfig.setLimitRowsForSpec(m_limitAnalysisChecker.isSelected());
+        tableReadConfig.setMaxRowsForSpec((long)m_limitAnalysisSpinner.getValue());
         tableReadConfig.setRowIDIdx(0);
+        m_config.setFailOnDifferingSpecs(m_failOnDifferingSpecs.isSelected());
         tableReadConfig.setSkipEmptyRows(m_skipEmptyRows.isSelected());
         tableReadConfig.setUseColumnHeaderIdx(m_columnHeaderCheckBox.isSelected());
         tableReadConfig.setColumnHeaderIdx((long)m_columnHeaderSpinner.getValue() - 1);
-        tableReadConfig.setLimitRowsForSpec(false);
         tableReadConfig.setDecorateRead(false);
     }
 
@@ -619,6 +762,28 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         } catch (IllegalArgumentException e) { // NOSONAR re-throw as InvalidSettingsException
             throw new InvalidSettingsException(e.getMessage());
         }
+        excelConfig.setUseRawSettings(false);
+    }
+
+    private void setRawSettings() {
+        final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = m_config.getTableReadConfig();
+        tableReadConfig.setLimitRowsForSpec(m_limitAnalysisChecker.isSelected());
+        tableReadConfig.setMaxRowsForSpec((long)m_limitAnalysisSpinner.getValue());
+        tableReadConfig.setDecorateRead(false);
+        tableReadConfig.setRowIDIdx(0);
+        tableReadConfig.setUseRowIDIdx(true);
+        tableReadConfig.setSkipEmptyRows(false);
+        tableReadConfig.setUseColumnHeaderIdx(false);
+        final ExcelTableReaderConfig excelConfig = m_config.getReaderSpecificConfig();
+        excelConfig.setUse15DigitsPrecision(true);
+        excelConfig.setSheetSelection(SheetSelection.FIRST);
+        excelConfig.setSkipHiddenCols(false);
+        excelConfig.setSkipHiddenRows(false);
+        excelConfig.setReevaluateFormulas(false);
+        excelConfig.setFormulaErrorHandling(FormulaErrorHandling.PATTERN);
+        excelConfig.setAreaOfSheetToRead(AreaOfSheetToRead.ENTIRE);
+        excelConfig.setRowIdGeneration(RowIDGeneration.GENERATE);
+        excelConfig.setUseRawSettings(true);
     }
 
     /**
@@ -697,8 +862,12 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
 
     @Override
     protected MultiTableReadConfig<ExcelTableReaderConfig> getConfig() throws InvalidSettingsException {
-        saveTableReadSettings();
-        saveExcelReadSettings();
+        if (isTablePreviewInForeground()) {
+            saveTableReadSettings();
+            saveExcelReadSettings();
+        } else {
+            setRawSettings();
+        }
         return m_config;
     }
 

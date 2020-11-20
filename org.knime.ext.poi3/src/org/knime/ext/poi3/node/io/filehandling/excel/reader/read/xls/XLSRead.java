@@ -83,9 +83,7 @@ import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCellUtils;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelParserRunnable;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelRead;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelUtils;
-import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.VisibilityAwareRandomAccessible;
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
-import org.knime.filehandling.core.node.table.reader.randomaccess.RandomAccessibleUtils;
 
 /**
  * This class implements a read that uses the non-streaming API of Apache POI (usermodel API). It provides all
@@ -240,8 +238,7 @@ public final class XLSRead extends ExcelRead {
                         numEmptyRows = 0;
                         // insert the row id at the beginning
                         insertRowIDAtBeginning(cells, m_rowId);
-                        addToQueue(VisibilityAwareRandomAccessible.createUnsafe(
-                            RandomAccessibleUtils.createFromArrayUnsafe(cells.toArray(new ExcelCell[0])), isHiddenRow));
+                        addToQueue(cells, isHiddenRow);
                     }
                 }
             }

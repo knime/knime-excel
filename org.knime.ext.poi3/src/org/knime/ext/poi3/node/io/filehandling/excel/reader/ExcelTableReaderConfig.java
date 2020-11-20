@@ -60,6 +60,8 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /** The default String to be inserted when an error cell is encountered. */
     static final String DEFAULT_FORMULA_ERROR_PATTERN = "#XL_EVAL_ERROR#";
 
+    private boolean m_useRawSettings = false;
+
     private boolean m_use15DigitsPrecision = true;
 
     private SheetSelection m_sheetSelection = SheetSelection.FIRST;
@@ -115,6 +117,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
         setReadToRow(toCopy.getReadToRow());
         setRowIdGeneration(toCopy.getRowIdGeneration());
         setRowIDCol(toCopy.getRowIDCol());
+        setUseRawSettings(toCopy.isUseRawSettings());
     }
 
     @Override
@@ -344,6 +347,20 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
      */
     void setRowIdGeneration(final RowIDGeneration rowIdGeneration) {
         m_rowIdGeneration = rowIdGeneration;
+    }
+
+    /**
+     * @return the useRawSettings
+     */
+    public boolean isUseRawSettings() {
+        return m_useRawSettings;
+    }
+
+    /**
+     * @param useRawSettings the useRawSettings to set
+     */
+    public void setUseRawSettings(final boolean useRawSettings) {
+        m_useRawSettings = useRawSettings;
     }
 
 }

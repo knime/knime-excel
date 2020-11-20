@@ -123,6 +123,10 @@ enum ExcelMultiTableReadConfigSerializer implements
 
     private static final String CFG_ROW_ID_COL = "row_id_column";
 
+    private static final String CFG_MAX_DATA_ROWS_SCANNED = "max_data_rows_scanned";
+
+    private static final String CFG_LIMIT_DATA_ROWS_SCANNED = "limit_data_rows_scanned";
+
     @Override
     public void loadInDialog(
         final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> config,
@@ -271,6 +275,8 @@ enum ExcelMultiTableReadConfigSerializer implements
         config.setFailOnDifferingSpecs(settings.getBoolean(CFG_FAIL_ON_DIFFERING_SPECS, true));
         final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = config.getTableReadConfig();
         tableReadConfig.setSkipEmptyRows(settings.getBoolean(CFG_SKIP_EMPTY_ROWS, true));
+        tableReadConfig.setLimitRowsForSpec(settings.getBoolean(CFG_LIMIT_DATA_ROWS_SCANNED, true));
+        tableReadConfig.setMaxRowsForSpec(settings.getLong(CFG_MAX_DATA_ROWS_SCANNED, 50));
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
         excelConfig.setUse15DigitsPrecision(settings.getBoolean(CFG_USE_15_DIGITS_PRECISION, true));
         excelConfig.setSkipHiddenCols(settings.getBoolean(CFG_SKIP_HIDDEN_COLS, true));
@@ -288,6 +294,8 @@ enum ExcelMultiTableReadConfigSerializer implements
         config.setFailOnDifferingSpecs(settings.getBoolean(CFG_FAIL_ON_DIFFERING_SPECS));
         final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = config.getTableReadConfig();
         tableReadConfig.setSkipEmptyRows(settings.getBoolean(CFG_SKIP_EMPTY_ROWS));
+        tableReadConfig.setLimitRowsForSpec(settings.getBoolean(CFG_LIMIT_DATA_ROWS_SCANNED));
+        tableReadConfig.setMaxRowsForSpec(settings.getLong(CFG_MAX_DATA_ROWS_SCANNED));
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
         excelConfig.setUse15DigitsPrecision(settings.getBoolean(CFG_USE_15_DIGITS_PRECISION));
         excelConfig.setSkipHiddenCols(settings.getBoolean(CFG_SKIP_HIDDEN_COLS));
@@ -304,6 +312,8 @@ enum ExcelMultiTableReadConfigSerializer implements
         settings.addBoolean(CFG_FAIL_ON_DIFFERING_SPECS, config.failOnDifferingSpecs());
         final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = config.getTableReadConfig();
         settings.addBoolean(CFG_SKIP_EMPTY_ROWS, tableReadConfig.skipEmptyRows());
+        settings.addBoolean(CFG_LIMIT_DATA_ROWS_SCANNED, tableReadConfig.limitRowsForSpec());
+        settings.addLong(CFG_MAX_DATA_ROWS_SCANNED, tableReadConfig.getMaxRowsForSpec());
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
         settings.addBoolean(CFG_USE_15_DIGITS_PRECISION, excelConfig.isUse15DigitsPrecision());
         settings.addBoolean(CFG_SKIP_HIDDEN_COLS, excelConfig.isSkipHiddenCols());
@@ -322,6 +332,8 @@ enum ExcelMultiTableReadConfigSerializer implements
         settings.getBoolean(CFG_REEVALUATE_FORMULAS);
         settings.getString(CFG_FORMULA_ERROR_HANDLING);
         settings.getString(CFG_FORMULA_ERROR_PATTERN);
+        settings.getBoolean(CFG_LIMIT_DATA_ROWS_SCANNED);
+        settings.getLong(CFG_MAX_DATA_ROWS_SCANNED);
     }
 
 }

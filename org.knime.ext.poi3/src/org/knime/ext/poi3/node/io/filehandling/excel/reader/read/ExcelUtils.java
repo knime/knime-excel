@@ -169,7 +169,8 @@ public final class ExcelUtils {
                 && !hiddenColumns.contains(rowIdColIdx)) {
                 filteredIdx++;
             }
-        } else if (rowIdBeforeIdxAndWithinStart(config.useRowIDIdx(), filteredIdx, startColIdx, rowIdColIdx)) {
+        } else if (!excelConfig.isUseRawSettings()
+            && rowIdBeforeIdxAndWithinStart(config.useRowIDIdx(), filteredIdx, startColIdx, rowIdColIdx)) {
             // increment if we had a row ID before the index and >= start (as this was filtered out and not counted)
             filteredIdx++;
         }
