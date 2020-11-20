@@ -4,19 +4,34 @@
    <extension
          point="org.knime.workbench.repository.nodes">
       <node
-            category-path="/labs/file-handling-prototype/file-handling-IO/file-handling-Read"
+            category-path="/io/read"
             deprecated="false"
             factory-class="org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderNodeFactory">
       </node>
       <node
-            category-path="/labs/file-handling-prototype/file-handling-IO/file-handling-Write"
+            category-path="/io/write"
             deprecated="false"
             factory-class="org.knime.ext.poi3.node.io.filehandling.excel.writer.ExcelTableWriterNodeFactory">
       </node>
       <node
-            category-path="/labs/file-handling-prototype/file-handling-IO/file-handling-Read"
+            category-path="/io/read"
             deprecated="false"
             factory-class="org.knime.ext.poi3.node.io.filehandling.excel.sheets.ExcelSheetReaderNodeFactory">
       </node>
+   </extension>
+   <extension
+         point="org.knime.workbench.repository.registeredFileExtensions">
+      <FileExtensionMapping
+            NodeFactory="org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderNodeFactory">
+         <FileExtension
+               extension="xls">
+         </FileExtension>
+         <FileExtension
+               extension="xlsx">
+         </FileExtension>
+         <FileExtension
+               extension="xlsm">
+         </FileExtension>
+      </FileExtensionMapping>
    </extension>
 </plugin>
