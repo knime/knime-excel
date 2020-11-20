@@ -53,6 +53,7 @@ package org.knime.ext.poi2.node.read4;
  *
  * @author Gabor Bakos
  */
+@Deprecated
 public enum ActualDataType {
     /** The missing value */
     MISSING,

@@ -55,6 +55,7 @@ import org.knime.filehandling.core.defaultnodesettings.SettingsModelFileChooser2
  *
  * @author julian
  */
+@Deprecated
 final class SettingsIDBuilder {
 
     private SettingsIDBuilder() {

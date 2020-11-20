@@ -1,5 +1,6 @@
 /*
  * ------------------------------------------------------------------------
+ *
  *  Copyright by KNIME AG, Zurich, Switzerland
  *  Website: http://www.knime.com; Email: contact@knime.com
  *
@@ -42,92 +43,58 @@
  *  when such Node is propagated with or for interoperation with KNIME.
  * ---------------------------------------------------------------------
  *
- * Created on Feb 22, 2013 by Patrick Winter
+ * History
+ *   29 Sep 2016 (Gabor Bakos): created
  */
-package org.knime.ext.poi2.node.write3;
+package org.knime.ext.poi2.node.read4;
 
-import java.util.HashMap;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.apache.poi.ss.usermodel.DateUtil;
 
 /**
- * Manages one lock per key.
+ * Caches the seen date formats. <br/>
+ * <b>NOT thread-safe</b>
  *
- * @author Patrick Winter
+ * @author Gabor Bakos
  */
-final class KeyLocker {
+@Deprecated
+final class DateFormatCache {
+    private final Set<String> m_dateFormat = new HashSet<>();
+    private final Set<String> m_nonDateFormat = new HashSet<>();
 
-    private static Lock mapLock = new ReentrantLock();
-
-    private static HashMap<Object, CountingLock> map = new HashMap<Object, CountingLock>();
-
-    private KeyLocker() {
-        // disable default constructor
+    /**
+     * Constructs the cache.
+     */
+    DateFormatCache() {
     }
 
     /**
-     * @param key Identifies the locked object
+     * @param formatCode
+     * @param format
+     * @return Checks whether it is a valid date format or not.
      */
-    public static void lock(final Object key) {
-        mapLock.lock();
-        CountingLock lock = map.get(key);
-        if (lock == null) {
-            lock = new CountingLock();
-            map.put(key, lock);
+    boolean isDateFormat(final int formatCode, final String format) {
+        String key = key(formatCode, format);
+        if (m_dateFormat.contains(key)) {
+            return true;
         }
-        lock.incrementReferences();
-        mapLock.unlock();
-        lock.lock();
+        if (m_nonDateFormat.contains(key)) {
+            return false;
+        }
+        boolean ret = DateUtil.isADateFormat(formatCode, format);
+        (ret ? m_dateFormat : m_nonDateFormat).add(key);
+        return ret;
     }
 
     /**
-     * @param key Identifies the locked object
+     * @param formatCode
+     * @param format
+     * @return
      */
-    public static void unlock(final Object key) {
-        mapLock.lock();
-        CountingLock lock = map.get(key);
-        if (lock != null) {
-            lock.unlock();
-            lock.decrementReferences();
-            if (lock.getReferences() < 1) {
-                map.remove(key);
-            }
-        }
-        mapLock.unlock();
-        if (lock == null) {
-            throw new RuntimeException(key + " could not be unlocked, no lock found");
-        }
+    private String key(final int formatCode, final String format) {
+        return format == null ? Integer.toBinaryString(formatCode) + "\u0000\u0000"
+            : Integer.toString(formatCode) + "\u0000" + format;
     }
-
-    private static class CountingLock {
-
-        private Lock m_lock = new ReentrantLock();
-
-        private int m_references = 0;
-
-        public void lock() {
-            m_lock.lock();
-        }
-
-        public void unlock() {
-            m_lock.unlock();
-        }
-
-        /**
-         * @return the references
-         */
-        public int getReferences() {
-            return m_references;
-        }
-
-        public void incrementReferences() {
-            ++m_references;
-        }
-
-        public void decrementReferences() {
-            --m_references;
-        }
-
-    }
-
 }

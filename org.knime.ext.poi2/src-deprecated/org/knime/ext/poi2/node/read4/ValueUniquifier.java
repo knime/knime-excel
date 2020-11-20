@@ -1,5 +1,6 @@
 /*
  * ------------------------------------------------------------------------
+ *
  *  Copyright by KNIME AG, Zurich, Switzerland
  *  Website: http://www.knime.com; Email: contact@knime.com
  *
@@ -40,69 +41,76 @@
  *  propagated with or for interoperation with KNIME.  The owner of a Node
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
- * -------------------------------------------------------------------
+ * ---------------------------------------------------------------------
  *
  * History
- *   Apr 8, 2009 (ohl): created
+ *   2 Sep 2016 (Gabor Bakos): created
  */
-package org.knime.ext.poi2.node.readsheets;
+package org.knime.ext.poi2.node.read4;
 
-import org.knime.core.node.ContextAwareNodeFactory;
-import org.knime.core.node.NodeCreationContext;
-import org.knime.core.node.NodeDialogPane;
-import org.knime.core.node.NodeView;
+import java.util.HashMap;
+
+import org.knime.core.util.MutableInteger;
 
 /**
- * @author Patrick Winter, KNIME AG, Zurich, Switzerland
+ * Makes values unique, ideal for row ids.
+ *
+ * @author Peter Ohl, KNIME AG, Zurich, Switzerland
+ * @author Gabor Bakos
  */
-public class XLSSheetReaderNodeFactory extends ContextAwareNodeFactory<XLSSheetReaderNodeModel> {
+@Deprecated
+//TODO unit test
+class ValueUniquifier {
+
+    private static final Integer NOSUFFIX = new Integer(0);
+    private final HashMap<String, Number> m_rowIDhash = new HashMap<>();
+
+    //TODO should we have a constructor to reuse a previous/clone it?
 
     /**
-     * {@inheritDoc}
+     *
      */
-    @Override
-    protected NodeDialogPane createNodeDialogPane() {
-        return new XLSSheetReaderNodeDialog();
+    ValueUniquifier() {
+        super();
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public XLSSheetReaderNodeModel createNodeModel() {
-        return new XLSSheetReaderNodeModel();
-    }
+    String uniquifyRowHeader(final String newRowHeader) {
+        //TODO should we check for potential suffices?
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public NodeView<XLSSheetReaderNodeModel>
-            createNodeView(final int viewIndex, final XLSSheetReaderNodeModel nodeModel) {
-        return null;
-    }
+        Number oldSuffix = m_rowIDhash.put(newRowHeader, NOSUFFIX);
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected int getNrNodeViews() {
-        return 0;
-    }
+        if (oldSuffix == null) {
+            // haven't seen the rowID so far.
+            return newRowHeader;
+        }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected boolean hasDialog() {
-        return true;
-    }
+        String result = newRowHeader;
+        while (oldSuffix != null) {
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public XLSSheetReaderNodeModel createNodeModel(final NodeCreationContext context) {
-        return new XLSSheetReaderNodeModel(context);
+            // we have seen this rowID before!
+            int idx = oldSuffix.intValue();
+
+            assert idx >= NOSUFFIX.intValue();
+
+            idx++;
+
+            if (oldSuffix == NOSUFFIX) {
+                // until now the NOSUFFIX placeholder was in the hash
+                assert idx - 1 == NOSUFFIX.intValue();
+                m_rowIDhash.put(result, new MutableInteger(idx));
+            } else {
+                assert oldSuffix instanceof MutableInteger;
+                ((MutableInteger)oldSuffix).inc();
+                assert idx == oldSuffix.intValue();
+                // put back the old (incr.) suffix (overridden with NOSUFFIX).
+                m_rowIDhash.put(result, oldSuffix);
+            }
+
+            result = result + "_" + idx;
+            oldSuffix = m_rowIDhash.put(result, NOSUFFIX);
+
+        }
+
+        return result;
     }
 }

@@ -1,6 +1,5 @@
 /*
  * ------------------------------------------------------------------------
- *
  *  Copyright by KNIME AG, Zurich, Switzerland
  *  Website: http://www.knime.com; Email: contact@knime.com
  *
@@ -43,73 +42,25 @@
  *  when such Node is propagated with or for interoperation with KNIME.
  * ---------------------------------------------------------------------
  *
- * History
- *   2 Sep 2016 (Gabor Bakos): created
+ * Created on Feb 19, 2013 by Patrick Winter
  */
-package org.knime.ext.poi2.node.read4;
-
-import java.util.HashMap;
-
-import org.knime.core.util.MutableInteger;
+package org.knime.ext.poi2.node.write3;
 
 /**
- * Makes values unique, ideal for row ids.
  *
- * @author Peter Ohl, KNIME AG, Zurich, Switzerland
- * @author Gabor Bakos
+ * @author Patrick Winter
  */
-//TODO unit test
-class ValueUniquifier {
-
-    private static final Integer NOSUFFIX = new Integer(0);
-    private final HashMap<String, Number> m_rowIDhash = new HashMap<>();
-
-    //TODO should we have a constructor to reuse a previous/clone it?
+@Deprecated
+enum XLSNodeType {
 
     /**
-     *
+     * Writer node that writes new XLS files.
      */
-    ValueUniquifier() {
-        super();
-    }
+    WRITER,
 
-    String uniquifyRowHeader(final String newRowHeader) {
-        //TODO should we check for potential suffices?
+    /**
+     * Appender node that appends sheets to existing XLS files.
+     */
+    APPENDER
 
-        Number oldSuffix = m_rowIDhash.put(newRowHeader, NOSUFFIX);
-
-        if (oldSuffix == null) {
-            // haven't seen the rowID so far.
-            return newRowHeader;
-        }
-
-        String result = newRowHeader;
-        while (oldSuffix != null) {
-
-            // we have seen this rowID before!
-            int idx = oldSuffix.intValue();
-
-            assert idx >= NOSUFFIX.intValue();
-
-            idx++;
-
-            if (oldSuffix == NOSUFFIX) {
-                // until now the NOSUFFIX placeholder was in the hash
-                assert idx - 1 == NOSUFFIX.intValue();
-                m_rowIDhash.put(result, new MutableInteger(idx));
-            } else {
-                assert oldSuffix instanceof MutableInteger;
-                ((MutableInteger)oldSuffix).inc();
-                assert idx == oldSuffix.intValue();
-                // put back the old (incr.) suffix (overridden with NOSUFFIX).
-                m_rowIDhash.put(result, oldSuffix);
-            }
-
-            result = result + "_" + idx;
-            oldSuffix = m_rowIDhash.put(result, NOSUFFIX);
-
-        }
-
-        return result;
-    }
 }

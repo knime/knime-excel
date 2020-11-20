@@ -43,55 +43,67 @@
  * -------------------------------------------------------------------
  *
  * History
- *   Mar 15, 2007 (ohl): created
+ *   Apr 8, 2009 (ohl): created
  */
-package org.knime.ext.poi2.node.write3;
+package org.knime.ext.poi2.node.readsheets;
 
-import java.util.Optional;
-
-import org.knime.core.node.BufferedDataTable;
-import org.knime.core.node.ConfigurableNodeFactory;
+import org.knime.core.node.ContextAwareNodeFactory;
+import org.knime.core.node.NodeCreationContext;
 import org.knime.core.node.NodeDialogPane;
 import org.knime.core.node.NodeView;
-import org.knime.core.node.context.NodeCreationConfiguration;
-import org.knime.filehandling.core.port.FileSystemPortObject;
 
 /**
- *
- * @author ohl, University of Konstanz
+ * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
-public class XLSWriter2NodeFactory extends ConfigurableNodeFactory<XLSWriter2NodeModel> {
+@Deprecated
+public class XLSSheetReaderNodeFactory extends ContextAwareNodeFactory<XLSSheetReaderNodeModel> {
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    protected Optional<PortsConfigurationBuilder> createPortsConfigBuilder() {
-        final PortsConfigurationBuilder builder = new PortsConfigurationBuilder();
-        builder.addFixedInputPortGroup("Data table", BufferedDataTable.TYPE);
-        builder.addOptionalInputPortGroup("File system connection", FileSystemPortObject.TYPE);
-        return Optional.of(builder);
+    protected NodeDialogPane createNodeDialogPane() {
+        return new XLSSheetReaderNodeDialog();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    protected XLSWriter2NodeModel createNodeModel(final NodeCreationConfiguration creationConfig) {
-        return new XLSWriter2NodeModel(creationConfig, XLSNodeType.WRITER);
+    public XLSSheetReaderNodeModel createNodeModel() {
+        return new XLSSheetReaderNodeModel();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    protected NodeDialogPane createNodeDialogPane(final NodeCreationConfiguration creationConfig) {
-        return new XLSWriter2NodeDialogPane(XLSNodeType.WRITER);
-    }
-
-    @Override
-    public NodeView<XLSWriter2NodeModel> createNodeView(final int viewIndex, final XLSWriter2NodeModel nodeModel) {
+    public NodeView<XLSSheetReaderNodeModel>
+            createNodeView(final int viewIndex, final XLSSheetReaderNodeModel nodeModel) {
         return null;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected int getNrNodeViews() {
         return 0;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     protected boolean hasDialog() {
         return true;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public XLSSheetReaderNodeModel createNodeModel(final NodeCreationContext context) {
+        return new XLSSheetReaderNodeModel(context);
     }
 }

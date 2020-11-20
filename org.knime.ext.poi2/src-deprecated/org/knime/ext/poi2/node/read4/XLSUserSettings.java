@@ -59,6 +59,7 @@ import org.knime.core.node.util.CheckUtils;
  * @author Peter Ohl, KNIME AG, Zurich, Switzerland
  * @author Gabor Bakos
  */
+@Deprecated
 class XLSUserSettings {
 
     /**

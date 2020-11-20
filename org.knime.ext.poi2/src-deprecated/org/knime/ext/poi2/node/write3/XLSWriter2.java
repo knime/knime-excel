@@ -111,6 +111,7 @@ import org.knime.core.node.NodeLogger;
  *
  * @author ohl, University of Konstanz
  */
+@Deprecated
 class XLSWriter2 {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(XLSWriter2.class);

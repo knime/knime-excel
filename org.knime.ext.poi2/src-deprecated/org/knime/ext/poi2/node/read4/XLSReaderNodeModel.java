@@ -88,6 +88,7 @@ import org.knime.filehandling.core.port.FileSystemPortObjectSpec;
  * @author Peter Ohl, KNIME AG, Zurich, Switzerland
  * @author Gabor Bakos
  */
+@Deprecated
 class XLSReaderNodeModel extends NodeModel {
 
     /**

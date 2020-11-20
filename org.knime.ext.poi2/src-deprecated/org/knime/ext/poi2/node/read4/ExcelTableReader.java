@@ -78,6 +78,7 @@ import org.xml.sax.SAXException;
  *
  * @author Julian Bunzel, KNIME GmbH, Berlin, Germany
  */
+@Deprecated
 class ExcelTableReader implements FilesToDataTableReader {
 
     private final XLSUserSettings m_settings;

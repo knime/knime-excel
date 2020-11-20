@@ -23,33 +23,23 @@
       </node>
       <node
             category-path="/io/read"
+            deprecated="true"
             factory-class="org.knime.ext.poi2.node.readsheets.XLSSheetReaderNodeFactory">
       </node>
       <node
             category-path="/io/write"
+            deprecated="true"
             factory-class="org.knime.ext.poi2.node.write3.XLSAppenderNodeFactory">
       </node>
       <node
             category-path="/io/write"
+            deprecated="true"
             factory-class="org.knime.ext.poi2.node.write3.XLSWriter2NodeFactory">
       </node>
       <node
             category-path="/io/read"
-            deprecated="false"
+            deprecated="true"
             factory-class="org.knime.ext.poi2.node.read4.XLSReaderNodeFactory">
       </node>
-      
    </extension>
-     <extension
-           point="org.knime.workbench.repository.registeredFileExtensions">
-        <FileExtensionMapping
-              NodeFactory="org.knime.ext.poi2.node.read4.XLSReaderNodeFactory">
-           <FileExtension
-                 extension=".xls">
-           </FileExtension>
-           <FileExtension
-                 extension=".xlsx">
-           </FileExtension>
-        </FileExtensionMapping>
-    </extension>
 </plugin>

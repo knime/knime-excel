@@ -43,102 +43,99 @@
  * -------------------------------------------------------------------
  *
  * History
- *   Apr 3, 2009 (ohl): created
+ *   Apr 8, 2009 (ohl): created
  */
 package org.knime.ext.poi2.node.readsheets;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
 
+import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeDialogPane;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
-import org.knime.core.util.FileUtil;
+import org.knime.core.node.NotConfigurableException;
+import org.knime.core.node.util.FilesHistoryPanel;
 
 /**
+ * The dialog to the XLS sheet reader.
+ *
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
-public class XLSSheetReaderSettings {
+@Deprecated
+public class XLSSheetReaderNodeDialog extends NodeDialogPane {
+
+    private final FilesHistoryPanel m_fileName = new FilesHistoryPanel("XLSSheetReader", ".xls|.xlsx");
 
     /**
-     * Location of the selected file.
+     * Creates the dialog with its components.
      */
-    private String m_fileLocation = null;
-
-    private static final String FILE_LOCATION = "XLS_LOCATION";
-
-    /**
-     * Saves the current values.
-     *
-     * @param settings Object to write values into
-     */
-    public void save(final NodeSettingsWO settings) {
-        settings.addString(FILE_LOCATION, m_fileLocation);
+    public XLSSheetReaderNodeDialog() {
+        JPanel dlgTab = new JPanel();
+        dlgTab.setLayout(new BoxLayout(dlgTab, BoxLayout.Y_AXIS));
+        JComponent fileBox = getFileBox();
+        fileBox.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Select file to read:"));
+        dlgTab.add(fileBox);
+        addTab("XLS Sheet Reader Settings", dlgTab);
     }
 
     /**
-     * Creates a new settings object with values from the settings passed.
-     *
-     * @param settings the values to store in the new object
-     * @return a new settings object
-     * @throws InvalidSettingsException if the stored settings are incorrect.
+     * Creates a box with the file selection panel.
      */
-    public static XLSSheetReaderSettings load(final NodeSettingsRO settings) throws InvalidSettingsException {
-        XLSSheetReaderSettings result = new XLSSheetReaderSettings();
-        result.m_fileLocation = settings.getString(FILE_LOCATION);
-        return result;
+    private JComponent getFileBox() {
+        Box fBox = Box.createHorizontalBox();
+        fBox.add(Box.createHorizontalGlue());
+        fBox.add(m_fileName);
+        fBox.add(Box.createHorizontalGlue());
+        return fBox;
     }
 
     /**
-     * Checks the settings and returns an error message - or null if everything is alright.
+     * Creates an XLSSheetReaderSettings object based on the settings in the panels.
      *
-     * @param checkFileExistence if true existence and readability of the specified file location is checked (not the
-     *            content/format though).
-     * @return an error message or null if settings are okay
+     * @return The settings object
      */
-    public String getStatus(final boolean checkFileExistence) {
-        if (m_fileLocation == null || m_fileLocation.isEmpty()) {
-            return "No file location specified";
+    private XLSSheetReaderSettings createSettingsFromComponents() {
+        XLSSheetReaderSettings s = new XLSSheetReaderSettings();
+        s.setFileLocation(m_fileName.getSelectedFile());
+        return s;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
+        String file = m_fileName.getSelectedFile();
+        if (file == null || file.isEmpty()) {
+            throw new InvalidSettingsException("Please select a file to read from.");
         }
-        if (checkFileExistence) {
-            try {
-                URL url = new URL(m_fileLocation);
-                try {
-                    FileUtil.openStreamWithTimeout(url).close();
-                } catch (IOException ioe) {
-                    return "Can't open specified location (" + m_fileLocation + ")";
-                }
-            } catch (MalformedURLException mue) {
-                // then try a file
-                File f = new File(m_fileLocation);
-                if (!f.exists()) {
-                    return "Specified file doesn't exist (" + f.getAbsolutePath() + ")";
-                }
-                if (!f.canRead()) {
-                    return "Specified file is not readable (" + f.getAbsolutePath() + ")";
-                }
-                if (!f.isFile()) {
-                    return "Specified location is not a file (" + f.getAbsolutePath() + ")";
-                }
-            }
+        XLSSheetReaderSettings s = createSettingsFromComponents();
+        String errMsg = s.getStatus(true);
+        if (errMsg != null) {
+            throw new InvalidSettingsException(errMsg);
         }
-        return null;
+        s.save(settings);
+        m_fileName.addToHistory();
     }
 
     /**
-     * @param fileLocation the fileLocation to set
+     * {@inheritDoc}
      */
-    public void setFileLocation(final String fileLocation) {
-        m_fileLocation = fileLocation;
-    }
-
-    /**
-     * @return the fileLocation
-     */
-    public String getFileLocation() {
-        return m_fileLocation;
+    @Override
+    protected void loadSettingsFrom(final NodeSettingsRO settings, final DataTableSpec[] specs)
+            throws NotConfigurableException {
+        XLSSheetReaderSettings s;
+        try {
+            s = XLSSheetReaderSettings.load(settings);
+        } catch (InvalidSettingsException e) {
+            s = new XLSSheetReaderSettings();
+        }
+        m_fileName.setSelectedFile(s.getFileLocation());
     }
 
 }

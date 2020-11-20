@@ -60,6 +60,7 @@ import org.knime.filehandling.core.port.FileSystemPortObject;
  *
  * @author Peter Ohl, KNIME AG, Zurich, Switzerland
  */
+@Deprecated
 public class XLSReaderNodeFactory extends ConfigurableNodeFactory<XLSReaderNodeModel> {
 
     /**

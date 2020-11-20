@@ -40,59 +40,95 @@
  *  propagated with or for interoperation with KNIME.  The owner of a Node
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
- * -------------------------------------------------------------------
+ * ---------------------------------------------------------------------
  *
- * History
- *   Mar 15, 2007 (ohl): created
+ * Created on Feb 22, 2013 by Patrick Winter
  */
 package org.knime.ext.poi2.node.write3;
 
-import java.util.Optional;
-
-import org.knime.core.node.BufferedDataTable;
-import org.knime.core.node.ConfigurableNodeFactory;
-import org.knime.core.node.NodeDialogPane;
-import org.knime.core.node.NodeView;
-import org.knime.core.node.context.NodeCreationConfiguration;
-import org.knime.filehandling.core.port.FileSystemPortObject;
+import java.util.HashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
+ * Manages one lock per key.
  *
- * @author ohl, University of Konstanz
+ * @author Patrick Winter
  */
-public class XLSAppenderNodeFactory extends ConfigurableNodeFactory<XLSWriter2NodeModel> {
+@Deprecated
+final class KeyLocker {
 
-    @Override
-    protected Optional<PortsConfigurationBuilder> createPortsConfigBuilder() {
-        final PortsConfigurationBuilder builder = new PortsConfigurationBuilder();
-        builder.addFixedInputPortGroup("Data table", BufferedDataTable.TYPE);
-        builder.addOptionalInputPortGroup("File System Connection", FileSystemPortObject.TYPE);
-        return Optional.of(builder);
+    private static Lock mapLock = new ReentrantLock();
+
+    private static HashMap<Object, CountingLock> map = new HashMap<Object, CountingLock>();
+
+    private KeyLocker() {
+        // disable default constructor
     }
 
-    @Override
-    protected XLSWriter2NodeModel createNodeModel(final NodeCreationConfiguration creationConfig) {
-        return new XLSWriter2NodeModel(creationConfig, XLSNodeType.APPENDER);
+    /**
+     * @param key Identifies the locked object
+     */
+    public static void lock(final Object key) {
+        mapLock.lock();
+        CountingLock lock = map.get(key);
+        if (lock == null) {
+            lock = new CountingLock();
+            map.put(key, lock);
+        }
+        lock.incrementReferences();
+        mapLock.unlock();
+        lock.lock();
     }
 
-    @Override
-    protected NodeDialogPane createNodeDialogPane(final NodeCreationConfiguration creationConfig) {
-        return new XLSWriter2NodeDialogPane(XLSNodeType.APPENDER);
+    /**
+     * @param key Identifies the locked object
+     */
+    public static void unlock(final Object key) {
+        mapLock.lock();
+        CountingLock lock = map.get(key);
+        if (lock != null) {
+            lock.unlock();
+            lock.decrementReferences();
+            if (lock.getReferences() < 1) {
+                map.remove(key);
+            }
+        }
+        mapLock.unlock();
+        if (lock == null) {
+            throw new RuntimeException(key + " could not be unlocked, no lock found");
+        }
     }
 
-    @Override
-    public NodeView<XLSWriter2NodeModel> createNodeView(final int viewIndex, final XLSWriter2NodeModel nodeModel) {
-        return null;
-    }
+    private static class CountingLock {
 
-    @Override
-    protected int getNrNodeViews() {
-        return 0;
-    }
+        private Lock m_lock = new ReentrantLock();
 
-    @Override
-    protected boolean hasDialog() {
-        return true;
+        private int m_references = 0;
+
+        public void lock() {
+            m_lock.lock();
+        }
+
+        public void unlock() {
+            m_lock.unlock();
+        }
+
+        /**
+         * @return the references
+         */
+        public int getReferences() {
+            return m_references;
+        }
+
+        public void incrementReferences() {
+            ++m_references;
+        }
+
+        public void decrementReferences() {
+            --m_references;
+        }
+
     }
 
 }

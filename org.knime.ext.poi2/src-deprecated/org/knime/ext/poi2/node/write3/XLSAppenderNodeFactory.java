@@ -1,6 +1,5 @@
 /*
  * ------------------------------------------------------------------------
- *
  *  Copyright by KNIME AG, Zurich, Switzerland
  *  Website: http://www.knime.com; Email: contact@knime.com
  *
@@ -41,59 +40,60 @@
  *  propagated with or for interoperation with KNIME.  The owner of a Node
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
- * ---------------------------------------------------------------------
+ * -------------------------------------------------------------------
  *
  * History
- *   29 Sep 2016 (Gabor Bakos): created
+ *   Mar 15, 2007 (ohl): created
  */
-package org.knime.ext.poi2.node.read4;
+package org.knime.ext.poi2.node.write3;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Optional;
 
-import org.apache.poi.ss.usermodel.DateUtil;
+import org.knime.core.node.BufferedDataTable;
+import org.knime.core.node.ConfigurableNodeFactory;
+import org.knime.core.node.NodeDialogPane;
+import org.knime.core.node.NodeView;
+import org.knime.core.node.context.NodeCreationConfiguration;
+import org.knime.filehandling.core.port.FileSystemPortObject;
 
 /**
- * Caches the seen date formats. <br/>
- * <b>NOT thread-safe</b>
  *
- * @author Gabor Bakos
+ * @author ohl, University of Konstanz
  */
-final class DateFormatCache {
-    private final Set<String> m_dateFormat = new HashSet<>();
-    private final Set<String> m_nonDateFormat = new HashSet<>();
+@Deprecated
+public class XLSAppenderNodeFactory extends ConfigurableNodeFactory<XLSWriter2NodeModel> {
 
-    /**
-     * Constructs the cache.
-     */
-    DateFormatCache() {
+    @Override
+    protected Optional<PortsConfigurationBuilder> createPortsConfigBuilder() {
+        final PortsConfigurationBuilder builder = new PortsConfigurationBuilder();
+        builder.addFixedInputPortGroup("Data table", BufferedDataTable.TYPE);
+        builder.addOptionalInputPortGroup("File System Connection", FileSystemPortObject.TYPE);
+        return Optional.of(builder);
     }
 
-    /**
-     * @param formatCode
-     * @param format
-     * @return Checks whether it is a valid date format or not.
-     */
-    boolean isDateFormat(final int formatCode, final String format) {
-        String key = key(formatCode, format);
-        if (m_dateFormat.contains(key)) {
-            return true;
-        }
-        if (m_nonDateFormat.contains(key)) {
-            return false;
-        }
-        boolean ret = DateUtil.isADateFormat(formatCode, format);
-        (ret ? m_dateFormat : m_nonDateFormat).add(key);
-        return ret;
+    @Override
+    protected XLSWriter2NodeModel createNodeModel(final NodeCreationConfiguration creationConfig) {
+        return new XLSWriter2NodeModel(creationConfig, XLSNodeType.APPENDER);
     }
 
-    /**
-     * @param formatCode
-     * @param format
-     * @return
-     */
-    private String key(final int formatCode, final String format) {
-        return format == null ? Integer.toBinaryString(formatCode) + "\u0000\u0000"
-            : Integer.toString(formatCode) + "\u0000" + format;
+    @Override
+    protected NodeDialogPane createNodeDialogPane(final NodeCreationConfiguration creationConfig) {
+        return new XLSWriter2NodeDialogPane(XLSNodeType.APPENDER);
     }
+
+    @Override
+    public NodeView<XLSWriter2NodeModel> createNodeView(final int viewIndex, final XLSWriter2NodeModel nodeModel) {
+        return null;
+    }
+
+    @Override
+    protected int getNrNodeViews() {
+        return 0;
+    }
+
+    @Override
+    protected boolean hasDialog() {
+        return true;
+    }
+
 }

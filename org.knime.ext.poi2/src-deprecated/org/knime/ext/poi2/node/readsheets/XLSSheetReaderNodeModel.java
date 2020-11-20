@@ -79,6 +79,7 @@ import org.knime.core.util.FileUtil;
 /**
  * @author Patrick Winter, KNIME AG, Zurich, Switzerland
  */
+@Deprecated
 public class XLSSheetReaderNodeModel extends NodeModel {
 
     /** The default timeout in seconds. */

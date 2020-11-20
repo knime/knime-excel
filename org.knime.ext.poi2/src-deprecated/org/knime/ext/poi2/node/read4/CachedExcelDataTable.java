@@ -159,6 +159,7 @@ import com.google.common.collect.Interners;
  *
  * @author Gabor Bakos
  */
+@Deprecated
 final class CachedExcelTable {
 
     private static final AtomicInteger CACHED_THREAD_POOL_INDEX = new AtomicInteger();

@@ -156,6 +156,7 @@ import org.xml.sax.SAXException;
  * @author Peter Ohl, KNIME AG, Zurich, Switzerland
  * @author Gabor Bakos
  */
+@Deprecated
 class XLSReaderNodeDialog extends NodeDialogPane {
     private static final String REFRESH = "refresh";
 

@@ -65,6 +65,7 @@ import org.xml.sax.SAXException;
  *
  * @author Gabor Bakos
  */
+@Deprecated
 final class KNIMEXSSFSheetXMLHandler extends XSSFSheetXMLHandler {
 
     /** Data type of the cell. */

@@ -85,6 +85,7 @@ import org.knime.filehandling.core.port.FileSystemPortObject;
  *
  * @author ohl, University of Konstanz
  */
+@Deprecated
 final class XLSWriter2NodeModel extends NodeModel {
 
     private static final String CFG_KEY_FILE_CHOOSER = "FILE_CHOOSER";

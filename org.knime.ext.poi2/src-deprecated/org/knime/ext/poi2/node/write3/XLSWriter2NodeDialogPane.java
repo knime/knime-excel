@@ -108,6 +108,7 @@ import org.knime.filehandling.core.port.FileSystemPortObjectSpec;
  *
  * @author ohl, University of Konstanz
  */
+@Deprecated
 final class XLSWriter2NodeDialogPane extends NodeDialogPane {
 
     @SuppressWarnings("unchecked")
