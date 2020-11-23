@@ -109,4 +109,9 @@ final class ExcelSheetReaderNodeDialog extends NodeDialogPane {
         m_fileChooser.loadSettingsFrom(settings, specs);
     }
 
+    @Override
+    public void onClose() {
+        m_fileChooser.onClose();
+    }
+
 }

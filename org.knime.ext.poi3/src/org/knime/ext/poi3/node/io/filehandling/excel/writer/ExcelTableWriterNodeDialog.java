@@ -377,4 +377,9 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
         updateLocation();
     }
 
+    @Override
+    public void onClose() {
+        m_fileChooser.onClose();
+    }
+
 }

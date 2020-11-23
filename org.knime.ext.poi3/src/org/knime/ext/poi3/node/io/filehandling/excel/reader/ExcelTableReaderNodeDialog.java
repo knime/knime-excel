@@ -943,5 +943,6 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
     public void onClose() {
         super.onClose();
         m_fileContentPreviewController.onClose();
+        m_filePanel.onClose();
     }
 }
