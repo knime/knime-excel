@@ -162,6 +162,8 @@ final class FileContentPreviewController<C extends ReaderSpecificConfig<C>, T> {
 
         private final AtomicBoolean m_closed = new AtomicBoolean(false);
 
+        private List<Path> m_paths;
+
         PreviewRun(final MultiTableReadConfig<C> config) {
             m_config = new ImmutableMultiTableReadConfig<>(config);
             m_readPathAccessor = m_readPathAccessorSupplier.get();
@@ -204,6 +206,7 @@ final class FileContentPreviewController<C extends ReaderSpecificConfig<C>, T> {
                 // and the invocation of its background worker
                 return;
             }
+            m_paths = rootPathAndPaths.getSecond();
             m_analysisComponent.setVisible(true);
             m_specGuessingWorker = new SpecGuessingSwingWorker<>(m_readFactory, rootPathAndPaths.getFirst().toString(),
                 rootPathAndPaths.getSecond(), m_config, m_analysisComponent, this::consumeNewStagedMultiRead, e -> {});
@@ -230,7 +233,7 @@ final class FileContentPreviewController<C extends ReaderSpecificConfig<C>, T> {
                 return;
             }
             try {
-                final GenericMultiTableRead<Path> mtr = m_currentRead.withoutTransformation();
+                final GenericMultiTableRead<Path> mtr = m_currentRead.withoutTransformation(m_paths);
                 @SuppressWarnings("resource") // the m_preview must make sure that the PreviewDataTable is closed
                 final PreviewDataTable pdt = new PreviewDataTable(mtr::createPreviewIterator, mtr.getOutputSpec());
                 m_previewModel.setDataTable(pdt);
