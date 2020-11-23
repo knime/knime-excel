@@ -206,7 +206,7 @@ final class FileContentPreviewController<C extends ReaderSpecificConfig<C>, T> {
             }
             m_analysisComponent.setVisible(true);
             m_specGuessingWorker = new SpecGuessingSwingWorker<>(m_readFactory, rootPathAndPaths.getFirst().toString(),
-                rootPathAndPaths.getSecond(), m_config, m_analysisComponent, this::consumeNewStagedMultiRead);
+                rootPathAndPaths.getSecond(), m_config, m_analysisComponent, this::consumeNewStagedMultiRead, e -> {});
             m_specGuessingWorker.execute();
         }
 
