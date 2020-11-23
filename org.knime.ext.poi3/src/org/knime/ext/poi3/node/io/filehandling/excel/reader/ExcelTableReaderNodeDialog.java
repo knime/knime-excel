@@ -114,7 +114,11 @@ import org.knime.filehandling.core.util.SettingsUtils;
  */
 final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<ExcelTableReaderConfig, KNIMECellType> {
 
-    private final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> m_config;
+    private final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> //
+    m_fileContentPreviewConfig = createFileContentPreviewSettings();
+
+    private final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> //
+    m_config;
 
     private final ExcelTableReader m_tableReader;
 
@@ -657,7 +661,7 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         final TableReaderPreviewView preview = new TableReaderPreviewView(m_previewModel);
         preview.getTableView().getHeaderTable().setColumnName("Row No.");
         preview.setBorder(
-            BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Content of the selected file"));
+            BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Content of the selected file(s)"));
         m_fileContentPreviews.add(preview);
         preview.addScrollListener(this::updateFileContentScrolling);
         return preview;
@@ -765,16 +769,23 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         excelConfig.setUseRawSettings(false);
     }
 
-    private void setRawSettings() {
-        final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = m_config.getTableReadConfig();
+    private void updateFileContentPreviewSettings() {
+        final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig =
+            m_fileContentPreviewConfig.getTableReadConfig();
         tableReadConfig.setLimitRowsForSpec(m_limitAnalysisChecker.isSelected());
         tableReadConfig.setMaxRowsForSpec((long)m_limitAnalysisSpinner.getValue());
+    }
+
+    private static DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>>
+        createFileContentPreviewSettings() {
+        final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig =
+            new DefaultTableReadConfig<>(new ExcelTableReaderConfig());
         tableReadConfig.setDecorateRead(false);
         tableReadConfig.setRowIDIdx(0);
         tableReadConfig.setUseRowIDIdx(true);
         tableReadConfig.setSkipEmptyRows(false);
         tableReadConfig.setUseColumnHeaderIdx(false);
-        final ExcelTableReaderConfig excelConfig = m_config.getReaderSpecificConfig();
+        final ExcelTableReaderConfig excelConfig = tableReadConfig.getReaderSpecificConfig();
         excelConfig.setUse15DigitsPrecision(true);
         excelConfig.setSheetSelection(SheetSelection.FIRST);
         excelConfig.setSkipHiddenCols(false);
@@ -784,6 +795,7 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         excelConfig.setAreaOfSheetToRead(AreaOfSheetToRead.ENTIRE);
         excelConfig.setRowIdGeneration(RowIDGeneration.GENERATE);
         excelConfig.setUseRawSettings(true);
+        return new DefaultMultiTableReadConfig<>(tableReadConfig, ExcelMultiTableReadConfigSerializer.INSTANCE);
     }
 
     /**
@@ -865,10 +877,11 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         if (isTablePreviewInForeground()) {
             saveTableReadSettings();
             saveExcelReadSettings();
+            return m_config;
         } else {
-            setRawSettings();
+            updateFileContentPreviewSettings();
+            return m_fileContentPreviewConfig;
         }
-        return m_config;
     }
 
     @Override
