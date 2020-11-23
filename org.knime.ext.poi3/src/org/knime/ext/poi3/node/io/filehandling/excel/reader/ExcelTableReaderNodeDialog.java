@@ -888,4 +888,10 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
     protected ReadPathAccessor createReadPathAccessor() {
         return m_settingsModelFilePanel.createReadPathAccessor();
     }
+
+    @Override
+    public void onClose() {
+        super.onClose();
+        m_fileContentPreviewController.onClose();
+    }
 }
