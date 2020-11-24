@@ -142,7 +142,8 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
 
     private JSpinner m_sheetIndexSelection = new JSpinner(new SpinnerNumberModel(0, 0, Integer.MAX_VALUE, 1));
 
-    private final JLabel m_sheetIdxNoteLabel = new JLabel("(Sheet indexes start with 0.)");
+    // text has trailing space to not be cut on Windows because of italic font
+    private final JLabel m_sheetIdxNoteLabel = new JLabel("(Sheet indexes start with 0.) ");
 
     private JCheckBox m_failOnDifferingSpecs = new JCheckBox("Fail if specs differ");
 
@@ -151,8 +152,9 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
     private final JSpinner m_columnHeaderSpinner = new JSpinner(
         new SpinnerNumberModel(Long.valueOf(1), Long.valueOf(1), Long.valueOf(Long.MAX_VALUE), Long.valueOf(1)));
 
+    // text has trailing space to not be cut on Windows because of italic font
     private final JLabel m_columnHeaderNoteLabel =
-        new JLabel("(Row numbers start with 1. Mouse over Row ID to see row number.)");
+        new JLabel("(Row numbers start with 1. See \"File Content\" tab to identify row numbers.) ");
 
     private final JCheckBox m_skipHiddenCols = new JCheckBox("Skip hidden columns", true);
 
@@ -191,6 +193,11 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
     private final JLabel m_fromRowLabel = new JLabel("rows from");
 
     private final JLabel m_toRowLabel = new JLabel("to");
+
+    private final JLabel m_dotLabel = new JLabel(".");
+
+    // text has trailing space to not be cut on Windows because of italic font
+    private final JLabel m_readAreaNoteLabel = new JLabel("(See \"File Content\" tab to identify columns and rows.) ");
 
     private final JTextField m_fromCol = new JTextField("A");
 
@@ -248,6 +255,7 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         m_firstSheetWithDataLabel.setFont(italicFont);
         m_columnHeaderNoteLabel.setFont(italicFont);
         m_sheetIdxNoteLabel.setFont(italicFont);
+        m_readAreaNoteLabel.setFont(italicFont);
         m_sheetSelectionButtonGroup.add(m_radioButtonFirstSheetWithData);
         m_sheetSelectionButtonGroup.add(m_radioButtonSheetByName);
         m_sheetSelectionButtonGroup.add(m_radioButtonSheetByIndex);
@@ -310,6 +318,8 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         m_fromRow.setEnabled(selected);
         m_toRowLabel.setEnabled(selected);
         m_toRow.setEnabled(selected);
+        m_dotLabel.setEnabled(selected);
+        m_readAreaNoteLabel.setEnabled(selected);
     }
 
     private void configChanged(final boolean updateSheets) {
@@ -361,7 +371,8 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         }
         final String text;
         if (m_settingsModelFilePanel.getFilterMode() == FilterMode.FILE) {
-            text = String.format("(%s)", ExcelUtils.getFirstSheetWithDataOrFirstIfAllEmpty(sheetNames));
+            // text has trailing space to not be cut on Windows because of italic font
+            text = String.format("(%s) ", ExcelUtils.getFirstSheetWithDataOrFirstIfAllEmpty(sheetNames));
         } else {
             text = "";
         }
@@ -430,7 +441,7 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         final GBCBuilder gbcBuilder = new GBCBuilder(new Insets(5, 5, 0, 0)).resetPos().anchorFirstLineStart();
 
         panel.add(m_radioButtonGenerateRowIDs, gbcBuilder.build());
-        panel.add(m_radioButtonReadRowIDsFromCol, gbcBuilder.incY().setInsets(new Insets(5, 5, 5, 0)).build());
+        panel.add(m_radioButtonReadRowIDsFromCol, gbcBuilder.incX().setInsets(new Insets(5, 5, 5, 0)).build());
         setWidthTo(m_rowIDColumn, 50);
         panel.add(m_rowIDColumn, gbcBuilder.incX().setWeightX(1).build());
         return panel;
@@ -442,11 +453,8 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         final Insets insets = new Insets(5, 5, 0, 0);
         final GBCBuilder gbcBuilder = new GBCBuilder(insets).resetPos().anchorFirstLineStart();
 
-        m_columnHeaderNoteLabel
-            .setPreferredSize(new Dimension((int)m_columnHeaderNoteLabel.getPreferredSize().getWidth(),
-                (int)m_columnHeaderCheckBox.getPreferredSize().getHeight()));
-        panel.add(m_radioButtonReadEntireSheet, gbcBuilder.setWidth(5).build());
-        panel.add(m_radioButtonReadPartOfSheet, gbcBuilder.incY().setWidth(1).build());
+        panel.add(m_radioButtonReadEntireSheet, gbcBuilder.build());
+        panel.add(m_radioButtonReadPartOfSheet, gbcBuilder.incX().setWidth(1).build());
 
         setHeightToComponentHeight(m_fromColLabel, m_radioButtonReadPartOfSheet);
         setHeightToComponentHeight(m_toColLabel, m_radioButtonReadPartOfSheet);
@@ -460,15 +468,17 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         panel.add(m_fromCol, gbcBuilder.incX().build());
         panel.add(m_toColLabel, gbcBuilder.incX().build());
         panel.add(m_toCol, gbcBuilder.incX().build());
-        panel.add(m_andLabel, gbcBuilder.incX().setWeightX(1).build());
+        panel.add(m_andLabel, gbcBuilder.incX().setWidth(2).setWeightX(1).build());
         m_fromRowLabel.setHorizontalAlignment(SwingConstants.RIGHT);
         m_fromRowLabel.setPreferredSize(new Dimension((int)m_fromColLabel.getPreferredSize().getWidth(),
             (int)m_fromRowLabel.getPreferredSize().getHeight()));
-        panel.add(m_fromRowLabel,
-            gbcBuilder.incY().resetX().incX().setWeightX(0).setInsets(new Insets(5, 0, 5, 5)).build());
+        panel.add(m_fromRowLabel, gbcBuilder.incY().resetX().incX().incX().setWidth(1).setWeightX(0)
+            .setInsets(new Insets(5, 0, 5, 5)).build());
         panel.add(m_fromRow, gbcBuilder.incX().build());
         panel.add(m_toRowLabel, gbcBuilder.incX().build());
         panel.add(m_toRow, gbcBuilder.incX().build());
+        panel.add(m_dotLabel, gbcBuilder.incX().build());
+        panel.add(m_readAreaNoteLabel, gbcBuilder.incX().build());
         return panel;
     }
 
@@ -500,7 +510,7 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         preview.setBorder(
             BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Preview with current settings"));
         tabbedPane.add("Preview", preview);
-        tabbedPane.add("File content", createFileContentPreview());
+        tabbedPane.add("File Content", createFileContentPreview());
         m_tabbedPreviewPaneList.add(tabbedPane);
         return tabbedPane;
     }
