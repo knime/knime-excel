@@ -65,6 +65,7 @@ import org.knime.core.data.convert.map.MappingFramework;
 import org.knime.core.data.convert.map.PrimitiveCellValueProducer;
 import org.knime.core.data.convert.map.ProducerRegistry;
 import org.knime.core.data.convert.map.SimpleCellValueProducerFactory;
+import org.knime.core.data.convert.map.SupplierCellValueProducerFactory;
 import org.knime.core.data.def.BooleanCell;
 import org.knime.core.data.def.DoubleCell;
 import org.knime.core.data.def.IntCell;
