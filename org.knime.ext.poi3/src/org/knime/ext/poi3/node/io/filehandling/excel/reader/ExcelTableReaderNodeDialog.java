@@ -359,7 +359,12 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         } else {
             m_sheetNameSelection.setSelectedIndex(-1);
         }
-        final String text = String.format("(%s)", ExcelUtils.getFirstSheetWithDataOrFirstIfAllEmpty(sheetNames));
+        final String text;
+        if (m_settingsModelFilePanel.getFilterMode() == FilterMode.FILE) {
+            text = String.format("(%s)", ExcelUtils.getFirstSheetWithDataOrFirstIfAllEmpty(sheetNames));
+        } else {
+            text = "";
+        }
         m_firstSheetWithDataLabel.setText(text);
         // set the preferred height to be correctly aligned with the radio button
         m_firstSheetWithDataLabel.setPreferredSize(new Dimension((int)new JLabel(text).getPreferredSize().getWidth(),
