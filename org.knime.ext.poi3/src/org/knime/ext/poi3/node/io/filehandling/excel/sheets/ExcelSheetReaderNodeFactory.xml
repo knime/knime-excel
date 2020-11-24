@@ -2,11 +2,11 @@
 <knimeNode type="Source" icon="./xlssheetreader.png" xmlns="http://knime.org/node/v4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://knime.org/node/v4.1 http://knime.org/node/v4.1.xsd">
 	<name>Read Excel Sheet Names</name>
 	<shortDescription>
-		Reads the sheet names contained in a excel file.
+		Reads the sheet names contained in a Excel file.
 	</shortDescription>
 	<fullDescription>
 		<intro>
-			This node reads an excel file and provides the contained sheet names at its output port.<br />
+			This node reads an Excel file and provides the contained sheet names at its output port.<br />
 			The performance of the reader node is limited (due to the underlying library
 			of the Apache POI project). Reading large files takes a very long time and uses a
 			lot of memory (especially files in xlsx format).

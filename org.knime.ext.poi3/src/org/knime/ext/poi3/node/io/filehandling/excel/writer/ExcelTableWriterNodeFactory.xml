@@ -3,11 +3,11 @@
 	 xmlns="http://knime.org/node/v4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
 	 xsi:schemaLocation="http://knime.org/node/v4.1 http://knime.org/node/v4.1.xsd">
     <name>Excel Writer</name>
-    <shortDescription> Writes data tables to an excel file. 
+    <shortDescription> Writes data tables to an Excel file. 
     </shortDescription>
     <fullDescription>
         <intro>
-            <p> This node writes the input data table into a spreadsheet of an excel file. The files can then
+            <p> This node writes the input data table into a spreadsheet of an Excel file. The files can then
                 be read with other applications such as Microsoft Excel.
                 <br/>
                 Adding additional sheet input ports allows to write multiple spreadsheets to the same file. 
@@ -98,7 +98,7 @@
 			<ul>
 				<li><i>Overwrite:</i> Will replace any existing file.
 				</li>
-				<li><i>Append:</i> Will append the input tables to the existent excel file.
+				<li><i>Append:</i> Will append the input tables to the existent Excel file.
 				</li>
 				<li><i>Fail:</i> Will issue an error during the node's execution (to prevent unintentional overwrite).
 				</li>
