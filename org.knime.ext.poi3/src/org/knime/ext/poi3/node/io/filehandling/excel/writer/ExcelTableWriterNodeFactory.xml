@@ -10,7 +10,9 @@
             <p> This node writes the input data table into a spreadsheet of an Excel file. The files can then
                 be read with other applications such as Microsoft Excel.
                 <br/>
-                Adding additional sheet input ports allows to write multiple spreadsheets to the same file. 
+                Adding additional sheet input ports allows to write multiple spreadsheets to the same file. Furthermore,
+                it is also possible to append sheets to an already existing excel file by selecting the <i>append</i>
+                option.
             </p>
             <p>The node supports two formats chosen by file extension:
             <ul>
@@ -26,10 +28,10 @@
                 </li>
             </ul>
             </p>
-	        <p>This nodes does not support writing in the 'xlsm' format.</p>
+	        <p>This nodes does not support writing files in the 'xlsm' format, yet appending is supported.</p>
             <p>Specifying a remote URL as the destination location will force the node to overwrite this file as it is 
-            not possible to determine whether this location already exists. If no extension is specified, the
-            file will be written in the .xlsx format.</p>
+            not possible to determine whether this location already exists, furthermore it is not possible to append
+            in this scenario.</p>
         </intro>
         
         <option name="Write to">
@@ -37,7 +39,7 @@
 			choose from:
 			<br />
 			<ul>
-				<li><i>Local File System:</i> Allows you to select a location in your
+				<li><i>Local File System:</i> Allows you to select a location on your
                     local system.
                 </li>
                 <li><i>Mountpoint:</i> Allows you to write to a mountpoint.
@@ -45,11 +47,11 @@
                 	Unconnected mountpoints are greyed out but can still be selected (note that browsing is disabled in this case).
                 	Go to the KNIME Explorer and connect to the mountpoint to enable browsing.
                 	A mountpoint is displayed in red if it was previously selected but is no longer available.
-                	You won't be able to save the dialog as long as you don't select a valid i.e. known mountpoint.
+                	You won't be able to save the dialog as long as you don't select a valid, i.e. known, mountpoint.
                 </li>
                 <li><i>Relative to:</i> Allows you to choose whether to resolve the path
-					relative to the current mountpoint, current workflow or the current workflow's data area.
-                When selected a new drop-down menu appears to choose which of the three options to use.
+					relative to the current mountpoint, current workflow, or the current workflow's data area.
+                When selected, a new drop-down menu appears to choose which of the three options to use.
                 </li>
 				<li><i>Custom/KNIME URL:</i> Allows to specify a URL (e.g. file://, http:// or knime:// protocol). 
                     When selected, a spinner appears that allows you to specify the desired connection and write timeout in milliseconds.
@@ -57,7 +59,7 @@
                     Browsing is disabled for this option.
                 </li>
 			</ul>
-			It is possible to use other file systems with this node. Therefore,
+			It is possible to use other file systems with this node. For this
 			you have to enable the file system connection input port of this
 			node
 			by clicking the
@@ -68,7 +70,7 @@
 			<br />
 			Afterwards, you can simply connect the desired connector node to this node.
 			The file system connection will then be shown in the drop-down menu.
-			It is greyed out if the file system is not connected in which case you have to (re)execute the connector node first.
+			It is greyed out if the file system is not connected, in which case you have to (re)execute the connector node first.
 			Note: The default file systems listed above can't be selected if a file system is provided via the input port.
 		</option>
 		<option name="File/URL">
@@ -98,7 +100,8 @@
 			<ul>
 				<li><i>Overwrite:</i> Will replace any existing file.
 				</li>
-				<li><i>Append:</i> Will append the input tables to the existent Excel file.
+				<li><i>Append:</i> Will append the input tables to the existent Excel file. Not supported by
+					Custom/KNIME URL.
 				</li>
 				<li><i>Fail:</i> Will issue an error during the node's execution (to prevent unintentional overwrite).
 				</li>
