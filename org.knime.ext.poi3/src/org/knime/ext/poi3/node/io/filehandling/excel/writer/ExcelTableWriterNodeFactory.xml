@@ -29,9 +29,6 @@
             </ul>
             </p>
 	        <p>This nodes does not support writing files in the 'xlsm' format, yet appending is supported.</p>
-            <p>Specifying a remote URL as the destination location will force the node to overwrite this file as it is 
-            not possible to determine whether this location already exists, furthermore it is not possible to append
-            in this scenario.</p>
         </intro>
         
         <option name="Write to">
@@ -100,8 +97,7 @@
 			<ul>
 				<li><i>Overwrite:</i> Will replace any existing file.
 				</li>
-				<li><i>Append:</i> Will append the input tables to the existent Excel file. Not supported by
-					Custom/KNIME URL.
+				<li><i>Append:</i> Will append the input tables to the existent Excel file.
 				</li>
 				<li><i>Fail:</i> Will issue an error during the node's execution (to prevent unintentional overwrite).
 				</li>
