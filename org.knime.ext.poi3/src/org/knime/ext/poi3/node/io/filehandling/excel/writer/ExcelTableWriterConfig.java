@@ -62,7 +62,6 @@ import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.context.ports.PortsConfiguration;
 import org.knime.core.node.defaultnodesettings.SettingsModelBoolean;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
-import org.knime.core.node.util.CheckUtils;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.ExcelTableConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelConstants;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelFormat;
@@ -366,11 +365,9 @@ final class ExcelTableWriterConfig implements ExcelTableConfig {
         m_paperSize.validateSettings(settings);
     }
 
-    private void validateSheets(final NodeSettingsRO settings) throws InvalidSettingsException {
+    private static void validateSheets(final NodeSettingsRO settings) throws InvalidSettingsException {
         final String[] sheetNames = settings.getStringArray(CFG_SHEET_NAMES);
         final Set<String> uniqueNames = new HashSet<>();
-        CheckUtils.checkSetting(m_sheetNames.length <= sheetNames.length,
-            "The number of sheet names must match the number of table input ports");
         for (final String sheetName : sheetNames) {
             validateSheetName(sheetName);
             if (!uniqueNames.add(sheetName)) {
