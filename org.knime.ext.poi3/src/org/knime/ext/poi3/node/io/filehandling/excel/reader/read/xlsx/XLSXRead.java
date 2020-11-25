@@ -251,7 +251,7 @@ public final class XLSXRead extends ExcelRead {
 
             @Override
             public void endRow(final int rowIdx) {
-                if (!isRowEmpty(m_row)) {
+                if (!isRowEmpty(m_row) || m_rowId != null) {
                     // if there were empty rows in between two non-empty rows, output these (we need to make sure that
                     // there is a non-empty row after an empty row)
                     outputEmptyRows(m_currentRowIdx - m_lastNonEmptyRowIdx - 1);

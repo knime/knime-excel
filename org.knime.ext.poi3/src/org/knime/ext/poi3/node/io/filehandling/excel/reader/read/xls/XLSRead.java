@@ -228,7 +228,7 @@ public final class XLSRead extends ExcelRead {
                     // parse the row
                     final List<ExcelCell> cells = parseRow(row);
                     // if all cells of the row are null, the row is empty
-                    if (isRowEmpty(cells)) {
+                    if (isRowEmpty(cells) && m_rowId == null) {
                         // by not adding empty rows directly to the queue but waiting for the next non-empty row, we prevent
                         // rows with only "empty-but-formatted/styled" cells being added (cells which had content
                         // before and were set to empty later might still be counted as cells by Excel and Apache POI)

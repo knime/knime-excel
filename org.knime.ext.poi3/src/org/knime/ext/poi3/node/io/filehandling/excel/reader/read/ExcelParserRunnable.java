@@ -180,7 +180,7 @@ public abstract class ExcelParserRunnable implements Runnable {
     protected void outputEmptyRows(final int numMissingsRows) {
         for (int i = 0; i < numMissingsRows; i++) {
             final List<ExcelCell> cells = new ArrayList<>();
-            if (m_rowIdIdx >= 0) {
+            if (m_rowIdIdx >= 0 && !m_rawSettings) {
                 // make sure the empty row ID is added
                 final ExcelCell cell = null;
                 cells.add(cell);
