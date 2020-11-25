@@ -64,8 +64,10 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.streamable.RowInput;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.cell.ExcelCellWriterFactory;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelProgressMonitor;
+import org.knime.filehandling.core.connections.FSCategory;
 import org.knime.filehandling.core.connections.FSFiles;
 import org.knime.filehandling.core.connections.FSPath;
+import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.FileOverwritePolicy;
 
 /**
  * This writer writes {@link RowInput} to individual sheets of an excel file and finally stores this excel file to disc.
@@ -121,18 +123,32 @@ public class ExcelMultiTableWriter {
                 formulaCtx.setProgress(1);
             }
             exec.setMessage(String.format("Saving excel file to '%s'", outPath.toString()));
-            final Path tmpFile = FSFiles.createTempFile((FSPath)outPath.toAbsolutePath().getParent());
-            try (final OutputStream out = FSFiles.newOutputStream(tmpFile);
-                    final BufferedOutputStream buffer = new BufferedOutputStream(out)) {
-                wb.write(buffer);
-            }
-            Files.move(tmpFile, outPath, StandardCopyOption.REPLACE_EXISTING);
-            exec.setProgress(1);
+            saveFile(outPath, exec, wb);
         } finally {
             if (wb instanceof SXSSFWorkbook) {
                 ((SXSSFWorkbook)wb).dispose();
             }
             wb.close();
+        }
+    }
+
+    private static void saveFile(final FSPath outPath, final ExecutionContext exec, final Workbook wb)
+        throws IOException {
+        // custom url does not support move so we have to overwrite the file right away
+        if (outPath.toFSLocation().getFSCategory() == FSCategory.CUSTOM_URL) {
+            saveWorkbook(wb, outPath);
+        } else {
+            final Path tmpFile = FSFiles.createTempFile((FSPath)outPath.toAbsolutePath().getParent());
+            saveWorkbook(wb, tmpFile);
+            Files.move(tmpFile, outPath, StandardCopyOption.REPLACE_EXISTING);
+        }
+        exec.setProgress(1);
+    }
+
+    private static void saveWorkbook(final Workbook wb, final Path tmpFile) throws IOException {
+        try (final OutputStream out = FSFiles.newOutputStream(tmpFile, FileOverwritePolicy.OVERWRITE.getOpenOptions());
+                final BufferedOutputStream buffer = new BufferedOutputStream(out)) {
+            wb.write(buffer);
         }
     }
 
