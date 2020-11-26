@@ -160,13 +160,13 @@
 		</tab>
 		<tab name="Advanced Settings">
 			<option name="Skip hidden columns">
-				If checked, hidden columns of the sheet will be skipped and not in the output.
+				If checked, hidden columns of the sheet will be skipped and not displayed in the output.
 			</option>
 			<option name="Skip empty rows">
-				If checked, empty rows of the sheet will be skipped and not in the output.
+				If checked, empty rows of the sheet will be skipped and not displayed in the output.
 			</option>
 			<option name="Skip hidden rows">
-				If checked, hidden rows of the sheet will be skipped and not in the output.
+				If checked, hidden rows of the sheet will be skipped and not displayed in the output.
 			</option>
 			<option name="Use Excel 15 digits precision">
 				If checked, numbers are read in with 15 digits precision which is the same precision Excel is using
