@@ -349,8 +349,10 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
     }
 
     private void updatePreviewOrFileContentView(final boolean isTablePreviewInForeground) {
-        if (isTablePreviewInForeground && m_previewConfigChanged) {
-            configChanged();
+        if (isTablePreviewInForeground) {
+            if (m_previewConfigChanged) {
+                configChanged();
+            }
         } else if (m_fileContentConfigChanged) {
             updateFileContentPreview();
         }
@@ -718,6 +720,18 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         loadExcelSettings();
         if (m_config.hasTableSpecConfig()) {
             loadFromTableSpecConfig(m_config.getTableSpecConfig());
+        }
+        m_fileContentConfigChanged = true;
+        ignoreEvents(false);
+        updatePreviewOrFileContentView(isTablePreviewInForeground());
+    }
+
+    @Override
+    public void refreshPreview(final boolean refreshPreview) {
+        final boolean enabled = !areIOComponentsDisabled();
+        setPreviewEnabled(enabled);
+        if (enabled && refreshPreview && isTablePreviewInForeground()) {
+            configChanged();
         }
     }
 
