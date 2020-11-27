@@ -307,10 +307,12 @@ public final class XLSXRead extends ExcelRead {
                         excelCell = ExcelCellUtils.createErrorCell(m_config);
                         break;
                     case FORMULA:
-                        excelCell = new ExcelCell(KNIMECellType.STRING, formattedValue);
+                        excelCell =
+                            replaceStringWithMissing(formattedValue) ? null : new ExcelCell(KNIMECellType.STRING, formattedValue);
                         break;
                     case STRING:
-                        excelCell = new ExcelCell(KNIMECellType.STRING, formattedValue);
+                        excelCell =
+                            replaceStringWithMissing(formattedValue) ? null : new ExcelCell(KNIMECellType.STRING, formattedValue);
                         break;
                     case NUMBER_OR_DATE:
                     default:

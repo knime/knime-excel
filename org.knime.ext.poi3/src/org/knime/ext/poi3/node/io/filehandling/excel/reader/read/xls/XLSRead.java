@@ -288,7 +288,8 @@ public final class XLSRead extends ExcelRead {
                     excelCell = new ExcelCell(KNIMECellType.BOOLEAN, cell.getBooleanCellValue());
                     break;
                 case STRING:
-                    excelCell = new ExcelCell(KNIMECellType.STRING, cell.getStringCellValue());
+                    excelCell = replaceStringWithMissing(cell.getStringCellValue()) ? null
+                        : new ExcelCell(KNIMECellType.STRING, cell.getStringCellValue());
                     break;
                 case FORMULA:
                     excelCell = parseFormulaCell(cell);
@@ -378,7 +379,8 @@ public final class XLSRead extends ExcelRead {
                     excelCell = new ExcelCell(KNIMECellType.BOOLEAN, cellValue.getBooleanValue());
                     break;
                 case STRING:
-                    excelCell = new ExcelCell(KNIMECellType.STRING, cellValue.getStringValue());
+                    excelCell = replaceStringWithMissing(cellValue.getStringValue()) ? null
+                        : new ExcelCell(KNIMECellType.STRING, cellValue.getStringValue());
                     break;
                 case ERROR:
                     excelCell = ExcelCellUtils.createErrorCell(m_config);

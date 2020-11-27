@@ -83,6 +83,9 @@ public abstract class ExcelParserRunnable implements Runnable {
     /** True if hidden rows should be skipped. */
     protected final boolean m_skipHiddenRows;
 
+    /** True if empty strings should be replaced by missings. */
+    private final boolean m_replaceEmptyStringsWithMissings;
+
     /** The index of the row ID or -1 if no row ID column is set. */
     protected final int m_rowIdIdx;
 
@@ -108,6 +111,7 @@ public abstract class ExcelParserRunnable implements Runnable {
         m_use15DigitsPrecision = excelConfig.isUse15DigitsPrecision();
         m_skipHiddenCols = excelConfig.isSkipHiddenCols();
         m_skipHiddenRows = excelConfig.isSkipHiddenRows();
+        m_replaceEmptyStringsWithMissings = excelConfig.isReplaceEmptyStringsWithMissings();
         m_rowIdIdx = config.useRowIDIdx() ? ExcelUtils.getRowIdColIdx(excelConfig.getRowIDCol()) : -1;
         m_firstCol = excelConfig.getAreaOfSheetToRead() == AreaOfSheetToRead.PARTIAL
             ? ExcelUtils.getFirstColumnIdx(excelConfig.getReadFromCol()) : 0;
@@ -229,6 +233,18 @@ public abstract class ExcelParserRunnable implements Runnable {
      */
     protected boolean isColRowID(final int col) {
         return col == m_rowIdIdx;
+    }
+
+    /**
+     * Returns whether the passed string should be replaced with a missing value which is {@code true} if
+     * {@link String#trim()} returns an empty string and the user has configured the node to replace such strings with
+     * missing values.
+     *
+     * @param string the string to test
+     * @return whether the passed string should be replaced with a missing value
+     */
+    protected boolean replaceStringWithMissing(final String string) {
+        return m_replaceEmptyStringsWithMissings && string.trim().isEmpty();
     }
 
 }

@@ -173,6 +173,10 @@
 				to display numbers. This will prevent potential floating point issues. For most numbers, no difference
 				can be observed if this option is unchecked.
 			</option>
+			<option name="Replace empty strings with missing values">
+				If checked, empty strings (i.e. strings with only whitespaces) are replaced with missing values. This
+				option is also applied to formulas that evaluate to strings.				
+			</option>
 			<option name="Reevaluate formulas">
 				If checked, formulas are reevaluated and put into the created table instead of using the cached values. 
 				This can cause errors when there are functions that are not	implemented by the underlying Apache POI 

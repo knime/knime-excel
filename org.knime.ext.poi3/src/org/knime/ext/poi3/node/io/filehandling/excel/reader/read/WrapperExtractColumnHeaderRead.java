@@ -65,28 +65,27 @@ import org.knime.filehandling.core.util.CheckedExceptionSupplier;
  * passing the column headers.
  *
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
- * @param <V> the type of tokens making up a row in the read
  */
-public final class WrapperExtractColumnHeaderRead<V> implements ExtractColumnHeaderRead<V> {
+public final class WrapperExtractColumnHeaderRead implements ExtractColumnHeaderRead<ExcelCell> {
 
     /** The underlying read. */
-    private final Read<V> m_read;
+    private final Read<ExcelCell> m_read;
 
-    private CheckedExceptionSupplier<Optional<RandomAccessible<V>>, IOException> m_columnHeadersSupplier;
+    private CheckedExceptionSupplier<Optional<RandomAccessible<ExcelCell>>, IOException> m_columnHeadersSupplier;
 
     /**
      * @param source the source {@link Read}
      * @param columnHeadersSupplier a {@link Supplier} that supplies the column headers and can throw
      *            {@link IOException}s
      */
-    public WrapperExtractColumnHeaderRead(final Read<V> source,
-        final CheckedExceptionSupplier<Optional<RandomAccessible<V>>, IOException> columnHeadersSupplier) {
+    public WrapperExtractColumnHeaderRead(final Read<ExcelCell> source,
+        final CheckedExceptionSupplier<Optional<RandomAccessible<ExcelCell>>, IOException> columnHeadersSupplier) {
         m_read = source;
         m_columnHeadersSupplier = columnHeadersSupplier;
     }
 
     @Override
-    public RandomAccessible<V> next() throws IOException {
+    public RandomAccessible<ExcelCell> next() throws IOException {
         return m_read.next();
     }
 
@@ -106,10 +105,20 @@ public final class WrapperExtractColumnHeaderRead<V> implements ExtractColumnHea
     }
 
     @Override
-    public Optional<RandomAccessible<V>> getColumnHeaders() throws IOException {
-        final Optional<RandomAccessible<V>> headers = m_columnHeadersSupplier.get();
+    public Optional<RandomAccessible<ExcelCell>> getColumnHeaders() throws IOException {
+        final Optional<RandomAccessible<ExcelCell>> headers = m_columnHeadersSupplier.get();
         if (headers.isPresent()) {
-            return headers;
+            final RandomAccessible<ExcelCell> ra = headers.get();
+            final ExcelCell[] cells = new ExcelCell[ra.size()];
+            for (int i = 0; i < ra.size(); i++) {
+                final ExcelCell excelCell = ra.get(i);
+                if (excelCell == null || excelCell.getStringValue().trim().isEmpty()) {
+                    cells[i] = null;
+                } else {
+                    cells[i] = excelCell;
+                }
+            }
+            return Optional.of(RandomAccessibleUtils.createFromArrayUnsafe(cells));
         }
         return Optional.of(RandomAccessibleUtils.createFromArrayUnsafe());
     }

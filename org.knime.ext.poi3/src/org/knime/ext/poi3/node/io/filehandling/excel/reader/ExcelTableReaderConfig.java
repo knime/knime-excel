@@ -76,6 +76,8 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
 
     private boolean m_reevaluateFormulas = false;
 
+    private boolean m_replaceEmptyStringsWithMissings = true;
+
     private FormulaErrorHandling m_formulaErrorHandling = FormulaErrorHandling.PATTERN;
 
     private String m_errorPattern = DEFAULT_FORMULA_ERROR_PATTERN;
@@ -118,6 +120,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
         setRowIdGeneration(toCopy.getRowIdGeneration());
         setRowIDCol(toCopy.getRowIDCol());
         setUseRawSettings(toCopy.isUseRawSettings());
+        setReplaceEmptyStringsWithMissings(toCopy.isReplaceEmptyStringsWithMissings());
     }
 
     @Override
@@ -359,8 +362,22 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param useRawSettings the useRawSettings to set
      */
-    public void setUseRawSettings(final boolean useRawSettings) {
+    void setUseRawSettings(final boolean useRawSettings) {
         m_useRawSettings = useRawSettings;
+    }
+
+    /**
+     * @return the replaceEmptyStringsWithMissings
+     */
+    public boolean isReplaceEmptyStringsWithMissings() {
+        return m_replaceEmptyStringsWithMissings;
+    }
+
+    /**
+     * @param replaceEmptyStringsWithMissings the replaceEmptyStringsWithMissings to set
+     */
+    void setReplaceEmptyStringsWithMissings(final boolean replaceEmptyStringsWithMissings) {
+        m_replaceEmptyStringsWithMissings = replaceEmptyStringsWithMissings;
     }
 
 }

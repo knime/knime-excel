@@ -162,6 +162,9 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
 
     private final JCheckBox m_skipEmptyRows = new JCheckBox("Skip empty rows", true);
 
+    private final JCheckBox m_replaceEmptyStringsWithMissings =
+        new JCheckBox("Replace empty strings with missing values", true);
+
     private boolean m_updatingSheetSelection = false;
 
     private final JCheckBox m_reevaluateFormulas =
@@ -537,6 +540,7 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         panel.add(m_skipEmptyRows, gbcBuilder.incY().build());
         panel.add(m_skipHiddenRows, gbcBuilder.incY().build());
         panel.add(m_use15DigitsPrecision, gbcBuilder.incY().build());
+        panel.add(m_replaceEmptyStringsWithMissings, gbcBuilder.incY().build());
         panel.add(m_reevaluateFormulas, gbcBuilder.incY().setInsets(new Insets(5, 5, 5, 5)).build());
         return panel;
     }
@@ -589,6 +593,7 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         m_skipHiddenRows.addActionListener(actionListener);
         m_skipEmptyRows.addActionListener(actionListener);
         m_use15DigitsPrecision.addActionListener(actionListener);
+        m_replaceEmptyStringsWithMissings.addActionListener(actionListener);
         m_reevaluateFormulas.addActionListener(actionListener);
         m_radioButtonInsertErrorPattern.addActionListener(actionListener);
         m_radioButtonInsertMissingCell.addActionListener(actionListener);
@@ -768,6 +773,7 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         excelConfig.setSheetIdx((int)m_sheetIndexSelection.getValue());
         excelConfig.setSkipHiddenCols(m_skipHiddenCols.isSelected());
         excelConfig.setSkipHiddenRows(m_skipHiddenRows.isSelected());
+        excelConfig.setReplaceEmptyStringsWithMissings(m_replaceEmptyStringsWithMissings.isSelected());
         excelConfig.setReevaluateFormulas(m_reevaluateFormulas.isSelected());
         if (m_radioButtonInsertMissingCell.isSelected()) {
             excelConfig.setFormulaErrorHandling(FormulaErrorHandling.MISSING);
@@ -832,6 +838,7 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         excelConfig.setUse15DigitsPrecision(true);
         excelConfig.setSkipHiddenCols(false);
         excelConfig.setSkipHiddenRows(false);
+        excelConfig.setReplaceEmptyStringsWithMissings(false);
         excelConfig.setReevaluateFormulas(false);
         excelConfig.setFormulaErrorHandling(FormulaErrorHandling.PATTERN);
         excelConfig.setAreaOfSheetToRead(AreaOfSheetToRead.ENTIRE);
@@ -875,6 +882,7 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         m_sheetIndexSelection.setValue(excelConfig.getSheetIdx());
         m_skipHiddenCols.setSelected(excelConfig.isSkipHiddenCols());
         m_skipHiddenRows.setSelected(excelConfig.isSkipHiddenRows());
+        m_replaceEmptyStringsWithMissings.setSelected(excelConfig.isReplaceEmptyStringsWithMissings());
         m_reevaluateFormulas.setSelected(excelConfig.isReevaluateFormulas());
         switch (excelConfig.getFormulaErrorHandling()) {
             case MISSING:

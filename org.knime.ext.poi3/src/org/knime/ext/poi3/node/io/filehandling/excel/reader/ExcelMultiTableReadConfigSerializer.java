@@ -103,6 +103,8 @@ enum ExcelMultiTableReadConfigSerializer implements
 
     private static final String CFG_SKIP_EMPTY_ROWS = "skip_empty_rows";
 
+    private static final String CFG_REPLACE_EMPTY_STRINGS_WITH_MISSINGS = "replace_empty_strings_with_missings";
+
     private static final String CFG_REEVALUATE_FORMULAS = "reevaluate_formulas";
 
     private static final String CFG_FORMULA_ERROR_HANDLING = "formula_error_handling";
@@ -300,6 +302,7 @@ enum ExcelMultiTableReadConfigSerializer implements
         excelConfig.setUse15DigitsPrecision(settings.getBoolean(CFG_USE_15_DIGITS_PRECISION));
         excelConfig.setSkipHiddenCols(settings.getBoolean(CFG_SKIP_HIDDEN_COLS));
         excelConfig.setSkipHiddenRows(settings.getBoolean(CFG_SKIP_HIDDEN_ROWS));
+        excelConfig.setReplaceEmptyStringsWithMissings(settings.getBoolean(CFG_REPLACE_EMPTY_STRINGS_WITH_MISSINGS));
         excelConfig.setReevaluateFormulas(settings.getBoolean(CFG_REEVALUATE_FORMULAS));
         excelConfig.setFormulaErrorHandling(
             FormulaErrorHandling.loadValueInModel(settings.getString(CFG_FORMULA_ERROR_HANDLING)));
@@ -318,6 +321,7 @@ enum ExcelMultiTableReadConfigSerializer implements
         settings.addBoolean(CFG_USE_15_DIGITS_PRECISION, excelConfig.isUse15DigitsPrecision());
         settings.addBoolean(CFG_SKIP_HIDDEN_COLS, excelConfig.isSkipHiddenCols());
         settings.addBoolean(CFG_SKIP_HIDDEN_ROWS, excelConfig.isSkipHiddenRows());
+        settings.addBoolean(CFG_REPLACE_EMPTY_STRINGS_WITH_MISSINGS, excelConfig.isReplaceEmptyStringsWithMissings());
         settings.addBoolean(CFG_REEVALUATE_FORMULAS, excelConfig.isReevaluateFormulas());
         settings.addString(CFG_FORMULA_ERROR_HANDLING, excelConfig.getFormulaErrorHandling().name());
         settings.addString(CFG_FORMULA_ERROR_PATTERN, excelConfig.getErrorPattern());
@@ -329,6 +333,7 @@ enum ExcelMultiTableReadConfigSerializer implements
         settings.getBoolean(CFG_SKIP_HIDDEN_COLS);
         settings.getBoolean(CFG_SKIP_HIDDEN_ROWS);
         settings.getBoolean(CFG_SKIP_EMPTY_ROWS);
+        settings.getBoolean(CFG_REPLACE_EMPTY_STRINGS_WITH_MISSINGS);
         settings.getBoolean(CFG_REEVALUATE_FORMULAS);
         settings.getString(CFG_FORMULA_ERROR_HANDLING);
         settings.getString(CFG_FORMULA_ERROR_PATTERN);

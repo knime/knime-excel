@@ -134,9 +134,12 @@ public final class ExcelUtils {
         if (name.isPresent()) {
             return spec;
         } else {
-            return TypedReaderColumnSpec.createWithName(
-                nameGen.newName(ExcelUtils.getExcelColumnName(getFilteredIdx(idx, config, hiddenColumns))),
-                spec.getType(), spec.hasType());
+            String excelColumnName = ExcelUtils.getExcelColumnName(getFilteredIdx(idx, config, hiddenColumns));
+            if (config.useColumnHeaderIdx()) {
+                excelColumnName = "empty_" + excelColumnName;
+            }
+            return TypedReaderColumnSpec.createWithName(nameGen.newName(excelColumnName), spec.getType(),
+                spec.hasType());
         }
     }
 

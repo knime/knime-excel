@@ -135,7 +135,7 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
         final ExtractColumnHeaderRead<ExcelCell> extractColHeaderRead =
             new DefaultExtractColumnHeaderRead<>(excelRead, config);
         final Read<ExcelCell> read = ExcelUtils.decorateRowFilterReads(extractColHeaderRead, config);
-        return new WrapperExtractColumnHeaderRead<>(read, extractColHeaderRead::getColumnHeaders);
+        return new WrapperExtractColumnHeaderRead(read, extractColHeaderRead::getColumnHeaders);
     }
 
     private static ExcelRead getExcelRead(final Path path, final TableReadConfig<ExcelTableReaderConfig> config)
