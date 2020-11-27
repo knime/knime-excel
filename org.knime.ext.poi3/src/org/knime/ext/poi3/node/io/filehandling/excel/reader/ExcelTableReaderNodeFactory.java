@@ -97,8 +97,8 @@ public final class ExcelTableReaderNodeFactory
         final MultiTableReadFactory<ExcelTableReaderConfig, KNIMECellType> readFactory =
             createMultiTableReadFactory(tableReader);
         final DefaultProductionPathProvider<KNIMECellType> productionPathProvider = createProductionPathProvider();
-        return new ExcelTableReaderNodeDialog(createPathSettings(creationConfig), createConfig(), tableReader,
-            readFactory, productionPathProvider);
+        return new ExcelTableReaderNodeDialog(createPathSettings(creationConfig), createConfig(creationConfig),
+            tableReader, readFactory, productionPathProvider);
     }
 
     @Override
@@ -136,7 +136,7 @@ public final class ExcelTableReaderNodeFactory
 
     @Override
     protected DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>>
-        createConfig() {
+        createConfig(final NodeCreationConfiguration nodeCreationConfig) {
         final DefaultTableReadConfig<ExcelTableReaderConfig> tc =
             new DefaultTableReadConfig<>(new ExcelTableReaderConfig());
         tc.setColumnHeaderIdx(0);
