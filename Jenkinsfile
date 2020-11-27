@@ -49,7 +49,7 @@ try {
             workflowTests.runFilehandlingTests (
                 dependencies: [
                     repositories: [
-                        "knime-excel",
+                        "knime-excel", "knime-jep", "knime-js-base", "knime-datageneration"
                     ]
                 ],
             )
