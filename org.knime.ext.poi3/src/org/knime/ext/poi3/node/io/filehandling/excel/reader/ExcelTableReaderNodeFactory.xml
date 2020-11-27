@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<knimeNode type="Source" icon="xlsreader.png" xmlns="http://knime.org/node/v4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://knime.org/node/v4.1 http://knime.org/node/v4.1.xsd">
+<knimeNode type="Source" icon="excel_reader.png" xmlns="http://knime.org/node/v4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://knime.org/node/v4.1 http://knime.org/node/v4.1.xsd">
 	<name>Excel Reader</name>
 	<shortDescription>
 		Reads one or more Excel files.
