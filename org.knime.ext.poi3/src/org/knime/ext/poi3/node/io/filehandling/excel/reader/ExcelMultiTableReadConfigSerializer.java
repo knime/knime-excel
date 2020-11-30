@@ -283,6 +283,8 @@ enum ExcelMultiTableReadConfigSerializer implements
         excelConfig.setUse15DigitsPrecision(settings.getBoolean(CFG_USE_15_DIGITS_PRECISION, true));
         excelConfig.setSkipHiddenCols(settings.getBoolean(CFG_SKIP_HIDDEN_COLS, true));
         excelConfig.setSkipHiddenRows(settings.getBoolean(CFG_SKIP_HIDDEN_ROWS, true));
+        excelConfig
+            .setReplaceEmptyStringsWithMissings(settings.getBoolean(CFG_REPLACE_EMPTY_STRINGS_WITH_MISSINGS, true));
         excelConfig.setReevaluateFormulas(settings.getBoolean(CFG_REEVALUATE_FORMULAS, false));
         excelConfig.setFormulaErrorHandling(FormulaErrorHandling
             .valueOf(settings.getString(CFG_FORMULA_ERROR_HANDLING, FormulaErrorHandling.PATTERN.name())));
