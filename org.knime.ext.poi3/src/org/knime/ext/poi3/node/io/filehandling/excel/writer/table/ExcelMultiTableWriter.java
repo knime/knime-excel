@@ -125,11 +125,15 @@ public class ExcelMultiTableWriter {
             exec.setMessage(String.format("Saving excel file to '%s'", outPath.toString()));
             saveFile(outPath, exec, wb);
         } finally {
-            if (wb instanceof SXSSFWorkbook) {
-                ((SXSSFWorkbook)wb).dispose();
-            }
-            wb.close();
+            closeWorkbook(wb);
         }
+    }
+
+    private static void closeWorkbook(final Workbook wb) throws IOException {
+        if (wb instanceof SXSSFWorkbook) {
+            ((SXSSFWorkbook)wb).dispose();
+        }
+        wb.close();
     }
 
     private static void saveFile(final FSPath outPath, final ExecutionContext exec, final Workbook wb)
@@ -137,9 +141,11 @@ public class ExcelMultiTableWriter {
         // custom url does not support move so we have to overwrite the file right away
         if (outPath.toFSLocation().getFSCategory() == FSCategory.CUSTOM_URL) {
             saveWorkbook(wb, outPath);
+            closeWorkbook(wb);
         } else {
             final Path tmpFile = FSFiles.createTempFile((FSPath)outPath.toAbsolutePath().getParent());
             saveWorkbook(wb, tmpFile);
+            closeWorkbook(wb);
             Files.move(tmpFile, outPath, StandardCopyOption.REPLACE_EXISTING);
         }
         exec.setProgress(1);
