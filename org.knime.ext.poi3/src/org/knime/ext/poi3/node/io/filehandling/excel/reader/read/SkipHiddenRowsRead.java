@@ -49,6 +49,7 @@
 package org.knime.ext.poi3.node.io.filehandling.excel.reader.read;
 
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.knime.filehandling.core.node.table.reader.randomaccess.RandomAccessible;
 import org.knime.filehandling.core.node.table.reader.read.AbstractReadDecorator;
@@ -59,14 +60,14 @@ import org.knime.filehandling.core.node.table.reader.read.Read;
  *
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
  */
-final class SkipHiddenRowsRead extends AbstractReadDecorator<ExcelCell> {
+final class SkipHiddenRowsRead extends AbstractReadDecorator<Path, ExcelCell> {
 
     /**
      * Constructor.
      *
      * @param source the {@link Read} to decorate
      */
-    SkipHiddenRowsRead(final Read<ExcelCell> source) {
+    SkipHiddenRowsRead(final Read<Path, ExcelCell> source) {
         super(source);
     }
 

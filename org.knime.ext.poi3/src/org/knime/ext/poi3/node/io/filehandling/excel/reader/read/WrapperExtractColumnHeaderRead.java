@@ -66,10 +66,10 @@ import org.knime.filehandling.core.util.CheckedExceptionSupplier;
  *
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
  */
-public final class WrapperExtractColumnHeaderRead implements ExtractColumnHeaderRead<ExcelCell> {
+public final class WrapperExtractColumnHeaderRead implements ExtractColumnHeaderRead<Path, ExcelCell> {
 
     /** The underlying read. */
-    private final Read<ExcelCell> m_read;
+    private final Read<Path, ExcelCell> m_read;
 
     private CheckedExceptionSupplier<Optional<RandomAccessible<ExcelCell>>, IOException> m_columnHeadersSupplier;
 
@@ -78,7 +78,7 @@ public final class WrapperExtractColumnHeaderRead implements ExtractColumnHeader
      * @param columnHeadersSupplier a {@link Supplier} that supplies the column headers and can throw
      *            {@link IOException}s
      */
-    public WrapperExtractColumnHeaderRead(final Read<ExcelCell> source,
+    public WrapperExtractColumnHeaderRead(final Read<Path, ExcelCell> source,
         final CheckedExceptionSupplier<Optional<RandomAccessible<ExcelCell>>, IOException> columnHeadersSupplier) {
         m_read = source;
         m_columnHeadersSupplier = columnHeadersSupplier;
@@ -124,8 +124,8 @@ public final class WrapperExtractColumnHeaderRead implements ExtractColumnHeader
     }
 
     @Override
-    public Optional<Path> getPath() {
-        return m_read.getPath();
+    public Optional<Path> getItem() {
+        return m_read.getItem();
     }
 
 }

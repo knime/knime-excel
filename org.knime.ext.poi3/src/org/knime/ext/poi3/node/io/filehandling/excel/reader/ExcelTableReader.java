@@ -103,7 +103,7 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
 
     @SuppressWarnings("resource") // decorated read will be closed in AbstractReadDecorator#close
     @Override
-    public Read<ExcelCell> read(final Path path, final TableReadConfig<ExcelTableReaderConfig> config)
+    public Read<Path, ExcelCell> read(final Path path, final TableReadConfig<ExcelTableReaderConfig> config)
         throws IOException {
         return decorateRead(getExcelRead(path, config), config);
     }
@@ -112,7 +112,7 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
     @Override
     public TypedReaderTableSpec<KNIMECellType> readSpec(final Path path,
         final TableReadConfig<ExcelTableReaderConfig> config, final ExecutionMonitor exec) throws IOException {
-        final TableSpecGuesser<KNIMECellType, ExcelCell> guesser = createGuesser();
+        final TableSpecGuesser<Path, KNIMECellType, ExcelCell> guesser = createGuesser();
         try (ExcelRead read = getExcelRead(path, config)) {
             // sheet names are already retrieved, notify a potential listener from the dialog
             m_sheetNames = read.getSheetNames();
@@ -124,9 +124,9 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
     }
 
     @SuppressWarnings("resource") // decorated reads will be closed in AbstractReadDecorator#close
-    private static Read<ExcelCell> decorateRead(final ExcelRead excelRead,
+    private static Read<Path, ExcelCell> decorateRead(final ExcelRead excelRead,
         final TableReadConfig<ExcelTableReaderConfig> config) {
-        Read<ExcelCell> read = excelRead;
+        Read<Path, ExcelCell> read = excelRead;
         if (config.useColumnHeaderIdx()) {
             read = new SkipIdxRead<>(read, config.getColumnHeaderIdx());
         }
@@ -134,11 +134,11 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
     }
 
     @SuppressWarnings("resource") // decorated reads will be closed in AbstractReadDecorator#close
-    private static ExtractColumnHeaderRead<ExcelCell> decorateReadForSpecGuessing(final ExcelRead excelRead,
+    private static ExtractColumnHeaderRead<Path, ExcelCell> decorateReadForSpecGuessing(final ExcelRead excelRead,
         final TableReadConfig<ExcelTableReaderConfig> config) {
-        final ExtractColumnHeaderRead<ExcelCell> extractColHeaderRead =
+        final ExtractColumnHeaderRead<Path, ExcelCell> extractColHeaderRead =
             new DefaultExtractColumnHeaderRead<>(excelRead, config);
-        final Read<ExcelCell> read = ExcelUtils.decorateRowFilterReads(extractColHeaderRead, config);
+        final Read<Path, ExcelCell> read = ExcelUtils.decorateRowFilterReads(extractColHeaderRead, config);
         return new WrapperExtractColumnHeaderRead(read, extractColHeaderRead::getColumnHeaders);
     }
 
@@ -211,7 +211,7 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
             formatString, path), e);
     }
 
-    private static TableSpecGuesser<KNIMECellType, ExcelCell> createGuesser() {
+    private static TableSpecGuesser<Path, KNIMECellType, ExcelCell> createGuesser() {
         return new TableSpecGuesser<>(TYPE_HIERARCHY, ExcelCell::getStringValue);
     }
 

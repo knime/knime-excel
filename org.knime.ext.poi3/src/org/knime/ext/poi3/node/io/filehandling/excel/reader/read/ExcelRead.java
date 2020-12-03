@@ -80,7 +80,7 @@ import org.knime.filehandling.core.node.table.reader.read.Read;
  *
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
  */
-public abstract class ExcelRead implements Read<ExcelCell> {
+public abstract class ExcelRead implements Read<Path, ExcelCell> {
 
     private static final int BLOCKING_QUEUE_SIZE = 100;
 
@@ -167,7 +167,7 @@ public abstract class ExcelRead implements Read<ExcelCell> {
     }
 
     @Override
-    public final Optional<Path> getPath() {
+    public final Optional<Path> getItem() {
         return Optional.of(m_path);
     }
 

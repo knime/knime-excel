@@ -225,8 +225,8 @@ public enum ExcelReadAdapterFactory implements ReadAdapterFactory<KNIMECellType,
     }
 
     @Override
-    public Map<KNIMECellType, DataType> getDefaultTypeMap() {
-        return DEFAULT_TYPES;
+    public DataType getDefaultType(final KNIMECellType type) {
+        return DEFAULT_TYPES.get(type);
     }
 
 }

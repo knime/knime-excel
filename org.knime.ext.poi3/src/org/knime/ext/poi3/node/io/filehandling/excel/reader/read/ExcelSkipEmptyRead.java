@@ -49,6 +49,7 @@
 package org.knime.ext.poi3.node.io.filehandling.excel.reader.read;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Objects;
 
 import org.knime.filehandling.core.node.table.reader.randomaccess.RandomAccessible;
@@ -62,7 +63,7 @@ import org.knime.filehandling.core.node.table.reader.read.Read;
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
  * @param <V> the type of value
  */
-final class ExcelSkipEmptyRead<V> extends AbstractReadDecorator<V> {
+final class ExcelSkipEmptyRead<V> extends AbstractReadDecorator<Path, V> {
 
     private boolean m_useRowIdIdx;
 
@@ -72,7 +73,7 @@ final class ExcelSkipEmptyRead<V> extends AbstractReadDecorator<V> {
      * @param source the {@link Read} to decorate
      * @param useRowIDIdx if a row ID idx is used
      */
-    ExcelSkipEmptyRead(final Read<V> source, final boolean useRowIDIdx) {
+    ExcelSkipEmptyRead(final Read<Path, V> source, final boolean useRowIDIdx) {
         super(source);
         m_useRowIdIdx = useRowIDIdx;
     }

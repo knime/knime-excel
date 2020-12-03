@@ -70,8 +70,7 @@ import org.knime.filehandling.core.node.table.reader.preview.dialog.GenericItemA
 import org.knime.filehandling.core.node.table.reader.preview.dialog.PreviewDataTable;
 import org.knime.filehandling.core.node.table.reader.preview.dialog.SpecGuessingSwingWorker;
 import org.knime.filehandling.core.node.table.reader.preview.dialog.TableReaderPreviewModel;
-import org.knime.filehandling.core.node.table.reader.util.GenericMultiTableRead;
-import org.knime.filehandling.core.node.table.reader.util.GenericStagedMultiTableRead;
+import org.knime.filehandling.core.node.table.reader.util.MultiTableRead;
 import org.knime.filehandling.core.node.table.reader.util.StagedMultiTableRead;
 import org.knime.filehandling.core.util.CheckedExceptionSupplier;
 
@@ -86,7 +85,7 @@ import org.knime.filehandling.core.util.CheckedExceptionSupplier;
  */
 final class FileContentPreviewController<C extends ReaderSpecificConfig<C>, T> {
 
-    private final MultiTableReadFactory<C, T> m_readFactory;
+    private final MultiTableReadFactory<Path, C, T> m_readFactory;
 
     private final AnalysisComponentModel m_analysisComponent;
 
@@ -102,7 +101,7 @@ final class FileContentPreviewController<C extends ReaderSpecificConfig<C>, T> {
      * @param tableReaderPreviewModel {@link TableReaderPreviewModel}
      * @param itemAccessorSupplier GenericItemAccessor supplier
      */
-    FileContentPreviewController(final MultiTableReadFactory<C, T> readFactory,
+    FileContentPreviewController(final MultiTableReadFactory<Path, C, T> readFactory,
         final AnalysisComponentModel analysisComponentModel, final TableReaderPreviewModel tableReaderPreviewModel,
         final Supplier<GenericItemAccessor<Path>> itemAccessorSupplier) {
         m_readFactory = readFactory;
@@ -156,7 +155,7 @@ final class FileContentPreviewController<C extends ReaderSpecificConfig<C>, T> {
 
         private GenericItemAccessSwingWorker<Path> m_pathAccessWorker = null;
 
-        private StagedMultiTableRead<T> m_currentRead = null;
+        private StagedMultiTableRead<Path, T> m_currentRead = null;
 
         private GenericItemAccessor<Path> m_readPathAccessor = null;
 
@@ -213,14 +212,14 @@ final class FileContentPreviewController<C extends ReaderSpecificConfig<C>, T> {
             m_specGuessingWorker.execute();
         }
 
-        private void consumeNewStagedMultiRead(final GenericStagedMultiTableRead<Path, T> stagedMultiTableRead) {
+        private void consumeNewStagedMultiRead(final StagedMultiTableRead<Path, T> stagedMultiTableRead) {
             if (m_closed.get()) {
                 // this method is called in the EDT so it might be the case that
                 // the run got cancelled between the completion of the StagedMultiTableRead
                 // and the invocation of its background worker
                 return;
             }
-            m_currentRead = (StagedMultiTableRead<T>)stagedMultiTableRead;
+            m_currentRead = stagedMultiTableRead;
             // the table spec might not change but the read accessor will be closed therefore we need to
             // update the preview table otherwise we risk IOExceptions because the paths are no longer valid
             // In addition to this issue, it might also be the case that a config change might not result in
@@ -233,7 +232,7 @@ final class FileContentPreviewController<C extends ReaderSpecificConfig<C>, T> {
                 return;
             }
             try {
-                final GenericMultiTableRead<Path> mtr = m_currentRead.withoutTransformation(m_paths);
+                final MultiTableRead mtr = m_currentRead.withoutTransformation(m_paths);
                 @SuppressWarnings("resource") // the m_preview must make sure that the PreviewDataTable is closed
                 final PreviewDataTable pdt = new PreviewDataTable(mtr::createPreviewIterator, mtr.getOutputSpec());
                 m_previewModel.setDataTable(pdt);

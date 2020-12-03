@@ -53,6 +53,7 @@ import java.awt.Font;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionListener;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -100,7 +101,7 @@ import org.knime.filehandling.core.node.table.reader.config.DefaultMultiTableRea
 import org.knime.filehandling.core.node.table.reader.config.DefaultTableReadConfig;
 import org.knime.filehandling.core.node.table.reader.config.MultiTableReadConfig;
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
-import org.knime.filehandling.core.node.table.reader.preview.dialog.AbstractTableReaderNodeDialog;
+import org.knime.filehandling.core.node.table.reader.preview.dialog.AbstractPathTableReaderNodeDialog;
 import org.knime.filehandling.core.node.table.reader.preview.dialog.AnalysisComponentModel;
 import org.knime.filehandling.core.node.table.reader.preview.dialog.TableReaderPreviewModel;
 import org.knime.filehandling.core.node.table.reader.preview.dialog.TableReaderPreviewView;
@@ -112,7 +113,7 @@ import org.knime.filehandling.core.util.SettingsUtils;
  *
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
  */
-final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<ExcelTableReaderConfig, KNIMECellType> {
+final class ExcelTableReaderNodeDialog extends AbstractPathTableReaderNodeDialog<ExcelTableReaderConfig, KNIMECellType> {
 
     private final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> //
     m_fileContentPreviewConfig = createFileContentPreviewSettings();
@@ -240,7 +241,7 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
     ExcelTableReaderNodeDialog(final SettingsModelReaderFileChooser settingsModelReaderFileChooser,
         final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> //
         config, final ExcelTableReader tableReader,
-        final MultiTableReadFactory<ExcelTableReaderConfig, KNIMECellType> readFactory,
+        final MultiTableReadFactory<Path, ExcelTableReaderConfig, KNIMECellType> readFactory,
         final ProductionPathProvider<KNIMECellType> defaultProductionPathProvider) {
         super(readFactory, defaultProductionPathProvider, true);
         m_settingsModelFilePanel = settingsModelReaderFileChooser;

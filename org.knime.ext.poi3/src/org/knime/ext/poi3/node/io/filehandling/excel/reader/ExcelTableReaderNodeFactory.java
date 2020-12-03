@@ -48,6 +48,7 @@
  */
 package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 
+import java.nio.file.Path;
 import java.util.Optional;
 
 import org.knime.core.node.NodeDialogPane;
@@ -67,7 +68,7 @@ import org.knime.filehandling.core.node.table.reader.ProductionPathProvider;
 import org.knime.filehandling.core.node.table.reader.ReadAdapterFactory;
 import org.knime.filehandling.core.node.table.reader.config.DefaultMultiTableReadConfig;
 import org.knime.filehandling.core.node.table.reader.config.DefaultTableReadConfig;
-import org.knime.filehandling.core.node.table.reader.preview.dialog.AbstractTableReaderNodeDialog;
+import org.knime.filehandling.core.node.table.reader.preview.dialog.AbstractPathTableReaderNodeDialog;
 import org.knime.filehandling.core.node.table.reader.type.hierarchy.TypeHierarchy;
 
 /**
@@ -81,9 +82,9 @@ public final class ExcelTableReaderNodeFactory
     private static final String[] FILE_SUFFIXES = new String[]{".xlsx", ".xlsm", ".xlsb", ".xls"};
 
     @Override
-    protected AbstractTableReaderNodeDialog<ExcelTableReaderConfig, KNIMECellType> createNodeDialogPane(
+    protected AbstractPathTableReaderNodeDialog<ExcelTableReaderConfig, KNIMECellType> createNodeDialogPane(
         final NodeCreationConfiguration creationConfig,
-        final MultiTableReadFactory<ExcelTableReaderConfig, KNIMECellType> readFactory,
+        final MultiTableReadFactory<Path, ExcelTableReaderConfig, KNIMECellType> readFactory,
         final ProductionPathProvider<KNIMECellType> defaultProductionPathFn) {
         // we overwrite #createNodeDialogPane(NodeCreationConfiguration) directly to be able to pass a reference of the
         // ExcelTableReader to the dialog; this reference will be used to fetch sheet name information during spec
@@ -94,7 +95,7 @@ public final class ExcelTableReaderNodeFactory
     @Override
     protected NodeDialogPane createNodeDialogPane(final NodeCreationConfiguration creationConfig) {
         final ExcelTableReader tableReader = createReader();
-        final MultiTableReadFactory<ExcelTableReaderConfig, KNIMECellType> readFactory =
+        final MultiTableReadFactory<Path, ExcelTableReaderConfig, KNIMECellType> readFactory =
             createMultiTableReadFactory(tableReader);
         final DefaultProductionPathProvider<KNIMECellType> productionPathProvider = createProductionPathProvider();
         return new ExcelTableReaderNodeDialog(createPathSettings(creationConfig), createConfig(creationConfig),
