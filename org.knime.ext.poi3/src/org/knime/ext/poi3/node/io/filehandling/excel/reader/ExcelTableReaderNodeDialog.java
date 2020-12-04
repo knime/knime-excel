@@ -711,7 +711,6 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         m_filePanel.saveSettingsTo(SettingsUtils.getOrAdd(settings, SettingsUtils.CFG_SETTINGS_TAB));
         saveTableReadSettings();
         saveExcelReadSettings();
-        m_config.setTableSpecConfig(getTableSpecConfig());
         m_config.saveInDialog(settings);
     }
 
@@ -749,11 +748,12 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         tableReadConfig.setLimitRowsForSpec(m_limitAnalysisChecker.isSelected());
         tableReadConfig.setMaxRowsForSpec((long)m_limitAnalysisSpinner.getValue());
         tableReadConfig.setRowIDIdx(0);
-        m_config.setFailOnDifferingSpecs(m_failOnDifferingSpecs.isSelected());
         tableReadConfig.setSkipEmptyRows(m_skipEmptyRows.isSelected());
         tableReadConfig.setUseColumnHeaderIdx(m_columnHeaderCheckBox.isSelected());
         tableReadConfig.setColumnHeaderIdx((long)m_columnHeaderSpinner.getValue() - 1);
         tableReadConfig.setDecorateRead(false);
+        m_config.setFailOnDifferingSpecs(m_failOnDifferingSpecs.isSelected());
+        m_config.setTableSpecConfig(getTableSpecConfig());
     }
 
     /**
