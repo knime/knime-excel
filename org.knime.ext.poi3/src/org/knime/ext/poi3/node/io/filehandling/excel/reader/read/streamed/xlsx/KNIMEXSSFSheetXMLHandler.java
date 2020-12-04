@@ -46,7 +46,7 @@
  * History
  *   Oct 27, 2020 (Simon Schmid, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.reader.read.xlsx;
+package org.knime.ext.poi3.node.io.filehandling.excel.reader.read.streamed.xlsx;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -55,6 +55,9 @@ import java.util.stream.IntStream;
 import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
 import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler;
 import org.apache.poi.xssf.model.StylesTable;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.streamed.AbstractKNIMESheetContentsHandler;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.streamed.AbstractKNIMESheetContentsHandler.KNIMEXSSFDataType;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.streamed.KNIMEDataFormatter;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 
@@ -64,59 +67,7 @@ import org.xml.sax.SAXException;
  *
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
  */
-@SuppressWarnings("javadoc")
 final class KNIMEXSSFSheetXMLHandler extends XSSFSheetXMLHandler {
-
-    /** Data type of the cell. */
-    enum KNIMEXSSFDataType {
-            /** Number or date */
-            NUMBER_OR_DATE,
-            /** Boolean */
-            BOOLEAN,
-            /** Error in the formula */
-            ERROR,
-            /** Text */
-            STRING,
-            /** A formula */
-            FORMULA;
-    }
-
-    /**
-     * An extension of {@link SheetContentsHandler} that can provide type information of the current cell's type.
-     */
-    abstract static class AbstractKNIMESheetContentsHandler implements SheetContentsHandler {
-
-        private KNIMEXSSFDataType m_dataType;
-
-        private Set<Integer> m_hiddenCols;
-
-        private boolean m_isHiddenRow;
-
-        void nextCellType(final KNIMEXSSFDataType type) {
-            m_dataType = type;
-        }
-
-        protected KNIMEXSSFDataType getCellType() {
-            return m_dataType;
-        }
-
-        void hiddenCols(final Set<Integer> hiddenColsToSkip) {
-            m_hiddenCols = hiddenColsToSkip;
-        }
-
-        protected Set<Integer> getHiddenCols() {
-            return m_hiddenCols;
-        }
-
-        void hiddenRow(final boolean isHiddenRow) {
-            m_isHiddenRow = isHiddenRow;
-        }
-
-        protected boolean isHiddenRow() {
-            return m_isHiddenRow;
-        }
-
-    }
 
     private final AbstractKNIMESheetContentsHandler m_output;
 
@@ -178,7 +129,7 @@ final class KNIMEXSSFSheetXMLHandler extends XSSFSheetXMLHandler {
     @Override
     public void endElement(final String uri, final String localName, final String qName) throws SAXException {
         m_output.nextCellType(m_nextDataType);
-        m_output.hiddenCols(m_hiddenCols);
+        m_hiddenCols.stream().forEach(m_output::addHiddenCol);
         super.endElement(uri, localName, qName);
     }
 

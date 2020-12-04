@@ -6,8 +6,8 @@
 	</shortDescription>
 	<fullDescription>
 		<intro>
-		  This node reads Excel files (xlsx, xlsm, and xls format). It can read a single or multiple files at the same 
-		  time, however reading only 
+		  This node reads Excel files (xlsx, xlsm, xlsb, and xls format). It can read a single or multiple files at the 
+		  same time, however reading only 
 		  one sheet per file. The supported Excel types that can be read in are string, number, boolean, date, and time 
 		  but not pictures, diagrams, etc. Formulas can also be read in and reevaluated if desired. <br />The data is 
 		  read in and converted to the KNIME types string, integer, long, double, boolean, local date, local time,
@@ -186,7 +186,8 @@
 				If checked, formulas are reevaluated and put into the created table instead of using the cached values. 
 				This can cause errors when there are functions that are not	implemented by the underlying Apache POI 
 				library.<br/>
-				Note: for file formats besides xls, reevaluation requires significantly more memory as the whole file
+				Note: Files with xlsb format do not support this option. For xlsx and xlsm files, reevaluation requires
+				significantly more memory as the whole file
 				needs to be	kept in memory (xls files are anyway loaded completely into memory).
 			</option>
 			<option name="Formula error handling">

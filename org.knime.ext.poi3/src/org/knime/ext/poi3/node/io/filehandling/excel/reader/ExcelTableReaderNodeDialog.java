@@ -283,8 +283,10 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
     }
 
     private void registerDialogChangeListeners() {
-        m_settingsModelFilePanel.addChangeListener(
-            e -> setReadingMultipleFiles(m_settingsModelFilePanel.getFilterMode() != FilterMode.FILE));
+        m_settingsModelFilePanel.addChangeListener(e -> {
+            setReadingMultipleFiles(m_settingsModelFilePanel.getFilterMode() != FilterMode.FILE);
+            m_reevaluateFormulas.setEnabled(!m_settingsModelFilePanel.getPath().endsWith(".xlsb"));
+        });
 
         m_radioButtonSheetByName.addChangeListener(l -> m_sheetNameSelection
             .setEnabled(m_radioButtonSheetByName.isEnabled() && m_radioButtonSheetByName.isSelected()));

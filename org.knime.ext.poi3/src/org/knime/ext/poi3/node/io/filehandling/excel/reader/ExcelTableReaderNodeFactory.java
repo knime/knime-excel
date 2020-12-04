@@ -78,7 +78,7 @@ import org.knime.filehandling.core.node.table.reader.type.hierarchy.TypeHierarch
 public final class ExcelTableReaderNodeFactory
     extends AbstractTableReaderNodeFactory<ExcelTableReaderConfig, KNIMECellType, ExcelCell> {
 
-    private static final String[] FILE_SUFFIXES = new String[]{".xlsx", ".xlsm", ".xls"};
+    private static final String[] FILE_SUFFIXES = new String[]{".xlsx", ".xlsm", ".xlsb", ".xls"};
 
     @Override
     protected AbstractTableReaderNodeDialog<ExcelTableReaderConfig, KNIMECellType> createNodeDialogPane(

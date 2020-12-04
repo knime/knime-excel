@@ -63,13 +63,15 @@ import org.apache.poi.openxml4j.exceptions.ODFNotOfficeXmlFileException;
 import org.apache.poi.openxml4j.exceptions.OLE2NotOfficeXmlFileException;
 import org.apache.poi.xssf.XLSBUnsupportedException;
 import org.knime.core.node.ExecutionMonitor;
+import org.knime.core.node.NodeLogger;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelRead;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelUtils;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.WrapperExtractColumnHeaderRead;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.streamed.xlsb.XLSBRead;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.streamed.xlsx.XLSXRead;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.xls.XLSRead;
-import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.xlsx.XLSXRead;
 import org.knime.filehandling.core.node.table.reader.TableReader;
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
 import org.knime.filehandling.core.node.table.reader.read.Read;
@@ -88,6 +90,8 @@ import org.knime.filehandling.core.node.table.reader.type.hierarchy.TypeTester;
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
  */
 final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIMECellType, ExcelCell> {
+
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(ExcelTableReader.class);
 
     static final TypeFocusableTypeHierarchy<KNIMECellType, ExcelCell> TYPE_HIERARCHY = createHierarchy();
 
@@ -140,9 +144,12 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
 
     private static ExcelRead getExcelRead(final Path path, final TableReadConfig<ExcelTableReaderConfig> config)
         throws IOException {
+        final boolean reevaluateFormulas = config.getReaderSpecificConfig().isReevaluateFormulas();
         try {
-            final boolean reevaluateFormulas = config.getReaderSpecificConfig().isReevaluateFormulas();
             final String pathLowerCase = path.toString().toLowerCase();
+            if (pathLowerCase.endsWith(".xlsb")) {
+                return new XLSBRead(path, config);
+            }
             if (!reevaluateFormulas && (pathLowerCase.endsWith(".xlsx") || pathLowerCase.endsWith(".xlsm"))) {
                 return createXLSXRead(path, config);
             }
@@ -151,9 +158,19 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
             // ODF (open office) files are xml files and, hence, not detected as invalid file format by the above check
             // however, ODF files are not supported
             throw createUnsupportedFileFormatException(e, path, "ODF");
-        } catch (XLSBUnsupportedException e) {
-            // TODO: remove this catch with AP-15391
-            throw createUnsupportedFileFormatException(e, path, "XLSB");
+        } catch (XLSBUnsupportedException e) { // NOSONAR
+            // we handle this exception by creating the proper Read.
+            // user must have specified a file not ending with ".xlsb" but being an xlsb file
+            final XLSBRead xlsbRead = new XLSBRead(path, config);
+            if (reevaluateFormulas) {
+                // we just put a debug message as it is also written when creating the preview and we don't want to
+                // spam the console (of regular users)
+                LOGGER.debugWithFormat(
+                    "The format of the file '%s' is XLSB which does not support formula reevaluation. The file is read "
+                        + "without reevaluating formulas.",
+                    path);
+            }
+            return xlsbRead;
         } catch (UnsupportedFileFormatException e) {
             throw createUnsupportedFileFormatException(e, path, null);
         } catch (IOException e) {
@@ -189,10 +206,9 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
     private static IllegalArgumentException createUnsupportedFileFormatException(final Exception e, final Path path,
         final String fileFormat) {
         final String formatString = fileFormat != null ? String.format(" (%s)", fileFormat) : "";
-        return new IllegalArgumentException(
-            String.format("The format%s of the file '%s' is not supported. Please select an XLSX, XLSM, or XLS file.",
-                formatString, path),
-            e); // TODO add XLSB with AP-15391
+        return new IllegalArgumentException(String.format(
+            "The format%s of the file '%s' is not supported. Please select a valid XLSX, XLSM, XLSB or XLS file.",
+            formatString, path), e);
     }
 
     private static TableSpecGuesser<KNIMECellType, ExcelCell> createGuesser() {

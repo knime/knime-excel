@@ -32,6 +32,9 @@
          <FileExtension
                extension="xlsm">
          </FileExtension>
+         <FileExtension
+               extension="xlsb">
+         </FileExtension>
       </FileExtensionMapping>
    </extension>
 </plugin>

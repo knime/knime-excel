@@ -69,6 +69,8 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Row.MissingCellPolicy;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.binary.XSSFBSheetHandler;
+import org.apache.poi.xssf.eventusermodel.XSSFBReader;
 import org.apache.poi.xssf.eventusermodel.XSSFReader;
 import org.apache.poi.xssf.eventusermodel.XSSFReader.SheetIterator;
 import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler;
@@ -270,6 +272,39 @@ public final class ExcelUtils {
     }
 
     /**
+     * Returns a map that contains the names of the sheets contained in the file read by the specified
+     * {@link XSSFBReader} as keys and whether it is the first non-empty sheet as value.
+     *
+     * @param reader the xssfb reader
+     * @param sharedStrings the shared strings table
+     * @return the map of sheet names and whether a sheet is the first with data
+     * @throws InvalidFormatException
+     * @throws IOException
+     * @throws SAXException
+     */
+    public static Map<String, Boolean> getSheetNames(final XSSFBReader reader, final SharedStrings sharedStrings)
+        throws InvalidFormatException, IOException, SAXException {
+        final Map<String, Boolean> sheetNames = new LinkedHashMap<>(); // LinkedHashMap to retain order
+        boolean nonEmptySheetFound = false;
+        final SheetIterator sheetsData = (SheetIterator)reader.getSheetsData();
+        while (sheetsData.hasNext()) {
+            try (final InputStream inputStream = sheetsData.next()) {
+                final XSSFBSheetHandler xssfbSheetHandler = new XSSFBSheetHandler(inputStream,
+                    reader.getXSSFBStylesTable(), ((XSSFBReader.SheetIterator)sheetsData).getXSSFBSheetComments(),
+                    sharedStrings, new IsEmpty(), new DataFormatter(), false);
+                if (nonEmptySheetFound) {
+                    sheetNames.put(sheetsData.getSheetName(), false);
+                } else {
+                    final boolean sheetEmpty = isSheetEmpty(xssfbSheetHandler);
+                    sheetNames.put(sheetsData.getSheetName(), !sheetEmpty);
+                    nonEmptySheetFound = !sheetEmpty;
+                }
+            }
+        }
+        return sheetNames;
+    }
+
+    /**
      * Returns the Excel column name for the given column index.
      *
      * @param colIdx the index
@@ -459,6 +494,16 @@ public final class ExcelUtils {
         throws IOException, SAXException {
         try {
             xmlReader.parse(new InputSource(inputStream));
+            return true;
+        } catch (ParsingInterruptedException e) { // NOSONAR, exception is expected and handled
+            // not empty
+            return false;
+        }
+    }
+
+    private static boolean isSheetEmpty(final XSSFBSheetHandler xssfbSheetHandler) throws IOException {
+        try {
+            xssfbSheetHandler.parse();
             return true;
         } catch (ParsingInterruptedException e) { // NOSONAR, exception is expected and handled
             // not empty

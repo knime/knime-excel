@@ -46,7 +46,7 @@
  * History
  *   Oct 27, 2020 (Simon Schmid, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.reader.read.xlsx;
+package org.knime.ext.poi3.node.io.filehandling.excel.reader.read.streamed;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -63,7 +63,7 @@ import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCellUtils;
  *
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
  */
-final class KNIMEDataFormatter extends DataFormatter {
+public final class KNIMEDataFormatter extends DataFormatter {
 
     /**
      * The {@code use1904Windowing} passed into {@link #formatRawCellContents(double, int, String, boolean)} is always
@@ -75,7 +75,13 @@ final class KNIMEDataFormatter extends DataFormatter {
 
     private ExcelCell m_excelCell;
 
-    KNIMEDataFormatter(final boolean use1904Windowing, final boolean use15DigitsPrecision) {
+    /**
+     * Constructor.
+     *
+     * @param use1904Windowing if 1904 windowing is used
+     * @param use15DigitsPrecision is 15 digits precision is used
+     */
+    public KNIMEDataFormatter(final boolean use1904Windowing, final boolean use15DigitsPrecision) {
         m_use1904Windowing = use1904Windowing;
         m_use15DigitsPrecision = use15DigitsPrecision;
     }
@@ -118,8 +124,10 @@ final class KNIMEDataFormatter extends DataFormatter {
     /**
      * Returns an {@link Optional} holding the last created {@link ExcelCell} or being empty if there is none. Also,
      * sets the {@link ExcelCell} to {@code null}.
+     *
+     * @return the optional excel cell
      */
-    Optional<ExcelCell> getAndResetExcelCell() {
+    public Optional<ExcelCell> getAndResetExcelCell() {
         final Optional<ExcelCell> excelCell = Optional.ofNullable(m_excelCell);
         m_excelCell = null;
         return excelCell;
