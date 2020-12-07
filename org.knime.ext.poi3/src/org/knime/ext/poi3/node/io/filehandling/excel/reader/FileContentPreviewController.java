@@ -49,25 +49,24 @@
 package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 
 import java.nio.file.Path;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeLogger;
-import org.knime.core.util.Pair;
 import org.knime.core.util.SwingWorkerWithContext;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.reader.ReadPathAccessor;
 import org.knime.filehandling.core.node.table.reader.MultiTableReadFactory;
+import org.knime.filehandling.core.node.table.reader.SourceGroup;
 import org.knime.filehandling.core.node.table.reader.config.ImmutableMultiTableReadConfig;
 import org.knime.filehandling.core.node.table.reader.config.MultiTableReadConfig;
 import org.knime.filehandling.core.node.table.reader.config.ReaderSpecificConfig;
 import org.knime.filehandling.core.node.table.reader.preview.dialog.AnalysisComponentModel;
 import org.knime.filehandling.core.node.table.reader.preview.dialog.CloserSwingWorker;
-import org.knime.filehandling.core.node.table.reader.preview.dialog.GenericItemAccessSwingWorker;
 import org.knime.filehandling.core.node.table.reader.preview.dialog.GenericItemAccessor;
 import org.knime.filehandling.core.node.table.reader.preview.dialog.PreviewDataTable;
+import org.knime.filehandling.core.node.table.reader.preview.dialog.SourceGroupSwingWorker;
 import org.knime.filehandling.core.node.table.reader.preview.dialog.SpecGuessingSwingWorker;
 import org.knime.filehandling.core.node.table.reader.preview.dialog.TableReaderPreviewModel;
 import org.knime.filehandling.core.node.table.reader.util.MultiTableRead;
@@ -153,7 +152,7 @@ final class FileContentPreviewController<C extends ReaderSpecificConfig<C>, T> {
 
         private SpecGuessingSwingWorker<Path, C, T> m_specGuessingWorker = null;
 
-        private GenericItemAccessSwingWorker<Path> m_pathAccessWorker = null;
+        private SourceGroupSwingWorker<Path> m_pathAccessWorker = null;
 
         private StagedMultiTableRead<Path, T> m_currentRead = null;
 
@@ -161,12 +160,12 @@ final class FileContentPreviewController<C extends ReaderSpecificConfig<C>, T> {
 
         private final AtomicBoolean m_closed = new AtomicBoolean(false);
 
-        private List<Path> m_paths;
+        private SourceGroup<Path> m_sourceGroup;
 
         PreviewRun(final MultiTableReadConfig<C> config) {
             m_config = new ImmutableMultiTableReadConfig<>(config);
             m_readPathAccessor = m_readPathAccessorSupplier.get();
-            m_pathAccessWorker = new GenericItemAccessSwingWorker<>(m_readPathAccessor, this::startSpecGuessingWorker,
+            m_pathAccessWorker = new SourceGroupSwingWorker<>(m_readPathAccessor, this::startSpecGuessingWorker,
                 this::displayPathError);
             m_pathAccessWorker.execute();
         }
@@ -198,17 +197,18 @@ final class FileContentPreviewController<C extends ReaderSpecificConfig<C>, T> {
          *
          * @param rootPathAndPaths the list of paths resolved by m_pathAccessWorker
          */
-        private void startSpecGuessingWorker(final Pair<Path, List<Path>> rootPathAndPaths) {
+        private void startSpecGuessingWorker(final SourceGroup<Path> sourceGroup) {
             if (m_closed.get()) {
                 // this method is called in the EDT so it might be the case that
                 // the run got cancelled between the completion of the path access worker
                 // and the invocation of its background worker
                 return;
             }
-            m_paths = rootPathAndPaths.getSecond();
+            m_sourceGroup = sourceGroup;
             m_analysisComponent.setVisible(true);
-            m_specGuessingWorker = new SpecGuessingSwingWorker<>(m_readFactory, rootPathAndPaths.getFirst().toString(),
-                rootPathAndPaths.getSecond(), m_config, m_analysisComponent, this::consumeNewStagedMultiRead, e -> {});
+            m_specGuessingWorker = new SpecGuessingSwingWorker<>(m_readFactory, m_sourceGroup, m_config,
+                m_analysisComponent, this::consumeNewStagedMultiRead, e -> {
+                });
             m_specGuessingWorker.execute();
         }
 
@@ -232,7 +232,7 @@ final class FileContentPreviewController<C extends ReaderSpecificConfig<C>, T> {
                 return;
             }
             try {
-                final MultiTableRead mtr = m_currentRead.withoutTransformation(m_paths);
+                final MultiTableRead mtr = m_currentRead.withoutTransformation(m_sourceGroup);
                 @SuppressWarnings("resource") // the m_preview must make sure that the PreviewDataTable is closed
                 final PreviewDataTable pdt = new PreviewDataTable(mtr::createPreviewIterator, mtr.getOutputSpec());
                 m_previewModel.setDataTable(pdt);
