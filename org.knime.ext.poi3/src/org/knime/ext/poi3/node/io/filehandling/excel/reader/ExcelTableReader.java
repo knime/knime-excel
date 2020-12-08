@@ -148,7 +148,7 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
         try {
             final String pathLowerCase = path.toString().toLowerCase();
             if (pathLowerCase.endsWith(".xlsb")) {
-                return new XLSBRead(path, config);
+                return createXLSBRead(path, config);
             }
             if (!reevaluateFormulas && (pathLowerCase.endsWith(".xlsx") || pathLowerCase.endsWith(".xlsm"))) {
                 return createXLSXRead(path, config);
@@ -181,6 +181,17 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
             throw e;
         }
     }
+
+    private static ExcelRead createXLSBRead(final Path path, final TableReadConfig<ExcelTableReaderConfig> config)
+            throws IOException {
+            try {
+                return new XLSBRead(path, config);
+            } catch (OLE2NotOfficeXmlFileException e) { // NOSONAR
+                // Happens if an xls file has been specified that ends with xlsb.
+                // We do not fail but simply use the XLSParser instead.
+                return new XLSRead(path, config);
+            }
+        }
 
     private static ExcelRead createXLSXRead(final Path path, final TableReadConfig<ExcelTableReaderConfig> config)
         throws IOException {

@@ -48,16 +48,25 @@
  */
 package org.knime.ext.poi3.node.io.filehandling.excel.reader.read.streamed;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.security.GeneralSecurityException;
 import java.util.Map;
 import java.util.OptionalLong;
 import java.util.Set;
 
 import org.apache.commons.io.input.CountingInputStream;
+import org.apache.poi.openxml4j.exceptions.NotOfficeXmlFileException;
 import org.apache.poi.openxml4j.opc.OPCPackage;
+import org.apache.poi.poifs.crypt.Decryptor;
+import org.apache.poi.poifs.crypt.EncryptionInfo;
+import org.apache.poi.poifs.filesystem.FileMagic;
+import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.apache.poi.xssf.eventusermodel.XSSFReader.SheetIterator;
+import org.knime.core.node.defaultnodesettings.SettingsModelAuthentication;
+import org.knime.core.node.defaultnodesettings.SettingsModelAuthentication.AuthenticationType;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelParserRunnable;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelRead;
@@ -98,10 +107,56 @@ public abstract class AbstractStreamedRead extends ExcelRead {
 
     private AbstractStreamedParserRunnable m_streamedParser;
 
+    private POIFSFileSystem m_poiFS;
+
+    @SuppressWarnings("resource") // resources closed in #closeResources
     @Override
     protected ExcelParserRunnable createParser(final InputStream inputStream) throws IOException {
-        m_streamedParser = createStreamedParser(inputStream);
+        m_streamedParser = createStreamedParser(checkEncryptionAndDecrypt(inputStream));
         return m_streamedParser;
+    }
+
+    private InputStream checkEncryptionAndDecrypt(final InputStream inputStream) throws IOException {
+        final SettingsModelAuthentication authenticationSettingsModel =
+            m_config.getReaderSpecificConfig().getAuthenticationSettingsModel();
+        final AuthenticationType authenticationType = authenticationSettingsModel.getAuthenticationType();
+        if (authenticationType == AuthenticationType.NONE) {
+            return inputStream;
+        }
+
+        // we need an input stream that supports #mark and #reset
+        final BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream);
+        switch (FileMagic.valueOf(bufferedInputStream)) {
+            case OLE2:
+                // encrypted OOXML files are stored as encrypted OLE2 files that contain the xml content
+                return decrypt(bufferedInputStream);
+            case OOXML:
+                // this case means we actually have a not encrypted file, so just return the stream without decryption
+                return bufferedInputStream;
+            default:
+                // will be caught and output with a user-friendly error message
+                throw new NotOfficeXmlFileException("");
+        }
+    }
+
+    private InputStream decrypt(final BufferedInputStream bufferedInputStream) throws IOException {
+        try {
+            m_poiFS = new POIFSFileSystem(bufferedInputStream);
+            final EncryptionInfo encryptionInfo = new EncryptionInfo(m_poiFS);
+            final Decryptor d = Decryptor.getInstance(encryptionInfo);
+            final SettingsModelAuthentication authenticationSettingsModel =
+                m_config.getReaderSpecificConfig().getAuthenticationSettingsModel();
+            final String password =
+                authenticationSettingsModel.getPassword(m_config.getReaderSpecificConfig().getCredentialsProvider());
+            if (!d.verifyPassword(password)) {
+                bufferedInputStream.close();
+                m_poiFS.close();
+                throw createPasswordIncorrectException(null);
+            }
+            return d.getDataStream(m_poiFS);
+        } catch (GeneralSecurityException e) {
+            throw new IOException(e.getMessage(), e);
+        }
     }
 
     /**
@@ -156,6 +211,9 @@ public abstract class AbstractStreamedRead extends ExcelRead {
         }
         if (m_opc != null) {
             m_opc.close();
+        }
+        if (m_poiFS != null) {
+            m_poiFS.close();
         }
     }
 

@@ -210,6 +210,17 @@
 				files have the same table structure, i.e. the same columns.
 			</option>	
 		</tab>
+		<tab name="Encryption">
+			<option name="Password for protected files">
+				Allows you to specify a password to decrypt files that have been protected with a password via Excel.
+				<ul>
+					<li>None: only files without password protection can be read.</li>
+					<li>Credentials: use a password set via workflow credentials. Files without password protection can
+					also be read.</li>
+					<li>Password: specify a password. Files without password protection can	also be read.</li>
+				</ul>
+			</option>
+		</tab>
 	</fullDescription>
 
 	<ports>

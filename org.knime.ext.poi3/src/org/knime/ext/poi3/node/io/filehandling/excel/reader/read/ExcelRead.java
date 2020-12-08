@@ -65,6 +65,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.openxml4j.exceptions.InvalidOperationException;
 import org.knime.core.util.ThreadUtils;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
@@ -127,7 +128,12 @@ public abstract class ExcelRead implements Read<Path, ExcelCell> {
         m_path = path;
         m_config = config;
         m_inputStream = FSFiles.newInputStream(path);
-        startParserThread();
+        try {
+            startParserThread();
+        } catch (Exception e) { // NOSONAR catch any exception to make sure the stream is closed
+            m_inputStream.close();
+            throw e;
+        }
     }
 
     /**
@@ -154,6 +160,29 @@ public abstract class ExcelRead implements Read<Path, ExcelCell> {
             close();
         }
         return hasNext ? m_randomAccessibleIterator.next() : null;
+    }
+
+    /**
+     * Creates and returns an {@link IOException} with an error message telling the user which file requires a password
+     * to be opened.
+     *
+     * @param e the {@link EncryptedDocumentException} to re-throw, can be {@code null}
+     * @return an {@link IOException} with a nice error message
+     */
+    protected IOException createPasswordProtectedFileException(final EncryptedDocumentException e) {
+        return new IOException(String
+            .format("The file '%s' is password protected. Supply a password via the encryption settings.", m_path), e);
+    }
+
+    /**
+     * Creates and returns an {@link IOException} with an error message telling the user for which file the password is
+     * incorrect.
+     *
+     * @param e the {@link EncryptedDocumentException} to re-throw, can be {@code null}
+     * @return an {@link IOException} with a nice error message
+     */
+    protected IOException createPasswordIncorrectException(final EncryptedDocumentException e) {
+        return new IOException(String.format("The supplied password is incorrect for file '%s'.", m_path), e);
     }
 
     private void startParserThread() throws IOException {

@@ -60,6 +60,7 @@ import java.util.Map;
 import java.util.OptionalLong;
 import java.util.Set;
 
+import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.openxml4j.exceptions.InvalidOperationException;
 import org.apache.poi.openxml4j.exceptions.NotOfficeXmlFileException;
@@ -75,6 +76,8 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.knime.core.node.defaultnodesettings.SettingsModelAuthentication;
+import org.knime.core.node.defaultnodesettings.SettingsModelAuthentication.AuthenticationType;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell;
@@ -161,7 +164,7 @@ public final class XLSRead extends ExcelRead {
      * need to parse the message of the exception thrown there, we check ourselves and provide a more user-friendly
      * error message.
      */
-    private static Workbook checkFileFormatAndCreateWorkbook(final BufferedInputStream inputStream) throws IOException {
+    private Workbook checkFileFormatAndCreateWorkbook(final BufferedInputStream inputStream) throws IOException {
         switch (FileMagic.valueOf(inputStream)) {
             case OLE2:
             case OOXML:
@@ -170,7 +173,23 @@ public final class XLSRead extends ExcelRead {
                 // will be caught and output with a user-friendly error message
                 throw new NotOfficeXmlFileException("");
         }
-        return WorkbookFactory.create(inputStream);
+        final SettingsModelAuthentication authenticationSettingsModel =
+            m_config.getReaderSpecificConfig().getAuthenticationSettingsModel();
+        if (authenticationSettingsModel.getAuthenticationType() == AuthenticationType.NONE) {
+            try {
+                return WorkbookFactory.create(inputStream);
+            } catch (EncryptedDocumentException e) {
+                throw createPasswordProtectedFileException(e);
+            }
+        } else {
+            try {
+                final String password = authenticationSettingsModel
+                    .getPassword(m_config.getReaderSpecificConfig().getCredentialsProvider());
+                return WorkbookFactory.create(inputStream, password);
+            } catch (EncryptedDocumentException e) {
+                throw createPasswordIncorrectException(e);
+            }
+        }
     }
 
     @Override

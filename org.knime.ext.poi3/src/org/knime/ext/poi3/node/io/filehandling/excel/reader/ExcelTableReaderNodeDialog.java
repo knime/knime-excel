@@ -86,6 +86,9 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NotConfigurableException;
+import org.knime.core.node.defaultnodesettings.DialogComponentAuthentication;
+import org.knime.core.node.defaultnodesettings.SettingsModelAuthentication;
+import org.knime.core.node.defaultnodesettings.SettingsModelAuthentication.AuthenticationType;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.util.ViewUtils;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
@@ -223,6 +226,8 @@ final class ExcelTableReaderNodeDialog
     private final JSpinner m_limitAnalysisSpinner = new JSpinner(
         new SpinnerNumberModel(Long.valueOf(50), Long.valueOf(1), Long.valueOf(Long.MAX_VALUE), Long.valueOf(50)));
 
+    private final DialogComponentAuthentication m_passwordComponent;
+
     private List<JTabbedPane> m_tabbedPreviewPaneList = new ArrayList<>();
 
     private final FileContentPreviewController<ExcelTableReaderConfig, KNIMECellType> m_fileContentPreviewController;
@@ -236,6 +241,8 @@ final class ExcelTableReaderNodeDialog
     private boolean m_previewConfigChanged = false;
 
     private boolean m_switchTabInTabbedPanes = false;
+
+    private final SettingsModelAuthentication m_authenticationSettingsModel;
 
     ExcelTableReaderNodeDialog(final SettingsModelReaderFileChooser settingsModelReaderFileChooser,
         final ExcelMultiTableReadConfig //
@@ -252,6 +259,10 @@ final class ExcelTableReaderNodeDialog
         final FlowVariableModel readFvm = createFlowVariableModel(keyChain, FSLocationVariableType.INSTANCE);
         m_filePanel = new DialogComponentReaderFileChooser(m_settingsModelFilePanel, "excel_reader_writer", readFvm,
             FilterMode.FILE, FilterMode.FILES_IN_FOLDERS);
+
+        m_authenticationSettingsModel = m_config.getReaderSpecificConfig().getAuthenticationSettingsModel();
+        m_passwordComponent = new DialogComponentAuthentication(m_authenticationSettingsModel, null,
+            AuthenticationType.PWD, AuthenticationType.CREDENTIALS, AuthenticationType.NONE);
 
         final Font italicFont = new Font(m_firstSheetWithDataLabel.getFont().getName(), Font.ITALIC,
             m_firstSheetWithDataLabel.getFont().getSize());
@@ -277,6 +288,7 @@ final class ExcelTableReaderNodeDialog
         addTab("Settings", createGeneralSettingsTab());
         addTab("Transformation", createTransformationTab());
         addTab("Advanced Settings", createAdvancedSettingsTab());
+        addTab("Encryption", createEncryptionSettingsTab());
         registerDialogChangeListeners();
         registerPreviewChangeListeners();
         registerTabbedPaneChangeListeners();
@@ -527,8 +539,17 @@ final class ExcelTableReaderNodeDialog
         final GBCBuilder gbcBuilder = new GBCBuilder().resetPos().anchorFirstLineStart().setWeightX(1).fillHorizontal();
         panel.add(createAdvancedReaderOptionsPanel(), gbcBuilder.build());
         panel.add(createFormulaEvaluationErrorOptionsPanel(), gbcBuilder.incY().build());
+        panel.add(createEncryptionPanel(), gbcBuilder.incY().build());
         panel.add(createDataRowsSpecLimitPanel(), gbcBuilder.incY().build());
         panel.add(createSpecFailingOptionsPanel(), gbcBuilder.incY().build());
+        panel.add(createPreviewComponent(), gbcBuilder.incY().fillBoth().setWeightY(1).build());
+        return panel;
+    }
+
+    private JPanel createEncryptionSettingsTab() {
+        final JPanel panel = new JPanel(new GridBagLayout());
+        final GBCBuilder gbcBuilder = new GBCBuilder().resetPos().anchorFirstLineStart().setWeightX(1).fillHorizontal();
+        panel.add(createEncryptionPanel(), gbcBuilder.build());
         panel.add(createPreviewComponent(), gbcBuilder.incY().fillBoth().setWeightY(1).build());
         return panel;
     }
@@ -544,6 +565,17 @@ final class ExcelTableReaderNodeDialog
         panel.add(m_use15DigitsPrecision, gbcBuilder.incY().build());
         panel.add(m_replaceEmptyStringsWithMissings, gbcBuilder.incY().build());
         panel.add(m_reevaluateFormulas, gbcBuilder.incY().setInsets(new Insets(5, 5, 5, 5)).build());
+        return panel;
+    }
+
+    private JPanel createEncryptionPanel() {
+        final JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBorder(
+            BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Password for protected files"));
+        final GBCBuilder gbcBuilder =
+            new GBCBuilder(new Insets(0, 5, 0, 5)).resetPos().anchorFirstLineStart().fillBoth();
+        panel.add(m_passwordComponent.getComponentPanel(), gbcBuilder.build());
+        panel.add(Box.createHorizontalBox(), gbcBuilder.incX().setWeightX(1).build());
         return panel;
     }
 
@@ -587,6 +619,7 @@ final class ExcelTableReaderNodeDialog
 
     private void registerPreviewChangeListeners() {
         m_settingsModelFilePanel.addChangeListener(l -> configRelevantForFileContentChanged(true));
+        m_authenticationSettingsModel.addChangeListener(l -> configRelevantForFileContentChanged(true));
 
         final ActionListener actionListener = l -> configNotRelevantForFileContentChanged();
         m_failOnDifferingSpecs.addActionListener(actionListener);
@@ -670,10 +703,10 @@ final class ExcelTableReaderNodeDialog
         configChanged(false);
     }
 
-    private void configRelevantForFileContentChanged(final boolean fileChanged) {
+    private void configRelevantForFileContentChanged(final boolean updateSheets) {
         m_fileContentConfigChanged = true;
         m_previewConfigChanged = true;
-        configChanged(fileChanged);
+        configChanged(updateSheets);
     }
 
     private void updateFileContentPreview() {
@@ -727,6 +760,9 @@ final class ExcelTableReaderNodeDialog
         if (m_config.hasTableSpecConfig()) {
             loadFromTableSpecConfig(m_config.getTableSpecConfig());
         }
+        m_passwordComponent.loadSettingsFrom(
+            SettingsUtils.getOrEmpty(settings, ExcelMultiTableReadConfigSerializer.CFG_ENCRYPTION_SETTINGS_TAB), specs,
+            getCredentialsProvider());
         m_fileContentConfigChanged = true;
         ignoreEvents(false);
         updatePreviewOrFileContentView(isTablePreviewInForeground());
@@ -807,6 +843,9 @@ final class ExcelTableReaderNodeDialog
             throw new InvalidSettingsException(e.getMessage());
         }
         excelConfig.setUseRawSettings(false);
+
+        excelConfig.setCredentialsProvider(getCredentialsProvider());
+        excelConfig.setAuthenticationSettingsModel(m_authenticationSettingsModel);
     }
 
     private void updateFileContentPreviewSettings() {
@@ -824,6 +863,8 @@ final class ExcelTableReaderNodeDialog
         }
         excelConfig.setSheetName((String)m_sheetNameSelection.getSelectedItem());
         excelConfig.setSheetIdx((int)m_sheetIndexSelection.getValue());
+        excelConfig.setCredentialsProvider(getCredentialsProvider());
+        excelConfig.setAuthenticationSettingsModel(m_authenticationSettingsModel);
     }
 
     private static

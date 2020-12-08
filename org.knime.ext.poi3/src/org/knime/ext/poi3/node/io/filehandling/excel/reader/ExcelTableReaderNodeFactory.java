@@ -53,6 +53,7 @@ import java.util.Optional;
 
 import org.knime.core.node.NodeDialogPane;
 import org.knime.core.node.context.NodeCreationConfiguration;
+import org.knime.core.node.context.ports.PortsConfiguration;
 import org.knime.core.node.context.url.URLConfiguration;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
@@ -64,10 +65,13 @@ import org.knime.filehandling.core.defaultnodesettings.filtermode.SettingsModelF
 import org.knime.filehandling.core.node.table.reader.AbstractTableReaderNodeFactory;
 import org.knime.filehandling.core.node.table.reader.DefaultProductionPathProvider;
 import org.knime.filehandling.core.node.table.reader.MultiTableReadFactory;
+import org.knime.filehandling.core.node.table.reader.MultiTableReader;
 import org.knime.filehandling.core.node.table.reader.ProductionPathProvider;
 import org.knime.filehandling.core.node.table.reader.ReadAdapterFactory;
 import org.knime.filehandling.core.node.table.reader.config.DefaultTableReadConfig;
-import org.knime.filehandling.core.node.table.reader.preview.dialog.AbstractPathTableReaderNodeDialog;
+import org.knime.filehandling.core.node.table.reader.config.StorableMultiTableReadConfig;
+import org.knime.filehandling.core.node.table.reader.paths.PathSettings;
+import org.knime.filehandling.core.node.table.reader.preview.dialog.AbstractTableReaderNodeDialog;
 import org.knime.filehandling.core.node.table.reader.type.hierarchy.TypeHierarchy;
 
 /**
@@ -81,7 +85,20 @@ public final class ExcelTableReaderNodeFactory
     private static final String[] FILE_SUFFIXES = new String[]{".xlsx", ".xlsm", ".xlsb", ".xls"};
 
     @Override
-    protected AbstractPathTableReaderNodeDialog<ExcelTableReaderConfig, KNIMECellType> createNodeDialogPane(
+    public ExcelTableReaderNodeModel createNodeModel(final NodeCreationConfiguration creationConfig) {
+        final StorableMultiTableReadConfig<ExcelTableReaderConfig, KNIMECellType> config = createConfig(creationConfig);
+        final PathSettings pathSettings = createPathSettings(creationConfig);
+        final MultiTableReader<Path, ExcelTableReaderConfig, KNIMECellType> reader = createMultiTableReader();
+        final Optional<? extends PortsConfiguration> portConfig = creationConfig.getPortConfig();
+        if (portConfig.isPresent()) {
+            return new ExcelTableReaderNodeModel(config, pathSettings, reader, portConfig.get());
+        } else {
+            return new ExcelTableReaderNodeModel(config, pathSettings, reader);
+        }
+    }
+
+    @Override
+    protected AbstractTableReaderNodeDialog<Path, ExcelTableReaderConfig, KNIMECellType> createNodeDialogPane(
         final NodeCreationConfiguration creationConfig,
         final MultiTableReadFactory<Path, ExcelTableReaderConfig, KNIMECellType> readFactory,
         final ProductionPathProvider<KNIMECellType> defaultProductionPathFn) {

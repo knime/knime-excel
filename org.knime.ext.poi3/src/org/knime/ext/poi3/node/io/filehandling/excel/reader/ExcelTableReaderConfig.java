@@ -48,6 +48,9 @@
  */
 package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 
+import org.knime.core.node.defaultnodesettings.SettingsModelAuthentication;
+import org.knime.core.node.defaultnodesettings.SettingsModelAuthentication.AuthenticationType;
+import org.knime.core.node.workflow.CredentialsProvider;
 import org.knime.filehandling.core.node.table.reader.config.ReaderSpecificConfig;
 
 /**
@@ -56,6 +59,8 @@ import org.knime.filehandling.core.node.table.reader.config.ReaderSpecificConfig
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
  */
 public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelTableReaderConfig> {
+
+    static final String CFG_PASSWORD = "password";
 
     /** The default String to be inserted when an error cell is encountered. */
     static final String DEFAULT_FORMULA_ERROR_PATTERN = "#XL_EVAL_ERROR#";
@@ -96,6 +101,11 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
 
     private String m_rowIDCol = "A";
 
+    private SettingsModelAuthentication m_authenticationSettingsModel =
+        new SettingsModelAuthentication(CFG_PASSWORD, AuthenticationType.NONE);
+
+    private CredentialsProvider m_credentialsProvider;
+
     /**
      * Constructor.
      */
@@ -121,6 +131,8 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
         setRowIDCol(toCopy.getRowIDCol());
         setUseRawSettings(toCopy.isUseRawSettings());
         setReplaceEmptyStringsWithMissings(toCopy.isReplaceEmptyStringsWithMissings());
+        setAuthenticationSettingsModel(toCopy.getAuthenticationSettingsModel());
+        setCredentialsProvider(toCopy.getCredentialsProvider());
     }
 
     @Override
@@ -378,6 +390,34 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
      */
     void setReplaceEmptyStringsWithMissings(final boolean replaceEmptyStringsWithMissings) {
         m_replaceEmptyStringsWithMissings = replaceEmptyStringsWithMissings;
+    }
+
+    /**
+     * @return the authenticationSettingsModel
+     */
+    public SettingsModelAuthentication getAuthenticationSettingsModel() {
+        return m_authenticationSettingsModel;
+    }
+
+    /**
+     * @param authenticationSettingsModel the authenticationSettingsModel to set
+     */
+    void setAuthenticationSettingsModel(final SettingsModelAuthentication authenticationSettingsModel) {
+        m_authenticationSettingsModel = authenticationSettingsModel;
+    }
+
+    /**
+     * @return the credentialsProvider
+     */
+    public CredentialsProvider getCredentialsProvider() {
+        return m_credentialsProvider;
+    }
+
+    /**
+     * @param credentialsProvider the credentialsProvider to set
+     */
+    void setCredentialsProvider(final CredentialsProvider credentialsProvider) {
+        m_credentialsProvider = credentialsProvider;
     }
 
 }

@@ -127,6 +127,8 @@ enum ExcelMultiTableReadConfigSerializer implements ConfigSerializer<ExcelMultiT
 
     private static final String CFG_LIMIT_DATA_ROWS_SCANNED = "limit_data_rows_scanned";
 
+    static final String CFG_ENCRYPTION_SETTINGS_TAB = "encryption";
+
     @Override
     public void loadInDialog(final ExcelMultiTableReadConfig config, final NodeSettingsRO settings,
         final PortObjectSpec[] specs) throws NotConfigurableException {
@@ -152,6 +154,7 @@ enum ExcelMultiTableReadConfigSerializer implements ConfigSerializer<ExcelMultiT
         throws InvalidSettingsException {
         loadSettingsTabInModel(config, SettingsUtils.getOrEmpty(settings, CFG_SETTINGS_TAB));
         loadAdvancedSettingsTabInModel(config, settings.getNodeSettings(CFG_ADVANCED_SETTINGS_TAB));
+        loadEncryptionSettingsTabInModel(config, SettingsUtils.getOrEmpty(settings, CFG_ENCRYPTION_SETTINGS_TAB));
         if (settings.containsKey(CFG_TABLE_SPEC_CONFIG)) {
             config.setTableSpecConfig(DefaultTableSpecConfig.load(settings.getNodeSettings(CFG_TABLE_SPEC_CONFIG),
                 ExcelReadAdapterFactory.INSTANCE.getProducerRegistry(), MOST_GENERIC_EXTERNAL_TYPE, null));
@@ -167,14 +170,15 @@ enum ExcelMultiTableReadConfigSerializer implements ConfigSerializer<ExcelMultiT
         }
         saveSettingsTab(config, SettingsUtils.getOrAdd(settings, CFG_SETTINGS_TAB));
         saveAdvancedSettingsTab(config, settings.addNodeSettings(CFG_ADVANCED_SETTINGS_TAB));
+        saveEncryptionSettingsTab(config, settings.addNodeSettings(CFG_ENCRYPTION_SETTINGS_TAB));
     }
 
     @Override
-    public void validate(
-        final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> config,
-        final NodeSettingsRO settings) throws InvalidSettingsException {
+    public void validate(final ExcelMultiTableReadConfig config, final NodeSettingsRO settings)
+        throws InvalidSettingsException {
         validateSettingsTab(settings.getNodeSettings(CFG_SETTINGS_TAB));
         validateAdvancedSettingsTab(settings.getNodeSettings(CFG_ADVANCED_SETTINGS_TAB));
+        validateEncryptionSettingsTab(config, SettingsUtils.getOrEmpty(settings, CFG_ENCRYPTION_SETTINGS_TAB));
     }
 
     @Override
@@ -327,6 +331,30 @@ enum ExcelMultiTableReadConfigSerializer implements ConfigSerializer<ExcelMultiT
         settings.getString(CFG_FORMULA_ERROR_PATTERN);
         settings.getBoolean(CFG_LIMIT_DATA_ROWS_SCANNED);
         settings.getLong(CFG_MAX_DATA_ROWS_SCANNED);
+    }
+
+    private static void loadEncryptionSettingsTabInModel(final ExcelMultiTableReadConfig config,
+        final NodeSettingsRO settings) throws InvalidSettingsException {
+        final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
+        // this option has been added later; check the existence of the setting for sake of backwards compatibility
+        if (settings.containsKey(ExcelTableReaderConfig.CFG_PASSWORD)) {
+            excelConfig.getAuthenticationSettingsModel().loadSettingsFrom(settings);
+        }
+    }
+
+    private static void saveEncryptionSettingsTab(final ExcelMultiTableReadConfig config,
+        final NodeSettingsWO settings) {
+        final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
+        excelConfig.getAuthenticationSettingsModel().saveSettingsTo(settings);
+    }
+
+    public static void validateEncryptionSettingsTab(final ExcelMultiTableReadConfig config,
+        final NodeSettingsRO settings) throws InvalidSettingsException {
+        final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
+        // this option has been added later; check the existence of the setting for sake of backwards compatibility
+        if (settings.containsKey(ExcelTableReaderConfig.CFG_PASSWORD)) {
+            excelConfig.getAuthenticationSettingsModel().validateSettings(settings);
+        }
     }
 
 }
