@@ -859,6 +859,10 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         m_columnHeaderCheckBox.setSelected(tableReadConfig.useColumnHeaderIdx());
         m_columnHeaderSpinner.setValue(tableReadConfig.getColumnHeaderIdx() + 1);
         m_radioButtonReadRowIDsFromCol.setSelected(tableReadConfig.useRowIDIdx());
+        m_limitAnalysisChecker.setSelected(tableReadConfig.limitRowsForSpec());
+        m_limitAnalysisSpinner.setValue(tableReadConfig.getMaxRowsForSpec());
+        //enable disable spinner
+        m_limitAnalysisSpinner.setEnabled(m_limitAnalysisChecker.isSelected());
     }
 
     /**
