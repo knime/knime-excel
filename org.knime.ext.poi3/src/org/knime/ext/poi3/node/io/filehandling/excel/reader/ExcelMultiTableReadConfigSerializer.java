@@ -170,7 +170,9 @@ enum ExcelMultiTableReadConfigSerializer implements ConfigSerializer<ExcelMultiT
     }
 
     @Override
-    public void validate(final NodeSettingsRO settings) throws InvalidSettingsException {
+    public void validate(
+        final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> config,
+        final NodeSettingsRO settings) throws InvalidSettingsException {
         validateSettingsTab(settings.getNodeSettings(CFG_SETTINGS_TAB));
         validateAdvancedSettingsTab(settings.getNodeSettings(CFG_ADVANCED_SETTINGS_TAB));
     }
