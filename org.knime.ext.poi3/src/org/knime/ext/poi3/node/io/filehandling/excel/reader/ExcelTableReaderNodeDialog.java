@@ -113,12 +113,13 @@ import org.knime.filehandling.core.util.SettingsUtils;
  *
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
  */
-final class ExcelTableReaderNodeDialog extends AbstractPathTableReaderNodeDialog<ExcelTableReaderConfig, KNIMECellType> {
+final class ExcelTableReaderNodeDialog
+    extends AbstractPathTableReaderNodeDialog<ExcelTableReaderConfig, KNIMECellType> {
 
-    private final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> //
+    private final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>, KNIMECellType> //
     m_fileContentPreviewConfig = createFileContentPreviewSettings();
 
-    private final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> //
+    private final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>, KNIMECellType> //
     m_config;
 
     private final ExcelTableReader m_tableReader;
@@ -239,7 +240,7 @@ final class ExcelTableReaderNodeDialog extends AbstractPathTableReaderNodeDialog
     private boolean m_switchTabInTabbedPanes = false;
 
     ExcelTableReaderNodeDialog(final SettingsModelReaderFileChooser settingsModelReaderFileChooser,
-        final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> //
+        final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>, KNIMECellType> //
         config, final ExcelTableReader tableReader,
         final MultiTableReadFactory<Path, ExcelTableReaderConfig, KNIMECellType> readFactory,
         final ProductionPathProvider<KNIMECellType> defaultProductionPathProvider) {
@@ -827,7 +828,8 @@ final class ExcelTableReaderNodeDialog extends AbstractPathTableReaderNodeDialog
         excelConfig.setSheetIdx((int)m_sheetIndexSelection.getValue());
     }
 
-    private static DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>>
+    private static
+        DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>, KNIMECellType>
         createFileContentPreviewSettings() {
         final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig =
             new DefaultTableReadConfig<>(new ExcelTableReaderConfig());
@@ -930,7 +932,7 @@ final class ExcelTableReaderNodeDialog extends AbstractPathTableReaderNodeDialog
     }
 
     @Override
-    protected MultiTableReadConfig<ExcelTableReaderConfig> getConfig() throws InvalidSettingsException {
+    protected MultiTableReadConfig<ExcelTableReaderConfig, KNIMECellType> getConfig() throws InvalidSettingsException {
         if (isTablePreviewInForeground()) {
             saveTableReadSettings();
             saveExcelReadSettings();

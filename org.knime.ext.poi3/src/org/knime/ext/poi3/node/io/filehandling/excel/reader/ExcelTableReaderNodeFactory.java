@@ -136,7 +136,8 @@ public final class ExcelTableReaderNodeFactory
     }
 
     @Override
-    protected DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>>
+    protected
+        DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>, KNIMECellType>
         createConfig(final NodeCreationConfiguration nodeCreationConfig) {
         final DefaultTableReadConfig<ExcelTableReaderConfig> tc =
             new DefaultTableReadConfig<>(new ExcelTableReaderConfig());

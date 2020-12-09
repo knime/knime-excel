@@ -110,7 +110,7 @@ final class FileContentPreviewController<C extends ReaderSpecificConfig<C>, T> {
     }
 
     void configChanged(
-        final CheckedExceptionSupplier<MultiTableReadConfig<C>, InvalidSettingsException> configSupplier) {
+        final CheckedExceptionSupplier<MultiTableReadConfig<C, T>, InvalidSettingsException> configSupplier) {
         m_analysisComponent.reset();
         cancelCurrentRun();
         try {
@@ -148,7 +148,7 @@ final class FileContentPreviewController<C extends ReaderSpecificConfig<C>, T> {
      */
     private class PreviewRun implements AutoCloseable {
 
-        private ImmutableMultiTableReadConfig<C> m_config;
+        private ImmutableMultiTableReadConfig<C, T> m_config;
 
         private SpecGuessingSwingWorker<Path, C, T> m_specGuessingWorker = null;
 
@@ -162,7 +162,7 @@ final class FileContentPreviewController<C extends ReaderSpecificConfig<C>, T> {
 
         private SourceGroup<Path> m_sourceGroup;
 
-        PreviewRun(final MultiTableReadConfig<C> config) {
+        PreviewRun(final MultiTableReadConfig<C, T> config) {
             m_config = new ImmutableMultiTableReadConfig<>(config);
             m_readPathAccessor = m_readPathAccessorSupplier.get();
             m_pathAccessWorker = new SourceGroupSwingWorker<>(m_readPathAccessor, this::startSpecGuessingWorker,
@@ -232,7 +232,7 @@ final class FileContentPreviewController<C extends ReaderSpecificConfig<C>, T> {
                 return;
             }
             try {
-                final MultiTableRead mtr = m_currentRead.withoutTransformation(m_sourceGroup);
+                final MultiTableRead<T> mtr = m_currentRead.withoutTransformation(m_sourceGroup);
                 @SuppressWarnings("resource") // the m_preview must make sure that the PreviewDataTable is closed
                 final PreviewDataTable pdt = new PreviewDataTable(mtr::createPreviewIterator, mtr.getOutputSpec());
                 m_previewModel.setDataTable(pdt);
