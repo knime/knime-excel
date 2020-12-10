@@ -97,7 +97,6 @@ import org.knime.filehandling.core.defaultnodesettings.filechooser.reader.Settin
 import org.knime.filehandling.core.defaultnodesettings.filtermode.SettingsModelFilterMode.FilterMode;
 import org.knime.filehandling.core.node.table.reader.MultiTableReadFactory;
 import org.knime.filehandling.core.node.table.reader.ProductionPathProvider;
-import org.knime.filehandling.core.node.table.reader.config.DefaultMultiTableReadConfig;
 import org.knime.filehandling.core.node.table.reader.config.DefaultTableReadConfig;
 import org.knime.filehandling.core.node.table.reader.config.MultiTableReadConfig;
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
@@ -116,11 +115,10 @@ import org.knime.filehandling.core.util.SettingsUtils;
 final class ExcelTableReaderNodeDialog
     extends AbstractPathTableReaderNodeDialog<ExcelTableReaderConfig, KNIMECellType> {
 
-    private final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>, KNIMECellType> //
+    private final ExcelMultiTableReadConfig
     m_fileContentPreviewConfig = createFileContentPreviewSettings();
 
-    private final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>, KNIMECellType> //
-    m_config;
+    private final ExcelMultiTableReadConfig m_config;
 
     private final ExcelTableReader m_tableReader;
 
@@ -240,7 +238,7 @@ final class ExcelTableReaderNodeDialog
     private boolean m_switchTabInTabbedPanes = false;
 
     ExcelTableReaderNodeDialog(final SettingsModelReaderFileChooser settingsModelReaderFileChooser,
-        final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>, KNIMECellType> //
+        final ExcelMultiTableReadConfig //
         config, final ExcelTableReader tableReader,
         final MultiTableReadFactory<Path, ExcelTableReaderConfig, KNIMECellType> readFactory,
         final ProductionPathProvider<KNIMECellType> defaultProductionPathProvider) {
@@ -829,10 +827,11 @@ final class ExcelTableReaderNodeDialog
     }
 
     private static
-        DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>, KNIMECellType>
+        ExcelMultiTableReadConfig
         createFileContentPreviewSettings() {
+        final ExcelMultiTableReadConfig multiTableReadConfig = new ExcelMultiTableReadConfig();
         final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig =
-            new DefaultTableReadConfig<>(new ExcelTableReaderConfig());
+            multiTableReadConfig.getTableReadConfig();
         tableReadConfig.setDecorateRead(false);
         tableReadConfig.setRowIDIdx(0);
         tableReadConfig.setUseRowIDIdx(true);
@@ -849,7 +848,7 @@ final class ExcelTableReaderNodeDialog
         excelConfig.setAreaOfSheetToRead(AreaOfSheetToRead.ENTIRE);
         excelConfig.setRowIdGeneration(RowIDGeneration.GENERATE);
         excelConfig.setUseRawSettings(true);
-        return new DefaultMultiTableReadConfig<>(tableReadConfig, ExcelMultiTableReadConfigSerializer.INSTANCE);
+        return multiTableReadConfig;
     }
 
     /**

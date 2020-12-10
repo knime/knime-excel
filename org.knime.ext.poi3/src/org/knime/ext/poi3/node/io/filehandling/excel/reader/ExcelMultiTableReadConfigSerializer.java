@@ -57,7 +57,6 @@ import org.knime.core.node.port.PortObjectSpec;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelReadAdapterFactory;
 import org.knime.filehandling.core.node.table.reader.config.ConfigSerializer;
-import org.knime.filehandling.core.node.table.reader.config.DefaultMultiTableReadConfig;
 import org.knime.filehandling.core.node.table.reader.config.DefaultTableReadConfig;
 import org.knime.filehandling.core.node.table.reader.config.DefaultTableSpecConfig;
 import org.knime.filehandling.core.util.SettingsUtils;
@@ -67,8 +66,7 @@ import org.knime.filehandling.core.util.SettingsUtils;
  *
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
  */
-enum ExcelMultiTableReadConfigSerializer implements
-    ConfigSerializer<DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>, KNIMECellType>> {
+enum ExcelMultiTableReadConfigSerializer implements ConfigSerializer<ExcelMultiTableReadConfig> {
 
         /**
          * Singleton instance.
@@ -130,9 +128,8 @@ enum ExcelMultiTableReadConfigSerializer implements
     private static final String CFG_LIMIT_DATA_ROWS_SCANNED = "limit_data_rows_scanned";
 
     @Override
-    public void loadInDialog(
-        final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>, KNIMECellType> config,
-        final NodeSettingsRO settings, final PortObjectSpec[] specs) throws NotConfigurableException {
+    public void loadInDialog(final ExcelMultiTableReadConfig config, final NodeSettingsRO settings,
+        final PortObjectSpec[] specs) throws NotConfigurableException {
         loadSettingsTabInDialog(config, SettingsUtils.getOrEmpty(settings, CFG_SETTINGS_TAB));
         loadAdvancedSettingsTabInDialog(config, SettingsUtils.getOrEmpty(settings, CFG_ADVANCED_SETTINGS_TAB));
         if (settings.containsKey(CFG_TABLE_SPEC_CONFIG)) {
@@ -151,9 +148,8 @@ enum ExcelMultiTableReadConfigSerializer implements
     }
 
     @Override
-    public void loadInModel(
-        final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>, KNIMECellType> config,
-        final NodeSettingsRO settings) throws InvalidSettingsException {
+    public void loadInModel(final ExcelMultiTableReadConfig config, final NodeSettingsRO settings)
+        throws InvalidSettingsException {
         loadSettingsTabInModel(config, SettingsUtils.getOrEmpty(settings, CFG_SETTINGS_TAB));
         loadAdvancedSettingsTabInModel(config, settings.getNodeSettings(CFG_ADVANCED_SETTINGS_TAB));
         if (settings.containsKey(CFG_TABLE_SPEC_CONFIG)) {
@@ -165,9 +161,7 @@ enum ExcelMultiTableReadConfigSerializer implements
     }
 
     @Override
-    public void saveInModel(
-        final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>, KNIMECellType> config,
-        final NodeSettingsWO settings) {
+    public void saveInModel(final ExcelMultiTableReadConfig config, final NodeSettingsWO settings) {
         if (config.hasTableSpecConfig()) {
             config.getTableSpecConfig().save(settings.addNodeSettings(CFG_TABLE_SPEC_CONFIG));
         }
@@ -182,15 +176,12 @@ enum ExcelMultiTableReadConfigSerializer implements
     }
 
     @Override
-    public void saveInDialog(
-        final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>, KNIMECellType> config,
-        final NodeSettingsWO settings) throws InvalidSettingsException {
+    public void saveInDialog(final ExcelMultiTableReadConfig config, final NodeSettingsWO settings)
+        throws InvalidSettingsException {
         saveInModel(config, settings);
     }
 
-    private static void loadSettingsTabInDialog(
-        final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>, KNIMECellType> config,
-        final NodeSettingsRO settings) {
+    private static void loadSettingsTabInDialog(final ExcelMultiTableReadConfig config, final NodeSettingsRO settings) {
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
         excelConfig.setSheetSelection(
             SheetSelection.valueOf(settings.getString(CFG_SHEET_SELECTION, SheetSelection.FIRST.name())));
@@ -212,9 +203,8 @@ enum ExcelMultiTableReadConfigSerializer implements
         tableReadConfig.setLimitRowsForSpec(false);
     }
 
-    private static void loadSettingsTabInModel(
-        final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>, KNIMECellType> config,
-        final NodeSettingsRO settings) throws InvalidSettingsException {
+    private static void loadSettingsTabInModel(final ExcelMultiTableReadConfig config, final NodeSettingsRO settings)
+        throws InvalidSettingsException {
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
         excelConfig.setSheetSelection(SheetSelection.loadValueInModel(settings.getString(CFG_SHEET_SELECTION)));
         excelConfig.setSheetName(settings.getString(CFG_SHEET_NAME));
@@ -237,9 +227,7 @@ enum ExcelMultiTableReadConfigSerializer implements
         tableReadConfig.setDecorateRead(false);
     }
 
-    private static void saveSettingsTab(
-        final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>, KNIMECellType> config,
-        final NodeSettingsWO settings) {
+    private static void saveSettingsTab(final ExcelMultiTableReadConfig config, final NodeSettingsWO settings) {
         final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = config.getTableReadConfig();
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
         settings.addString(CFG_SHEET_SELECTION, excelConfig.getSheetSelection().name());
@@ -271,8 +259,7 @@ enum ExcelMultiTableReadConfigSerializer implements
         settings.getString(CFG_READ_TO_ROW);
     }
 
-    private static void loadAdvancedSettingsTabInDialog(
-        final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>, KNIMECellType> config,
+    private static void loadAdvancedSettingsTabInDialog(final ExcelMultiTableReadConfig config,
         final NodeSettingsRO settings) {
         config.setFailOnDifferingSpecs(settings.getBoolean(CFG_FAIL_ON_DIFFERING_SPECS, true));
         final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = config.getTableReadConfig();
@@ -292,8 +279,7 @@ enum ExcelMultiTableReadConfigSerializer implements
             settings.getString(CFG_FORMULA_ERROR_PATTERN, ExcelTableReaderConfig.DEFAULT_FORMULA_ERROR_PATTERN));
     }
 
-    private static void loadAdvancedSettingsTabInModel(
-        final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>, KNIMECellType> config,
+    private static void loadAdvancedSettingsTabInModel(final ExcelMultiTableReadConfig config,
         final NodeSettingsRO settings) throws InvalidSettingsException {
         config.setFailOnDifferingSpecs(settings.getBoolean(CFG_FAIL_ON_DIFFERING_SPECS));
         final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = config.getTableReadConfig();
@@ -311,9 +297,7 @@ enum ExcelMultiTableReadConfigSerializer implements
         excelConfig.setErrorPattern(settings.getString(CFG_FORMULA_ERROR_PATTERN));
     }
 
-    private static void saveAdvancedSettingsTab(
-        final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>, KNIMECellType> config,
-        final NodeSettingsWO settings) {
+    private static void saveAdvancedSettingsTab(final ExcelMultiTableReadConfig config, final NodeSettingsWO settings) {
         settings.addBoolean(CFG_FAIL_ON_DIFFERING_SPECS, config.failOnDifferingSpecs());
         final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = config.getTableReadConfig();
         settings.addBoolean(CFG_SKIP_EMPTY_ROWS, tableReadConfig.skipEmptyRows());

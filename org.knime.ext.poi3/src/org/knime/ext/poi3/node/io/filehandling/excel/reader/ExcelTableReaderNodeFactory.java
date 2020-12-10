@@ -66,7 +66,6 @@ import org.knime.filehandling.core.node.table.reader.DefaultProductionPathProvid
 import org.knime.filehandling.core.node.table.reader.MultiTableReadFactory;
 import org.knime.filehandling.core.node.table.reader.ProductionPathProvider;
 import org.knime.filehandling.core.node.table.reader.ReadAdapterFactory;
-import org.knime.filehandling.core.node.table.reader.config.DefaultMultiTableReadConfig;
 import org.knime.filehandling.core.node.table.reader.config.DefaultTableReadConfig;
 import org.knime.filehandling.core.node.table.reader.preview.dialog.AbstractPathTableReaderNodeDialog;
 import org.knime.filehandling.core.node.table.reader.type.hierarchy.TypeHierarchy;
@@ -136,17 +135,15 @@ public final class ExcelTableReaderNodeFactory
     }
 
     @Override
-    protected
-        DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>, KNIMECellType>
-        createConfig(final NodeCreationConfiguration nodeCreationConfig) {
-        final DefaultTableReadConfig<ExcelTableReaderConfig> tc =
-            new DefaultTableReadConfig<>(new ExcelTableReaderConfig());
+    protected ExcelMultiTableReadConfig createConfig(final NodeCreationConfiguration nodeCreationConfig) {
+        ExcelMultiTableReadConfig config = new ExcelMultiTableReadConfig();
+        final DefaultTableReadConfig<ExcelTableReaderConfig> tc = config.getTableReadConfig();
         tc.setColumnHeaderIdx(0);
         tc.setSkipEmptyRows(true);
         tc.setAllowShortRows(true);
         tc.setDecorateRead(false);
         tc.setMaxRowsForSpec(1000);
-        return new DefaultMultiTableReadConfig<>(tc, ExcelMultiTableReadConfigSerializer.INSTANCE);
+        return config;
     }
 
     @Override
