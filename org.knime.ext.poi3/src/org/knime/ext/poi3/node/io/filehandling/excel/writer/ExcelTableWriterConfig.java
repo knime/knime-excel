@@ -296,7 +296,8 @@ final class ExcelTableWriterConfig implements ExcelTableConfig {
         return m_paperSize;
     }
 
-    ExcelFormat getExcelFormat() {
+    @Override
+    public ExcelFormat getExcelFormat() {
         return ExcelFormat.valueOf(m_excelFormat.getStringValue());
     }
 
