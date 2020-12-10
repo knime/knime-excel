@@ -50,6 +50,8 @@ package org.knime.ext.poi3.node.io.filehandling.excel.writer.table;
 
 import java.util.Optional;
 
+import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelFormat;
+
 /**
  * The excel table configuration interface.
  *
@@ -119,4 +121,12 @@ public interface ExcelTableConfig {
      * @return {@code true} if the sheets need to be (re-)evaluated and {@code false} otherwise
      */
     boolean evaluate();
+
+    /**
+     *
+     * Returns the {@link ExcelFormat} to be written.
+     *
+     * @return the {@link ExcelFormat} to be written
+     */
+    ExcelFormat getExcelFormat();
 }
