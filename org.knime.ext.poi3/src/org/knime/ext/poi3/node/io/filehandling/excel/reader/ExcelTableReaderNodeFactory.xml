@@ -164,6 +164,13 @@
 			</option>
 		</tab>
 		<tab name="Advanced Settings">
+			<option name="Skip empty columns">
+				If checked, empty columns of the sheet will be skipped and not displayed in the output. Whether a column
+				is considered empty depends on the <i>Table specification</i> settings. This means that if the cells of 
+				a column for all scanned rows were empty, the column is considered empty, even if the sheet contains a
+				non-empty cell after the scanned rows. Removing the limit of scanned rows ensures empty and non-empty
+				columns being detected correctly but also increases the time required for scanning.
+			</option>
 			<option name="Skip hidden columns">
 				If checked, hidden columns of the sheet will be skipped and not displayed in the output.
 			</option>

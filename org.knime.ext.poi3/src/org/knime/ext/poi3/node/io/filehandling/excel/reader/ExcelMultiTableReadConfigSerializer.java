@@ -58,7 +58,8 @@ import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIME
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelReadAdapterFactory;
 import org.knime.filehandling.core.node.table.reader.config.ConfigSerializer;
 import org.knime.filehandling.core.node.table.reader.config.DefaultTableReadConfig;
-import org.knime.filehandling.core.node.table.reader.config.DefaultTableSpecConfig;
+import org.knime.filehandling.core.node.table.reader.config.DefaultTableSpecConfigSerializer;
+import org.knime.filehandling.core.node.table.reader.config.DefaultTableSpecConfigSerializer.ExternalConfig;
 import org.knime.filehandling.core.util.SettingsUtils;
 
 /**
@@ -101,6 +102,8 @@ enum ExcelMultiTableReadConfigSerializer implements ConfigSerializer<ExcelMultiT
 
     private static final String CFG_SKIP_EMPTY_ROWS = "skip_empty_rows";
 
+    private static final String CFG_SKIP_EMPTY_COLS = "skip_empty_cols";
+
     private static final String CFG_REPLACE_EMPTY_STRINGS_WITH_MISSINGS = "replace_empty_strings_with_missings";
 
     private static final String CFG_REEVALUATE_FORMULAS = "reevaluate_formulas";
@@ -129,6 +132,10 @@ enum ExcelMultiTableReadConfigSerializer implements ConfigSerializer<ExcelMultiT
 
     static final String CFG_ENCRYPTION_SETTINGS_TAB = "encryption";
 
+    private static final DefaultTableSpecConfigSerializer<KNIMECellType> TABLE_SPEC_CONFIG_SERIALIZER =
+        new DefaultTableSpecConfigSerializer<>(ExcelReadAdapterFactory.INSTANCE.getProducerRegistry(),
+            MOST_GENERIC_EXTERNAL_TYPE);
+
     @Override
     public void loadInDialog(final ExcelMultiTableReadConfig config, final NodeSettingsRO settings,
         final PortObjectSpec[] specs) throws NotConfigurableException {
@@ -136,8 +143,9 @@ enum ExcelMultiTableReadConfigSerializer implements ConfigSerializer<ExcelMultiT
         loadAdvancedSettingsTabInDialog(config, SettingsUtils.getOrEmpty(settings, CFG_ADVANCED_SETTINGS_TAB));
         if (settings.containsKey(CFG_TABLE_SPEC_CONFIG)) {
             try {
-                config.setTableSpecConfig(DefaultTableSpecConfig.load(settings.getNodeSettings(CFG_TABLE_SPEC_CONFIG),
-                    ExcelReadAdapterFactory.INSTANCE.getProducerRegistry(), MOST_GENERIC_EXTERNAL_TYPE, null));
+                config.setTableSpecConfig(
+                    TABLE_SPEC_CONFIG_SERIALIZER.load(settings.getNodeSettings(CFG_TABLE_SPEC_CONFIG),
+                        new ExternalConfig(null, config.skipEmptyColumns())));
             } catch (InvalidSettingsException ex) { // NOSONAR
                 /* Can only happen in TableSpecConfig#load, since we checked #NodeSettingsRO#getNodeSettings(String)
                  * before. The framework takes care that #validate is called before load so we can assume that this
@@ -156,8 +164,8 @@ enum ExcelMultiTableReadConfigSerializer implements ConfigSerializer<ExcelMultiT
         loadAdvancedSettingsTabInModel(config, settings.getNodeSettings(CFG_ADVANCED_SETTINGS_TAB));
         loadEncryptionSettingsTabInModel(config, SettingsUtils.getOrEmpty(settings, CFG_ENCRYPTION_SETTINGS_TAB));
         if (settings.containsKey(CFG_TABLE_SPEC_CONFIG)) {
-            config.setTableSpecConfig(DefaultTableSpecConfig.load(settings.getNodeSettings(CFG_TABLE_SPEC_CONFIG),
-                ExcelReadAdapterFactory.INSTANCE.getProducerRegistry(), MOST_GENERIC_EXTERNAL_TYPE, null));
+            config.setTableSpecConfig(TABLE_SPEC_CONFIG_SERIALIZER.load(settings.getNodeSettings(CFG_TABLE_SPEC_CONFIG),
+                new ExternalConfig(null, config.skipEmptyColumns())));
         } else {
             config.setTableSpecConfig(null);
         }
@@ -268,6 +276,7 @@ enum ExcelMultiTableReadConfigSerializer implements ConfigSerializer<ExcelMultiT
     private static void loadAdvancedSettingsTabInDialog(final ExcelMultiTableReadConfig config,
         final NodeSettingsRO settings) {
         config.setFailOnDifferingSpecs(settings.getBoolean(CFG_FAIL_ON_DIFFERING_SPECS, true));
+        config.setSkipEmptyColumns(settings.getBoolean(CFG_SKIP_EMPTY_COLS, false));
         final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = config.getTableReadConfig();
         tableReadConfig.setSkipEmptyRows(settings.getBoolean(CFG_SKIP_EMPTY_ROWS, true));
         tableReadConfig.setLimitRowsForSpec(settings.getBoolean(CFG_LIMIT_DATA_ROWS_SCANNED, true));
@@ -288,6 +297,9 @@ enum ExcelMultiTableReadConfigSerializer implements ConfigSerializer<ExcelMultiT
     private static void loadAdvancedSettingsTabInModel(final ExcelMultiTableReadConfig config,
         final NodeSettingsRO settings) throws InvalidSettingsException {
         config.setFailOnDifferingSpecs(settings.getBoolean(CFG_FAIL_ON_DIFFERING_SPECS));
+        if (settings.containsKey(CFG_SKIP_EMPTY_COLS)) {
+            config.setSkipEmptyColumns(settings.getBoolean(CFG_SKIP_EMPTY_COLS));
+        }
         final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = config.getTableReadConfig();
         tableReadConfig.setSkipEmptyRows(settings.getBoolean(CFG_SKIP_EMPTY_ROWS));
         tableReadConfig.setLimitRowsForSpec(settings.getBoolean(CFG_LIMIT_DATA_ROWS_SCANNED));
@@ -305,6 +317,7 @@ enum ExcelMultiTableReadConfigSerializer implements ConfigSerializer<ExcelMultiT
 
     private static void saveAdvancedSettingsTab(final ExcelMultiTableReadConfig config, final NodeSettingsWO settings) {
         settings.addBoolean(CFG_FAIL_ON_DIFFERING_SPECS, config.failOnDifferingSpecs());
+        settings.addBoolean(CFG_SKIP_EMPTY_COLS, config.skipEmptyColumns());
         final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = config.getTableReadConfig();
         settings.addBoolean(CFG_SKIP_EMPTY_ROWS, tableReadConfig.skipEmptyRows());
         settings.addBoolean(CFG_LIMIT_DATA_ROWS_SCANNED, tableReadConfig.limitRowsForSpec());

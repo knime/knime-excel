@@ -118,8 +118,7 @@ import org.knime.filehandling.core.util.SettingsUtils;
 final class ExcelTableReaderNodeDialog
     extends AbstractPathTableReaderNodeDialog<ExcelTableReaderConfig, KNIMECellType> {
 
-    private final ExcelMultiTableReadConfig
-    m_fileContentPreviewConfig = createFileContentPreviewSettings();
+    private final ExcelMultiTableReadConfig m_fileContentPreviewConfig = createFileContentPreviewSettings();
 
     private final ExcelMultiTableReadConfig m_config;
 
@@ -164,6 +163,11 @@ final class ExcelTableReaderNodeDialog
     private final JCheckBox m_skipHiddenRows = new JCheckBox("Skip hidden rows", true);
 
     private final JCheckBox m_skipEmptyRows = new JCheckBox("Skip empty rows", true);
+
+    private final JCheckBox m_skipEmptyCols = new JCheckBox(
+        "Skip empty columns (whether a column is considered empty depends on the \"Table specification\" settings "
+            + "below)",
+        false);
 
     private final JCheckBox m_replaceEmptyStringsWithMissings =
         new JCheckBox("Replace empty strings with missing values", true);
@@ -559,7 +563,8 @@ final class ExcelTableReaderNodeDialog
         panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Reading options"));
         final GBCBuilder gbcBuilder =
             new GBCBuilder(new Insets(5, 5, 0, 5)).resetPos().anchorFirstLineStart().setWeightX(1).fillHorizontal();
-        panel.add(m_skipHiddenCols, gbcBuilder.build());
+        panel.add(m_skipEmptyCols, gbcBuilder.build());
+        panel.add(m_skipHiddenCols, gbcBuilder.incY().build());
         panel.add(m_skipEmptyRows, gbcBuilder.incY().build());
         panel.add(m_skipHiddenRows, gbcBuilder.incY().build());
         panel.add(m_use15DigitsPrecision, gbcBuilder.incY().build());
@@ -627,6 +632,7 @@ final class ExcelTableReaderNodeDialog
         m_skipHiddenCols.addActionListener(actionListener);
         m_skipHiddenRows.addActionListener(actionListener);
         m_skipEmptyRows.addActionListener(actionListener);
+        m_skipEmptyCols.addActionListener(actionListener);
         m_use15DigitsPrecision.addActionListener(actionListener);
         m_replaceEmptyStringsWithMissings.addActionListener(actionListener);
         m_reevaluateFormulas.addActionListener(actionListener);
@@ -750,22 +756,20 @@ final class ExcelTableReaderNodeDialog
     }
 
     @Override
-    protected void loadSettings(final NodeSettingsRO settings, final PortObjectSpec[] specs)
+    protected ExcelMultiTableReadConfig loadSettings(final NodeSettingsRO settings, final PortObjectSpec[] specs)
         throws NotConfigurableException {
         // FIXME: loading should be handled by the config (AP-14460 & AP-14462)
         m_filePanel.loadSettingsFrom(SettingsUtils.getOrEmpty(settings, SettingsUtils.CFG_SETTINGS_TAB), specs);
         m_config.loadInDialog(settings, specs);
         loadTableReadSettings();
         loadExcelSettings();
-        if (m_config.hasTableSpecConfig()) {
-            loadFromTableSpecConfig(m_config.getTableSpecConfig());
-        }
         m_passwordComponent.loadSettingsFrom(
             SettingsUtils.getOrEmpty(settings, ExcelMultiTableReadConfigSerializer.CFG_ENCRYPTION_SETTINGS_TAB), specs,
             getCredentialsProvider());
         m_fileContentConfigChanged = true;
         ignoreEvents(false);
         updatePreviewOrFileContentView(isTablePreviewInForeground());
+        return m_config;
     }
 
     @Override
@@ -811,6 +815,7 @@ final class ExcelTableReaderNodeDialog
         excelConfig.setSheetIdx((int)m_sheetIndexSelection.getValue());
         excelConfig.setSkipHiddenCols(m_skipHiddenCols.isSelected());
         excelConfig.setSkipHiddenRows(m_skipHiddenRows.isSelected());
+        m_config.setSkipEmptyColumns(m_skipEmptyCols.isSelected());
         excelConfig.setReplaceEmptyStringsWithMissings(m_replaceEmptyStringsWithMissings.isSelected());
         excelConfig.setReevaluateFormulas(m_reevaluateFormulas.isSelected());
         if (m_radioButtonInsertMissingCell.isSelected()) {
@@ -867,9 +872,7 @@ final class ExcelTableReaderNodeDialog
         excelConfig.setAuthenticationSettingsModel(m_authenticationSettingsModel);
     }
 
-    private static
-        ExcelMultiTableReadConfig
-        createFileContentPreviewSettings() {
+    private static ExcelMultiTableReadConfig createFileContentPreviewSettings() {
         final ExcelMultiTableReadConfig multiTableReadConfig = new ExcelMultiTableReadConfig();
         final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig =
             multiTableReadConfig.getTableReadConfig();
@@ -899,6 +902,7 @@ final class ExcelTableReaderNodeDialog
         m_failOnDifferingSpecs.setSelected(m_config.failOnDifferingSpecs());
         final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = m_config.getTableReadConfig();
         m_skipEmptyRows.setSelected(tableReadConfig.skipEmptyRows());
+        m_skipEmptyCols.setSelected(m_config.skipEmptyColumns());
         m_columnHeaderCheckBox.setSelected(tableReadConfig.useColumnHeaderIdx());
         m_columnHeaderSpinner.setValue(tableReadConfig.getColumnHeaderIdx() + 1);
         m_radioButtonReadRowIDsFromCol.setSelected(tableReadConfig.useRowIDIdx());
