@@ -101,6 +101,8 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
 
     private String m_rowIDCol = "A";
 
+    private boolean m_zipBombDetection = true;
+
     private SettingsModelAuthentication m_authenticationSettingsModel =
         new SettingsModelAuthentication(CFG_PASSWORD, AuthenticationType.NONE);
 
@@ -133,6 +135,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
         setReplaceEmptyStringsWithMissings(toCopy.isReplaceEmptyStringsWithMissings());
         setAuthenticationSettingsModel(toCopy.getAuthenticationSettingsModel());
         setCredentialsProvider(toCopy.getCredentialsProvider());
+        setZipBombDetection(toCopy.isZipBombDetection());
     }
 
     @Override
@@ -418,6 +421,20 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
      */
     void setCredentialsProvider(final CredentialsProvider credentialsProvider) {
         m_credentialsProvider = credentialsProvider;
+    }
+
+    /**
+     * @return the zipBombDetection
+     */
+    public boolean isZipBombDetection() {
+        return m_zipBombDetection;
+    }
+
+    /**
+     * @param zipBombDetection the zipBombDetection to set
+     */
+    void setZipBombDetection(final boolean zipBombDetection) {
+        m_zipBombDetection = zipBombDetection;
     }
 
 }

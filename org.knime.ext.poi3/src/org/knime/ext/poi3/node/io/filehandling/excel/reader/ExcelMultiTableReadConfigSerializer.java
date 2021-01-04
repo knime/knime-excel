@@ -130,6 +130,8 @@ enum ExcelMultiTableReadConfigSerializer implements ConfigSerializer<ExcelMultiT
 
     private static final String CFG_LIMIT_DATA_ROWS_SCANNED = "limit_data_rows_scanned";
 
+    private static final String CFG_ZIP_BOMB_DETECTION = "enable_zip_bomb_detection";
+
     static final String CFG_ENCRYPTION_SETTINGS_TAB = "encryption";
 
     private static final DefaultTableSpecConfigSerializer<KNIMECellType> TABLE_SPEC_CONFIG_SERIALIZER =
@@ -292,6 +294,7 @@ enum ExcelMultiTableReadConfigSerializer implements ConfigSerializer<ExcelMultiT
             .valueOf(settings.getString(CFG_FORMULA_ERROR_HANDLING, FormulaErrorHandling.PATTERN.name())));
         excelConfig.setErrorPattern(
             settings.getString(CFG_FORMULA_ERROR_PATTERN, ExcelTableReaderConfig.DEFAULT_FORMULA_ERROR_PATTERN));
+        excelConfig.setZipBombDetection(settings.getBoolean(CFG_ZIP_BOMB_DETECTION, true));
     }
 
     private static void loadAdvancedSettingsTabInModel(final ExcelMultiTableReadConfig config,
@@ -313,6 +316,9 @@ enum ExcelMultiTableReadConfigSerializer implements ConfigSerializer<ExcelMultiT
         excelConfig.setFormulaErrorHandling(
             FormulaErrorHandling.loadValueInModel(settings.getString(CFG_FORMULA_ERROR_HANDLING)));
         excelConfig.setErrorPattern(settings.getString(CFG_FORMULA_ERROR_PATTERN));
+        if (settings.containsKey(CFG_ZIP_BOMB_DETECTION)) {
+            excelConfig.setZipBombDetection(settings.getBoolean(CFG_ZIP_BOMB_DETECTION));
+        }
     }
 
     private static void saveAdvancedSettingsTab(final ExcelMultiTableReadConfig config, final NodeSettingsWO settings) {
@@ -330,6 +336,7 @@ enum ExcelMultiTableReadConfigSerializer implements ConfigSerializer<ExcelMultiT
         settings.addBoolean(CFG_REEVALUATE_FORMULAS, excelConfig.isReevaluateFormulas());
         settings.addString(CFG_FORMULA_ERROR_HANDLING, excelConfig.getFormulaErrorHandling().name());
         settings.addString(CFG_FORMULA_ERROR_PATTERN, excelConfig.getErrorPattern());
+        settings.addBoolean(CFG_ZIP_BOMB_DETECTION, excelConfig.isZipBombDetection());
     }
 
     public static void validateAdvancedSettingsTab(final NodeSettingsRO settings) throws InvalidSettingsException {

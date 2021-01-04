@@ -177,6 +177,8 @@ final class ExcelTableReaderNodeDialog
     private final JCheckBox m_reevaluateFormulas =
         new JCheckBox("Reevaluate formulas (leave unchecked if uncertain; see node description for details)");
 
+    private final JCheckBox m_detectZipBombs = new JCheckBox("Enable zip bomb detection", true);
+
     private final JRadioButton m_radioButtonInsertErrorPattern =
         new JRadioButton(FormulaErrorHandling.PATTERN.getText(), true);
 
@@ -543,10 +545,19 @@ final class ExcelTableReaderNodeDialog
         final GBCBuilder gbcBuilder = new GBCBuilder().resetPos().anchorFirstLineStart().setWeightX(1).fillHorizontal();
         panel.add(createAdvancedReaderOptionsPanel(), gbcBuilder.build());
         panel.add(createFormulaEvaluationErrorOptionsPanel(), gbcBuilder.incY().build());
-        panel.add(createEncryptionPanel(), gbcBuilder.incY().build());
+        panel.add(createSecurityOptionsPanel(), gbcBuilder.incY().build());
         panel.add(createDataRowsSpecLimitPanel(), gbcBuilder.incY().build());
         panel.add(createSpecFailingOptionsPanel(), gbcBuilder.incY().build());
         panel.add(createPreviewComponent(), gbcBuilder.incY().fillBoth().setWeightY(1).build());
+        return panel;
+    }
+
+    private JPanel createSecurityOptionsPanel() {
+        final JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Security options"));
+        final GBCBuilder gbcBuilder =
+            new GBCBuilder(new Insets(5, 5, 0, 5)).resetPos().anchorFirstLineStart().setWeightX(1).fillHorizontal();
+        panel.add(m_detectZipBombs, gbcBuilder.build());
         return panel;
     }
 
@@ -625,6 +636,7 @@ final class ExcelTableReaderNodeDialog
     private void registerPreviewChangeListeners() {
         m_settingsModelFilePanel.addChangeListener(l -> configRelevantForFileContentChanged(true));
         m_authenticationSettingsModel.addChangeListener(l -> configRelevantForFileContentChanged(true));
+        m_detectZipBombs.addActionListener(l -> configRelevantForFileContentChanged(true));
 
         final ActionListener actionListener = l -> configNotRelevantForFileContentChanged();
         m_failOnDifferingSpecs.addActionListener(actionListener);
@@ -824,6 +836,7 @@ final class ExcelTableReaderNodeDialog
             excelConfig.setFormulaErrorHandling(FormulaErrorHandling.PATTERN);
         }
         excelConfig.setErrorPattern(m_formulaErrorPattern.getText());
+        excelConfig.setZipBombDetection(m_detectZipBombs.isSelected());
         if (m_radioButtonReadPartOfSheet.isSelected()) {
             excelConfig.setAreaOfSheetToRead(AreaOfSheetToRead.PARTIAL);
         } else {
@@ -870,6 +883,7 @@ final class ExcelTableReaderNodeDialog
         excelConfig.setSheetIdx((int)m_sheetIndexSelection.getValue());
         excelConfig.setCredentialsProvider(getCredentialsProvider());
         excelConfig.setAuthenticationSettingsModel(m_authenticationSettingsModel);
+        excelConfig.setZipBombDetection(m_detectZipBombs.isSelected());
     }
 
     private static ExcelMultiTableReadConfig createFileContentPreviewSettings() {
@@ -947,6 +961,7 @@ final class ExcelTableReaderNodeDialog
                 break;
         }
         m_formulaErrorPattern.setText(excelConfig.getErrorPattern());
+        m_detectZipBombs.setSelected(excelConfig.isZipBombDetection());
         switch (excelConfig.getAreaOfSheetToRead()) {
             case PARTIAL:
                 m_radioButtonReadPartOfSheet.setSelected(true);

@@ -207,6 +207,11 @@
 					type innocent, but also unobtrusive.</li>
 				</ul>
 			</option>
+			<option name="Enable zip bomb detection">
+				If enabled, the selected file(s) will be checked for
+				<a href="https://en.wikipedia.org/wiki/Zip_bomb">zip bombs</a> and the node will fail if one is 
+				detected. Disable this option only if necessary and if you are sure that the file is not a zip bomb. 
+			</option>
 			<option name="Table specification">
 			  If enabled, only the specified number of input <i>rows</i> are used to analyze the file (i.e to determine
 	          the column types). This option is recommended for long files where the first <i>n</i> rows are 

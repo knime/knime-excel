@@ -67,6 +67,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.openxml4j.exceptions.InvalidOperationException;
+import org.apache.poi.openxml4j.util.ZipSecureFile;
 import org.knime.core.util.ThreadUtils;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
@@ -86,6 +87,8 @@ public abstract class ExcelRead implements Read<Path, ExcelCell> {
     private static final int BLOCKING_QUEUE_SIZE = 100;
 
     private static final AtomicLong CACHED_THREAD_POOL_INDEX = new AtomicLong();
+
+    private static final double DEFAULT_MIN_INFLATION_RATIO = ZipSecureFile.getMinInflateRatio();
 
     /** Threadpool that can be used to parse new sheets. */
     private static final ExecutorService CACHED_THREAD_POOL = Executors.newCachedThreadPool(
@@ -186,12 +189,21 @@ public abstract class ExcelRead implements Read<Path, ExcelCell> {
     }
 
     private void startParserThread() throws IOException {
+        setZipBombDetection();
         try {
             // create and start the thread
             final ExcelParserRunnable runnable = createParser(m_inputStream);
             m_parserThread = CACHED_THREAD_POOL.submit(ThreadUtils.runnableWithContext(runnable));
         } catch (InvalidOperationException e) {
             throw new IllegalStateException(e.getMessage(), e);
+        }
+    }
+
+    private void setZipBombDetection() {
+        if (m_config.getReaderSpecificConfig().isZipBombDetection()) {
+            ZipSecureFile.setMinInflateRatio(DEFAULT_MIN_INFLATION_RATIO);
+        } else {
+            ZipSecureFile.setMinInflateRatio(0d);
         }
     }
 
