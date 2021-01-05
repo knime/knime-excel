@@ -100,6 +100,8 @@ public final class XLSXRead extends AbstractStreamedRead {
             m_opc = OPCPackage.open(inputStream);
             final XSSFReader xssfReader = new XSSFReader(m_opc);
             final XMLReader xmlReader = XMLHelper.newXMLReader();
+            // disable DTD to prevent almost all XXE attacks, XMLHelper.newXMLReader() did set further security features
+            xmlReader.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
             final ReadOnlySharedStringsTable sharedStringsTable = new ReadOnlySharedStringsTable(m_opc, false);
 
             m_sheetNames = ExcelUtils.getSheetNames(xmlReader, xssfReader, sharedStringsTable);
