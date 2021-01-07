@@ -97,6 +97,25 @@ public final class XLSXRead extends AbstractStreamedRead {
     @Override
     public AbstractStreamedParserRunnable createStreamedParser(final InputStream inputStream) throws IOException {
         try {
+            // this approach fails we always get -1 as size returned
+            //            ZipInputStream zipInputStream = new ZipInputStream(inputStream);
+            //            ZipEntry entry;
+            //            while ((entry = zipInputStream.getNextEntry()) != null) {
+            //                long compressedSize = entry.getCompressedSize();
+            //                long size = entry.getSize();
+            //                double ratio = compressedSize / (double)size;
+            //                if (size > 0 || compressedSize > 0) {
+            //                    System.out.println();
+            //                }
+            //                if (ratio < 0.9) {
+            //                    throw new IOException("zip bomb");
+            //                }
+            //            }
+
+
+            // this approach fails with org.apache.poi.EmptyFileException: The supplied file was empty (zero bytes long)
+//            m_opc = OPCPackage.open(new ZipBombDetectionInputStream(inputStream));
+
             m_opc = OPCPackage.open(inputStream);
             final XSSFReader xssfReader = new XSSFReader(m_opc);
             final XMLReader xmlReader = XMLHelper.newXMLReader();
