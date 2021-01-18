@@ -163,7 +163,7 @@ final class ExcelTableWriterConfig implements ExcelTableConfig {
                     SheetNameExistsHandling.valueOf(setting);
                 } catch (final IllegalArgumentException e) {
                     throw new InvalidSettingsException(
-                        String.format("No if sheet exists option associated with '%s'", setting));
+                        String.format("No if sheet exists option associated with '%s'", setting), e);
                 }
             }
         };
@@ -182,7 +182,8 @@ final class ExcelTableWriterConfig implements ExcelTableConfig {
                 try {
                     Orientation.valueOf(setting);
                 } catch (final IllegalArgumentException e) {
-                    throw new InvalidSettingsException(String.format("No orientation associated with '%s'", setting));
+                    throw new InvalidSettingsException(String.format("No orientation associated with '%s'", setting),
+                        e);
                 }
             }
         };
