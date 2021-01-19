@@ -88,15 +88,17 @@ abstract class AbstractExcelImageWriter implements ExcelImageWriter {
     @Override
     public final OptionalInt writeImages(final Sheet sheet, final DataRow row, final int rowIdx,
         final int colIdxOffset) {
-        return Arrays.stream(m_pngIndices)//
-            .map(idx -> writeImages(sheet, row, rowIdx, idx, idx + colIdxOffset))//
+        return IntStream.range(0, m_pngIndices.length)//
+            .map(idx -> writeImages(sheet, row, rowIdx, idx, colIdxOffset))//
             .max();
     }
 
-    private int writeImages(final Sheet sheet, final DataRow row, final int rowIdx, final int idx, final int colIdx) {
-        final PNGImageContent image = ((PNGImageValue)row.getCell(idx)).getImageContent();
+    private int writeImages(final Sheet sheet, final DataRow row, final int rowIdx, final int idx,
+        final int colIdxOffset) {
+        final int colIdx = m_pngIndices[idx];
+        final PNGImageContent image = ((PNGImageValue)row.getCell(colIdx)).getImageContent();
         final AnchorInfo anchorInfo = getAnchorInfo(image.getPreferredSize());
-        createPicture(sheet, rowIdx, colIdx, image, anchorInfo);
+        createPicture(sheet, rowIdx, colIdx + colIdxOffset, image, anchorInfo);
         m_colWidth[idx] = Math.max(m_colWidth[idx], anchorInfo.m_widthInPixel);
         return anchorInfo.m_heightInPixel;
     }
