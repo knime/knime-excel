@@ -76,6 +76,8 @@ enum ExcelMultiTableReadConfigSerializer implements
          */
         INSTANCE;
 
+    private static final String CFG_SAVE_TABLE_SPEC_CONFIG = "save_table_spec_config" + SettingsModel.CFGKEY_INTERNAL;
+
     private static final KNIMECellType MOST_GENERIC_EXTERNAL_TYPE = KNIMECellType.STRING;
 
     private static final String CFG_TABLE_SPEC_CONFIG = "table_spec_config" + SettingsModel.CFGKEY_INTERNAL;
@@ -281,6 +283,7 @@ enum ExcelMultiTableReadConfigSerializer implements
         tableReadConfig.setLimitRowsForSpec(settings.getBoolean(CFG_LIMIT_DATA_ROWS_SCANNED, true));
         tableReadConfig.setMaxRowsForSpec(
             settings.getLong(CFG_MAX_DATA_ROWS_SCANNED, AbstractTableReadConfig.DEFAULT_ROWS_FOR_SPEC_GUESSING));
+        config.setSaveTableSpecConfig(settings.getBoolean(CFG_SAVE_TABLE_SPEC_CONFIG, true));
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
         excelConfig.setUse15DigitsPrecision(settings.getBoolean(CFG_USE_15_DIGITS_PRECISION, true));
         excelConfig.setSkipHiddenCols(settings.getBoolean(CFG_SKIP_HIDDEN_COLS, true));
@@ -302,6 +305,10 @@ enum ExcelMultiTableReadConfigSerializer implements
         tableReadConfig.setSkipEmptyRows(settings.getBoolean(CFG_SKIP_EMPTY_ROWS));
         tableReadConfig.setLimitRowsForSpec(settings.getBoolean(CFG_LIMIT_DATA_ROWS_SCANNED));
         tableReadConfig.setMaxRowsForSpec(settings.getLong(CFG_MAX_DATA_ROWS_SCANNED));
+        // added with 4.3.1
+        if (settings.containsKey(CFG_SAVE_TABLE_SPEC_CONFIG)) {
+            config.setSaveTableSpecConfig(settings.getBoolean(CFG_SAVE_TABLE_SPEC_CONFIG));
+        }
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
         excelConfig.setUse15DigitsPrecision(settings.getBoolean(CFG_USE_15_DIGITS_PRECISION));
         excelConfig.setSkipHiddenCols(settings.getBoolean(CFG_SKIP_HIDDEN_COLS));
@@ -329,6 +336,7 @@ enum ExcelMultiTableReadConfigSerializer implements
         settings.addBoolean(CFG_REEVALUATE_FORMULAS, excelConfig.isReevaluateFormulas());
         settings.addString(CFG_FORMULA_ERROR_HANDLING, excelConfig.getFormulaErrorHandling().name());
         settings.addString(CFG_FORMULA_ERROR_PATTERN, excelConfig.getErrorPattern());
+        settings.addBoolean(CFG_SAVE_TABLE_SPEC_CONFIG, config.saveTableSpecConfig());
     }
 
     public static void validateAdvancedSettingsTab(final NodeSettingsRO settings) throws InvalidSettingsException {
@@ -343,6 +351,10 @@ enum ExcelMultiTableReadConfigSerializer implements
         settings.getString(CFG_FORMULA_ERROR_PATTERN);
         settings.getBoolean(CFG_LIMIT_DATA_ROWS_SCANNED);
         settings.getLong(CFG_MAX_DATA_ROWS_SCANNED);
+        // added with 4.3.1
+        if (settings.containsKey(CFG_SAVE_TABLE_SPEC_CONFIG)) {
+            settings.getBoolean(CFG_SAVE_TABLE_SPEC_CONFIG);
+        }
     }
 
 }

@@ -114,6 +114,8 @@ import org.knime.filehandling.core.util.SettingsUtils;
  */
 final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<ExcelTableReaderConfig, KNIMECellType> {
 
+    private static final String TRANSFORMATION_TAB = "Transformation";
+
     private final DefaultMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>> //
     m_fileContentPreviewConfig = createFileContentPreviewSettings();
 
@@ -223,6 +225,8 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
     private final JSpinner m_limitAnalysisSpinner = new JSpinner(
         new SpinnerNumberModel(Long.valueOf(50), Long.valueOf(1), Long.valueOf(Long.MAX_VALUE), Long.valueOf(50)));
 
+    private final JCheckBox m_supportChangingFileSchemas = new JCheckBox("Support changing file schemas");
+
     private List<JTabbedPane> m_tabbedPreviewPaneList = new ArrayList<>();
 
     private final FileContentPreviewController<ExcelTableReaderConfig, KNIMECellType> m_fileContentPreviewController;
@@ -275,7 +279,7 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
             m_previewModel, this::createItemAccessor);
 
         addTab("Settings", createGeneralSettingsTab());
-        addTab("Transformation", createTransformationTab());
+        addTab(TRANSFORMATION_TAB, createTransformationTab());
         addTab("Advanced Settings", createAdvancedSettingsTab());
         registerDialogChangeListeners();
         registerPreviewChangeListeners();
@@ -308,6 +312,13 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
 
         m_limitAnalysisChecker
             .addActionListener(e -> m_limitAnalysisSpinner.setEnabled(m_limitAnalysisChecker.isSelected()));
+
+        m_supportChangingFileSchemas.addActionListener(e -> updateTransformationTabEnabledStatus());
+
+    }
+
+    private void updateTransformationTabEnabledStatus() {
+        setEnabled(!m_supportChangingFileSchemas.isSelected(), TRANSFORMATION_TAB);
     }
 
     private void setEnablednessReadPartOfSheetFields() {
@@ -553,6 +564,7 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         panel.add(m_limitAnalysisChecker, gbcBuilder.build());
         setWidthTo(m_limitAnalysisSpinner, 100);
         panel.add(m_limitAnalysisSpinner, gbcBuilder.incX().setWeightX(1).fillNone().build());
+        panel.add(m_supportChangingFileSchemas, gbcBuilder.incY().resetX().setWidth(2).build());
         return panel;
     }
 
@@ -601,6 +613,7 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         m_radioButtonReadPartOfSheet.addActionListener(actionListener);
         m_radioButtonGenerateRowIDs.addActionListener(actionListener);
         m_radioButtonReadRowIDsFromCol.addActionListener(actionListener);
+        m_supportChangingFileSchemas.addActionListener(actionListener);
         final ChangeListener changeListener = l -> configNotRelevantForFileContentChanged();
         m_columnHeaderSpinner.addChangeListener(changeListener);
 
@@ -753,7 +766,11 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         tableReadConfig.setColumnHeaderIdx((long)m_columnHeaderSpinner.getValue() - 1);
         tableReadConfig.setDecorateRead(false);
         m_config.setFailOnDifferingSpecs(m_failOnDifferingSpecs.isSelected());
-        m_config.setTableSpecConfig(getTableSpecConfig());
+        boolean saveSpec = !m_supportChangingFileSchemas.isSelected();
+        m_config.setSaveTableSpecConfig(saveSpec);
+        if (saveSpec) {
+            m_config.setTableSpecConfig(getTableSpecConfig());
+        }
     }
 
     /**
@@ -861,6 +878,8 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         m_limitAnalysisSpinner.setValue(tableReadConfig.getMaxRowsForSpec());
         //enable disable spinner
         m_limitAnalysisSpinner.setEnabled(m_limitAnalysisChecker.isSelected());
+        m_supportChangingFileSchemas.setSelected(!m_config.saveTableSpecConfig());
+        updateTransformationTabEnabledStatus();
     }
 
     /**

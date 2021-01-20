@@ -204,6 +204,21 @@
 	          the column types). This option is recommended for long files where the first <i>n</i> rows are 
 	          representative for the whole file.
 			</option>
+			<option name="Support changing file schemas">
+			  If selected, the reader will compute the table specification on execution.
+			  This is useful for two use-cases:
+			  <ul>
+			  	<li>
+			  		Looping over the sheets in an excel file, when the sheets are structured differently.
+			  	</li>
+			  	<li>
+			  		If the content of the configured file/folder changes between executions, 
+			  		i.e., columns are added/removed to/from file(s) or their types change.
+			  	</li>
+			  </ul>
+			  NOTE: When checked, the node will not output a table specification during configure and won't apply transformations
+			  (therefore the transformation tab is disabled).
+			</option>
 			<option name="Fail on differing specs">
 				If checked, the node will fail if multiple files are read via the Files in folder option and not all 
 				files have the same table structure, i.e. the same columns.
