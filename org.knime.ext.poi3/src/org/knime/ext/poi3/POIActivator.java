@@ -44,6 +44,7 @@
  */
 package org.knime.ext.poi3;
 
+import org.apache.poi.openxml4j.util.ZipSecureFile;
 import org.apache.poi.util.TempFile;
 import org.eclipse.core.runtime.Plugin;
 import org.knime.core.node.KNIMEConstants;
@@ -67,5 +68,8 @@ public class POIActivator extends Plugin {
         // directory and be removed when the workflow is closed.
         TempFile.setTempFileCreationStrategy(new KNIMEPOITempFileCreationStrategy(
             PathUtils.createTempDir("poifiles", KNIMEConstants.getKNIMETempPath())));
+
+        // AP-15963: lower the ratio (defaults to 0.01) as some users had issues with it
+        ZipSecureFile.setMinInflateRatio(0.001d);
     }
 }
