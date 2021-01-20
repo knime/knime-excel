@@ -68,6 +68,7 @@ import javax.swing.DefaultComboBoxModel;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
+import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
@@ -448,11 +449,19 @@ final class ExcelTableReaderNodeDialog
         final Insets insets = new Insets(5, 5, 0, 0);
         final GBCBuilder gbcBuilder = new GBCBuilder(insets).resetPos().anchorFirstLineStart();
 
+        /*
+         * This sets the text field of the spinner to a fixed column based size
+         * because internally the max value of the spinner is used to determine
+         * the size even though you set the preferred size.
+         */
+        final JComponent editor = m_columnHeaderSpinner.getEditor();
+        final JFormattedTextField tf = ((JSpinner.DefaultEditor) editor).getTextField();
+        tf.setColumns(6);
+
         m_columnHeaderNoteLabel
             .setPreferredSize(new Dimension((int)m_columnHeaderNoteLabel.getPreferredSize().getWidth(),
                 (int)m_columnHeaderCheckBox.getPreferredSize().getHeight()));
         panel.add(m_columnHeaderCheckBox, gbcBuilder.build());
-        setWidthTo(m_columnHeaderSpinner, 75);
         panel.add(m_columnHeaderSpinner, gbcBuilder.incX().build());
         panel.add(m_columnHeaderNoteLabel, gbcBuilder.incX().setWeightX(1).build());
         return panel;
