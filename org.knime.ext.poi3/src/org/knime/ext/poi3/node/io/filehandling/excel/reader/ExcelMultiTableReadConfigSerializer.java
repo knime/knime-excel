@@ -56,6 +56,7 @@ import org.knime.core.node.defaultnodesettings.SettingsModel;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelReadAdapterFactory;
+import org.knime.filehandling.core.node.table.reader.config.AbstractTableReadConfig;
 import org.knime.filehandling.core.node.table.reader.config.ConfigSerializer;
 import org.knime.filehandling.core.node.table.reader.config.DefaultMultiTableReadConfig;
 import org.knime.filehandling.core.node.table.reader.config.DefaultTableReadConfig;
@@ -278,7 +279,8 @@ enum ExcelMultiTableReadConfigSerializer implements
         final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = config.getTableReadConfig();
         tableReadConfig.setSkipEmptyRows(settings.getBoolean(CFG_SKIP_EMPTY_ROWS, true));
         tableReadConfig.setLimitRowsForSpec(settings.getBoolean(CFG_LIMIT_DATA_ROWS_SCANNED, true));
-        tableReadConfig.setMaxRowsForSpec(settings.getLong(CFG_MAX_DATA_ROWS_SCANNED, 1000));
+        tableReadConfig.setMaxRowsForSpec(
+            settings.getLong(CFG_MAX_DATA_ROWS_SCANNED, AbstractTableReadConfig.DEFAULT_ROWS_FOR_SPEC_GUESSING));
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
         excelConfig.setUse15DigitsPrecision(settings.getBoolean(CFG_USE_15_DIGITS_PRECISION, true));
         excelConfig.setSkipHiddenCols(settings.getBoolean(CFG_SKIP_HIDDEN_COLS, true));
