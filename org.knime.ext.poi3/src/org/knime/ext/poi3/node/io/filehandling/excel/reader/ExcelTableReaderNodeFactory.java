@@ -159,7 +159,6 @@ public final class ExcelTableReaderNodeFactory
         tc.setSkipEmptyRows(true);
         tc.setAllowShortRows(true);
         tc.setDecorateRead(false);
-        tc.setMaxRowsForSpec(1000);
         return config;
     }
 
