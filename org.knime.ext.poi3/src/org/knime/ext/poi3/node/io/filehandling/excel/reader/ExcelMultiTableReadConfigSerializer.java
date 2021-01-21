@@ -134,6 +134,8 @@ enum ExcelMultiTableReadConfigSerializer
 
     private static final String CFG_LIMIT_DATA_ROWS_SCANNED = "limit_data_rows_scanned";
 
+    private static final String CFG_SAVE_TABLE_SPEC_CONFIG = "save_table_spec_config" + SettingsModel.CFGKEY_INTERNAL;
+
     static final String CFG_ENCRYPTION_SETTINGS_TAB = "encryption";
 
     private final DefaultTableSpecConfigSerializer<KNIMECellType> m_tableSpecConfigSerializer;
@@ -265,7 +267,7 @@ enum ExcelMultiTableReadConfigSerializer
         settings.addString(CFG_READ_TO_ROW, excelConfig.getReadToRow());
     }
 
-    public static void validateSettingsTab(final NodeSettingsRO settings) throws InvalidSettingsException {
+    static void validateSettingsTab(final NodeSettingsRO settings) throws InvalidSettingsException {
         SheetSelection.loadValueInModel(settings.getString(CFG_SHEET_SELECTION));
         settings.getString(CFG_SHEET_NAME);
         settings.getInt(CFG_SHEET_INDEX);
@@ -289,6 +291,7 @@ enum ExcelMultiTableReadConfigSerializer
         tableReadConfig.setLimitRowsForSpec(settings.getBoolean(CFG_LIMIT_DATA_ROWS_SCANNED, true));
         tableReadConfig.setMaxRowsForSpec(
             settings.getLong(CFG_MAX_DATA_ROWS_SCANNED, AbstractTableReadConfig.DEFAULT_ROWS_FOR_SPEC_GUESSING));
+        config.setSaveTableSpecConfig(settings.getBoolean(CFG_SAVE_TABLE_SPEC_CONFIG, true));
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
         excelConfig.setUse15DigitsPrecision(settings.getBoolean(CFG_USE_15_DIGITS_PRECISION, true));
         excelConfig.setSkipHiddenCols(settings.getBoolean(CFG_SKIP_HIDDEN_COLS, true));
@@ -312,6 +315,12 @@ enum ExcelMultiTableReadConfigSerializer
         tableReadConfig.setSkipEmptyRows(settings.getBoolean(CFG_SKIP_EMPTY_ROWS));
         tableReadConfig.setLimitRowsForSpec(settings.getBoolean(CFG_LIMIT_DATA_ROWS_SCANNED));
         tableReadConfig.setMaxRowsForSpec(settings.getLong(CFG_MAX_DATA_ROWS_SCANNED));
+
+        // added in 4.3.1
+        if (settings.containsKey(CFG_SAVE_TABLE_SPEC_CONFIG)) {
+            config.setSaveTableSpecConfig(settings.getBoolean(CFG_SAVE_TABLE_SPEC_CONFIG));
+        }
+
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
         excelConfig.setUse15DigitsPrecision(settings.getBoolean(CFG_USE_15_DIGITS_PRECISION));
         excelConfig.setSkipHiddenCols(settings.getBoolean(CFG_SKIP_HIDDEN_COLS));
@@ -330,6 +339,7 @@ enum ExcelMultiTableReadConfigSerializer
         settings.addBoolean(CFG_SKIP_EMPTY_ROWS, tableReadConfig.skipEmptyRows());
         settings.addBoolean(CFG_LIMIT_DATA_ROWS_SCANNED, tableReadConfig.limitRowsForSpec());
         settings.addLong(CFG_MAX_DATA_ROWS_SCANNED, tableReadConfig.getMaxRowsForSpec());
+        settings.addBoolean(CFG_SAVE_TABLE_SPEC_CONFIG, config.saveTableSpecConfig());
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
         settings.addBoolean(CFG_USE_15_DIGITS_PRECISION, excelConfig.isUse15DigitsPrecision());
         settings.addBoolean(CFG_SKIP_HIDDEN_COLS, excelConfig.isSkipHiddenCols());
@@ -340,7 +350,7 @@ enum ExcelMultiTableReadConfigSerializer
         settings.addString(CFG_FORMULA_ERROR_PATTERN, excelConfig.getErrorPattern());
     }
 
-    public static void validateAdvancedSettingsTab(final NodeSettingsRO settings) throws InvalidSettingsException {
+    static void validateAdvancedSettingsTab(final NodeSettingsRO settings) throws InvalidSettingsException {
         settings.getBoolean(CFG_FAIL_ON_DIFFERING_SPECS);
         settings.getBoolean(CFG_USE_15_DIGITS_PRECISION);
         settings.getBoolean(CFG_SKIP_HIDDEN_COLS);
@@ -352,6 +362,10 @@ enum ExcelMultiTableReadConfigSerializer
         settings.getString(CFG_FORMULA_ERROR_PATTERN);
         settings.getBoolean(CFG_LIMIT_DATA_ROWS_SCANNED);
         settings.getLong(CFG_MAX_DATA_ROWS_SCANNED);
+        // added in 4.3.1
+        if (settings.containsKey(CFG_SAVE_TABLE_SPEC_CONFIG)) {
+            settings.getBoolean(CFG_SAVE_TABLE_SPEC_CONFIG);
+        }
     }
 
     private static void loadEncryptionSettingsTabInModel(final ExcelMultiTableReadConfig config,
@@ -369,7 +383,7 @@ enum ExcelMultiTableReadConfigSerializer
         excelConfig.getAuthenticationSettingsModel().saveSettingsTo(settings);
     }
 
-    public static void validateEncryptionSettingsTab(final ExcelMultiTableReadConfig config,
+    static void validateEncryptionSettingsTab(final ExcelMultiTableReadConfig config,
         final NodeSettingsRO settings) throws InvalidSettingsException {
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
         // this option has been added later; check the existence of the setting for sake of backwards compatibility
