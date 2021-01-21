@@ -60,6 +60,7 @@ import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.context.ports.PortsConfiguration;
+import org.knime.core.node.defaultnodesettings.SettingsModel;
 import org.knime.core.node.defaultnodesettings.SettingsModelBoolean;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.ExcelTableConfig;
@@ -109,6 +110,8 @@ final class ExcelTableWriterConfig implements ExcelTableConfig {
 
     private static final String CFG_EVALUATE_FORMULAS = "evaluate_formulas";
 
+    private static final String CFG_OPEN_FILE_AFTER_EXEC = "open_file_after_exec" + SettingsModel.CFGKEY_INTERNAL;
+
     private final SettingsModelString m_excelFormat;
 
     private final SettingsModelWriterFileChooser m_fileChooser;
@@ -132,6 +135,8 @@ final class ExcelTableWriterConfig implements ExcelTableConfig {
     private final SettingsModelString m_paperSize;
 
     private final SettingsModelString m_landscape;
+
+    private final SettingsModelBoolean m_openFileAfterExec;
 
     /**
      * Constructor.
@@ -182,6 +187,24 @@ final class ExcelTableWriterConfig implements ExcelTableConfig {
             }
         };
         m_paperSize = new SettingsModelString(CFG_PAPER_SIZE, ExcelConstants.DEFAULT_PAPER_SIZE.name());
+
+        // introduced with 4.3.1 so we need to load it backwards compatible
+        m_openFileAfterExec = new SettingsModelBoolean(CFG_OPEN_FILE_AFTER_EXEC, false) {
+
+            @Override
+            protected void validateSettingsForModel(final NodeSettingsRO settings) throws InvalidSettingsException {
+                if (settings.containsKey(getConfigName())) {
+                    super.validateSettingsForModel(settings);
+                }
+            }
+
+            @Override
+            protected void loadSettingsForModel(final NodeSettingsRO settings) throws InvalidSettingsException {
+                if (settings.containsKey(getConfigName())) {
+                    super.loadSettingsForModel(settings);
+                }
+            }
+        };
     }
 
     private static String createDefaultSheetName(final int idx) {
@@ -296,6 +319,15 @@ final class ExcelTableWriterConfig implements ExcelTableConfig {
         return m_paperSize;
     }
 
+    /**
+     * Returns the open file after execution model.
+     *
+     * @return the open file after execution model
+     */
+    SettingsModelBoolean getOpenFileAfterExecModel() {
+        return m_openFileAfterExec;
+    }
+
     @Override
     public ExcelFormat getExcelFormat() {
         return ExcelFormat.valueOf(m_excelFormat.getStringValue());
@@ -364,6 +396,7 @@ final class ExcelTableWriterConfig implements ExcelTableConfig {
         m_autoSize.validateSettings(settings);
         m_landscape.validateSettings(settings);
         m_paperSize.validateSettings(settings);
+        m_openFileAfterExec.validateSettings(settings);
     }
 
     private static void validateSheets(final NodeSettingsRO settings) throws InvalidSettingsException {
@@ -408,6 +441,7 @@ final class ExcelTableWriterConfig implements ExcelTableConfig {
         m_autoSize.loadSettingsFrom(settings);
         m_landscape.loadSettingsFrom(settings);
         m_paperSize.loadSettingsFrom(settings);
+        m_openFileAfterExec.loadSettingsFrom(settings);
     }
 
     private void loadSheetNamesForModel(final NodeSettingsRO settings) throws InvalidSettingsException {
@@ -434,6 +468,7 @@ final class ExcelTableWriterConfig implements ExcelTableConfig {
         m_autoSize.saveSettingsTo(settings);
         m_landscape.saveSettingsTo(settings);
         m_paperSize.saveSettingsTo(settings);
+        m_openFileAfterExec.saveSettingsTo(settings);
     }
 
     /**
