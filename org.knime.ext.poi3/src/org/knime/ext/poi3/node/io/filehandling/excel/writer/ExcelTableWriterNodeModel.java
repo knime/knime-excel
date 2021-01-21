@@ -51,10 +51,14 @@ package org.knime.ext.poi3.node.io.filehandling.excel.writer;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.Optional;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -65,6 +69,7 @@ import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
@@ -80,6 +85,8 @@ import org.knime.core.node.streamable.PortOutput;
 import org.knime.core.node.streamable.RowInput;
 import org.knime.core.node.streamable.StreamableOperator;
 import org.knime.core.node.util.CheckUtils;
+import org.knime.core.util.DesktopUtil;
+import org.knime.core.util.FileUtil;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.cell.ExcelCellWriterFactory;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.ExcelMultiTableWriter;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.ExcelTableConfig;
@@ -88,13 +95,18 @@ import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.WorkbookCreato
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelFormat;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelProgressMonitor;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.SheetUtils;
+import org.knime.filehandling.core.connections.FSCategory;
+import org.knime.filehandling.core.connections.FSConnection;
 import org.knime.filehandling.core.connections.FSFiles;
 import org.knime.filehandling.core.connections.FSPath;
+import org.knime.filehandling.core.connections.uriexport.URIExporter;
+import org.knime.filehandling.core.connections.uriexport.URIExporterIDs;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.FileOverwritePolicy;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.SettingsModelWriterFileChooser;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.WritePathAccessor;
 import org.knime.filehandling.core.defaultnodesettings.status.NodeModelStatusConsumer;
 import org.knime.filehandling.core.defaultnodesettings.status.StatusMessage.MessageType;
+import org.knime.filehandling.core.util.CheckNodeContextUtil;
 
 /**
  * {@link NodeModel} writing tables to individual sheets of an excel file.
@@ -102,6 +114,8 @@ import org.knime.filehandling.core.defaultnodesettings.status.StatusMessage.Mess
  * @author Mark Ortmann, KNIME GmbH, Berlin, Germany
  */
 final class ExcelTableWriterNodeModel extends NodeModel {
+
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(ExcelTableWriterNodeModel.class);
 
     /** The maximum progress for creating the excel file. */
     private static final double MAX_EXCEL_PROGRESS = 0.75;
@@ -179,6 +193,40 @@ final class ExcelTableWriterNodeModel extends NodeModel {
             final WorkbookCreator wbCreator = getWorkbookCreator(fileChooser.getFileOverwritePolicy(), outputPath);
             final ExcelMultiTableWriter writer = new ExcelMultiTableWriter(m_cfg);
             writer.writeTables(outputPath, tables, wbCreator, exec, m);
+            if (m_cfg.getOpenFileAfterExecModel().getBooleanValue() && !isHeadlessOrRemote()
+                && categoryIsSupported(outputPath.toFSLocation().getFSCategory())) {
+                final Optional<File> file = toFile(outputPath, fileChooser.getConnection());
+                if (file.isPresent()) {
+                    DesktopUtil.open(file.get());
+                } else {
+                    setWarningMessage("Non local files cannot be opened");
+                }
+            }
+        }
+    }
+
+    static boolean isHeadlessOrRemote() {
+        return Boolean.getBoolean("java.awt.headless") || CheckNodeContextUtil.isRemoteWorkflowContext();
+    }
+
+    static boolean categoryIsSupported(final FSCategory fsCategory) {
+        return fsCategory == FSCategory.LOCAL //
+            || fsCategory == FSCategory.RELATIVE //
+            || fsCategory == FSCategory.CUSTOM_URL;
+    }
+
+    private static Optional<File> toFile(final FSPath outputPath, final FSConnection fsConnection) {
+        if (outputPath.toFSLocation().getFSCategory() != FSCategory.CUSTOM_URL) {
+            return Optional.of(outputPath.toAbsolutePath().toFile());
+        }
+        try {
+            final URIExporter uriExporter = fsConnection.getURIExporters().get(URIExporterIDs.DEFAULT);
+            final String uri = uriExporter.toUri(outputPath).toString();
+            final URL url = FileUtil.toURL(uri);
+            return Optional.ofNullable(FileUtil.getFileFromURL(url));
+        } catch (final MalformedURLException | IllegalArgumentException | URISyntaxException e) {
+            LOGGER.debug("Unable to resolve custom URL", e);
+            return Optional.empty();
         }
     }
 

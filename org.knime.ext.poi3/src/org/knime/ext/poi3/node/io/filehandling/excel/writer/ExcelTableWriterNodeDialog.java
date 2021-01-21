@@ -75,6 +75,7 @@ import org.knime.core.node.defaultnodesettings.DialogComponentString;
 import org.knime.core.node.defaultnodesettings.DialogComponentStringSelection;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.core.node.port.PortObjectSpec;
+import org.knime.core.node.util.SharedIcons;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelConstants;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelFormat;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.Orientation;
@@ -127,6 +128,10 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
 
     private final JComboBox<PaperSize> m_paperSize;
 
+    private final DialogComponentBoolean m_openFileAfterExec;
+
+    private final JLabel m_openFileAfterExecLbl;
+
     /**
      * Constructor.
      *
@@ -163,17 +168,43 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
         m_autoSize = new DialogComponentBoolean(m_cfg.getAutoSizeModel(), "Autosize columns");
         m_landscape = new DialogComponentButtonGroup(m_cfg.getLandscapeModel(), null, false, Orientation.values());
         m_paperSize = new JComboBox<>(PaperSize.values());
+        m_openFileAfterExec =
+            new DialogComponentBoolean(m_cfg.getOpenFileAfterExecModel(), "Open file after execution");
+        m_openFileAfterExecLbl = new JLabel("");
 
-        writerModel.addChangeListener(l -> toggleAppendRelatedOptions());
+        writerModel.addChangeListener(l -> toggleOptions());
         excelFormatModel.addChangeListener(l -> updateLocation());
 
         addTab("Settings", createSettings());
+    }
+
+    private void toggleOptions() {
+        toggleAppendRelatedOptions();
+        toggleOpenFileAfterExecOption();
     }
 
     private void toggleAppendRelatedOptions() {
         final boolean enabled = m_fileChooser.getSettingsModel().getFileOverwritePolicy() == FileOverwritePolicy.APPEND;
         m_evaluateFormulas.getModel().setEnabled(enabled);
         m_sheetNameCollisionHandling.getModel().setEnabled(enabled);
+    }
+
+    private void toggleOpenFileAfterExecOption() {
+        // cannot be headless as we'd not have a dialog in this case
+        final boolean isRemote = ExcelTableWriterNodeModel.isHeadlessOrRemote();
+        final boolean categorySupported = ExcelTableWriterNodeModel
+            .categoryIsSupported(m_fileChooser.getSettingsModel().getLocation().getFSCategory());
+        m_openFileAfterExec.getModel().setEnabled(!isRemote && categorySupported);
+        if (isRemote) {
+            m_openFileAfterExecLbl.setIcon(SharedIcons.INFO_BALLOON.get());
+            m_openFileAfterExecLbl.setText("Not support in remote job view");
+        } else if (!categorySupported) {
+            m_openFileAfterExecLbl.setIcon(SharedIcons.INFO_BALLOON.get());
+            m_openFileAfterExecLbl.setText("Not support by the selected file system");
+        } else {
+            m_openFileAfterExecLbl.setIcon(null);
+            m_openFileAfterExecLbl.setText("");
+        }
     }
 
     private void updateLocation() {
@@ -191,11 +222,10 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
         writerModel.setFileExtensions(format.getFileExtension());
     }
 
-
-
     private Component createSettings() {
         final JPanel p = new JPanel(new GridBagLayout());
-        final GBCBuilder gbc = new GBCBuilder().resetX().resetY().anchorLineStart().setWeightX(1).fillHorizontal();
+        final GBCBuilder gbc =
+            new GBCBuilder().resetX().resetY().anchorLineStart().setWeightX(1).fillHorizontal().setWidth(2);
         p.add(createFileChooserPanel(), gbc.build());
 
         gbc.incY();
@@ -213,7 +243,13 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
         gbc.incY();
         p.add(createSizePanel(), gbc.build());
 
-        gbc.incY().setWeightY(1).fillVertical();
+        gbc.incY().setWeightX(0).fillNone().setWidth(1);
+        p.add(m_openFileAfterExec.getComponentPanel(), gbc.build());
+
+        gbc.incX();
+        p.add(m_openFileAfterExecLbl, gbc.build());
+
+        gbc.resetX().incY().setWidth(2).weight(1, 1).fillBoth();
         p.add(new JPanel(), gbc.build());
 
         return p;
@@ -347,6 +383,7 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
         final SettingsModelString paperSizeModel = m_cfg.getPaperSizeModel();
         paperSizeModel.setStringValue(((PaperSize)m_paperSize.getSelectedItem()).name());
         paperSizeModel.saveSettingsTo(settings);
+        m_openFileAfterExec.saveSettingsTo(settings);
     }
 
     @Override
@@ -365,7 +402,6 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
         m_evaluateFormulas.loadSettingsFrom(settings, specs);
         m_autoSize.loadSettingsFrom(settings, specs);
         m_landscape.loadSettingsFrom(settings, specs);
-
         final SettingsModelString paperSizeModel = m_cfg.getPaperSizeModel();
         try {
             paperSizeModel.loadSettingsFrom(settings);
@@ -373,7 +409,9 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
             paperSizeModel.setStringValue(ExcelConstants.DEFAULT_PAPER_SIZE.name());
         }
         m_paperSize.setSelectedItem(PaperSize.valueOf(paperSizeModel.getStringValue()));
-        toggleAppendRelatedOptions();
+        m_openFileAfterExec.loadSettingsFrom(settings, specs);
+
+        toggleOptions();
         updateLocation();
     }
 
