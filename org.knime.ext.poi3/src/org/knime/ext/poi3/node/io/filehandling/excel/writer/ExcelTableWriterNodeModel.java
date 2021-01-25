@@ -100,7 +100,6 @@ import org.knime.filehandling.core.connections.FSConnection;
 import org.knime.filehandling.core.connections.FSFiles;
 import org.knime.filehandling.core.connections.FSPath;
 import org.knime.filehandling.core.connections.uriexport.URIExporter;
-import org.knime.filehandling.core.connections.uriexport.URIExporterIDs;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.FileOverwritePolicy;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.SettingsModelWriterFileChooser;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.WritePathAccessor;
@@ -195,12 +194,19 @@ final class ExcelTableWriterNodeModel extends NodeModel {
             writer.writeTables(outputPath, tables, wbCreator, exec, m);
             if (m_cfg.getOpenFileAfterExecModel().getBooleanValue() && !isHeadlessOrRemote()
                 && categoryIsSupported(outputPath.toFSLocation().getFSCategory())) {
-                final Optional<File> file = toFile(outputPath, fileChooser.getConnection());
-                if (file.isPresent()) {
-                    DesktopUtil.open(file.get());
-                } else {
-                    setWarningMessage("Non local files cannot be opened");
-                }
+                openFile(fileChooser, outputPath);
+            }
+        }
+    }
+
+    private void openFile(final SettingsModelWriterFileChooser fileChooser, final FSPath outputPath)
+        throws IOException {
+        try (final FSConnection connection = fileChooser.getConnection()) {
+            final Optional<File> file = toFile(outputPath, connection);
+            if (file.isPresent()) {
+                DesktopUtil.open(file.get());
+            } else {
+                setWarningMessage("Non local files cannot be opened");
             }
         }
     }
@@ -216,11 +222,12 @@ final class ExcelTableWriterNodeModel extends NodeModel {
     }
 
     private static Optional<File> toFile(final FSPath outputPath, final FSConnection fsConnection) {
-        if (outputPath.toFSLocation().getFSCategory() != FSCategory.CUSTOM_URL) {
+        final FSCategory fsCategory = outputPath.toFSLocation().getFSCategory();
+        if (fsCategory != FSCategory.CUSTOM_URL && fsCategory != FSCategory.RELATIVE) {
             return Optional.of(outputPath.toAbsolutePath().toFile());
         }
         try {
-            final URIExporter uriExporter = fsConnection.getURIExporters().get(URIExporterIDs.DEFAULT);
+            final URIExporter uriExporter = fsConnection.getDefaultURIExporter();
             final String uri = uriExporter.toUri(outputPath).toString();
             final URL url = FileUtil.toURL(uri);
             return Optional.ofNullable(FileUtil.getFileFromURL(url));
