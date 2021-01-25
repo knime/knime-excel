@@ -662,8 +662,11 @@ final class ExcelTableReaderNodeDialog
         m_radioButtonReadPartOfSheet.addActionListener(actionListener);
         m_radioButtonGenerateRowIDs.addActionListener(actionListener);
         m_radioButtonReadRowIDsFromCol.addActionListener(actionListener);
+        m_supportChangingFileSchemas.addActionListener(actionListener);
+
         final ChangeListener changeListener = l -> configNotRelevantForFileContentChanged();
         m_columnHeaderSpinner.addChangeListener(changeListener);
+
 
         final ChangeListener changeListenerFileContent = l -> configRelevantForFileContentChanged(false);
         final ActionListener actionListenerFileContent = l -> configRelevantForFileContentChanged(false);
@@ -817,9 +820,7 @@ final class ExcelTableReaderNodeDialog
         m_config.setFailOnDifferingSpecs(m_failOnDifferingSpecs.isSelected());
         boolean saveSpec = !m_supportChangingFileSchemas.isSelected();
         m_config.setSaveTableSpecConfig(saveSpec);
-        if (saveSpec) {
-            m_config.setTableSpecConfig(getTableSpecConfig());
-        }
+        m_config.setTableSpecConfig(saveSpec ? getTableSpecConfig() : null);
     }
 
     /**
