@@ -58,13 +58,13 @@ import org.knime.core.node.port.PortObjectSpec;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelReadAdapterFactory;
 import org.knime.filehandling.core.node.table.reader.config.AbstractTableReadConfig;
-import org.knime.filehandling.core.node.table.reader.config.ConfigID;
-import org.knime.filehandling.core.node.table.reader.config.ConfigIDFactory;
 import org.knime.filehandling.core.node.table.reader.config.ConfigSerializer;
 import org.knime.filehandling.core.node.table.reader.config.DefaultTableReadConfig;
-import org.knime.filehandling.core.node.table.reader.config.DefaultTableSpecConfigSerializer;
-import org.knime.filehandling.core.node.table.reader.config.DefaultTableSpecConfigSerializer.ExternalConfig;
-import org.knime.filehandling.core.node.table.reader.config.NodeSettingsConfigID;
+import org.knime.filehandling.core.node.table.reader.config.tablespec.ConfigID;
+import org.knime.filehandling.core.node.table.reader.config.tablespec.ConfigIDFactory;
+import org.knime.filehandling.core.node.table.reader.config.tablespec.NodeSettingsConfigID;
+import org.knime.filehandling.core.node.table.reader.config.tablespec.NodeSettingsSerializer;
+import org.knime.filehandling.core.node.table.reader.config.tablespec.TableSpecConfigSerializer;
 import org.knime.filehandling.core.util.SettingsUtils;
 
 /**
@@ -72,13 +72,8 @@ import org.knime.filehandling.core.util.SettingsUtils;
  *
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
  */
-enum ExcelMultiTableReadConfigSerializer
+final class ExcelMultiTableReadConfigSerializer
     implements ConfigSerializer<ExcelMultiTableReadConfig>, ConfigIDFactory<ExcelMultiTableReadConfig> {
-
-        /**
-         * Singleton instance.
-         */
-        INSTANCE;
 
     private static final String CFG_TABLE_SPEC_CONFIG = "table_spec_config" + SettingsModel.CFGKEY_INTERNAL;
 
@@ -138,11 +133,30 @@ enum ExcelMultiTableReadConfigSerializer
 
     static final String CFG_ENCRYPTION_SETTINGS_TAB = "encryption";
 
-    private final DefaultTableSpecConfigSerializer<KNIMECellType> m_tableSpecConfigSerializer;
+    private final TableSpecConfigSerializer<KNIMECellType> m_tableSpecConfigSerializer;
 
-    private ExcelMultiTableReadConfigSerializer() {
-        m_tableSpecConfigSerializer = new DefaultTableSpecConfigSerializer<>(
-            ExcelReadAdapterFactory.INSTANCE.getProducerRegistry(), KNIMECellType.STRING, this);
+    private enum ExcelTypeSerializer implements NodeSettingsSerializer<KNIMECellType> {
+            SERIALIZER;
+
+        private static final String CFG_TYPE = "type";
+
+        @Override
+        public void save(final KNIMECellType object, final NodeSettingsWO settings) {
+            settings.addString(CFG_TYPE, object.name());
+        }
+
+        @Override
+        public KNIMECellType load(final NodeSettingsRO settings) throws InvalidSettingsException {
+            return KNIMECellType.valueOf(settings.getString(CFG_TYPE));
+        }
+
+    }
+
+    ExcelMultiTableReadConfigSerializer() {
+        m_tableSpecConfigSerializer = TableSpecConfigSerializer//
+            .builder(ExcelReadAdapterFactory.INSTANCE.getProducerRegistry(), this, ExcelTypeSerializer.SERIALIZER)//
+            .addV43Support()//
+            .build();
     }
 
     @Override
@@ -152,9 +166,9 @@ enum ExcelMultiTableReadConfigSerializer
         loadAdvancedSettingsTabInDialog(config, SettingsUtils.getOrEmpty(settings, CFG_ADVANCED_SETTINGS_TAB));
         if (settings.containsKey(CFG_TABLE_SPEC_CONFIG)) {
             try {
+                m_tableSpecConfigSerializer.setSkipEmptyColumns(config.skipEmptyColumns());
                 config.setTableSpecConfig(
-                    m_tableSpecConfigSerializer.load(settings.getNodeSettings(CFG_TABLE_SPEC_CONFIG),
-                        new ExternalConfig(null, config.skipEmptyColumns())));
+                    m_tableSpecConfigSerializer.load(settings.getNodeSettings(CFG_TABLE_SPEC_CONFIG)));
             } catch (InvalidSettingsException ex) { // NOSONAR
                 /* Can only happen in TableSpecConfig#load, since we checked #NodeSettingsRO#getNodeSettings(String)
                  * before. The framework takes care that #validate is called before load so we can assume that this
@@ -173,8 +187,9 @@ enum ExcelMultiTableReadConfigSerializer
         loadAdvancedSettingsTabInModel(config, settings.getNodeSettings(CFG_ADVANCED_SETTINGS_TAB));
         loadEncryptionSettingsTabInModel(config, SettingsUtils.getOrEmpty(settings, CFG_ENCRYPTION_SETTINGS_TAB));
         if (settings.containsKey(CFG_TABLE_SPEC_CONFIG)) {
-            config.setTableSpecConfig(m_tableSpecConfigSerializer.load(settings.getNodeSettings(CFG_TABLE_SPEC_CONFIG),
-                new ExternalConfig(null, config.skipEmptyColumns())));
+            m_tableSpecConfigSerializer.setSkipEmptyColumns(config.skipEmptyColumns());
+            config
+                .setTableSpecConfig(m_tableSpecConfigSerializer.load(settings.getNodeSettings(CFG_TABLE_SPEC_CONFIG)));
         } else {
             config.setTableSpecConfig(null);
         }
@@ -183,7 +198,8 @@ enum ExcelMultiTableReadConfigSerializer
     @Override
     public void saveInModel(final ExcelMultiTableReadConfig config, final NodeSettingsWO settings) {
         if (config.hasTableSpecConfig()) {
-            config.getTableSpecConfig().save(settings.addNodeSettings(CFG_TABLE_SPEC_CONFIG));
+            m_tableSpecConfigSerializer.save(config.getTableSpecConfig(),
+                settings.addNodeSettings(CFG_TABLE_SPEC_CONFIG));
         }
         saveSettingsTab(config, SettingsUtils.getOrAdd(settings, CFG_SETTINGS_TAB));
         saveAdvancedSettingsTab(config, settings.addNodeSettings(CFG_ADVANCED_SETTINGS_TAB));
@@ -383,8 +399,8 @@ enum ExcelMultiTableReadConfigSerializer
         excelConfig.getAuthenticationSettingsModel().saveSettingsTo(settings);
     }
 
-    static void validateEncryptionSettingsTab(final ExcelMultiTableReadConfig config,
-        final NodeSettingsRO settings) throws InvalidSettingsException {
+    static void validateEncryptionSettingsTab(final ExcelMultiTableReadConfig config, final NodeSettingsRO settings)
+        throws InvalidSettingsException {
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
         // this option has been added later; check the existence of the setting for sake of backwards compatibility
         if (settings.containsKey(ExcelTableReaderConfig.CFG_PASSWORD)) {

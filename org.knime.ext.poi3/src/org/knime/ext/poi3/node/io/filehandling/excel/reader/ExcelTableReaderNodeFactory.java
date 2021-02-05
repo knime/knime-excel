@@ -63,7 +63,6 @@ import org.knime.filehandling.core.connections.FSLocation;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.reader.SettingsModelReaderFileChooser;
 import org.knime.filehandling.core.defaultnodesettings.filtermode.SettingsModelFilterMode.FilterMode;
 import org.knime.filehandling.core.node.table.reader.AbstractTableReaderNodeFactory;
-import org.knime.filehandling.core.node.table.reader.DefaultProductionPathProvider;
 import org.knime.filehandling.core.node.table.reader.MultiTableReadFactory;
 import org.knime.filehandling.core.node.table.reader.MultiTableReader;
 import org.knime.filehandling.core.node.table.reader.ProductionPathProvider;
@@ -113,7 +112,7 @@ public final class ExcelTableReaderNodeFactory
         final ExcelTableReader tableReader = createReader();
         final MultiTableReadFactory<Path, ExcelTableReaderConfig, KNIMECellType> readFactory =
             createMultiTableReadFactory(tableReader);
-        final DefaultProductionPathProvider<KNIMECellType> productionPathProvider = createProductionPathProvider();
+        final ProductionPathProvider<KNIMECellType> productionPathProvider = createProductionPathProvider();
         return new ExcelTableReaderNodeDialog(createPathSettings(creationConfig), createConfig(creationConfig),
             tableReader, readFactory, productionPathProvider);
     }

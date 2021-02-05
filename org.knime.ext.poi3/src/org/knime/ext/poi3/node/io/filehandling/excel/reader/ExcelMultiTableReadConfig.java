@@ -62,8 +62,8 @@ final class ExcelMultiTableReadConfig extends
     AbstractMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>, KNIMECellType, ExcelMultiTableReadConfig> {
 
     ExcelMultiTableReadConfig() {
-        super(new DefaultTableReadConfig<>(new ExcelTableReaderConfig()), ExcelMultiTableReadConfigSerializer.INSTANCE,
-            ExcelMultiTableReadConfigSerializer.INSTANCE);
+        super(new DefaultTableReadConfig<>(new ExcelTableReaderConfig()), new ExcelMultiTableReadConfigSerializer(),
+            new ExcelMultiTableReadConfigSerializer());
     }
 
     @Override
