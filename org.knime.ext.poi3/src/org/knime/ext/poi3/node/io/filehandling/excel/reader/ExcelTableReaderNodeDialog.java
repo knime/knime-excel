@@ -562,7 +562,6 @@ final class ExcelTableReaderNodeDialog
         final GBCBuilder gbcBuilder = new GBCBuilder().resetPos().anchorFirstLineStart().setWeightX(1).fillHorizontal();
         panel.add(createAdvancedReaderOptionsPanel(), gbcBuilder.build());
         panel.add(createFormulaEvaluationErrorOptionsPanel(), gbcBuilder.incY().build());
-        panel.add(createEncryptionPanel(), gbcBuilder.incY().build());
         panel.add(createDataRowsSpecLimitPanel(), gbcBuilder.incY().build());
         panel.add(createSpecFailingOptionsPanel(), gbcBuilder.incY().build());
         panel.add(createPreviewComponent(), gbcBuilder.incY().fillBoth().setWeightY(1).build());
