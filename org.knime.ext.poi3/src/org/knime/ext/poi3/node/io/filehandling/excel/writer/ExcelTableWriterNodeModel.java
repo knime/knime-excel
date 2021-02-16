@@ -63,6 +63,7 @@ import java.util.Optional;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
@@ -376,7 +377,7 @@ final class ExcelTableWriterNodeModel extends NodeModel {
             }
             // if create fails the input stream gets closed otherwise it's closed when invoking close on the workbook
             BufferedInputStream inp = new BufferedInputStream(Files.newInputStream(m_path));
-            final Workbook wb = WorkbookFactory.create(inp);
+            Workbook wb = WorkbookFactory.create(inp);
             if (wb instanceof HSSFWorkbook) {
                 if (m_format != ExcelFormat.XLS) {
                     wb.close();
@@ -393,6 +394,7 @@ final class ExcelTableWriterNodeModel extends NodeModel {
                             + "configuration",
                         m_path));
                 }
+                wb = new SXSSFWorkbook((XSSFWorkbook)wb);
             } else {
                 wb.close();
                 throw new IOException(
