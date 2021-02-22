@@ -57,6 +57,7 @@ import org.knime.core.node.NodeFactory;
 import org.knime.core.node.NodeView;
 import org.knime.core.node.context.NodeCreationConfiguration;
 import org.knime.core.node.context.ports.PortsConfiguration;
+import org.knime.filehandling.core.defaultnodesettings.EnumConfig;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.reader.SettingsModelReaderFileChooser;
 import org.knime.filehandling.core.defaultnodesettings.filtermode.SettingsModelFilterMode.FilterMode;
 import org.knime.filehandling.core.port.FileSystemPortObject;
@@ -111,8 +112,8 @@ public final class ExcelSheetReaderNodeFactory extends ConfigurableNodeFactory<E
     }
 
     private static SettingsModelReaderFileChooser createFileChooser(final PortsConfiguration portsConfig) {
-        return new SettingsModelReaderFileChooser("file_selection", portsConfig, FS_CONNECT_GRP_ID, FilterMode.FILE,
-            FILE_EXTENSIONS);
+        return new SettingsModelReaderFileChooser("file_selection", portsConfig, FS_CONNECT_GRP_ID,
+            EnumConfig.create(FilterMode.FILE, FilterMode.FILES_IN_FOLDERS), FILE_EXTENSIONS);
     }
 
 }

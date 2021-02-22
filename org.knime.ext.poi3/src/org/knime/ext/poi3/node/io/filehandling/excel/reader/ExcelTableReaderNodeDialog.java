@@ -266,8 +266,7 @@ final class ExcelTableReaderNodeDialog
             Stream.concat(Stream.of("settings"), Arrays.stream(m_settingsModelFilePanel.getKeysForFSLocation()))
                 .toArray(String[]::new);
         final FlowVariableModel readFvm = createFlowVariableModel(keyChain, FSLocationVariableType.INSTANCE);
-        m_filePanel = new DialogComponentReaderFileChooser(m_settingsModelFilePanel, "excel_reader_writer", readFvm,
-            FilterMode.FILE, FilterMode.FILES_IN_FOLDERS);
+        m_filePanel = new DialogComponentReaderFileChooser(m_settingsModelFilePanel, "excel_reader_writer", readFvm);
 
         m_authenticationSettingsModel = m_config.getReaderSpecificConfig().getAuthenticationSettingsModel();
         m_passwordComponent = new DialogComponentAuthentication(m_authenticationSettingsModel, null,

@@ -86,7 +86,6 @@ import org.knime.filehandling.core.data.location.variable.FSLocationVariableType
 import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.DialogComponentWriterFileChooser;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.FileOverwritePolicy;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.SettingsModelWriterFileChooser;
-import org.knime.filehandling.core.defaultnodesettings.filtermode.SettingsModelFilterMode.FilterMode;
 import org.knime.filehandling.core.util.GBCBuilder;
 
 /**
@@ -150,7 +149,7 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
         final FlowVariableModel writeFvm =
             createFlowVariableModel(writerModel.getKeysForFSLocation(), FSLocationVariableType.INSTANCE);
         m_fileChooser =
-            new DialogComponentWriterFileChooser(writerModel, "excel_reader_writer", writeFvm, FilterMode.FILE);
+            new DialogComponentWriterFileChooser(writerModel, "excel_reader_writer", writeFvm);
 
         m_sheetNames = Stream.generate(() -> new JTextField(23))//
             .limit(portsConfig.getInputPortLocation().get(ExcelTableWriterNodeFactory.SHEET_GRP_ID).length)//

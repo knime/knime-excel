@@ -64,7 +64,6 @@ import org.knime.core.node.port.PortObjectSpec;
 import org.knime.filehandling.core.data.location.variable.FSLocationVariableType;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.reader.DialogComponentReaderFileChooser;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.reader.SettingsModelReaderFileChooser;
-import org.knime.filehandling.core.defaultnodesettings.filtermode.SettingsModelFilterMode.FilterMode;
 import org.knime.filehandling.core.util.GBCBuilder;
 
 /**
@@ -79,8 +78,7 @@ final class ExcelSheetReaderNodeDialog extends NodeDialogPane {
     ExcelSheetReaderNodeDialog(final SettingsModelReaderFileChooser readerModel) {
         final FlowVariableModel writeFvm =
             createFlowVariableModel(readerModel.getKeysForFSLocation(), FSLocationVariableType.INSTANCE);
-        m_fileChooser = new DialogComponentReaderFileChooser(readerModel, "excel_reader_writer", writeFvm,
-            FilterMode.FILE, FilterMode.FILES_IN_FOLDERS);
+        m_fileChooser = new DialogComponentReaderFileChooser(readerModel, "excel_reader_writer", writeFvm);
 
         addTab("Settings", createPanel());
     }

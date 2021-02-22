@@ -48,7 +48,6 @@
  */
 package org.knime.ext.poi3.node.io.filehandling.excel.writer;
 
-import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -69,6 +68,7 @@ import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelFormat;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.Orientation;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.PaperSize;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.SheetNameExistsHandling;
+import org.knime.filehandling.core.defaultnodesettings.EnumConfig;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.FileOverwritePolicy;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.SettingsModelWriterFileChooser;
 import org.knime.filehandling.core.defaultnodesettings.filtermode.SettingsModelFilterMode.FilterMode;
@@ -146,8 +146,8 @@ final class ExcelTableWriterConfig implements ExcelTableConfig {
     ExcelTableWriterConfig(final PortsConfiguration portsCfg) {
         m_excelFormat = new SettingsModelString(CFG_EXCEL_FORMAT, DEFAULT_EXCEL_FORMAT.name());
         m_fileChooser = new SettingsModelWriterFileChooser(CFG_FILE_CHOOSER, portsCfg,
-            ExcelTableWriterNodeFactory.FS_CONNECT_GRP_ID, FilterMode.FILE, FileOverwritePolicy.FAIL,
-            EnumSet.of(FileOverwritePolicy.FAIL, FileOverwritePolicy.OVERWRITE, FileOverwritePolicy.APPEND),
+            ExcelTableWriterNodeFactory.FS_CONNECT_GRP_ID, EnumConfig.create(FilterMode.FILE),
+            EnumConfig.create(FileOverwritePolicy.FAIL, FileOverwritePolicy.OVERWRITE, FileOverwritePolicy.APPEND),
             DEFAULT_EXCEL_FORMAT.getFileExtension());
         m_sheetNames =
             IntStream.range(0, portsCfg.getInputPortLocation().get(ExcelTableWriterNodeFactory.SHEET_GRP_ID).length)//
