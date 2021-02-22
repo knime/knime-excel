@@ -85,8 +85,8 @@ import org.knime.core.node.streamable.StreamableOperator;
 import org.knime.filehandling.core.connections.FSLocation;
 import org.knime.filehandling.core.connections.FSPath;
 import org.knime.filehandling.core.data.location.FSLocationValueMetaData;
-import org.knime.filehandling.core.data.location.cell.FSLocationCellFactory;
-import org.knime.filehandling.core.data.location.cell.MultiFSLocationCellFactory;
+import org.knime.filehandling.core.data.location.cell.SimpleFSLocationCellFactory;
+import org.knime.filehandling.core.data.location.cell.MultiSimpleFSLocationCellFactory;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.reader.ReadPathAccessor;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.reader.SettingsModelReaderFileChooser;
 import org.knime.filehandling.core.defaultnodesettings.status.NodeModelStatusConsumer;
@@ -117,7 +117,7 @@ final class ExcelSheetReaderNodeModel extends NodeModel {
     }
 
     private DataTableSpec createSpec() {
-        final DataColumnSpecCreator colCreator = new DataColumnSpecCreator("Path", FSLocationCellFactory.TYPE);
+        final DataColumnSpecCreator colCreator = new DataColumnSpecCreator("Path", SimpleFSLocationCellFactory.TYPE);
         final FSLocation location = m_filechooser.getLocation();
         final FSLocationValueMetaData metaData = new FSLocationValueMetaData(location.getFileSystemCategory(),
             location.getFileSystemSpecifier().orElse(null));
@@ -140,8 +140,8 @@ final class ExcelSheetReaderNodeModel extends NodeModel {
 
     private void write(final ExecutionContext exec, final RowOutput output)
         throws IOException, InvalidSettingsException, InterruptedException, CanceledExecutionException {
-        try (ReadPathAccessor accessor = m_filechooser.createReadPathAccessor();
-                final MultiFSLocationCellFactory fac = new MultiFSLocationCellFactory()) {
+        try (ReadPathAccessor accessor = m_filechooser.createReadPathAccessor()) {
+            final MultiSimpleFSLocationCellFactory fac = new MultiSimpleFSLocationCellFactory();
             final List<FSPath> inputPaths = accessor.getFSPaths(m_statusConsumer);
             m_statusConsumer.setWarningsIfRequired(this::setWarningMessage);
             int rowOffset = 0;
@@ -158,7 +158,7 @@ final class ExcelSheetReaderNodeModel extends NodeModel {
     }
 
     private static int writeSheetNames(final ExecutionContext exec, final RowOutput output,
-        final MultiFSLocationCellFactory fac, final FSPath input, final int rowOffset)
+        final MultiSimpleFSLocationCellFactory fac, final FSPath input, final int rowOffset)
         throws InterruptedException, CanceledExecutionException, IOException {
         try (final InputStream in = Files.newInputStream(input);
                 final BufferedInputStream buffered = new BufferedInputStream(in)) {
@@ -169,13 +169,13 @@ final class ExcelSheetReaderNodeModel extends NodeModel {
         }
     }
 
-    private static int pushRows(final ExecutionContext exec, final MultiFSLocationCellFactory fac,
+    private static int pushRows(final ExecutionContext exec, final MultiSimpleFSLocationCellFactory fac,
         final FSLocation fsLocation, final RowOutput output, final Workbook wb, final int rowOffset)
         throws InterruptedException, CanceledExecutionException {
         final int numOfRows = wb.getNumberOfSheets();
         for (int i = 0; i < numOfRows; i++) {
             exec.checkCanceled();
-            output.push(new DefaultRow("Row" + (i + rowOffset), fac.createCell(exec, fsLocation),
+            output.push(new DefaultRow("Row" + (i + rowOffset), fac.createCell(fsLocation),
                 StringCellFactory.create(wb.getSheetName(i))));
         }
         return numOfRows;
