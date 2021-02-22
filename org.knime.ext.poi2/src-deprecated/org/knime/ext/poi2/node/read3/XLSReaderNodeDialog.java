@@ -324,8 +324,7 @@ class XLSReaderNodeDialog extends NodeDialogPane {
                 }
             }
         });
-        @SuppressWarnings("unchecked")
-        final ListCellRenderer<String> sheetNameRenderer = new BasicComboBoxRenderer() {
+        final ListCellRenderer<Object> sheetNameRenderer = new BasicComboBoxRenderer() {
             /**
              * {@inheritDoc}
              */
