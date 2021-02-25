@@ -168,7 +168,7 @@ enum ExcelMultiTableReadConfigSerializer
         loadSettingsTabInDialog(config, SettingsUtils.getOrEmpty(settings, CFG_SETTINGS_TAB));
         loadAdvancedSettingsTabInDialog(config, SettingsUtils.getOrEmpty(settings, CFG_ADVANCED_SETTINGS_TAB));
         try {
-            config.setTableSpecConfig(loadTableSpecConfig(settings, config.skipEmptyColumns()));
+            config.setTableSpecConfig(loadTableSpecConfig(settings));
         } catch (InvalidSettingsException ex) { // NOSONAR
             /* Can only happen in TableSpecConfig#load, since we checked #NodeSettingsRO#getNodeSettings(String)
              * before. The framework takes care that #validate is called before load so we can assume that this
@@ -177,11 +177,9 @@ enum ExcelMultiTableReadConfigSerializer
         }
     }
 
-    private TableSpecConfig<KNIMECellType> loadTableSpecConfig(final NodeSettingsRO settings,
-        final boolean skipEmptyColumns) throws InvalidSettingsException {
+    private TableSpecConfig<KNIMECellType> loadTableSpecConfig(final NodeSettingsRO settings) throws InvalidSettingsException {
         if (settings.containsKey(CFG_TABLE_SPEC_CONFIG)) {
-            return m_tableSpecConfigSerializer.load(settings.getNodeSettings(CFG_TABLE_SPEC_CONFIG),
-                TableSpecConfigSerializer.AdditionalParameters.create().withSkipEmptyColumns(skipEmptyColumns));
+            return m_tableSpecConfigSerializer.load(settings.getNodeSettings(CFG_TABLE_SPEC_CONFIG));
         } else {
             return null;
         }
@@ -193,7 +191,7 @@ enum ExcelMultiTableReadConfigSerializer
         loadSettingsTabInModel(config, SettingsUtils.getOrEmpty(settings, CFG_SETTINGS_TAB));
         loadAdvancedSettingsTabInModel(config, settings.getNodeSettings(CFG_ADVANCED_SETTINGS_TAB));
         loadEncryptionSettingsTabInModel(config, SettingsUtils.getOrEmpty(settings, CFG_ENCRYPTION_SETTINGS_TAB));
-        config.setTableSpecConfig(loadTableSpecConfig(settings, config.skipEmptyColumns()));
+        config.setTableSpecConfig(loadTableSpecConfig(settings));
     }
 
     @Override
