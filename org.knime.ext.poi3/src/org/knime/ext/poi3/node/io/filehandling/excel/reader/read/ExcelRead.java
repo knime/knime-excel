@@ -55,7 +55,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -81,7 +80,7 @@ import org.knime.filehandling.core.node.table.reader.read.Read;
  *
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
  */
-public abstract class ExcelRead implements Read<Path, ExcelCell> {
+public abstract class ExcelRead implements Read<ExcelCell> {
 
     private static final int BLOCKING_QUEUE_SIZE = 100;
 
@@ -193,11 +192,6 @@ public abstract class ExcelRead implements Read<Path, ExcelCell> {
         } catch (InvalidOperationException e) {
             throw new IllegalStateException(e.getMessage(), e);
         }
-    }
-
-    @Override
-    public final Optional<Path> getItem() {
-        return Optional.of(m_path);
     }
 
     @Override
