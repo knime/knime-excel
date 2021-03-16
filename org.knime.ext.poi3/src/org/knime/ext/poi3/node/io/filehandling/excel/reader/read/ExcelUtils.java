@@ -48,20 +48,13 @@
  */
 package org.knime.ext.poi3.node.io.filehandling.excel.reader.read;
 
-import static java.util.stream.Collectors.toSet;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.Cell;
@@ -80,15 +73,11 @@ import org.apache.poi.xssf.model.SharedStrings;
 import org.apache.poi.xssf.usermodel.XSSFComment;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.util.CheckUtils;
-import org.knime.core.util.UniqueNameGenerator;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.AreaOfSheetToRead;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
-import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
 import org.knime.filehandling.core.node.table.reader.read.IntervalRead;
 import org.knime.filehandling.core.node.table.reader.read.Read;
-import org.knime.filehandling.core.node.table.reader.spec.TypedReaderColumnSpec;
-import org.knime.filehandling.core.node.table.reader.spec.TypedReaderTableSpec;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
@@ -104,96 +93,6 @@ public final class ExcelUtils {
 
     private ExcelUtils() {
         // Hide constructor, utils class
-    }
-
-    /**
-     * Assigns names to the columns in {@link TypedReaderTableSpec spec} if they don't contain a name already. The
-     * naming scheme is A, B, C, etc. whereby the letter depends on the column index in the original table, i.e., the
-     * first missing column name will not necessarily be assigned 'A' but the letter that corresponds with its index.
-     *
-     * @param spec {@link TypedReaderTableSpec} containing columns to assign names if they are missing
-     * @param config the config
-     * @param hiddenColumns the set of hidden columns
-     * @return a {@link TypedReaderTableSpec} with the same types as {@link TypedReaderTableSpec spec} in which all
-     *         columns are named
-     */
-    public static TypedReaderTableSpec<KNIMECellType> assignNamesIfMissing(
-        final TypedReaderTableSpec<KNIMECellType> spec, final TableReadConfig<ExcelTableReaderConfig> config,
-        final Set<Integer> hiddenColumns) {
-        final UniqueNameGenerator nameGen = new UniqueNameGenerator(spec.stream()//
-            .map(TypedReaderColumnSpec::getName)//
-            .map(n -> n.orElse(null))//
-            .filter(Objects::nonNull)//
-            .collect(toSet()));
-        return new TypedReaderTableSpec<>(IntStream.range(0, spec.size())
-            .mapToObj(i -> assignNameIfMissing(i, spec.getColumnSpec(i), nameGen, config, hiddenColumns))
-            .collect(Collectors.toList()));
-    }
-
-    private static <T> TypedReaderColumnSpec<T> assignNameIfMissing(final int idx, final TypedReaderColumnSpec<T> spec,
-        final UniqueNameGenerator nameGen, final TableReadConfig<ExcelTableReaderConfig> config,
-        final Set<Integer> hiddenColumns) {
-        final Optional<String> name = spec.getName();
-        if (name.isPresent()) {
-            return spec;
-        } else {
-            String excelColumnName = ExcelUtils.getExcelColumnName(getFilteredIdx(idx, config, hiddenColumns));
-            if (config.useColumnHeaderIdx()) {
-                excelColumnName = "empty_" + excelColumnName;
-            }
-            return TypedReaderColumnSpec.createWithName(nameGen.newName(excelColumnName), spec.getType(),
-                spec.hasType());
-        }
-    }
-
-    private static int getFilteredIdx(final int idx, final TableReadConfig<ExcelTableReaderConfig> config,
-        final Set<Integer> hiddenColumns) {
-        int filteredIdx;
-        final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
-        final int startColIdx;
-        // get the start index
-        if (excelConfig.getAreaOfSheetToRead() == AreaOfSheetToRead.PARTIAL) {
-            startColIdx = getColIntervalStart(config);
-            filteredIdx = idx + startColIdx;
-        } else {
-            startColIdx = 0;
-            filteredIdx = idx;
-        }
-        final int rowIdColIdx = getRowIdColIdx(excelConfig.getRowIDCol());
-        if (excelConfig.isSkipHiddenCols()) {
-            // increment the index by the number of hidden columns that are before it and >= start
-            final int i = filteredIdx;
-            int count = (int)hiddenColumns.stream().filter(hIdx -> hIdx >= startColIdx && hIdx <= i).count();
-            filteredIdx = filteredIdx + count;
-            // increment as long as we have an index that is hidden
-            while (hiddenColumns.contains(filteredIdx)) {
-                filteredIdx++;
-            }
-            // increment if we had a row ID before the index and >= start (as this was filtered out and not counted)
-            // make sure the row ID was not hidden as we have already covered that case above
-            if (rowIdBeforeIdxAndWithinStart(config.useRowIDIdx(), filteredIdx, startColIdx, rowIdColIdx)
-                && !hiddenColumns.contains(rowIdColIdx)) {
-                filteredIdx++;
-            }
-        } else if (!excelConfig.isUseRawSettings()
-            && rowIdBeforeIdxAndWithinStart(config.useRowIDIdx(), filteredIdx, startColIdx, rowIdColIdx)) {
-            // increment if we had a row ID before the index and >= start (as this was filtered out and not counted)
-            filteredIdx++;
-        }
-        return filteredIdx;
-    }
-
-    private static boolean rowIdBeforeIdxAndWithinStart(final boolean useRowIdIdx, final int filteredIdx,
-        final int startColIdx, final int rowIdColIdx) {
-        return useRowIdIdx && rowIdColIdx <= filteredIdx && rowIdColIdx >= startColIdx;
-    }
-
-    private static int getColIntervalStart(final TableReadConfig<ExcelTableReaderConfig> config) {
-        final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
-        if (excelConfig.getAreaOfSheetToRead() == AreaOfSheetToRead.ENTIRE) {
-            return 0;
-        }
-        return ExcelUtils.getFirstColumnIdx(excelConfig.getReadFromCol());
     }
 
     /**

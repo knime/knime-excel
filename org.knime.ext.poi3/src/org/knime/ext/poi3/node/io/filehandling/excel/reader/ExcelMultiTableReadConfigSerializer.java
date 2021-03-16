@@ -56,6 +56,7 @@ import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.defaultnodesettings.SettingsModel;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.columnnames.ColumnNameMode;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelReadAdapterFactory;
 import org.knime.filehandling.core.node.table.reader.config.AbstractTableReadConfig;
 import org.knime.filehandling.core.node.table.reader.config.ConfigSerializer;
@@ -128,6 +129,10 @@ enum ExcelMultiTableReadConfigSerializer
     private static final String CFG_ROW_ID_GENERATION = "row_id";
 
     private static final String CFG_ROW_ID_COL = "row_id_column";
+
+    private static final String CFG_EMPTY_COL_HEADER_PREFIX = "empty_col_header_prefix";
+
+    private static final String CFG_COLUMN_NAME_MODE = "column_name_mode";
 
     private static final String CFG_MAX_DATA_ROWS_SCANNED = "max_data_rows_scanned";
 
@@ -234,6 +239,9 @@ enum ExcelMultiTableReadConfigSerializer
         excelConfig.setReadToCol(settings.getString(CFG_READ_TO_COL, ""));
         excelConfig.setReadFromRow(settings.getString(CFG_READ_FROM_ROW, "1"));
         excelConfig.setReadToRow(settings.getString(CFG_READ_TO_ROW, ""));
+        excelConfig.setEmptyColHeaderPrefix(settings.getString(CFG_EMPTY_COL_HEADER_PREFIX, "empty_"));
+        excelConfig.setColumnNameMode(ColumnNameMode
+            .valueOf(settings.getString(CFG_COLUMN_NAME_MODE, ColumnNameMode.EXCEL_COL_NAME.name())));
         final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = config.getTableReadConfig();
         tableReadConfig.setUseColumnHeaderIdx(settings.getBoolean(CFG_HAS_COLUMN_HEADER, true));
         tableReadConfig.setColumnHeaderIdx(settings.getLong(CFG_COLUMN_HEADER_ROW_NUMBER, 1) - 1);
@@ -255,6 +263,15 @@ enum ExcelMultiTableReadConfigSerializer
         excelConfig.setReadToCol(settings.getString(CFG_READ_TO_COL));
         excelConfig.setReadFromRow(settings.getString(CFG_READ_FROM_ROW));
         excelConfig.setReadToRow(settings.getString(CFG_READ_TO_ROW));
+        //Check for backwards compatability
+        if (settings.containsKey(CFG_COLUMN_NAME_MODE)) {
+            excelConfig.setColumnNameMode(
+                ColumnNameMode.loadValueInModel(settings.getString(CFG_COLUMN_NAME_MODE)));
+        }
+        //Check for backwards compatability
+        if (settings.containsKey(CFG_EMPTY_COL_HEADER_PREFIX)) {
+            excelConfig.setEmptyColHeaderPrefix(settings.getString(CFG_EMPTY_COL_HEADER_PREFIX));
+        }
         final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = config.getTableReadConfig();
         tableReadConfig.setUseColumnHeaderIdx(settings.getBoolean(CFG_HAS_COLUMN_HEADER));
         tableReadConfig.setColumnHeaderIdx(settings.getLong(CFG_COLUMN_HEADER_ROW_NUMBER) - 1);
@@ -280,6 +297,8 @@ enum ExcelMultiTableReadConfigSerializer
         settings.addString(CFG_READ_TO_COL, excelConfig.getReadToCol());
         settings.addString(CFG_READ_FROM_ROW, excelConfig.getReadFromRow());
         settings.addString(CFG_READ_TO_ROW, excelConfig.getReadToRow());
+        settings.addString(CFG_EMPTY_COL_HEADER_PREFIX, excelConfig.getEmptyColHeaderPrefix());
+        settings.addString(CFG_COLUMN_NAME_MODE, excelConfig.getColumnNameMode().name());
     }
 
     static void validateSettingsTab(final NodeSettingsRO settings) throws InvalidSettingsException {
@@ -295,6 +314,14 @@ enum ExcelMultiTableReadConfigSerializer
         settings.getString(CFG_READ_TO_COL);
         settings.getString(CFG_READ_FROM_ROW);
         settings.getString(CFG_READ_TO_ROW);
+        //Check for backwards compatability
+        if(settings.containsKey(CFG_COLUMN_NAME_MODE)){
+            settings.getString(CFG_COLUMN_NAME_MODE);
+        }
+        //Check for backwards compatability
+        if(settings.containsKey(CFG_EMPTY_COL_HEADER_PREFIX)) {
+            settings.getString(CFG_EMPTY_COL_HEADER_PREFIX);
+        }
     }
 
     private static void loadAdvancedSettingsTabInDialog(final ExcelMultiTableReadConfig config,
