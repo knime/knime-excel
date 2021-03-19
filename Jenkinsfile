@@ -34,7 +34,6 @@ try {
                         "knime-js-core",
                         "knime-js-base",
                         "knime-cloud",
-                        "knime-dl4j",
                         "knime-textprocessing",
                         "knime-database",
                         "knime-kerberos",
