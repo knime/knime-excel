@@ -68,6 +68,7 @@ import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIME
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelRead;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelUtils;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.WrapperExtractColumnHeaderRead;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.columnnames.ExcelColNameUtils;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.xls.XLSRead;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.xlsx.XLSXRead;
 import org.knime.filehandling.core.node.table.reader.TableReader;
@@ -113,7 +114,7 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
             // sheet names are already retrieved, notify a potential listener from the dialog
             m_sheetNames = read.getSheetNames();
             notifyChangeListener();
-            return ExcelUtils.assignNamesIfMissing(
+            return ExcelColNameUtils.assignNamesIfMissing(
                 guesser.guessSpec(decorateReadForSpecGuessing(read, config), config, exec), config,
                 read.getHiddenColumns());
         }

@@ -67,6 +67,7 @@ import javax.swing.DefaultComboBoxModel;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
+import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
@@ -89,6 +90,7 @@ import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.util.ViewUtils;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelUtils;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.columnnames.ColumnNameMode;
 import org.knime.filehandling.core.data.location.variable.FSLocationVariableType;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.reader.DialogComponentReaderFileChooser;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.reader.ReadPathAccessor;
@@ -153,6 +155,17 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
 
     private final JSpinner m_columnHeaderSpinner = new JSpinner(
         new SpinnerNumberModel(Long.valueOf(1), Long.valueOf(1), Long.valueOf(Long.MAX_VALUE), Long.valueOf(1)));
+
+    private final JLabel m_emptyColHeaderLabel = new JLabel("Empty column name prefix:");
+
+    private final JTextField m_emptyColHeaderPrefix = new JTextField("empty_");
+
+    private final JRadioButton m_emptyColHeaderIndex = new JRadioButton(ColumnNameMode.COL_INDEX.getText());
+
+    private final JRadioButton m_emptyColHeaderExcelColName =
+        new JRadioButton(ColumnNameMode.EXCEL_COL_NAME.getText(), true);
+
+    private final ButtonGroup m_emptyColHeaderBtnGrp = new ButtonGroup();
 
     // text has trailing space to not be cut on Windows because of italic font
     private final JLabel m_columnHeaderNoteLabel =
@@ -272,6 +285,8 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         m_buttonGroupSheetArea.add(m_radioButtonReadPartOfSheet);
         m_buttonGrouprowIDGeneration.add(m_radioButtonGenerateRowIDs);
         m_buttonGrouprowIDGeneration.add(m_radioButtonReadRowIDsFromCol);
+        m_emptyColHeaderBtnGrp.add(m_emptyColHeaderIndex);
+        m_emptyColHeaderBtnGrp.add(m_emptyColHeaderExcelColName);
 
         final AnalysisComponentModel analysisComponentModel = new AnalysisComponentModel();
         m_previewModel = new TableReaderPreviewModel(analysisComponentModel);
@@ -298,8 +313,11 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         m_filePanel.getSettingsModel().getFilterModeModel().addChangeListener(l -> toggleFailOnDifferingCheckBox());
 
         m_columnHeaderCheckBox.addChangeListener(l -> {
-            m_columnHeaderSpinner.setEnabled(m_columnHeaderCheckBox.isSelected());
-            m_columnHeaderNoteLabel.setEnabled(m_columnHeaderCheckBox.isSelected());
+            final boolean isSelected = m_columnHeaderCheckBox.isSelected();
+            m_columnHeaderSpinner.setEnabled(isSelected);
+            m_columnHeaderNoteLabel.setEnabled(isSelected);
+            m_emptyColHeaderPrefix.setEnabled(isSelected);
+            m_emptyColHeaderLabel.setEnabled(isSelected);
         });
 
         m_radioButtonInsertErrorPattern
@@ -439,15 +457,57 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         final JPanel panel = new JPanel(new GridBagLayout());
         panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Column header"));
         final Insets insets = new Insets(5, 5, 0, 0);
-        final GBCBuilder gbcBuilder = new GBCBuilder(insets).resetPos().anchorFirstLineStart();
+        final GBCBuilder gbcBuilder = new GBCBuilder(insets).resetPos().setWeightX(1).anchorFirstLineStart();
+
+        panel.add(createColumnNameModePanel(), gbcBuilder.build());
+        panel.add(createColumnHeaderRowPanel(), gbcBuilder.incY().build());
+        panel.add(createColumnHeaderEmptyPrefixPanel(), gbcBuilder.insetBottom(5).incY().build());
+
+        return panel;
+    }
+
+    private JPanel createColumnNameModePanel() {
+        final JPanel panel = new JPanel(new GridBagLayout());
+        final GBCBuilder gbcBuilder = new GBCBuilder().resetPos().anchorFirstLineStart();
+
+        panel.add(m_emptyColHeaderExcelColName, gbcBuilder.incX().build());
+        panel.add(m_emptyColHeaderIndex, gbcBuilder.incX().build());
+
+        return panel;
+    }
+
+    private JPanel createColumnHeaderRowPanel() {
+        final JPanel panel = new JPanel(new GridBagLayout());
+        final GBCBuilder gbcBuilder = new GBCBuilder().resetPos().anchorFirstLineStart();
+
+        /*
+         * This sets the text field of the spinner to a fixed column based size
+         * because internally the max value of the spinner is used to determine
+         * the size even though you set the preferred size.
+         */
+        final JComponent editor = m_columnHeaderSpinner.getEditor();
+        final JFormattedTextField tf = ((JSpinner.DefaultEditor)editor).getTextField();
+        tf.setColumns(6);
 
         m_columnHeaderNoteLabel
             .setPreferredSize(new Dimension((int)m_columnHeaderNoteLabel.getPreferredSize().getWidth(),
                 (int)m_columnHeaderCheckBox.getPreferredSize().getHeight()));
         panel.add(m_columnHeaderCheckBox, gbcBuilder.build());
-        setWidthTo(m_columnHeaderSpinner, 75);
         panel.add(m_columnHeaderSpinner, gbcBuilder.incX().build());
-        panel.add(m_columnHeaderNoteLabel, gbcBuilder.incX().setWeightX(1).build());
+        panel.add(m_columnHeaderNoteLabel, gbcBuilder.incX().insetLeft(5).setWeightX(1).build());
+        return panel;
+    }
+
+    private JPanel createColumnHeaderEmptyPrefixPanel() {
+        final JPanel panel = new JPanel(new GridBagLayout());
+        final GBCBuilder gbcBuilder = new GBCBuilder().resetPos().anchorFirstLineStart();
+
+        setHeightToComponentHeight(m_emptyColHeaderLabel, m_emptyColHeaderPrefix);
+        setWidthTo(m_emptyColHeaderPrefix, 75);
+        panel.add(m_emptyColHeaderLabel, gbcBuilder.insetLeft(5).setWeightX(0).build());
+        panel.add(m_emptyColHeaderPrefix, gbcBuilder.incX().build());
+        panel.add(Box.createHorizontalBox(), gbcBuilder.incX().setWeightX(1).build());
+
         return panel;
     }
 
@@ -614,6 +674,8 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         m_radioButtonGenerateRowIDs.addActionListener(actionListener);
         m_radioButtonReadRowIDsFromCol.addActionListener(actionListener);
         m_supportChangingFileSchemas.addActionListener(actionListener);
+        m_emptyColHeaderIndex.addActionListener(actionListener);
+        m_emptyColHeaderExcelColName.addActionListener(actionListener);
         final ChangeListener changeListener = l -> configNotRelevantForFileContentChanged();
         m_columnHeaderSpinner.addChangeListener(changeListener);
 
@@ -650,6 +712,7 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         m_fromRow.getDocument().addDocumentListener(documentListener);
         m_toRow.getDocument().addDocumentListener(documentListener);
         m_rowIDColumn.getDocument().addDocumentListener(documentListener);
+        m_emptyColHeaderPrefix.getDocument().addDocumentListener(documentListener);
     }
 
     private void registerTabbedPaneChangeListeners() {
@@ -822,6 +885,13 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
             throw new InvalidSettingsException(e.getMessage());
         }
         excelConfig.setUseRawSettings(false);
+
+        excelConfig.setEmptyColHeaderPrefix(m_emptyColHeaderPrefix.getText());
+        if (m_emptyColHeaderIndex.isSelected()) {
+            excelConfig.setColumnNameMode(ColumnNameMode.COL_INDEX);
+        } else {
+            excelConfig.setColumnNameMode(ColumnNameMode.EXCEL_COL_NAME);
+        }
     }
 
     private void updateFileContentPreviewSettings() {
@@ -888,6 +958,85 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
     private void loadExcelSettings() {
         final ExcelTableReaderConfig excelConfig = m_config.getReaderSpecificConfig();
         m_use15DigitsPrecision.setSelected(excelConfig.isUse15DigitsPrecision());
+        loadExcelSettingsSheetSelection(excelConfig);
+        m_sheetNameSelection.addItem(excelConfig.getSheetName());
+        m_sheetNameSelection.setSelectedItem(excelConfig.getSheetName());
+        m_sheetIndexSelection.setValue(excelConfig.getSheetIdx());
+        m_skipHiddenCols.setSelected(excelConfig.isSkipHiddenCols());
+        m_skipHiddenRows.setSelected(excelConfig.isSkipHiddenRows());
+        m_replaceEmptyStringsWithMissings.setSelected(excelConfig.isReplaceEmptyStringsWithMissings());
+        m_reevaluateFormulas.setSelected(excelConfig.isReevaluateFormulas());
+        loadExcelSettingsFormulaErrorHandling(excelConfig);
+        m_formulaErrorPattern.setText(excelConfig.getErrorPattern());
+        loadExcelSettingsAreaOfSheet(excelConfig);
+        m_fromCol.setText(excelConfig.getReadFromCol());
+        m_toCol.setText(excelConfig.getReadToCol());
+        m_fromRow.setText(excelConfig.getReadFromRow());
+        m_toRow.setText(excelConfig.getReadToRow());
+        setEnablednessReadPartOfSheetFields();
+        loadExcelSettingsRowIdGeneration(excelConfig);
+        m_rowIDColumn.setText(excelConfig.getRowIDCol());
+        m_rowIDColumn.setEnabled(m_radioButtonReadRowIDsFromCol.isSelected());
+        loadExcelSettingsColumnNameMode(excelConfig);
+    }
+
+    /**
+     * Loads the row id generation settings.
+     *
+     * @param excelConfig the {@link ExcelTableReaderConfig}
+     */
+    private void loadExcelSettingsRowIdGeneration(final ExcelTableReaderConfig excelConfig) {
+        switch (excelConfig.getRowIdGeneration()) {
+            case COLUMN:
+                m_radioButtonReadRowIDsFromCol.setSelected(true);
+                break;
+            case GENERATE:
+            default:
+                m_radioButtonGenerateRowIDs.setSelected(true);
+                break;
+        }
+    }
+
+    /**
+     * Loads the area of sheet settings.
+     *
+     * @param excelConfig the {@link ExcelTableReaderConfig}
+     */
+    private void loadExcelSettingsAreaOfSheet(final ExcelTableReaderConfig excelConfig) {
+        switch (excelConfig.getAreaOfSheetToRead()) {
+            case PARTIAL:
+                m_radioButtonReadPartOfSheet.setSelected(true);
+                break;
+            case ENTIRE:
+            default:
+                m_radioButtonReadEntireSheet.setSelected(true);
+                break;
+        }
+    }
+
+    /**
+     * Loads the formula error handling settings.
+     *
+     * @param excelConfig the {@link ExcelTableReaderConfig}
+     */
+    private void loadExcelSettingsFormulaErrorHandling(final ExcelTableReaderConfig excelConfig) {
+        switch (excelConfig.getFormulaErrorHandling()) {
+            case MISSING:
+                m_radioButtonInsertMissingCell.setSelected(true);
+                break;
+            case PATTERN:
+            default:
+                m_radioButtonInsertErrorPattern.setSelected(true);
+                break;
+        }
+    }
+
+    /**
+     * Loads the sheet seletion settings.
+     *
+     * @param excelConfig the {@link ExcelTableReaderConfig}
+     */
+    private void loadExcelSettingsSheetSelection(final ExcelTableReaderConfig excelConfig) {
         switch (excelConfig.getSheetSelection()) {
             case NAME:
                 m_radioButtonSheetByName.setSelected(true);
@@ -900,49 +1049,23 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
                 m_radioButtonFirstSheetWithData.setSelected(true);
                 break;
         }
-        m_sheetNameSelection.addItem(excelConfig.getSheetName());
-        m_sheetNameSelection.setSelectedItem(excelConfig.getSheetName());
-        m_sheetIndexSelection.setValue(excelConfig.getSheetIdx());
-        m_skipHiddenCols.setSelected(excelConfig.isSkipHiddenCols());
-        m_skipHiddenRows.setSelected(excelConfig.isSkipHiddenRows());
-        m_replaceEmptyStringsWithMissings.setSelected(excelConfig.isReplaceEmptyStringsWithMissings());
-        m_reevaluateFormulas.setSelected(excelConfig.isReevaluateFormulas());
-        switch (excelConfig.getFormulaErrorHandling()) {
-            case MISSING:
-                m_radioButtonInsertMissingCell.setSelected(true);
-                break;
-            case PATTERN:
-            default:
-                m_radioButtonInsertErrorPattern.setSelected(true);
-                break;
-        }
-        m_formulaErrorPattern.setText(excelConfig.getErrorPattern());
-        switch (excelConfig.getAreaOfSheetToRead()) {
-            case PARTIAL:
-                m_radioButtonReadPartOfSheet.setSelected(true);
-                break;
-            case ENTIRE:
-            default:
-                m_radioButtonReadEntireSheet.setSelected(true);
-                break;
-        }
-        m_fromCol.setText(excelConfig.getReadFromCol());
-        m_toCol.setText(excelConfig.getReadToCol());
-        m_fromRow.setText(excelConfig.getReadFromRow());
-        m_toRow.setText(excelConfig.getReadToRow());
-        setEnablednessReadPartOfSheetFields();
+    }
 
-        switch (excelConfig.getRowIdGeneration()) {
-            case COLUMN:
-                m_radioButtonReadRowIDsFromCol.setSelected(true);
+    /**
+     * Loads the {@link ColumnNameMode} settings.
+     *
+     * @param excelConfig the {@link ExcelTableReaderConfig}
+     */
+    private void loadExcelSettingsColumnNameMode(final ExcelTableReaderConfig excelConfig) {
+        switch (excelConfig.getColumnNameMode()) {
+            case COL_INDEX:
+                m_emptyColHeaderIndex.setSelected(true);
                 break;
-            case GENERATE:
+            case EXCEL_COL_NAME:
             default:
-                m_radioButtonGenerateRowIDs.setSelected(true);
+                m_emptyColHeaderExcelColName.setSelected(true);
                 break;
         }
-        m_rowIDColumn.setText(excelConfig.getRowIDCol());
-        m_rowIDColumn.setEnabled(m_radioButtonReadRowIDsFromCol.isSelected());
     }
 
     @Override

@@ -48,6 +48,7 @@
  */
 package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.columnnames.ColumnNameMode;
 import org.knime.filehandling.core.node.table.reader.config.ReaderSpecificConfig;
 
 /**
@@ -96,6 +97,10 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
 
     private String m_rowIDCol = "A";
 
+    private String m_emptyColHeaderPrefix = "empty_";
+
+    private ColumnNameMode m_columnNameMode = ColumnNameMode.EXCEL_COL_NAME;
+
     /**
      * Constructor.
      */
@@ -121,6 +126,8 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
         setRowIDCol(toCopy.getRowIDCol());
         setUseRawSettings(toCopy.isUseRawSettings());
         setReplaceEmptyStringsWithMissings(toCopy.isReplaceEmptyStringsWithMissings());
+        setColumnNameMode(toCopy.getColumnNameMode());
+        setEmptyColHeaderPrefix(toCopy.getEmptyColHeaderPrefix());
     }
 
     @Override
@@ -336,6 +343,38 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
      */
     void setRowIDCol(final String rowIDCol) {
         m_rowIDCol = rowIDCol;
+    }
+
+    /**
+     * @return the prefix for empty column headers
+     */
+    public String getEmptyColHeaderPrefix() {
+        return m_emptyColHeaderPrefix;
+    }
+
+    /**
+     * Sets the prefix for empty column headers.
+     *
+     * @param emptyColHeaderPrefix the prefix for empty column headers
+     */
+    void setEmptyColHeaderPrefix(final String emptyColHeaderPrefix) {
+        m_emptyColHeaderPrefix = emptyColHeaderPrefix;
+    }
+
+    /**
+     * @return the {@link ColumnNameMode}
+     */
+    public ColumnNameMode getColumnNameMode() {
+        return m_columnNameMode;
+    }
+
+    /**
+     * Sets the {@link ColumnNameMode}.
+     *
+     * @param columnNameMode the {@link ColumnNameMode}
+     */
+    void setColumnNameMode(final ColumnNameMode columnNameMode) {
+        m_columnNameMode = columnNameMode;
     }
 
     /**
