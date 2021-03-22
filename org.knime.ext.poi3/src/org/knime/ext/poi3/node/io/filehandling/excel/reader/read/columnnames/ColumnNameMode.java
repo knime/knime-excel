@@ -51,6 +51,7 @@ package org.knime.ext.poi3.node.io.filehandling.excel.reader.read.columnnames;
 import java.util.Set;
 
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeLogger;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
@@ -80,6 +81,8 @@ public enum ColumnNameMode {
             }
         };
 
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(ColumnNameMode.class);
+
     private final String m_text;
 
     private ColumnNameMode(final String text) {
@@ -105,10 +108,18 @@ public enum ColumnNameMode {
     abstract ColumnNameCreator getColumnNameCreator(final TableReadConfig<ExcelTableReaderConfig> config,
         final Set<Integer> hiddenColumns, final TypedReaderTableSpec<KNIMECellType> spec);
 
+    /**
+     * Convenience method used to load the {@link ColumnNameMode}.
+     *
+     * @param s the name of the {@link ColumnNameMode}
+     * @return the {@link ColumnNameMode}
+     * @throws InvalidSettingsException in case the passed parameter is not a value of {@link ColumnNameMode}
+     */
     public static ColumnNameMode loadValueInModel(final String s) throws InvalidSettingsException {
         try {
             return valueOf(s);
         } catch (IllegalArgumentException e) {
+            LOGGER.debug(String.format("%s is no valid column name mode", s), e);
             throw new InvalidSettingsException(
                 "No valid column name mode '" + s + "' available. See node description.");
         }
