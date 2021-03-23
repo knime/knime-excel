@@ -978,6 +978,7 @@ final class ExcelTableReaderNodeDialog extends AbstractTableReaderNodeDialog<Exc
         m_rowIDColumn.setText(excelConfig.getRowIDCol());
         m_rowIDColumn.setEnabled(m_radioButtonReadRowIDsFromCol.isSelected());
         loadExcelSettingsColumnNameMode(excelConfig);
+        m_emptyColHeaderPrefix.setText(excelConfig.getEmptyColHeaderPrefix());
     }
 
     /**
