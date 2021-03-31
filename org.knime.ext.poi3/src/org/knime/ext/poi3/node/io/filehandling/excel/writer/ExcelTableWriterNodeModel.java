@@ -228,7 +228,7 @@ final class ExcelTableWriterNodeModel extends NodeModel {
             return Optional.of(outputPath.toAbsolutePath().toFile());
         }
         try {
-            final URIExporter uriExporter = fsConnection.getDefaultURIExporter();
+            final URIExporter uriExporter = fsConnection.getDefaultURIExporterFactory().getExporter();
             final String uri = uriExporter.toUri(outputPath).toString();
             final URL url = FileUtil.toURL(uri);
             return Optional.ofNullable(FileUtil.getFileFromURL(url));
