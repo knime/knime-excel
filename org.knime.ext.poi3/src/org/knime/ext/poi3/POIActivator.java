@@ -44,7 +44,11 @@
  */
 package org.knime.ext.poi3;
 
+import java.io.IOException;
+
 import org.apache.poi.openxml4j.util.ZipSecureFile;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.util.TempFile;
 import org.eclipse.core.runtime.Plugin;
 import org.knime.core.node.KNIMEConstants;
@@ -55,9 +59,7 @@ import org.osgi.framework.BundleContext;
  * The activator class controls the plug-in life cycle.
  */
 public class POIActivator extends Plugin {
-    /**
-     * {@inheritDoc}
-     */
+
     @Override
     public void start(final BundleContext context) throws Exception {
         super.start(context);
@@ -71,5 +73,20 @@ public class POIActivator extends Plugin {
 
         // AP-15963: lower the ratio (defaults to 0.01) as some users had issues with it
         ZipSecureFile.setMinInflateRatio(0.001d);
+
+        // AP-16499: executing multiple excel reader/writer nodes can cause NPE during WorkbookFactory#create
+        initWorkbookFactories();
+    }
+
+    private static void initWorkbookFactories() throws IOException {
+        initWorkbookFactory(false);
+        initWorkbookFactory(true);
+    }
+
+    private static void initWorkbookFactory(final boolean xssf) throws IOException {
+        // WorkbookFactory#create initializes the appropriate factories
+        try (final Workbook wb = WorkbookFactory.create(xssf)) {
+            // nothing to do
+        }
     }
 }
