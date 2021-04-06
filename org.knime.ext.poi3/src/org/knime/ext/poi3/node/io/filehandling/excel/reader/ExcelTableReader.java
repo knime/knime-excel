@@ -50,6 +50,9 @@ package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
@@ -62,6 +65,8 @@ import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.openxml4j.exceptions.ODFNotOfficeXmlFileException;
 import org.apache.poi.openxml4j.exceptions.OLE2NotOfficeXmlFileException;
 import org.apache.poi.xssf.XLSBUnsupportedException;
+import org.knime.core.columnar.batch.SequentialBatchReadable;
+import org.knime.core.columnar.data.DataSpec;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeLogger;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell;
@@ -75,6 +80,10 @@ import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.streamed.xlsx.X
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.xls.XLSRead;
 import org.knime.filehandling.core.node.table.reader.TableReader;
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
+import org.knime.filehandling.core.node.table.reader.ftrf.adapter.SequentialBatchReadableAdapter;
+import org.knime.filehandling.core.node.table.reader.ftrf.adapter.ValueAccess;
+import org.knime.filehandling.core.node.table.reader.ftrf.adapter.ValueAccess.DefaultObjectAccess;
+import org.knime.filehandling.core.node.table.reader.ftrf.adapter.ValueAccessFactory;
 import org.knime.filehandling.core.node.table.reader.read.Read;
 import org.knime.filehandling.core.node.table.reader.read.SkipIdxRead;
 import org.knime.filehandling.core.node.table.reader.spec.DefaultExtractColumnHeaderRead;
@@ -90,7 +99,7 @@ import org.knime.filehandling.core.node.table.reader.type.hierarchy.TypeTester;
  *
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
  */
-final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIMECellType, ExcelCell> {
+public final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIMECellType, ExcelCell> {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(ExcelTableReader.class);
 
@@ -260,6 +269,67 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
             return Collections.emptyMap();
         }
         return m_sheetNames;
+    }
+
+    @Override
+    public SequentialBatchReadable readContent(final Path item, final TableReadConfig<ExcelTableReaderConfig> config,
+        final TypedReaderTableSpec<KNIMECellType> spec) {
+        return new SequentialBatchReadableAdapter<>(item, config, spec, this, 1024, ExcelValueAccessFactory.INSTANCE);
+    }
+
+    private enum ExcelValueAccessFactory implements ValueAccessFactory<KNIMECellType> {
+
+        INSTANCE;
+
+        @Override
+        public ValueAccess createValueAccess(final KNIMECellType type) {
+            switch (type) {
+                case BOOLEAN:
+                    return (ValueAccess.BooleanAccess<ExcelCell>)ExcelCell::getBooleanValue;
+                case DOUBLE:
+                    return (ValueAccess.DoubleAccess<ExcelCell>)ExcelCell::getDoubleValue;
+                case INT:
+                    return (ValueAccess.IntAccess<ExcelCell>)ExcelCell::getIntValue;
+                case LOCAL_DATE:
+                    return new DefaultObjectAccess<>(LocalDate.class, ExcelCell::getLocalDateValue);
+                case LOCAL_DATE_TIME:
+                    return new DefaultObjectAccess<>(LocalDateTime.class, ExcelCell::getLocalDateTimeValue);
+                case LOCAL_TIME:
+                    return new DefaultObjectAccess<>(LocalTime.class, ExcelCell::getLocalTimeValue);
+                case LONG:
+                    return (ValueAccess.LongAccess<ExcelCell>)ExcelCell::getLongValue;
+                case STRING:
+                    return new DefaultObjectAccess<>(String.class, ExcelCell::getStringValue);
+                default:
+                    throw new IllegalArgumentException("Unsupported type: " + type);
+            }
+        }
+
+        @Override
+        public DataSpec getDataSpec(final KNIMECellType type) {
+            switch (type) {
+                case BOOLEAN:
+                    return DataSpec.booleanSpec();
+                case DOUBLE:
+                    return DataSpec.doubleSpec();
+                case INT:
+                    return DataSpec.intSpec();
+                case LOCAL_DATE:
+                    return DataSpec.localDateSpec();
+                case LOCAL_DATE_TIME:
+                    return DataSpec.localDateTimeSpec();
+                case LOCAL_TIME:
+                    return DataSpec.localTimeSpec();
+                case LONG:
+                    return DataSpec.longSpec();
+                case STRING:
+                    return DataSpec.stringSpec();
+                default:
+                    throw new IllegalArgumentException("Unsupported type: " + type);
+
+            }
+        }
+
     }
 
 }
