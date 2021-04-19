@@ -121,7 +121,7 @@ public enum ColumnNameMode {
         } catch (IllegalArgumentException e) {
             LOGGER.debug(String.format("%s is no valid column name mode", s), e);
             throw new InvalidSettingsException(
-                "No valid column name mode '" + s + "' available. See node description.");
+                "No valid column name mode '" + s + "' available. See node description.", e);
         }
     }
 
