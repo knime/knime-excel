@@ -51,9 +51,6 @@ package org.knime.ext.poi3.node.io.filehandling.excel.writer.table;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 
 import org.apache.poi.ss.usermodel.CreationHelper;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -64,7 +61,6 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.streamable.RowInput;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.cell.ExcelCellWriterFactory;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelProgressMonitor;
-import org.knime.filehandling.core.connections.FSCategory;
 import org.knime.filehandling.core.connections.FSFiles;
 import org.knime.filehandling.core.connections.FSPath;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.FileOverwritePolicy;
@@ -136,18 +132,10 @@ public class ExcelMultiTableWriter {
         wb.close();
     }
 
-    private void saveFile(final FSPath outPath, final ExecutionContext exec, final Workbook wb) throws IOException {
-        // custom url does not support move so we have to overwrite the file right away
-        if (outPath.toFSLocation().getFSCategory() == FSCategory.CUSTOM_URL) {
-            saveWorkbook(wb, outPath);
-            closeWorkbook(wb);
-        } else {
-            final Path tmpFile = FSFiles.createTempFile((FSPath)outPath.toAbsolutePath().getParent(), "",
-                m_cfg.getExcelFormat().getFileExtension());
-            saveWorkbook(wb, tmpFile);
-            closeWorkbook(wb);
-            Files.move(tmpFile, outPath, StandardCopyOption.REPLACE_EXISTING);
-        }
+    private static void saveFile(final FSPath outPath, final ExecutionContext exec, final Workbook wb)
+        throws IOException {
+        saveWorkbook(wb, outPath);
+        closeWorkbook(wb);
         exec.setProgress(1);
     }
 
