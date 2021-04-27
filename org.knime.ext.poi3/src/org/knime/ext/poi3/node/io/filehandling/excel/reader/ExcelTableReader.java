@@ -65,7 +65,6 @@ import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.openxml4j.exceptions.ODFNotOfficeXmlFileException;
 import org.apache.poi.openxml4j.exceptions.OLE2NotOfficeXmlFileException;
 import org.apache.poi.xssf.XLSBUnsupportedException;
-import org.knime.core.columnar.batch.SequentialBatchReadable;
 import org.knime.core.columnar.data.DataSpec;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeLogger;
@@ -80,10 +79,11 @@ import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.streamed.xlsx.X
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.xls.XLSRead;
 import org.knime.filehandling.core.node.table.reader.TableReader;
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
-import org.knime.filehandling.core.node.table.reader.ftrf.adapter.SequentialBatchReadableAdapter;
-import org.knime.filehandling.core.node.table.reader.ftrf.adapter.ValueAccess;
-import org.knime.filehandling.core.node.table.reader.ftrf.adapter.ValueAccess.DefaultObjectAccess;
-import org.knime.filehandling.core.node.table.reader.ftrf.adapter.ValueAccessFactory;
+import org.knime.filehandling.core.node.table.reader.ftrf.adapter.batch.SequentialBatchReadableAdapter;
+import org.knime.filehandling.core.node.table.reader.ftrf.adapter.batch.ValueAccess;
+import org.knime.filehandling.core.node.table.reader.ftrf.adapter.batch.ValueAccess.DefaultObjectAccess;
+import org.knime.filehandling.core.node.table.reader.ftrf.adapter.batch.ValueAccessFactory;
+import org.knime.filehandling.core.node.table.reader.ftrf.requapi.RowAccessible;
 import org.knime.filehandling.core.node.table.reader.read.Read;
 import org.knime.filehandling.core.node.table.reader.read.SkipIdxRead;
 import org.knime.filehandling.core.node.table.reader.spec.DefaultExtractColumnHeaderRead;
@@ -272,7 +272,7 @@ public final class ExcelTableReader implements TableReader<ExcelTableReaderConfi
     }
 
     @Override
-    public SequentialBatchReadable readContent(final Path item, final TableReadConfig<ExcelTableReaderConfig> config,
+    public RowAccessible readContent(final Path item, final TableReadConfig<ExcelTableReaderConfig> config,
         final TypedReaderTableSpec<KNIMECellType> spec) {
         return new SequentialBatchReadableAdapter<>(item, config, spec, this, 1024, ExcelValueAccessFactory.INSTANCE);
     }
