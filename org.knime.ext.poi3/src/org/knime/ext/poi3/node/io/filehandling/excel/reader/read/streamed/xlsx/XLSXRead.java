@@ -60,6 +60,7 @@ import org.apache.poi.util.XMLHelper;
 import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
 import org.apache.poi.xssf.eventusermodel.XSSFReader;
 import org.apache.poi.xssf.eventusermodel.XSSFReader.SheetIterator;
+import org.apache.xmlbeans.XmlObject;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelRead;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelUtils;
@@ -119,7 +120,7 @@ public final class XLSXRead extends AbstractStreamedRead {
 
     private static boolean use1904Windowing(final XSSFReader xssfReader) {
         try (final InputStream workbookXml = xssfReader.getWorkbookData()) {
-            final WorkbookDocument doc = WorkbookDocument.Factory.parse(workbookXml);
+            final WorkbookDocument doc = (WorkbookDocument)XmlObject.Factory.parse(workbookXml);
             final CTWorkbook wb = doc.getWorkbook();
             final CTWorkbookPr prefix = wb.getWorkbookPr();
             return prefix.getDate1904();
