@@ -60,6 +60,7 @@ import org.apache.poi.util.XMLHelper;
 import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
 import org.apache.poi.xssf.eventusermodel.XSSFReader;
 import org.apache.poi.xssf.eventusermodel.XSSFReader.SheetIterator;
+import org.knime.core.node.NodeLogger;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelRead;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelUtils;
@@ -81,6 +82,8 @@ import org.xml.sax.XMLReader;
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
  */
 public final class XLSXRead extends AbstractStreamedRead {
+
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(XLSXRead.class);
 
     /**
      * Constructor.
@@ -124,6 +127,7 @@ public final class XLSXRead extends AbstractStreamedRead {
             final CTWorkbookPr prefix = wb.getWorkbookPr();
             return prefix.getDate1904();
         } catch (Exception e) { // NOSONAR
+            LOGGER.warn("Unable to extract date format from workbook, assuming non 1904 date", e);
             // if anything goes wrong, we just assume false
             return false;
         }
