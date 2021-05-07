@@ -82,7 +82,6 @@ import org.knime.filehandling.core.node.table.reader.spec.ExtractColumnHeaderRea
 import org.knime.filehandling.core.node.table.reader.spec.TableSpecGuesser;
 import org.knime.filehandling.core.node.table.reader.spec.TypedReaderTableSpec;
 import org.knime.filehandling.core.node.table.reader.type.hierarchy.TreeTypeHierarchy;
-import org.knime.filehandling.core.node.table.reader.type.hierarchy.TypeFocusableTypeHierarchy;
 import org.knime.filehandling.core.node.table.reader.type.hierarchy.TypeTester;
 
 /**
@@ -94,7 +93,7 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(ExcelTableReader.class);
 
-    static final TypeFocusableTypeHierarchy<KNIMECellType, ExcelCell> TYPE_HIERARCHY = createHierarchy();
+    static final TreeTypeHierarchy<KNIMECellType, ExcelCell> TYPE_HIERARCHY = createHierarchy();
 
     /** The change listener that is set by the dialog to get notified once sheet names are retrieved. */
     private ChangeListener m_listener;
@@ -227,7 +226,7 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
         return new TableSpecGuesser<>(TYPE_HIERARCHY, ExcelCell::getStringValue);
     }
 
-    private static TypeFocusableTypeHierarchy<KNIMECellType, ExcelCell> createHierarchy() {
+    private static TreeTypeHierarchy<KNIMECellType, ExcelCell> createHierarchy() {
         return TreeTypeHierarchy.builder(createTypeTester(KNIMECellType.STRING, KNIMECellType.values()))
             .addType(KNIMECellType.STRING,
                 createTypeTester(KNIMECellType.DOUBLE, KNIMECellType.LONG, KNIMECellType.INT))

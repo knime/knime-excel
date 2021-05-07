@@ -64,6 +64,7 @@ import org.knime.filehandling.core.defaultnodesettings.EnumConfig;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.reader.SettingsModelReaderFileChooser;
 import org.knime.filehandling.core.defaultnodesettings.filtermode.SettingsModelFilterMode.FilterMode;
 import org.knime.filehandling.core.node.table.reader.AbstractTableReaderNodeFactory;
+import org.knime.filehandling.core.node.table.reader.HierarchyAwareProductionPathProvider;
 import org.knime.filehandling.core.node.table.reader.MultiTableReadFactory;
 import org.knime.filehandling.core.node.table.reader.MultiTableReader;
 import org.knime.filehandling.core.node.table.reader.ProductionPathProvider;
@@ -72,6 +73,7 @@ import org.knime.filehandling.core.node.table.reader.config.DefaultTableReadConf
 import org.knime.filehandling.core.node.table.reader.config.StorableMultiTableReadConfig;
 import org.knime.filehandling.core.node.table.reader.paths.PathSettings;
 import org.knime.filehandling.core.node.table.reader.preview.dialog.AbstractTableReaderNodeDialog;
+import org.knime.filehandling.core.node.table.reader.type.hierarchy.TreeTypeHierarchy;
 import org.knime.filehandling.core.node.table.reader.type.hierarchy.TypeHierarchy;
 
 /**
@@ -84,6 +86,9 @@ public final class ExcelTableReaderNodeFactory
 
     private static final String[] FILE_SUFFIXES = new String[]{".xlsx", ".xlsm", ".xlsb", ".xls"};
 
+    private static final TreeTypeHierarchy<KNIMECellType, KNIMECellType> TYPE_HIERARCHY =
+        ExcelTableReader.TYPE_HIERARCHY.createTypeFocusedHierarchy();
+
     @Override
     public ExcelTableReaderNodeModel createNodeModel(final NodeCreationConfiguration creationConfig) {
         final StorableMultiTableReadConfig<ExcelTableReaderConfig, KNIMECellType> config = createConfig(creationConfig);
@@ -95,6 +100,13 @@ public final class ExcelTableReaderNodeFactory
         } else {
             return new ExcelTableReaderNodeModel(config, pathSettings, reader);
         }
+    }
+
+    @Override
+    protected ProductionPathProvider<KNIMECellType> createProductionPathProvider() {
+        final ExcelReadAdapterFactory raf = ExcelReadAdapterFactory.INSTANCE;
+        return new HierarchyAwareProductionPathProvider<>(raf.getProducerRegistry(), TYPE_HIERARCHY, raf::getDefaultType,
+            (t, p) -> true);
     }
 
     @Override
