@@ -15,7 +15,7 @@ properties([
 SSHD_IMAGE = "${dockerTools.ECR}/knime/sshd:alpine3.11"
 
 try {
-    knimetools.defaultTychoBuild('org.knime.update.ext.poi')
+    /* knimetools.defaultTychoBuild('org.knime.update.ext.poi') */
 
     configs = [
         /* "Workflowtests" : { */
