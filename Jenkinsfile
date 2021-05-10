@@ -18,32 +18,32 @@ try {
     knimetools.defaultTychoBuild('org.knime.update.ext.poi')
 
     configs = [
-        "Workflowtests" : {
-            workflowTests.runTests (
-                dependencies: [
-                    repositories: [
-                        "knime-excel",
-                        "knime-timeseries",
-                        "knime-jep",
-                        "knime-datageneration",
-                        "knime-filehandling",
-                        "knime-jfreechart",
-                        "knime-distance",
-                        "knime-exttool",
-                        "knime-chemistry",
-                        "knime-js-core",
-                        "knime-js-base",
-                        "knime-cloud",
-                        "knime-textprocessing",
-                        "knime-database",
-                        "knime-kerberos",
-                        ]
-                ],
-                sidecarContainers: [
-                    [ image: SSHD_IMAGE, namePrefix: "SSHD", port: 22 ]
-                ],
-            )
-        },
+        /* "Workflowtests" : { */
+        /*     workflowTests.runTests ( */
+        /*         dependencies: [ */
+        /*             repositories: [ */
+        /*                 "knime-excel", */
+        /*                 "knime-timeseries", */
+        /*                 "knime-jep", */
+        /*                 "knime-datageneration", */
+        /*                 "knime-filehandling", */
+        /*                 "knime-jfreechart", */
+        /*                 "knime-distance", */
+        /*                 "knime-exttool", */
+        /*                 "knime-chemistry", */
+        /*                 "knime-js-core", */
+        /*                 "knime-js-base", */
+        /*                 "knime-cloud", */
+        /*                 "knime-textprocessing", */
+        /*                 "knime-database", */
+        /*                 "knime-kerberos", */
+        /*                 ] */
+        /*         ], */
+        /*         sidecarContainers: [ */
+        /*             [ image: SSHD_IMAGE, namePrefix: "SSHD", port: 22 ] */
+        /*         ], */
+        /*     ) */
+        /* }, */
         "Filehandlingtests" : {
             workflowTests.runFilehandlingTests (
                 dependencies: [
