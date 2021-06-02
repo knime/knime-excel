@@ -48,8 +48,6 @@
  */
 package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 
-import java.nio.file.Path;
-
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.context.ports.PortsConfiguration;
@@ -59,6 +57,7 @@ import org.knime.core.node.streamable.PartitionInfo;
 import org.knime.core.node.streamable.StreamableOperator;
 import org.knime.core.node.streamable.StreamableOperatorInternals;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
+import org.knime.filehandling.core.connections.FSPath;
 import org.knime.filehandling.core.node.table.reader.MultiTableReader;
 import org.knime.filehandling.core.node.table.reader.TableReaderNodeModel;
 import org.knime.filehandling.core.node.table.reader.config.StorableMultiTableReadConfig;
@@ -69,7 +68,7 @@ import org.knime.filehandling.core.node.table.reader.paths.PathSettings;
  *
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
  */
-final class ExcelTableReaderNodeModel extends TableReaderNodeModel<Path, ExcelTableReaderConfig, KNIMECellType> {
+final class ExcelTableReaderNodeModel extends TableReaderNodeModel<FSPath, ExcelTableReaderConfig, KNIMECellType> {
 
     /**
      * Constructs a node model with no inputs and one output.
@@ -81,7 +80,7 @@ final class ExcelTableReaderNodeModel extends TableReaderNodeModel<Path, ExcelTa
     protected ExcelTableReaderNodeModel(
         final StorableMultiTableReadConfig<ExcelTableReaderConfig, KNIMECellType> config,
         final PathSettings pathSettingsModel,
-        final MultiTableReader<Path, ExcelTableReaderConfig, KNIMECellType> tableReader) {
+        final MultiTableReader<FSPath, ExcelTableReaderConfig, KNIMECellType> tableReader) {
         super(config, pathSettingsModel, tableReader);
     }
 
@@ -96,7 +95,7 @@ final class ExcelTableReaderNodeModel extends TableReaderNodeModel<Path, ExcelTa
     protected ExcelTableReaderNodeModel(
         final StorableMultiTableReadConfig<ExcelTableReaderConfig, KNIMECellType> config,
         final PathSettings pathSettingsModel,
-        final MultiTableReader<Path, ExcelTableReaderConfig, KNIMECellType> tableReader,
+        final MultiTableReader<FSPath, ExcelTableReaderConfig, KNIMECellType> tableReader,
         final PortsConfiguration portsConfig) {
         super(config, pathSettingsModel, tableReader, portsConfig);
     }

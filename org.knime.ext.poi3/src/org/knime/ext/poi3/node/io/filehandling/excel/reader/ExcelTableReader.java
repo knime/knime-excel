@@ -49,7 +49,6 @@
 package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
@@ -73,6 +72,7 @@ import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.columnnames.Exc
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.streamed.xlsb.XLSBRead;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.streamed.xlsx.XLSXRead;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.xls.XLSRead;
+import org.knime.filehandling.core.connections.FSPath;
 import org.knime.filehandling.core.node.table.reader.TableReader;
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
 import org.knime.filehandling.core.node.table.reader.read.Read;
@@ -103,30 +103,30 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
 
     @SuppressWarnings("resource") // decorated read will be closed in AbstractReadDecorator#close
     @Override
-    public Read<Path, ExcelCell> read(final Path path, final TableReadConfig<ExcelTableReaderConfig> config)
+    public Read<ExcelCell> read(final FSPath path, final TableReadConfig<ExcelTableReaderConfig> config)
         throws IOException {
         return decorateRead(getExcelRead(path, config), config);
     }
 
     @SuppressWarnings("resource") // decorated read will be closed in AbstractReadDecorator#close
     @Override
-    public TypedReaderTableSpec<KNIMECellType> readSpec(final Path path,
+    public TypedReaderTableSpec<KNIMECellType> readSpec(final FSPath path,
         final TableReadConfig<ExcelTableReaderConfig> config, final ExecutionMonitor exec) throws IOException {
-        final TableSpecGuesser<Path, KNIMECellType, ExcelCell> guesser = createGuesser();
+        final TableSpecGuesser<FSPath, KNIMECellType, ExcelCell> guesser = createGuesser();
         try (ExcelRead read = getExcelRead(path, config)) {
             // sheet names are already retrieved, notify a potential listener from the dialog
             m_sheetNames = read.getSheetNames();
             notifyChangeListener();
             return ExcelColNameUtils.assignNamesIfMissing(
-                guesser.guessSpec(decorateReadForSpecGuessing(read, config), config, exec), config,
+                guesser.guessSpec(decorateReadForSpecGuessing(read, config), config, exec, path), config,
                 read.getHiddenColumns());
         }
     }
 
     @SuppressWarnings("resource") // decorated reads will be closed in AbstractReadDecorator#close
-    private static Read<Path, ExcelCell> decorateRead(final ExcelRead excelRead,
+    private static Read<ExcelCell> decorateRead(final ExcelRead excelRead,
         final TableReadConfig<ExcelTableReaderConfig> config) {
-        Read<Path, ExcelCell> read = excelRead;
+        Read<ExcelCell> read = excelRead;
         if (config.useColumnHeaderIdx()) {
             read = new SkipIdxRead<>(read, config.getColumnHeaderIdx());
         }
@@ -134,15 +134,15 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
     }
 
     @SuppressWarnings("resource") // decorated reads will be closed in AbstractReadDecorator#close
-    private static ExtractColumnHeaderRead<Path, ExcelCell> decorateReadForSpecGuessing(final ExcelRead excelRead,
+    private static ExtractColumnHeaderRead<ExcelCell> decorateReadForSpecGuessing(final ExcelRead excelRead,
         final TableReadConfig<ExcelTableReaderConfig> config) {
-        final ExtractColumnHeaderRead<Path, ExcelCell> extractColHeaderRead =
+        final ExtractColumnHeaderRead<ExcelCell> extractColHeaderRead =
             new DefaultExtractColumnHeaderRead<>(excelRead, config);
-        final Read<Path, ExcelCell> read = ExcelUtils.decorateRowFilterReads(extractColHeaderRead, config);
+        final Read<ExcelCell> read = ExcelUtils.decorateRowFilterReads(extractColHeaderRead, config);
         return new WrapperExtractColumnHeaderRead(read, extractColHeaderRead::getColumnHeaders);
     }
 
-    private static ExcelRead getExcelRead(final Path path, final TableReadConfig<ExcelTableReaderConfig> config)
+    private static ExcelRead getExcelRead(final FSPath path, final TableReadConfig<ExcelTableReaderConfig> config)
         throws IOException {
         final boolean reevaluateFormulas = config.getReaderSpecificConfig().isReevaluateFormulas();
         try {
@@ -182,7 +182,7 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
         }
     }
 
-    private static ExcelRead createXLSBRead(final Path path, final TableReadConfig<ExcelTableReaderConfig> config)
+    private static ExcelRead createXLSBRead(final FSPath path, final TableReadConfig<ExcelTableReaderConfig> config)
             throws IOException {
             try {
                 return new XLSBRead(path, config);
@@ -193,7 +193,7 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
             }
         }
 
-    private static ExcelRead createXLSXRead(final Path path, final TableReadConfig<ExcelTableReaderConfig> config)
+    private static ExcelRead createXLSXRead(final FSPath path, final TableReadConfig<ExcelTableReaderConfig> config)
         throws IOException {
         try {
             return new XLSXRead(path, config);
@@ -214,7 +214,7 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
      * @param fileFormat the unsupported file format if known, can be {@code null}
      * @return the created {@link IllegalArgumentException}
      */
-    private static IllegalArgumentException createUnsupportedFileFormatException(final Exception e, final Path path,
+    private static IllegalArgumentException createUnsupportedFileFormatException(final Exception e, final FSPath path,
         final String fileFormat) {
         final String formatString = fileFormat != null ? String.format(" (%s)", fileFormat) : "";
         return new IllegalArgumentException(String.format(
@@ -222,7 +222,7 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
             formatString, path), e);
     }
 
-    private static TableSpecGuesser<Path, KNIMECellType, ExcelCell> createGuesser() {
+    private static TableSpecGuesser<FSPath, KNIMECellType, ExcelCell> createGuesser() {
         return new TableSpecGuesser<>(TYPE_HIERARCHY, ExcelCell::getStringValue);
     }
 

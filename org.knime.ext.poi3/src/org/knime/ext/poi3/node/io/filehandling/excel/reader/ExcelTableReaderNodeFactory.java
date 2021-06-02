@@ -48,7 +48,6 @@
  */
 package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 
-import java.nio.file.Path;
 import java.util.Optional;
 
 import org.knime.core.node.NodeDialogPane;
@@ -60,6 +59,7 @@ import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIME
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelReadAdapterFactory;
 import org.knime.filehandling.core.connections.FSCategory;
 import org.knime.filehandling.core.connections.FSLocation;
+import org.knime.filehandling.core.connections.FSPath;
 import org.knime.filehandling.core.defaultnodesettings.EnumConfig;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.reader.SettingsModelReaderFileChooser;
 import org.knime.filehandling.core.defaultnodesettings.filtermode.SettingsModelFilterMode.FilterMode;
@@ -93,7 +93,7 @@ public final class ExcelTableReaderNodeFactory
     public ExcelTableReaderNodeModel createNodeModel(final NodeCreationConfiguration creationConfig) {
         final StorableMultiTableReadConfig<ExcelTableReaderConfig, KNIMECellType> config = createConfig(creationConfig);
         final PathSettings pathSettings = createPathSettings(creationConfig);
-        final MultiTableReader<Path, ExcelTableReaderConfig, KNIMECellType> reader = createMultiTableReader();
+        final MultiTableReader<FSPath, ExcelTableReaderConfig, KNIMECellType> reader = createMultiTableReader();
         final Optional<? extends PortsConfiguration> portConfig = creationConfig.getPortConfig();
         if (portConfig.isPresent()) {
             return new ExcelTableReaderNodeModel(config, pathSettings, reader, portConfig.get());
@@ -110,9 +110,9 @@ public final class ExcelTableReaderNodeFactory
     }
 
     @Override
-    protected AbstractTableReaderNodeDialog<Path, ExcelTableReaderConfig, KNIMECellType> createNodeDialogPane(
+    protected AbstractTableReaderNodeDialog<FSPath, ExcelTableReaderConfig, KNIMECellType> createNodeDialogPane(
         final NodeCreationConfiguration creationConfig,
-        final MultiTableReadFactory<Path, ExcelTableReaderConfig, KNIMECellType> readFactory,
+        final MultiTableReadFactory<FSPath, ExcelTableReaderConfig, KNIMECellType> readFactory,
         final ProductionPathProvider<KNIMECellType> defaultProductionPathFn) {
         // we overwrite #createNodeDialogPane(NodeCreationConfiguration) directly to be able to pass a reference of the
         // ExcelTableReader to the dialog; this reference will be used to fetch sheet name information during spec
@@ -123,7 +123,7 @@ public final class ExcelTableReaderNodeFactory
     @Override
     protected NodeDialogPane createNodeDialogPane(final NodeCreationConfiguration creationConfig) {
         final ExcelTableReader tableReader = createReader();
-        final MultiTableReadFactory<Path, ExcelTableReaderConfig, KNIMECellType> readFactory =
+        final MultiTableReadFactory<FSPath, ExcelTableReaderConfig, KNIMECellType> readFactory =
             createMultiTableReadFactory(tableReader);
         final ProductionPathProvider<KNIMECellType> productionPathProvider = createProductionPathProvider();
         return new ExcelTableReaderNodeDialog(createPathSettings(creationConfig), createConfig(creationConfig),

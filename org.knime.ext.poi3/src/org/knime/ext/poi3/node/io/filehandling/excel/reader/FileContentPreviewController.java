@@ -48,7 +48,6 @@
  */
 package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 
-import java.nio.file.Path;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
@@ -56,6 +55,7 @@ import java.util.function.Supplier;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.util.SwingWorkerWithContext;
+import org.knime.filehandling.core.connections.FSPath;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.reader.ReadPathAccessor;
 import org.knime.filehandling.core.node.table.reader.MultiTableReadFactory;
 import org.knime.filehandling.core.node.table.reader.SourceGroup;
@@ -84,13 +84,13 @@ import org.knime.filehandling.core.util.CheckedExceptionSupplier;
  */
 final class FileContentPreviewController<C extends ReaderSpecificConfig<C>, T> {
 
-    private final MultiTableReadFactory<Path, C, T> m_readFactory;
+    private final MultiTableReadFactory<FSPath, C, T> m_readFactory;
 
     private final AnalysisComponentModel m_analysisComponent;
 
     private final TableReaderPreviewModel m_previewModel;
 
-    private final Supplier<GenericItemAccessor<Path>> m_readPathAccessorSupplier;
+    private final Supplier<GenericItemAccessor<FSPath>> m_readPathAccessorSupplier;
 
     private PreviewRun m_currentRun;
 
@@ -100,9 +100,9 @@ final class FileContentPreviewController<C extends ReaderSpecificConfig<C>, T> {
      * @param tableReaderPreviewModel {@link TableReaderPreviewModel}
      * @param itemAccessorSupplier GenericItemAccessor supplier
      */
-    FileContentPreviewController(final MultiTableReadFactory<Path, C, T> readFactory,
+    FileContentPreviewController(final MultiTableReadFactory<FSPath, C, T> readFactory,
         final AnalysisComponentModel analysisComponentModel, final TableReaderPreviewModel tableReaderPreviewModel,
-        final Supplier<GenericItemAccessor<Path>> itemAccessorSupplier) {
+        final Supplier<GenericItemAccessor<FSPath>> itemAccessorSupplier) {
         m_readFactory = readFactory;
         m_analysisComponent = analysisComponentModel;
         m_previewModel = tableReaderPreviewModel;
@@ -150,17 +150,17 @@ final class FileContentPreviewController<C extends ReaderSpecificConfig<C>, T> {
 
         private ImmutableMultiTableReadConfig<C, T> m_config;
 
-        private SpecGuessingSwingWorker<Path, C, T> m_specGuessingWorker = null;
+        private SpecGuessingSwingWorker<FSPath, C, T> m_specGuessingWorker = null;
 
-        private SourceGroupSwingWorker<Path> m_pathAccessWorker = null;
+        private SourceGroupSwingWorker<FSPath> m_pathAccessWorker = null;
 
-        private StagedMultiTableRead<Path, T> m_currentRead = null;
+        private StagedMultiTableRead<FSPath, T> m_currentRead = null;
 
-        private GenericItemAccessor<Path> m_readPathAccessor = null;
+        private GenericItemAccessor<FSPath> m_readPathAccessor = null;
 
         private final AtomicBoolean m_closed = new AtomicBoolean(false);
 
-        private SourceGroup<Path> m_sourceGroup;
+        private SourceGroup<FSPath> m_sourceGroup;
 
         PreviewRun(final MultiTableReadConfig<C, T> config) {
             m_config = new ImmutableMultiTableReadConfig<>(config);
@@ -197,7 +197,7 @@ final class FileContentPreviewController<C extends ReaderSpecificConfig<C>, T> {
          *
          * @param rootPathAndPaths the list of paths resolved by m_pathAccessWorker
          */
-        private void startSpecGuessingWorker(final SourceGroup<Path> sourceGroup) {
+        private void startSpecGuessingWorker(final SourceGroup<FSPath> sourceGroup) {
             if (m_closed.get()) {
                 // this method is called in the EDT so it might be the case that
                 // the run got cancelled between the completion of the path access worker
@@ -212,7 +212,7 @@ final class FileContentPreviewController<C extends ReaderSpecificConfig<C>, T> {
             m_specGuessingWorker.execute();
         }
 
-        private void consumeNewStagedMultiRead(final StagedMultiTableRead<Path, T> stagedMultiTableRead) {
+        private void consumeNewStagedMultiRead(final StagedMultiTableRead<FSPath, T> stagedMultiTableRead) {
             if (m_closed.get()) {
                 // this method is called in the EDT so it might be the case that
                 // the run got cancelled between the completion of the StagedMultiTableRead

@@ -50,7 +50,6 @@ package org.knime.ext.poi3.node.io.filehandling.excel.reader.read;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -355,7 +354,7 @@ public final class ExcelUtils {
      * @param config the config
      * @return the decorated {@link Read}
      */
-    public static Read<Path, ExcelCell> decorateRowFilterReads(Read<Path, ExcelCell> read,
+    public static Read<ExcelCell> decorateRowFilterReads(Read<ExcelCell> read,
         final TableReadConfig<ExcelTableReaderConfig> config) {
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
         if (excelConfig.getAreaOfSheetToRead() == AreaOfSheetToRead.PARTIAL) {
