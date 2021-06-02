@@ -105,6 +105,7 @@ import org.knime.filehandling.core.node.table.reader.ProductionPathProvider;
 import org.knime.filehandling.core.node.table.reader.config.DefaultTableReadConfig;
 import org.knime.filehandling.core.node.table.reader.config.MultiTableReadConfig;
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
+import org.knime.filehandling.core.node.table.reader.dialog.SourceIdentifierColumnPanel;
 import org.knime.filehandling.core.node.table.reader.preview.dialog.AbstractPathTableReaderNodeDialog;
 import org.knime.filehandling.core.node.table.reader.preview.dialog.AnalysisComponentModel;
 import org.knime.filehandling.core.node.table.reader.preview.dialog.TableReaderPreviewModel;
@@ -152,6 +153,8 @@ final class ExcelTableReaderNodeDialog
     private final JLabel m_sheetIdxNoteLabel = new JLabel("(Sheet indexes start with 0.) ");
 
     private JCheckBox m_failOnDifferingSpecs = new JCheckBox("Fail if specs differ");
+
+    private final SourceIdentifierColumnPanel m_pathColumnPanel = new SourceIdentifierColumnPanel("Path");
 
     private final JCheckBox m_columnHeaderCheckBox = new JCheckBox("Table contains column names in row number", true);
 
@@ -613,6 +616,7 @@ final class ExcelTableReaderNodeDialog
         panel.add(createFormulaEvaluationErrorOptionsPanel(), gbcBuilder.incY().build());
         panel.add(createDataRowsSpecLimitPanel(), gbcBuilder.incY().build());
         panel.add(createSpecFailingOptionsPanel(), gbcBuilder.incY().build());
+        panel.add(m_pathColumnPanel, gbcBuilder.incY().build());
         panel.add(createPreviewComponent(), gbcBuilder.incY().fillBoth().setWeightY(1).build());
         return panel;
     }
@@ -716,6 +720,7 @@ final class ExcelTableReaderNodeDialog
 
         final ChangeListener changeListener = l -> configNotRelevantForFileContentChanged();
         m_columnHeaderSpinner.addChangeListener(changeListener);
+        m_pathColumnPanel.addChangeListener(changeListener);
 
 
         final ChangeListener changeListenerFileContent = l -> configRelevantForFileContentChanged(false);
@@ -869,6 +874,8 @@ final class ExcelTableReaderNodeDialog
         tableReadConfig.setColumnHeaderIdx((long)m_columnHeaderSpinner.getValue() - 1);
         tableReadConfig.setDecorateRead(false);
         m_config.setFailOnDifferingSpecs(m_failOnDifferingSpecs.isSelected());
+        m_config.setPrependItemIdentifierColumn(m_pathColumnPanel.isPrependSourceIdentifierColumn());
+        m_config.setItemIdentifierColumnName(m_pathColumnPanel.getSourceIdentifierColumnName());
         boolean saveSpec = !m_supportChangingFileSchemas.isSelected();
         m_config.setSaveTableSpecConfig(saveSpec);
         m_config.setTableSpecConfig(saveSpec ? getTableSpecConfig() : null);
@@ -984,6 +991,7 @@ final class ExcelTableReaderNodeDialog
      */
     private void loadTableReadSettings() {
         m_failOnDifferingSpecs.setSelected(m_config.failOnDifferingSpecs());
+        m_pathColumnPanel.load(m_config.prependItemIdentifierColumn(), m_config.getItemIdentifierColumnName());
         final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = m_config.getTableReadConfig();
         m_skipEmptyRows.setSelected(tableReadConfig.skipEmptyRows());
         m_skipEmptyCols.setSelected(m_config.skipEmptyColumns());

@@ -56,8 +56,8 @@ import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.defaultnodesettings.SettingsModel;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
-import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.columnnames.ColumnNameMode;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelReadAdapterFactory;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.columnnames.ColumnNameMode;
 import org.knime.filehandling.core.node.table.reader.config.AbstractTableReadConfig;
 import org.knime.filehandling.core.node.table.reader.config.ConfigSerializer;
 import org.knime.filehandling.core.node.table.reader.config.DefaultTableReadConfig;
@@ -79,6 +79,10 @@ enum ExcelMultiTableReadConfigSerializer
     implements ConfigSerializer<ExcelMultiTableReadConfig>, ConfigIDFactory<ExcelMultiTableReadConfig> {
 
         INSTANCE;
+
+    private static final String CFG_PATH_COLUMN_NAME = "path_column_name" + SettingsModel.CFGKEY_INTERNAL;
+
+    private static final String CFG_PREPEND_PATH_COLUMN = "prepend_path_column" + SettingsModel.CFGKEY_INTERNAL;
 
     private static final String CFG_TABLE_SPEC_CONFIG = "table_spec_config" + SettingsModel.CFGKEY_INTERNAL;
 
@@ -327,6 +331,9 @@ enum ExcelMultiTableReadConfigSerializer
     private static void loadAdvancedSettingsTabInDialog(final ExcelMultiTableReadConfig config,
         final NodeSettingsRO settings) {
         config.setFailOnDifferingSpecs(settings.getBoolean(CFG_FAIL_ON_DIFFERING_SPECS, true));
+        // added in 4.4.0
+        config.setPrependItemIdentifierColumn(settings.getBoolean(CFG_PREPEND_PATH_COLUMN, false));
+        config.setItemIdentifierColumnName(settings.getString(CFG_PATH_COLUMN_NAME, "Path"));
         config.setSkipEmptyColumns(settings.getBoolean(CFG_SKIP_EMPTY_COLS, false));
         final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = config.getTableReadConfig();
         tableReadConfig.setSkipEmptyRows(settings.getBoolean(CFG_SKIP_EMPTY_ROWS, true));
@@ -350,6 +357,11 @@ enum ExcelMultiTableReadConfigSerializer
     private static void loadAdvancedSettingsTabInModel(final ExcelMultiTableReadConfig config,
         final NodeSettingsRO settings) throws InvalidSettingsException {
         config.setFailOnDifferingSpecs(settings.getBoolean(CFG_FAIL_ON_DIFFERING_SPECS));
+        // added in 4.4.0
+        if (settings.containsKey(CFG_PREPEND_PATH_COLUMN)) {
+            config.setPrependItemIdentifierColumn(settings.getBoolean(CFG_PREPEND_PATH_COLUMN));
+            config.setItemIdentifierColumnName(settings.getString(CFG_PATH_COLUMN_NAME));
+        }
         if (settings.containsKey(CFG_SKIP_EMPTY_COLS)) {
             config.setSkipEmptyColumns(settings.getBoolean(CFG_SKIP_EMPTY_COLS));
         }
@@ -376,6 +388,8 @@ enum ExcelMultiTableReadConfigSerializer
 
     private static void saveAdvancedSettingsTab(final ExcelMultiTableReadConfig config, final NodeSettingsWO settings) {
         settings.addBoolean(CFG_FAIL_ON_DIFFERING_SPECS, config.failOnDifferingSpecs());
+        settings.addBoolean(CFG_PREPEND_PATH_COLUMN, config.prependItemIdentifierColumn());
+        settings.addString(CFG_PATH_COLUMN_NAME, config.getItemIdentifierColumnName());
         settings.addBoolean(CFG_SKIP_EMPTY_COLS, config.skipEmptyColumns());
         final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = config.getTableReadConfig();
         settings.addBoolean(CFG_SKIP_EMPTY_ROWS, tableReadConfig.skipEmptyRows());
@@ -407,6 +421,11 @@ enum ExcelMultiTableReadConfigSerializer
         // added in 4.3.1
         if (settings.containsKey(CFG_SAVE_TABLE_SPEC_CONFIG)) {
             settings.getBoolean(CFG_SAVE_TABLE_SPEC_CONFIG);
+        }
+        // added in 4.4.0
+        if (settings.containsKey(CFG_PREPEND_PATH_COLUMN)) {
+            settings.getBoolean(CFG_PREPEND_PATH_COLUMN);
+            settings.getString(CFG_PATH_COLUMN_NAME);
         }
     }
 

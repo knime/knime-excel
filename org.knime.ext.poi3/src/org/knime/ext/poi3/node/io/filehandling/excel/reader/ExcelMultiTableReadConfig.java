@@ -64,6 +64,7 @@ final class ExcelMultiTableReadConfig extends
     ExcelMultiTableReadConfig() {
         super(new DefaultTableReadConfig<>(new ExcelTableReaderConfig()), ExcelMultiTableReadConfigSerializer.INSTANCE,
             ExcelMultiTableReadConfigSerializer.INSTANCE);
+        setItemIdentifierColumnName("Path");
     }
 
     @Override
