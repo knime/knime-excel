@@ -307,14 +307,19 @@ public final class XLSXRead extends ExcelRead {
                         excelCell = ExcelCellUtils.createErrorCell(m_config);
                         break;
                     case FORMULA:
-                        excelCell =
-                            replaceStringWithMissing(formattedValue) ? null : new ExcelCell(KNIMECellType.STRING, formattedValue);
+                        excelCell = replaceStringWithMissing(formattedValue) ? null
+                            : new ExcelCell(KNIMECellType.STRING, formattedValue);
                         break;
                     case STRING:
-                        excelCell =
-                            replaceStringWithMissing(formattedValue) ? null : new ExcelCell(KNIMECellType.STRING, formattedValue);
+                        excelCell = replaceStringWithMissing(formattedValue) ? null
+                            : new ExcelCell(KNIMECellType.STRING, formattedValue);
                         break;
                     case NUMBER_OR_DATE:
+                        // special case, see AP-16880; required for cells that are processed by
+                        // org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler line 372
+                        // (cells with data type NUMBER but empty string as value)
+                        excelCell = null;
+                        break;
                     default:
                         throw new IllegalStateException("Unexpected data type: " + cellType);
                 }
