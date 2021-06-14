@@ -52,7 +52,6 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettings;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
-import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.defaultnodesettings.SettingsModel;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
@@ -82,7 +81,7 @@ enum ExcelMultiTableReadConfigSerializer
 
     private static final String CFG_PATH_COLUMN_NAME = "path_column_name" + SettingsModel.CFGKEY_INTERNAL;
 
-    private static final String CFG_PREPEND_PATH_COLUMN = "prepend_path_column" + SettingsModel.CFGKEY_INTERNAL;
+    private static final String CFG_APPEND_PATH_COLUMN = "append_path_column" + SettingsModel.CFGKEY_INTERNAL;
 
     private static final String CFG_TABLE_SPEC_CONFIG = "table_spec_config" + SettingsModel.CFGKEY_INTERNAL;
 
@@ -173,7 +172,7 @@ enum ExcelMultiTableReadConfigSerializer
 
     @Override
     public void loadInDialog(final ExcelMultiTableReadConfig config, final NodeSettingsRO settings,
-        final PortObjectSpec[] specs) throws NotConfigurableException {
+        final PortObjectSpec[] specs) {
         loadSettingsTabInDialog(config, SettingsUtils.getOrEmpty(settings, CFG_SETTINGS_TAB));
         loadAdvancedSettingsTabInDialog(config, SettingsUtils.getOrEmpty(settings, CFG_ADVANCED_SETTINGS_TAB));
         try {
@@ -332,7 +331,7 @@ enum ExcelMultiTableReadConfigSerializer
         final NodeSettingsRO settings) {
         config.setFailOnDifferingSpecs(settings.getBoolean(CFG_FAIL_ON_DIFFERING_SPECS, true));
         // added in 4.4.0
-        config.setPrependItemIdentifierColumn(settings.getBoolean(CFG_PREPEND_PATH_COLUMN, false));
+        config.setAppendItemIdentifierColumn(settings.getBoolean(CFG_APPEND_PATH_COLUMN, false));
         config.setItemIdentifierColumnName(settings.getString(CFG_PATH_COLUMN_NAME, "Path"));
         config.setSkipEmptyColumns(settings.getBoolean(CFG_SKIP_EMPTY_COLS, false));
         final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = config.getTableReadConfig();
@@ -358,8 +357,8 @@ enum ExcelMultiTableReadConfigSerializer
         final NodeSettingsRO settings) throws InvalidSettingsException {
         config.setFailOnDifferingSpecs(settings.getBoolean(CFG_FAIL_ON_DIFFERING_SPECS));
         // added in 4.4.0
-        if (settings.containsKey(CFG_PREPEND_PATH_COLUMN)) {
-            config.setPrependItemIdentifierColumn(settings.getBoolean(CFG_PREPEND_PATH_COLUMN));
+        if (settings.containsKey(CFG_APPEND_PATH_COLUMN)) {
+            config.setAppendItemIdentifierColumn(settings.getBoolean(CFG_APPEND_PATH_COLUMN));
             config.setItemIdentifierColumnName(settings.getString(CFG_PATH_COLUMN_NAME));
         }
         if (settings.containsKey(CFG_SKIP_EMPTY_COLS)) {
@@ -388,7 +387,7 @@ enum ExcelMultiTableReadConfigSerializer
 
     private static void saveAdvancedSettingsTab(final ExcelMultiTableReadConfig config, final NodeSettingsWO settings) {
         settings.addBoolean(CFG_FAIL_ON_DIFFERING_SPECS, config.failOnDifferingSpecs());
-        settings.addBoolean(CFG_PREPEND_PATH_COLUMN, config.prependItemIdentifierColumn());
+        settings.addBoolean(CFG_APPEND_PATH_COLUMN, config.appendItemIdentifierColumn());
         settings.addString(CFG_PATH_COLUMN_NAME, config.getItemIdentifierColumnName());
         settings.addBoolean(CFG_SKIP_EMPTY_COLS, config.skipEmptyColumns());
         final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = config.getTableReadConfig();
@@ -423,8 +422,8 @@ enum ExcelMultiTableReadConfigSerializer
             settings.getBoolean(CFG_SAVE_TABLE_SPEC_CONFIG);
         }
         // added in 4.4.0
-        if (settings.containsKey(CFG_PREPEND_PATH_COLUMN)) {
-            settings.getBoolean(CFG_PREPEND_PATH_COLUMN);
+        if (settings.containsKey(CFG_APPEND_PATH_COLUMN)) {
+            settings.getBoolean(CFG_APPEND_PATH_COLUMN);
             settings.getString(CFG_PATH_COLUMN_NAME);
         }
     }

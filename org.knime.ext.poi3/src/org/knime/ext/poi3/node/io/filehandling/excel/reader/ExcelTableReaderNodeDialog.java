@@ -874,7 +874,7 @@ final class ExcelTableReaderNodeDialog
         tableReadConfig.setColumnHeaderIdx((long)m_columnHeaderSpinner.getValue() - 1);
         tableReadConfig.setDecorateRead(false);
         m_config.setFailOnDifferingSpecs(m_failOnDifferingSpecs.isSelected());
-        m_config.setPrependItemIdentifierColumn(m_pathColumnPanel.isPrependSourceIdentifierColumn());
+        m_config.setAppendItemIdentifierColumn(m_pathColumnPanel.isAppendSourceIdentifierColumn());
         m_config.setItemIdentifierColumnName(m_pathColumnPanel.getSourceIdentifierColumnName());
         boolean saveSpec = !m_supportChangingFileSchemas.isSelected();
         m_config.setSaveTableSpecConfig(saveSpec);
@@ -991,7 +991,7 @@ final class ExcelTableReaderNodeDialog
      */
     private void loadTableReadSettings() {
         m_failOnDifferingSpecs.setSelected(m_config.failOnDifferingSpecs());
-        m_pathColumnPanel.load(m_config.prependItemIdentifierColumn(), m_config.getItemIdentifierColumnName());
+        m_pathColumnPanel.load(m_config.appendItemIdentifierColumn(), m_config.getItemIdentifierColumnName());
         final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = m_config.getTableReadConfig();
         m_skipEmptyRows.setSelected(tableReadConfig.skipEmptyRows());
         m_skipEmptyCols.setSelected(m_config.skipEmptyColumns());
