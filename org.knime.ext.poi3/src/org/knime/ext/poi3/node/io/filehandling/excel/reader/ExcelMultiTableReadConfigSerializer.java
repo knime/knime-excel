@@ -49,6 +49,7 @@
 package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NodeSettings;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
@@ -78,6 +79,8 @@ enum ExcelMultiTableReadConfigSerializer
     implements ConfigSerializer<ExcelMultiTableReadConfig>, ConfigIDFactory<ExcelMultiTableReadConfig> {
 
         INSTANCE;
+
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(ExcelMultiTableReadConfigSerializer.class);
 
     private static final String CFG_PATH_COLUMN_NAME = "path_column_name" + SettingsModel.CFGKEY_INTERNAL;
 
@@ -143,7 +146,7 @@ enum ExcelMultiTableReadConfigSerializer
 
     private static final String CFG_SAVE_TABLE_SPEC_CONFIG = "save_table_spec_config" + SettingsModel.CFGKEY_INTERNAL;
 
-    static final String CFG_ENCRYPTION_SETTINGS_TAB = "encryption";
+    private static final String CFG_ENCRYPTION_SETTINGS_TAB = "encryption";
 
     private final TableSpecConfigSerializer<KNIMECellType> m_tableSpecConfigSerializer;
 
@@ -185,7 +188,8 @@ enum ExcelMultiTableReadConfigSerializer
         }
     }
 
-    private TableSpecConfig<KNIMECellType> loadTableSpecConfig(final NodeSettingsRO settings) throws InvalidSettingsException {
+    private TableSpecConfig<KNIMECellType> loadTableSpecConfig(final NodeSettingsRO settings)
+        throws InvalidSettingsException {
         if (settings.containsKey(CFG_TABLE_SPEC_CONFIG)) {
             return m_tableSpecConfigSerializer.load(settings.getNodeSettings(CFG_TABLE_SPEC_CONFIG));
         } else {
@@ -243,8 +247,8 @@ enum ExcelMultiTableReadConfigSerializer
         excelConfig.setReadFromRow(settings.getString(CFG_READ_FROM_ROW, "1"));
         excelConfig.setReadToRow(settings.getString(CFG_READ_TO_ROW, ""));
         excelConfig.setEmptyColHeaderPrefix(settings.getString(CFG_EMPTY_COL_HEADER_PREFIX, "empty_"));
-        excelConfig.setColumnNameMode(ColumnNameMode
-            .valueOf(settings.getString(CFG_COLUMN_NAME_MODE, ColumnNameMode.EXCEL_COL_NAME.name())));
+        excelConfig.setColumnNameMode(
+            ColumnNameMode.valueOf(settings.getString(CFG_COLUMN_NAME_MODE, ColumnNameMode.EXCEL_COL_NAME.name())));
         final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = config.getTableReadConfig();
         tableReadConfig.setUseColumnHeaderIdx(settings.getBoolean(CFG_HAS_COLUMN_HEADER, true));
         tableReadConfig.setColumnHeaderIdx(settings.getLong(CFG_COLUMN_HEADER_ROW_NUMBER, 1) - 1);
@@ -268,8 +272,7 @@ enum ExcelMultiTableReadConfigSerializer
         excelConfig.setReadToRow(settings.getString(CFG_READ_TO_ROW));
         //Check for backwards compatability
         if (settings.containsKey(CFG_COLUMN_NAME_MODE)) {
-            excelConfig.setColumnNameMode(
-                ColumnNameMode.loadValueInModel(settings.getString(CFG_COLUMN_NAME_MODE)));
+            excelConfig.setColumnNameMode(ColumnNameMode.loadValueInModel(settings.getString(CFG_COLUMN_NAME_MODE)));
         }
         //Check for backwards compatability
         if (settings.containsKey(CFG_EMPTY_COL_HEADER_PREFIX)) {
@@ -318,11 +321,11 @@ enum ExcelMultiTableReadConfigSerializer
         settings.getString(CFG_READ_FROM_ROW);
         settings.getString(CFG_READ_TO_ROW);
         //Check for backwards compatability
-        if(settings.containsKey(CFG_COLUMN_NAME_MODE)){
+        if (settings.containsKey(CFG_COLUMN_NAME_MODE)) {
             settings.getString(CFG_COLUMN_NAME_MODE);
         }
         //Check for backwards compatability
-        if(settings.containsKey(CFG_EMPTY_COL_HEADER_PREFIX)) {
+        if (settings.containsKey(CFG_EMPTY_COL_HEADER_PREFIX)) {
             settings.getString(CFG_EMPTY_COL_HEADER_PREFIX);
         }
     }
@@ -431,10 +434,27 @@ enum ExcelMultiTableReadConfigSerializer
     private static void loadEncryptionSettingsTabInModel(final ExcelMultiTableReadConfig config,
         final NodeSettingsRO settings) throws InvalidSettingsException {
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
-        // this option has been added later; check the existence of the setting for sake of backwards compatibility
+        // this option has been added later with 4.4.0;
+        // check the existence of the setting for sake of backwards compatibility
         if (settings.containsKey(ExcelTableReaderConfig.CFG_PASSWORD)) {
             excelConfig.getAuthenticationSettingsModel().loadSettingsFrom(settings);
         }
+    }
+
+    static NodeSettingsRO getOrDefaultEncryptionSettingsTab(final NodeSettingsRO settings) {
+        if (settings.containsKey(CFG_ENCRYPTION_SETTINGS_TAB)) {
+            try {
+                return settings.getNodeSettings(CFG_ENCRYPTION_SETTINGS_TAB);
+            } catch (InvalidSettingsException e) {
+                LOGGER.error("Failed to fetch encryption settings despite the corresponding key being present.", e);
+            }
+        }
+        // this tab was added in 4.4.0 therefore workflows with 4.3.0 don't have it
+        // the SettingsModelAuthentication will fail to load in the dialog if its subsetting is missing
+        // hence we create a dummy.
+        final NodeSettings encryptionSettings = new NodeSettings(CFG_ENCRYPTION_SETTINGS_TAB);
+        encryptionSettings.addNodeSettings(ExcelTableReaderConfig.CFG_PASSWORD);
+        return encryptionSettings;
     }
 
     private static void saveEncryptionSettingsTab(final ExcelMultiTableReadConfig config,

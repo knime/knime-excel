@@ -843,13 +843,14 @@ final class ExcelTableReaderNodeDialog
         loadTableReadSettings();
         loadExcelSettings();
         m_passwordComponent.loadSettingsFrom(
-            SettingsUtils.getOrEmpty(settings, ExcelMultiTableReadConfigSerializer.CFG_ENCRYPTION_SETTINGS_TAB), specs,
+            ExcelMultiTableReadConfigSerializer.getOrDefaultEncryptionSettingsTab(settings), specs,
             getCredentialsProvider());
         m_fileContentConfigChanged = true;
         ignoreEvents(false);
         updatePreviewOrFileContentView(isTablePreviewInForeground());
         return m_config;
     }
+
 
     @Override
     public void refreshPreview(final boolean refreshPreview) {
