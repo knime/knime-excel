@@ -116,7 +116,7 @@ final class FileContentPreviewController<C extends ReaderSpecificConfig<C>, T> {
         try {
             m_currentRun = new PreviewRun(configSupplier.get());
         } catch (InvalidSettingsException ex) {// NOSONAR, the exception is displayed in the dialog
-            m_analysisComponent.setError(ex.getMessage());
+            m_analysisComponent.setErrorLabel(ex.getMessage());
             m_previewModel.setDataTable(null);
         }
     }
@@ -188,7 +188,7 @@ final class FileContentPreviewController<C extends ReaderSpecificConfig<C>, T> {
         }
 
         private void displayPathError(final ExecutionException exception) {
-            m_analysisComponent.setError(exception.getCause().getMessage());
+            m_analysisComponent.setErrorLabel(exception.getCause().getMessage());
             m_previewModel.setDataTable(null);
         }
 
@@ -205,7 +205,10 @@ final class FileContentPreviewController<C extends ReaderSpecificConfig<C>, T> {
                 return;
             }
             m_sourceGroup = sourceGroup;
-            m_analysisComponent.setVisible(true);
+            m_analysisComponent.startUpdate()//
+                .showProgressBar(true)//
+                .showQuickScanButton(true)//
+                .finishUpdate();
             m_specGuessingWorker = new SpecGuessingSwingWorker<>(m_readFactory, m_sourceGroup, m_config,
                 m_analysisComponent, this::consumeNewStagedMultiRead, e -> {
                 });
@@ -234,11 +237,11 @@ final class FileContentPreviewController<C extends ReaderSpecificConfig<C>, T> {
             try {
                 final MultiTableRead<T> mtr = m_currentRead.withoutTransformation(m_sourceGroup);
                 @SuppressWarnings("resource") // the m_preview must make sure that the PreviewDataTable is closed
-                final PreviewDataTable pdt = new PreviewDataTable(mtr::createPreviewIterator, mtr.getOutputSpec());
+                final PreviewDataTable pdt = PreviewDataTable.createLazyPreviewDataTable(mtr.getOutputSpec(), mtr::createPreviewIterator);
                 m_previewModel.setDataTable(pdt);
             } catch (Exception ex) {// NOSONAR we need to handle all exceptions in the same way
                 NodeLogger.getLogger(FileContentPreviewController.class).debug(ex);
-                m_analysisComponent.setError(ex.getMessage());
+                m_analysisComponent.setErrorLabel(ex.getMessage());
                 m_previewModel.setDataTable(null);
             }
         }
