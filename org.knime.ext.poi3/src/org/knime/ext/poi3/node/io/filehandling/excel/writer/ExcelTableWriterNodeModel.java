@@ -63,7 +63,6 @@ import java.util.Optional;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
-import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
@@ -406,7 +405,6 @@ final class ExcelTableWriterNodeModel extends NodeModel {
                             + "configuration",
                         m_originalPath));
                 }
-                wb = new SXSSFWorkbook((XSSFWorkbook)wb);
             } else {
                 wb.close();
                 throw new IOException(String.format("Unsupported format: Unable to append spreadsheets to %s",
