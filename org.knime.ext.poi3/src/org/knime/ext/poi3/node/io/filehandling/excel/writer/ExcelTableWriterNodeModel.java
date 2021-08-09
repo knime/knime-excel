@@ -48,6 +48,7 @@
  */
 package org.knime.ext.poi3.node.io.filehandling.excel.writer;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -55,7 +56,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Optional;
@@ -140,7 +140,6 @@ final class ExcelTableWriterNodeModel extends NodeModel {
     protected PortObjectSpec[] configure(final PortObjectSpec[] inSpecs) throws InvalidSettingsException {
         m_cfg.getFileChooserModel().configureInModel(inSpecs, m_statusConsumer);
         m_statusConsumer.setWarningsIfRequired(this::setWarningMessage);
-
         return new PortObjectSpec[]{};
     }
 
@@ -186,24 +185,18 @@ final class ExcelTableWriterNodeModel extends NodeModel {
         throws InvalidSettingsException, IOException, CanceledExecutionException, InterruptedException {
         validateColumnCount(tables);
         final SettingsModelWriterFileChooser fileChooser = m_cfg.getFileChooserModel();
-        // AP-16201: When opening as a file instead of the stream, closing the workbook overwrites with an empty sheet
-        //           Therefore, always creating a local tempfile and making a copy.
-        Path tempFile = Files.createTempFile("tmp", m_cfg.getExcelFormat().getFileExtension());
         try (final WritePathAccessor accessor = fileChooser.createWritePathAccessor()) {
             final FSPath outputPath = accessor.getOutputPath(m_statusConsumer);
             m_statusConsumer.setWarningsIfRequired(this::setWarningMessage);
             createOutputFoldersIfMissing(outputPath.toAbsolutePath().getParent(), fileChooser.isCreateMissingFolders());
             exec.setMessage("Opening excel file");
-            final WorkbookCreator wbCreator =
-                getWorkbookCreator(fileChooser.getFileOverwritePolicy(), outputPath, tempFile);
+            final WorkbookCreator wbCreator = getWorkbookCreator(fileChooser.getFileOverwritePolicy(), outputPath);
             final ExcelMultiTableWriter writer = new ExcelMultiTableWriter(m_cfg);
             writer.writeTables(outputPath, tables, wbCreator, exec, m);
             if (m_cfg.getOpenFileAfterExecModel().getBooleanValue() && !isHeadlessOrRemote()
                 && categoryIsSupported(outputPath.toFSLocation().getFSCategory())) {
                 openFile(fileChooser, outputPath);
             }
-        } finally {
-            FSFiles.deleteSafely(tempFile);
         }
     }
 
@@ -260,13 +253,12 @@ final class ExcelTableWriterNodeModel extends NodeModel {
         return exec.createSubExecutionContext(MAX_EXCEL_PROGRESS);
     }
 
-    private WorkbookCreator getWorkbookCreator(final FileOverwritePolicy fileOverwritePolicy, final FSPath path,
-        final Path tempFile) throws IOException {
+    private WorkbookCreator getWorkbookCreator(final FileOverwritePolicy fileOverwritePolicy, final Path path)
+        throws IOException {
         final boolean fileExists = FSFiles.exists(path);
         final ExcelFormat format = m_cfg.getExcelFormat();
         if (fileExists && fileOverwritePolicy == FileOverwritePolicy.APPEND) {
-            Files.copy(path, tempFile, StandardCopyOption.REPLACE_EXISTING);
-            return new WriteWorkbookCreator(format, path, tempFile);
+            return new WriteWorkbookCreator(format, path);
         } else {
             if (fileExists && fileOverwritePolicy == FileOverwritePolicy.FAIL) {
                 throw new IOException(String.format(
@@ -361,9 +353,7 @@ final class ExcelTableWriterNodeModel extends NodeModel {
 
         private final ExcelFormat m_format;
 
-        private final Path m_tempPath;
-
-        private final Path m_originalPath;
+        private final Path m_path;
 
         /**
          * Constructor.
@@ -371,32 +361,30 @@ final class ExcelTableWriterNodeModel extends NodeModel {
          * @param path path to the excel file
          */
         WriteWorkbookCreator(final ExcelFormat format) {
-            this(format, null, null);
+            this(format, null);
         }
 
-        WriteWorkbookCreator(final ExcelFormat format, final Path originalPath, final Path tmpPath) {
+        WriteWorkbookCreator(final ExcelFormat format, final Path path) {
             m_format = format;
-            m_originalPath = originalPath;
-            m_tempPath = tmpPath;
+            m_path = path;
         }
 
         @Override
         @SuppressWarnings("resource")
         public Workbook createWorkbook() throws IOException {
-            if (m_tempPath == null) {
+            if (m_path == null) {
                 return m_format.getWorkbook();
             }
-
-            // AP-16201 reading as a file to address memory issues
-            Workbook wb = WorkbookFactory.create(m_tempPath.toFile());
-
+            // if create fails the input stream gets closed otherwise it's closed when invoking close on the workbook
+            BufferedInputStream inp = new BufferedInputStream(Files.newInputStream(m_path));
+            Workbook wb = WorkbookFactory.create(inp);
             if (wb instanceof HSSFWorkbook) {
                 if (m_format != ExcelFormat.XLS) {
                     wb.close();
                     throw new IOException(String.format(
                         "Wrong format: The file '%s' is xls instead of xlsx or xlsm formatted. Please adapt the "
                             + "configuration",
-                        m_originalPath));
+                        m_path));
                 }
             } else if (wb instanceof XSSFWorkbook) {
                 if (m_format == ExcelFormat.XLS) {
@@ -404,13 +392,13 @@ final class ExcelTableWriterNodeModel extends NodeModel {
                     throw new IOException(String.format(
                         "Wrong format: The file '%s' is xlsx or xlsm instead of xls formatted. Please adapt the "
                             + "configuration",
-                        m_originalPath));
+                        m_path));
                 }
                 wb = new SXSSFWorkbook((XSSFWorkbook)wb);
             } else {
                 wb.close();
-                throw new IOException(String.format("Unsupported format: Unable to append spreadsheets to %s",
-                    m_originalPath.toString()));
+                throw new IOException(
+                    String.format("Unsupported format: Unable to append spreadsheets to %s", m_path.toString()));
             }
             return wb;
         }
