@@ -98,6 +98,20 @@ abstract class AbstractCellWriter implements ExcelCellWriter {
         }
     }
 
+    @Override
+    public void update(final DataCell dataCell, final Cell cell) throws IOException {
+        // TODO: cannot change the cell type
+        if (dataCell.isMissing()) {
+            if (m_missingValPattern != null) {
+                cell.setCellValue(m_missingValPattern);
+            } else {
+                cell.setBlank();
+            }
+        } else {
+            fill(dataCell, cell);
+        }
+    }
+
     abstract void fill(final DataCell dataCell, final Cell cell) throws IOException;
 
     abstract CellType getCellType();

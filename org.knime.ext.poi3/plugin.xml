@@ -18,6 +18,11 @@
             deprecated="false"
             factory-class="org.knime.ext.poi3.node.io.filehandling.excel.sheets.ExcelSheetReaderNodeFactory">
       </node>
+      <node
+            category-path="/io/read"
+            deprecated="false"
+            factory-class="org.knime.ext.poi3.node.io.filehandling.excel.sheets.updater.ExcelSheetUpdaterNodeFactory">
+      </node>
    </extension>
    <extension
          point="org.knime.workbench.repository.registeredFileExtensions">

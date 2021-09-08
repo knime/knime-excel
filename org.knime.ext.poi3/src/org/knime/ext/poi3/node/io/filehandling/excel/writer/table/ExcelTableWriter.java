@@ -60,6 +60,7 @@ import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelProgressMo
  * Interface class of any writer that writes a {@link RowInput} to an excel sheet.
  *
  * @author Mark Ortmann, KNIME GmbH, Berlin, Germany
+ * @author Jannik Löscher, KNIME GmbH, Konstanz, Germany
  */
 public interface ExcelTableWriter {
 
@@ -79,4 +80,25 @@ public interface ExcelTableWriter {
     void writeTable(Workbook workbook, String sheetName, RowInput table, ExcelProgressMonitor monitor)
         throws IOException, InvalidSettingsException, CanceledExecutionException, InterruptedException;
 
+    /**
+     * Updates a given sheet using coordinates and values in {@code coordinatesAndValues}. One column contains the coordinates
+     * and as to be of type string and the other columns contain the values and can be of varying type. The coordinate must be non-missing.
+     * Each row must at most contain one other non-missing value that is not the coordinate. The cells at the specified coordinate will
+     * be updated with the value and type in that column.
+     * If each non-coordinate value is missing, the cell will be cleared.
+     *
+     * @param workbook the {@link Workbook}
+     * @param sheetName the name of the sheet to be created and filled
+     * @param coordinatesAndValues a table with one column containing the coordinates and the other columns containing
+     *            the values to be written
+     * @param coordianteColumnIndex the index of the column that contains the coordinates
+     * @param monitor the {@link ExcelProgressMonitor}
+     * @throws IOException - If the cells could not be updated or created.
+     * @throws InvalidSettingsException - If the sheet name cannot be made unique
+     * @throws CanceledExecutionException - If the execution was canceled by the user
+     * @throws InterruptedException - If the execution was canceled by the user
+     */
+    void writeCellsFromCoordinates(final Workbook workbook, final String sheetName, final RowInput coordinatesAndValues,
+        final int coordianteColumnIndex, final ExcelProgressMonitor monitor)
+        throws IOException, InvalidSettingsException, CanceledExecutionException, InterruptedException;
 }

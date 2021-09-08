@@ -51,6 +51,7 @@ package org.knime.ext.poi3.node.io.filehandling.excel.writer.table;
 import org.knime.core.data.DataTableSpec;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.cell.ExcelCellWriterFactory;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.image.XlsImageWriter;
+import org.knime.ext.poi3.node.io.filehandling.excel.writer.sheet.ExcelSheetCoordinateWriter;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.sheet.ExcelSheetWriter;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelConstants;
 
@@ -75,6 +76,11 @@ public final class XlsTableWriter extends AbstractExcelTableWriter {
     ExcelSheetWriter createSheetWriter(final DataTableSpec spec, final ExcelCellWriterFactory cellWriterFactory,
         final boolean writeRowKey) {
         return new ExcelSheetWriter(spec, new XlsImageWriter(spec), cellWriterFactory, writeRowKey);
+    }
+
+    @Override
+    ExcelSheetCoordinateWriter createSheetCoordinateWriter(final DataTableSpec spec, final ExcelCellWriterFactory cellWriterFactory) {
+        return new ExcelSheetCoordinateWriter(spec, new XlsImageWriter(spec), cellWriterFactory);
     }
 
 }

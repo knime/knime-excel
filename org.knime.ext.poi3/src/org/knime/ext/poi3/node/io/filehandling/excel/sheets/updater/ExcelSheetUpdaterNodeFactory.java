@@ -44,37 +44,66 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Nov 6, 2020 (Mark Ortmann, KNIME GmbH, Berlin, Germany): created
+ *  Aug 9, 2021 (Moditha Hewasinghage, KNIME GmbH, Berlin, Germany): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.writer.cell;
+package org.knime.ext.poi3.node.io.filehandling.excel.sheets.updater;
 
-import java.io.IOException;
-import java.util.function.Function;
+import java.util.Optional;
 
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellType;
-import org.knime.core.data.DataCell;
+import org.knime.core.node.BufferedDataTable;
+import org.knime.core.node.ConfigurableNodeFactory;
+import org.knime.core.node.NodeDialogPane;
+import org.knime.core.node.NodeFactory;
+import org.knime.core.node.NodeView;
+import org.knime.core.node.context.NodeCreationConfiguration;
+import org.knime.core.node.port.PortType;
+import org.knime.filehandling.core.port.FileSystemPortObject;
 
 /**
- * Interface of all {@link DataCell} to {@link Cell} writers.
+ * {@link NodeFactory} creating the 'Excel Sheet Updater' node.
  *
- * @author Mark Ortmann, KNIME GmbH, Berlin, Germany
+ * @author Moditha Hewasinghage,, KNIME GmbH, Berlin, Germany
  */
-public interface ExcelCellWriter {
+public final class ExcelSheetUpdaterNodeFactory extends ConfigurableNodeFactory<ExcelSheetUpdaterNodeModel> {
 
-    /**
-     * Writes the given {@link DataCell} to a {@link Cell}.
-     *
-     * @param dataCell the data cell to be written
-     * @param cellCreator the function to create a {@link Cell}
-     * @throws IOException - If the value of the {@link DataCell} cannot be written to the {@link Cell}
-     */
-    void write(final DataCell dataCell, final Function<CellType, Cell> cellCreator) throws IOException;
+    /** The file system ports group id. */
+    static final String FS_CONNECT_GRP_ID = "File System Connection";
 
-    /**
-     * @param dataCell
-     * @param cell
-     * @throws IOException
-     */
-    void update(final DataCell dataCell, final Cell cell) throws IOException;
+    /** The sheet ports group id. */
+    static final String SHEET_GRP_ID = "Sheet Input Ports";
+
+    @Override
+    protected Optional<PortsConfigurationBuilder> createPortsConfigBuilder() {
+        final var b = new PortsConfigurationBuilder();
+        b.addOptionalInputPortGroup(FS_CONNECT_GRP_ID, FileSystemPortObject.TYPE);
+        b.addExtendableInputPortGroup(SHEET_GRP_ID, new PortType[]{BufferedDataTable.TYPE}, BufferedDataTable.TYPE);
+        return Optional.of(b);
+    }
+
+    @Override
+    protected ExcelSheetUpdaterNodeModel createNodeModel(final NodeCreationConfiguration creationConfig) {
+        return new ExcelSheetUpdaterNodeModel(creationConfig.getPortConfig().orElseThrow(IllegalStateException::new));
+    }
+
+    @Override
+    protected NodeDialogPane createNodeDialogPane(final NodeCreationConfiguration creationConfig) {
+        return new ExcelSheetUpdaterNodeDialog(creationConfig.getPortConfig().orElseThrow(IllegalStateException::new));
+    }
+
+    @Override
+    protected int getNrNodeViews() {
+        return 0;
+    }
+
+    @Override
+    public NodeView<ExcelSheetUpdaterNodeModel> createNodeView(final int viewIndex,
+        final ExcelSheetUpdaterNodeModel nodeModel) {
+        return null;
+    }
+
+    @Override
+    protected boolean hasDialog() {
+        return true;
+    }
+
 }

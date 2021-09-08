@@ -59,8 +59,10 @@ import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.streamable.RowInput;
+import org.knime.core.node.util.CheckUtils;
 import org.knime.core.util.Pair;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.cell.ExcelCellWriterFactory;
+import org.knime.ext.poi3.node.io.filehandling.excel.writer.sheet.ExcelSheetCoordinateWriter;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.sheet.ExcelSheetWriter;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelProgressMonitor;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.SheetNameExistsHandling;
@@ -124,6 +126,39 @@ abstract class AbstractExcelTableWriter implements ExcelTableWriter {
         }
         finalizeSheet(sheetWriter, curSheet);
     }
+
+    @Override
+    public final void writeCellsFromCoordinates(final Workbook workbook, final String sheetName,
+        final RowInput coordinatesAndValues, final int coordinateColumnIndex, final ExcelProgressMonitor monitor)
+        throws IOException, InvalidSettingsException, CanceledExecutionException, InterruptedException {
+
+        CheckUtils.checkSetting(coordinatesAndValues.getDataTableSpec().getNumColumns() > 0,
+            "The edit table has to have at least one column containing the addresses");
+        final var sheetWriter = createSheetCoordinateWriter(coordinatesAndValues.getDataTableSpec(),
+            m_cellWriterFactory);
+        final var curSheet = workbook.getSheet(sheetName);
+        CheckUtils.checkSetting(curSheet != null, "No sheet called '%s' found!", sheetName);
+
+        long rowIdx = 0;
+        DataRow row;
+        while ((row = coordinatesAndValues.poll()) != null) {
+            monitor.checkCanceled();
+            monitor.updateProgress(sheetName, rowIdx);
+            sheetWriter.writeCellWithCoordinate(curSheet, row, coordinateColumnIndex);
+            ++rowIdx;
+        }
+        finalizeSheet(sheetWriter, curSheet);
+    }
+
+    /**
+     * Creates an instance of {@link ExcelSheetCoordinateWriter}.
+     *
+     * @param spec the {@link DataTableSpec} of the coordinates and values table
+     * @param cellWriterFactory the {@link ExcelCellWriterFactory}
+     * @return the {@link ExcelSheetWriter}
+     */
+    abstract ExcelSheetCoordinateWriter createSheetCoordinateWriter(final DataTableSpec spec,
+        final ExcelCellWriterFactory cellWriterFactory);
 
     /**
      * Creates an instance of {@link ExcelSheetWriter}.

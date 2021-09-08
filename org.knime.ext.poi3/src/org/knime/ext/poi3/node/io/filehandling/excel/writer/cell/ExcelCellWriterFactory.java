@@ -48,6 +48,7 @@
  */
 package org.knime.ext.poi3.node.io.filehandling.excel.writer.cell;
 
+import java.io.IOException;
 import java.util.function.Function;
 
 import org.apache.poi.ss.usermodel.Cell;
@@ -134,6 +135,12 @@ public class ExcelCellWriterFactory {
                 @Override
                 public void write(final DataCell dataCell, final Function<CellType, Cell> cellCreator) {
                     // Image are no regular cells and must be treated by the writer itself
+                }
+
+                @Override
+                public void update(final DataCell dataCell, final Cell cell) throws IOException {
+                    // TODO Auto-generated method stub
+
                 }
             };
         } else if (type.isCompatible(StringValue.class)) {

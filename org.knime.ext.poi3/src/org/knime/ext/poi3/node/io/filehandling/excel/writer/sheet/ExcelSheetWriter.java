@@ -69,9 +69,10 @@ import org.knime.ext.poi3.node.io.filehandling.excel.writer.image.ExcelImageWrit
  *
  * @author Mark Ortmann, KNIME GmbH, Berlin, Germany
  */
-public final class ExcelSheetWriter {
+public class ExcelSheetWriter {
 
-    private final ExcelCellWriter[] m_cellWriters;
+    /** Contains the cell writers used to write cells of differing types. */
+    protected final ExcelCellWriter[] m_cellWriters;
 
     private final boolean m_writeRowKey;
 
