@@ -164,15 +164,14 @@ public abstract class AbstractStreamedParserRunnable extends ExcelParserRunnable
             m_currentCol = new CellReference(cellReference).getCol();
 
             final Optional<ExcelCell> numericCell = m_dataFormatter.getAndResetExcelCell();
-            final ExcelCell excelCell = numericCell.orElseGet(() -> createExcelCellFromStringValue(formattedValue));
+            final var excelCell = numericCell.orElseGet(() -> createExcelCellFromStringValue(formattedValue));
+            handleMissingCells(cellReference, currentColCount);
             if (!isColHiddenAndSkipped(m_currentCol, getHiddenCols())) {
                 if (isColRowID(m_currentCol)) {
                     // check if cells were missing and insert nulls if so
-                    handleMissingCells(cellReference, currentColCount);
                     m_rowId = excelCell;
                 } else if (isColIncluded(m_currentCol)) {
                     // check if cells were missing and insert nulls if so
-                    handleMissingCells(cellReference, currentColCount);
                     m_row.add(excelCell);
                 }
             } else if (isColRowID(m_currentCol)) {
