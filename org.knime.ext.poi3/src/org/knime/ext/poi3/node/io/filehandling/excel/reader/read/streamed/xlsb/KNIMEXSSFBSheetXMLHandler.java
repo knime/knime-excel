@@ -93,7 +93,7 @@ final class KNIMEXSSFBSheetXMLHandler extends XSSFBSheetHandler {
 
     @Override
     public void handleRecord(int id, final byte[] data) { // NOSONAR high Cyclomatic Complexity due to many switch cases
-        final XSSFBRecordType type = XSSFBRecordType.lookup(id);
+        final var type = XSSFBRecordType.lookup(id);
         switch (type) {
             case BrtCellIsst:
             case BrtCellSt:
@@ -138,18 +138,24 @@ final class KNIMEXSSFBSheetXMLHandler extends XSSFBSheetHandler {
 
     private void handleBrtRowHdr(final byte[] data) {
         // according to Microsoft's XLSB specification, the bit specifying whether a row is hidden is at index 92
-        // (see https://interoperability.blob.core.windows.net/files/MS-XLSB/%5bMS-XLSB%5d.pdf)
-        final BitSet bitSet = BitSet.valueOf(data);
+        // (see https://interoperability.blob.core.windows.net/files/MS-XLSB/%5bMS-XLSB%5d.pdf) (page 590)
+        final var bitSet = BitSet.valueOf(data);
+        // one record per defined row
         m_output.hiddenRow(bitSet.size() > 92 && bitSet.get(92));
     }
 
     private void handleBrtColInfo(final byte[] data) {
         // according to Microsoft's XLSB specification, the bit specifying whether a column is hidden is at index 128
-        // (see https://interoperability.blob.core.windows.net/files/MS-XLSB/%5bMS-XLSB%5d.pdf)
-        final BitSet bitSet = BitSet.valueOf(data);
+        // (see https://interoperability.blob.core.windows.net/files/MS-XLSB/%5bMS-XLSB%5d.pdf) (page 459)
+        final var bitSet = BitSet.valueOf(data);
         if (bitSet.size() > 128 && bitSet.get(128)) {
-            final int colIdx = (int)LittleEndian.getUInt(data, 0);
-            m_output.addHiddenCol(colIdx);
+            // first 4-byte int: first column defined with record
+            int colIdx = (int)LittleEndian.getUInt(data, 0);
+            // second 4-byte int: last column (inclusive) defined with record (directly after first) (can be the same)
+            final int colIdxLst = (int)LittleEndian.getUInt(data, 4);
+            for (; colIdx <= colIdxLst; ++colIdx) {
+                m_output.addHiddenCol(colIdx);
+            }
         }
     }
 
