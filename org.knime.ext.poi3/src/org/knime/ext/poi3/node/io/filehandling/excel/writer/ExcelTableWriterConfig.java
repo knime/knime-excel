@@ -98,6 +98,8 @@ final class ExcelTableWriterConfig implements ExcelTableConfig {
 
     private static final String CFG_WRITE_COLUMN_HEADER = "write_column_header";
 
+    private static final String CFG_SKIP_COLUMN_HEADER_ON_APPEND = "skip_column_header_on_append";
+
     private static final String CFG_MISSING_VALUE_PATTERN = "missing_value_pattern";
 
     private static final String CFG_REPLACE_MISSINGS = "replace_missings";
@@ -127,6 +129,8 @@ final class ExcelTableWriterConfig implements ExcelTableConfig {
     private final SettingsModelBoolean m_writeRowKey;
 
     private final SettingsModelBoolean m_writeColHeader;
+
+    private final SettingsModelBoolean m_skipColumnHeaderOnAppend;
 
     private final SettingsModelBoolean m_evaluateFormulas;
 
@@ -158,7 +162,7 @@ final class ExcelTableWriterConfig implements ExcelTableConfig {
             @Override
             protected void validateSettingsForModel(final NodeSettingsRO settings) throws InvalidSettingsException {
                 super.validateSettingsForModel(settings);
-                final String setting = settings.getString(getConfigName());
+                final var setting = settings.getString(getConfigName());
                 try {
                     SheetNameExistsHandling.valueOf(setting);
                 } catch (final IllegalArgumentException e) {
@@ -170,6 +174,7 @@ final class ExcelTableWriterConfig implements ExcelTableConfig {
         m_missingValPattern = new SettingsModelString(CFG_MISSING_VALUE_PATTERN, "");
         m_writeRowKey = new SettingsModelBoolean(CFG_WRITE_ROW_KEY, false);
         m_writeColHeader = new SettingsModelBoolean(CFG_WRITE_COLUMN_HEADER, true);
+        m_skipColumnHeaderOnAppend = new SettingsModelBoolean(CFG_SKIP_COLUMN_HEADER_ON_APPEND, true);
         m_evaluateFormulas = new SettingsModelBoolean(CFG_EVALUATE_FORMULAS, false);
         m_replaceMissings = new SettingsModelBoolean(CFG_REPLACE_MISSINGS, false);
         m_autoSize = new SettingsModelBoolean(CFG_AUTOSIZE, false);
@@ -178,7 +183,7 @@ final class ExcelTableWriterConfig implements ExcelTableConfig {
             @Override
             protected void validateSettingsForModel(final NodeSettingsRO settings) throws InvalidSettingsException {
                 super.validateSettingsForModel(settings);
-                final String setting = settings.getString(getConfigName());
+                final var setting = settings.getString(getConfigName());
                 try {
                     Orientation.valueOf(setting);
                 } catch (final IllegalArgumentException e) {
@@ -246,6 +251,15 @@ final class ExcelTableWriterConfig implements ExcelTableConfig {
      */
     SettingsModelString getSheetExistsHandlingModel() {
         return m_sheetExistsHandling;
+    }
+
+    /**
+     * Returns the don't write column header if sheet exists settings model.
+     *
+     * @return the column headers should be skipped if the sheet already exists settings model
+     */
+    SettingsModelBoolean getSkipColumnHeaderOnAppendModel() {
+        return m_skipColumnHeaderOnAppend;
     }
 
     /**
@@ -368,14 +382,22 @@ final class ExcelTableWriterConfig implements ExcelTableConfig {
         return m_writeColHeader.getBooleanValue();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean shipColumnHeaderOnAppend() {
+        return m_skipColumnHeaderOnAppend.getBooleanValue();
+    }
+
     @Override
     public boolean evaluate() {
         return m_evaluateFormulas.getBooleanValue();
     }
 
     @Override
-    public boolean abortIfSheetExists() {
-        return SheetNameExistsHandling.valueOf(m_sheetExistsHandling.getStringValue()) == SheetNameExistsHandling.FAIL;
+    public SheetNameExistsHandling getSheetNameExistsHandling() {
+        return SheetNameExistsHandling.valueOf(m_sheetExistsHandling.getStringValue());
     }
 
     /**
@@ -387,10 +409,13 @@ final class ExcelTableWriterConfig implements ExcelTableConfig {
     void validateSettingsForModel(final NodeSettingsRO settings) throws InvalidSettingsException {
         m_excelFormat.validateSettings(settings);
         m_fileChooser.validateSettings(settings);
-        validateSheets(settings);
         m_sheetExistsHandling.validateSettings(settings);
+        validateSheets(settings);
         m_writeRowKey.validateSettings(settings);
         m_writeColHeader.validateSettings(settings);
+        if (settings.containsKey(CFG_SKIP_COLUMN_HEADER_ON_APPEND)) {
+            m_skipColumnHeaderOnAppend.validateSettings(settings);
+        }
         m_replaceMissings.validateSettings(settings);
         m_missingValPattern.validateSettings(settings);
         m_evaluateFormulas.validateSettings(settings);
@@ -400,12 +425,14 @@ final class ExcelTableWriterConfig implements ExcelTableConfig {
         m_openFileAfterExec.validateSettings(settings);
     }
 
-    private static void validateSheets(final NodeSettingsRO settings) throws InvalidSettingsException {
-        final String[] sheetNames = settings.getStringArray(CFG_SHEET_NAMES);
+    private void validateSheets(final NodeSettingsRO settings) throws InvalidSettingsException {
+        final var sheetNames = settings.getStringArray(CFG_SHEET_NAMES);
+        final var handler = SheetNameExistsHandling.valueOf(
+            ((SettingsModelString)m_sheetExistsHandling.createCloneWithValidatedValue(settings)).getStringValue());
         final Set<String> uniqueNames = new HashSet<>();
         for (final String sheetName : sheetNames) {
             validateSheetName(sheetName);
-            if (!uniqueNames.add(sheetName)) {
+            if (!uniqueNames.add(sheetName) && handler != SheetNameExistsHandling.APPEND) {
                 throw new InvalidSettingsException("The sheet names must be unique.");
             }
         }
@@ -436,6 +463,11 @@ final class ExcelTableWriterConfig implements ExcelTableConfig {
         m_sheetExistsHandling.loadSettingsFrom(settings);
         m_writeRowKey.loadSettingsFrom(settings);
         m_writeColHeader.loadSettingsFrom(settings);
+        try {
+            m_skipColumnHeaderOnAppend.loadSettingsFrom(settings);
+        } catch (InvalidSettingsException e) { // NOSONAR: assume a default value here
+            m_skipColumnHeaderOnAppend.setBooleanValue(true);
+        }
         m_replaceMissings.loadSettingsFrom(settings);
         m_missingValPattern.loadSettingsFrom(settings);
         m_evaluateFormulas.loadSettingsFrom(settings);
@@ -463,6 +495,7 @@ final class ExcelTableWriterConfig implements ExcelTableConfig {
         m_sheetExistsHandling.saveSettingsTo(settings);
         m_writeRowKey.saveSettingsTo(settings);
         m_writeColHeader.saveSettingsTo(settings);
+        m_skipColumnHeaderOnAppend.saveSettingsTo(settings);
         m_replaceMissings.saveSettingsTo(settings);
         m_missingValPattern.saveSettingsTo(settings);
         m_evaluateFormulas.saveSettingsTo(settings);

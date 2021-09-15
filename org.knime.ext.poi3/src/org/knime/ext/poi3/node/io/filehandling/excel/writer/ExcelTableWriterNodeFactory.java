@@ -74,7 +74,7 @@ public final class ExcelTableWriterNodeFactory extends ConfigurableNodeFactory<E
 
     @Override
     protected Optional<PortsConfigurationBuilder> createPortsConfigBuilder() {
-        final PortsConfigurationBuilder b = new PortsConfigurationBuilder();
+        final var b = new PortsConfigurationBuilder();
         b.addOptionalInputPortGroup(FS_CONNECT_GRP_ID, FileSystemPortObject.TYPE);
         b.addExtendableInputPortGroup(SHEET_GRP_ID, new PortType[]{BufferedDataTable.TYPE}, BufferedDataTable.TYPE);
         return Optional.of(b);

@@ -50,10 +50,8 @@ package org.knime.ext.poi3.node.io.filehandling.excel.writer.table;
 
 import java.io.BufferedOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.file.Path;
 
-import org.apache.poi.ss.usermodel.CreationHelper;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.knime.core.node.CanceledExecutionException;
@@ -101,20 +99,20 @@ public class ExcelMultiTableWriter {
         final ExecutionContext exec, final ExcelProgressMonitor m)
         throws IOException, InvalidSettingsException, CanceledExecutionException, InterruptedException {
         @SuppressWarnings("resource") // try-with-resources does not work in case of SXSSFWorkbooks
-        final Workbook wb = wbCreator.createWorkbook();
-        final CreationHelper creationHelper = wb.getCreationHelper();
+        final var wb = wbCreator.createWorkbook();
+        final var creationHelper = wb.getCreationHelper();
         try {
-            final ExcelCellWriterFactory cellWriterFactory =
+            final var cellWriterFactory =
                 ExcelCellWriterFactory.createFactory(wb, m_cfg.getMissingValPattern().orElse(null));
             final String[] sheetNames = m_cfg.getSheetNames();
-            for (int i = 0; i < tables.length; i++) {
+            for (var i = 0; i < tables.length; i++) {
                 exec.checkCanceled();
-                final RowInput rowInput = tables[i];
+                final var rowInput = tables[i];
                 final ExcelTableWriter excelWriter = wbCreator.createTableWriter(m_cfg, cellWriterFactory);
                 excelWriter.writeTable(wb, sheetNames[i], rowInput, m);
             }
             if (m_cfg.evaluate()) {
-                ExecutionContext formulaCtx = exec.createSubExecutionContext(0.05);
+                var formulaCtx = exec.createSubExecutionContext(0.05);
                 formulaCtx.setMessage("Evaluating formulas");
                 creationHelper.createFormulaEvaluator().evaluateAll();
                 formulaCtx.setProgress(1);
@@ -141,8 +139,8 @@ public class ExcelMultiTableWriter {
     }
 
     private static void saveWorkbook(final Workbook wb, final Path tmpFile) throws IOException {
-        try (final OutputStream out = FSFiles.newOutputStream(tmpFile, FileOverwritePolicy.OVERWRITE.getOpenOptions());
-                final BufferedOutputStream buffer = new BufferedOutputStream(out)) {
+        try (final var out = FSFiles.newOutputStream(tmpFile, FileOverwritePolicy.OVERWRITE.getOpenOptions());
+                final var buffer = new BufferedOutputStream(out)) {
             wb.write(buffer);
         }
     }

@@ -58,15 +58,22 @@ import org.knime.core.node.util.ButtonGroupEnumInterface;
 public enum SheetNameExistsHandling implements ButtonGroupEnumInterface {
 
         /** Overwrite sheets. */
-        OVERWRITE("overwrite"),
+        OVERWRITE("overwrite", "Replace sheet content with table"),
+
+        /** Append the data after the last row in the sheet. */
+        APPEND("append", "Add data after the last row in sheet"),
+
 
         /** Fails if the sheet name is already taken. */
-        FAIL("fail");
+        FAIL("fail", "Fail during node execution");
 
     private final String m_text;
 
-    private SheetNameExistsHandling(final String text) {
+    private final String m_toolTip;
+
+    private SheetNameExistsHandling(final String text, final String toolTip) {
         m_text = text;
+        m_toolTip = toolTip;
     }
 
     @Override
@@ -81,7 +88,7 @@ public enum SheetNameExistsHandling implements ButtonGroupEnumInterface {
 
     @Override
     public String getToolTip() {
-        return "";
+        return m_toolTip;
     }
 
     @Override

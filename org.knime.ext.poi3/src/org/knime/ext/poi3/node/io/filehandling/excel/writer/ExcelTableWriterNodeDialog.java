@@ -50,21 +50,38 @@ package org.knime.ext.poi3.node.io.filehandling.excel.writer;
 
 import java.awt.Component;
 import java.awt.GridBagLayout;
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import javax.swing.BorderFactory;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JTextField;
+import javax.xml.parsers.ParserConfigurationException;
 
-import org.knime.core.node.FlowVariableModel;
+import org.apache.poi.openxml4j.exceptions.OpenXML4JException;
+import org.apache.poi.openxml4j.opc.OPCPackage;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.util.XMLHelper;
+import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
+import org.apache.poi.xssf.eventusermodel.XSSFReader;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeDialogPane;
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NotConfigurableException;
@@ -76,6 +93,8 @@ import org.knime.core.node.defaultnodesettings.DialogComponentStringSelection;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.util.SharedIcons;
+import org.knime.core.util.SwingWorkerWithContext;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelUtils;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelConstants;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelFormat;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.Orientation;
@@ -87,6 +106,7 @@ import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.Dialog
 import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.FileOverwritePolicy;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.SettingsModelWriterFileChooser;
 import org.knime.filehandling.core.util.GBCBuilder;
+import org.xml.sax.SAXException;
 
 /**
  * The dialog of the 'Excel Table Writer' node.
@@ -94,6 +114,14 @@ import org.knime.filehandling.core.util.GBCBuilder;
  * @author Mark Ortmann, KNIME GmbH, Berlin, Germany
  */
 final class ExcelTableWriterNodeDialog extends NodeDialogPane {
+
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(ExcelTableWriterNodeDialog.class);
+
+    private static final String SCANNING = "/* scanning... */";
+
+    private final AtomicLong m_updateSheetListId = new AtomicLong(0);
+
+    private SheetUpdater m_updateSheet = null;
 
     private static final Pattern FILE_EXTENSION_PATTERN = Pattern.compile(//
         Arrays.stream(ExcelFormat.values())//
@@ -107,13 +135,15 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
 
     private final DialogComponentWriterFileChooser m_fileChooser;
 
-    private final JTextField[] m_sheetNames;
+    private final JComboBox<String>[] m_sheetNames;
 
     private final DialogComponentButtonGroup m_sheetNameCollisionHandling;
 
     private final DialogComponentBoolean m_writeRowKey;
 
     private final DialogComponentBoolean m_writeColHeader;
+
+    private final DialogComponentBoolean m_skipColumnHeaderOnAppend;
 
     private final DialogComponentBoolean m_replaceMissings;
 
@@ -136,6 +166,7 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
      *
      * @param portsConfig the ports configuration
      */
+    @SuppressWarnings("unchecked")
     ExcelTableWriterNodeDialog(final PortsConfiguration portsConfig) {
         m_cfg = new ExcelTableWriterConfig(portsConfig);
 
@@ -146,18 +177,23 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
                 .collect(Collectors.toList()));
 
         final SettingsModelWriterFileChooser writerModel = m_cfg.getFileChooserModel();
-        final FlowVariableModel writeFvm =
+        final var writeFvm =
             createFlowVariableModel(writerModel.getKeysForFSLocation(), FSLocationVariableType.INSTANCE);
-        m_fileChooser =
-            new DialogComponentWriterFileChooser(writerModel, "excel_reader_writer", writeFvm);
+        m_fileChooser = new DialogComponentWriterFileChooser(writerModel, "excel_reader_writer", writeFvm);
 
-        m_sheetNames = Stream.generate(() -> new JTextField(23))//
+        m_sheetNames = Stream.generate(JComboBox<String>::new)//
             .limit(portsConfig.getInputPortLocation().get(ExcelTableWriterNodeFactory.SHEET_GRP_ID).length)//
-            .toArray(JTextField[]::new);
+            .toArray(JComboBox[]::new);
+        Arrays.stream(m_sheetNames).forEach(b -> b.setEditable(true));
         m_sheetNameCollisionHandling = new DialogComponentButtonGroup(m_cfg.getSheetExistsHandlingModel(), null, false,
             SheetNameExistsHandling.values());
 
         m_writeColHeader = new DialogComponentBoolean(m_cfg.getWriteColHeaderModel(), "Write column headers");
+        m_skipColumnHeaderOnAppend = new DialogComponentBoolean(m_cfg.getSkipColumnHeaderOnAppendModel(),
+            "Don't write column headers if sheet exists");
+        m_cfg.getWriteColHeaderModel().addChangeListener(
+            e -> m_cfg.getSkipColumnHeaderOnAppendModel().setEnabled(m_cfg.getWriteColHeaderModel().getBooleanValue()));
+
         m_writeRowKey = new DialogComponentBoolean(m_cfg.getWriteRowKeyModel(), "Write row key");
         m_replaceMissings = new DialogComponentBoolean(m_cfg.getReplaceMissingsModel(), "Replace missing values by");
         m_missingValPattern = new DialogComponentString(m_cfg.getMissingValPatternModel(), null);
@@ -180,6 +216,7 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
     private void toggleOptions() {
         toggleAppendRelatedOptions();
         toggleOpenFileAfterExecOption();
+        updateSheetListAndSelect();
     }
 
     private void toggleAppendRelatedOptions() {
@@ -207,7 +244,7 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
     }
 
     private void updateLocation() {
-        final ExcelFormat format = ExcelFormat.valueOf(m_cfg.getExcelFormatModel().getStringValue());
+        final var format = ExcelFormat.valueOf(m_cfg.getExcelFormatModel().getStringValue());
         SettingsModelWriterFileChooser writerModel = m_fileChooser.getSettingsModel();
         if (!writerModel.isOverwrittenByFlowVariable()) {
             FSLocation location = writerModel.getLocation();
@@ -222,9 +259,8 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
     }
 
     private Component createSettings() {
-        final JPanel p = new JPanel(new GridBagLayout());
-        final GBCBuilder gbc =
-            new GBCBuilder().resetX().resetY().anchorLineStart().setWeightX(1).fillHorizontal().setWidth(2);
+        final var p = new JPanel(new GridBagLayout());
+        final var gbc = new GBCBuilder().resetX().resetY().anchorLineStart().setWeightX(1).fillHorizontal().setWidth(2);
         p.add(createFileChooserPanel(), gbc.build());
 
         gbc.incY();
@@ -255,11 +291,10 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
     }
 
     private Component createFileChooserPanel() {
-        final JPanel p = new JPanel(new GridBagLayout());
+        final var p = new JPanel(new GridBagLayout());
         p.setBorder(
             BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "File format & output location"));
-        final GBCBuilder gbc =
-            new GBCBuilder().resetX().resetY().anchorLineStart().setWeightX(0).setWeightY(0).fillNone();
+        final var gbc = new GBCBuilder().resetX().resetY().anchorLineStart().setWeightX(0).setWeightY(0).fillNone();
 
         p.add(m_excelType.getComponentPanel(), gbc.build());
 
@@ -270,11 +305,11 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
     }
 
     private Component createSheetNamesPanel() {
-        final JPanel p = new JPanel(new GridBagLayout());
+        final var p = new JPanel(new GridBagLayout());
         p.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Sheets"));
-        final GBCBuilder gbc = new GBCBuilder().resetY().anchorLineStart().setWeightX(0).setWeightY(0).fillNone();
+        final var gbc = new GBCBuilder().resetY().anchorLineStart().setWeightX(0).setWeightY(0).fillNone();
 
-        for (int i = 0; i < m_sheetNames.length; i++) {
+        for (var i = 0; i < m_sheetNames.length; i++) {
             gbc.resetX().incY().insetLeft(4);
             p.add(new JLabel((i + 1) + ". sheet name"), gbc.build());
 
@@ -297,14 +332,16 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
     }
 
     private Component createNameIdPanel() {
-        final JPanel p = new JPanel(new GridBagLayout());
+        final var p = new JPanel(new GridBagLayout());
         p.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Names and IDs"));
-        final GBCBuilder gbc =
+        final var gbc =
             new GBCBuilder().resetX().resetY().anchorLineStart().setWeightX(0).setWeightY(0).fillNone().insetLeft(-3);
         p.add(m_writeRowKey.getComponentPanel(), gbc.build());
 
         gbc.incY().insetTop(-5);
         p.add(m_writeColHeader.getComponentPanel(), gbc.build());
+        gbc.incY();
+        p.add(m_skipColumnHeaderOnAppend.getComponentPanel(), gbc.build());
 
         gbc.incY().setWeightX(1).fillHorizontal();
         p.add(new JPanel(), gbc.build());
@@ -313,10 +350,10 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
     }
 
     private Component createMissingsPanel() {
-        final JPanel p = new JPanel(new GridBagLayout());
+        final var p = new JPanel(new GridBagLayout());
         p.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Missing value handling"));
 
-        final GBCBuilder gbc =
+        final var gbc =
             new GBCBuilder().resetX().resetY().anchorLineStart().setWeightX(0).setWeightY(0).fillNone().insetLeft(-3);
         p.add(m_replaceMissings.getComponentPanel(), gbc.build());
 
@@ -330,10 +367,10 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
     }
 
     private Component createFormulasPanel() {
-        final JPanel p = new JPanel(new GridBagLayout());
+        final var p = new JPanel(new GridBagLayout());
         p.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Formulas"));
 
-        final GBCBuilder gbc =
+        final var gbc =
             new GBCBuilder().resetX().resetY().anchorLineStart().setWeightX(0).setWeightY(0).fillNone().insetLeft(-3);
         p.add(m_evaluateFormulas.getComponentPanel(), gbc.build());
 
@@ -344,11 +381,11 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
     }
 
     private Component createSizePanel() {
-        final JPanel p = new JPanel(new GridBagLayout());
+        final var p = new JPanel(new GridBagLayout());
         p.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Layout"));
 
-        final GBCBuilder gbc = new GBCBuilder().resetX().resetY().anchorLineStart().setWeightX(0).setWeightY(0)
-            .fillNone().setWidth(2).insetLeft(-3);
+        final var gbc = new GBCBuilder().resetX().resetY().anchorLineStart().setWeightX(0).setWeightY(0).fillNone()
+            .setWidth(2).insetLeft(-3);
         p.add(m_autoSize.getComponentPanel(), gbc.build());
 
         gbc.incY().insetTop(-5).setWidth(1);
@@ -368,12 +405,14 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
         m_excelType.saveSettingsTo(settings);
         m_fileChooser.saveSettingsTo(settings);
         ExcelTableWriterConfig.saveSheetNames(settings, Arrays.stream(m_sheetNames)//
-            .map(JTextField::getText)//
+            .map(JComboBox::getSelectedItem)//
+            .map(String.class::cast)//
             .map(String::trim)//
             .toArray(String[]::new));
         m_sheetNameCollisionHandling.saveSettingsTo(settings);
         m_writeRowKey.saveSettingsTo(settings);
         m_writeColHeader.saveSettingsTo(settings);
+        m_skipColumnHeaderOnAppend.saveSettingsTo(settings);
         m_replaceMissings.saveSettingsTo(settings);
         m_missingValPattern.saveSettingsTo(settings);
         m_evaluateFormulas.saveSettingsTo(settings);
@@ -392,10 +431,17 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
         m_fileChooser.loadSettingsFrom(settings, specs);
         m_cfg.loadSheetsInDialog(settings);
         IntStream.range(0, m_sheetNames.length)//
-            .forEach(i -> m_sheetNames[i].setText(m_cfg.getSheetNames()[i]));
+            .forEach(i -> m_sheetNames[i].setSelectedItem(m_cfg.getSheetNames()[i]));
         m_sheetNameCollisionHandling.loadSettingsFrom(settings, specs);
         m_writeRowKey.loadSettingsFrom(settings, specs);
         m_writeColHeader.loadSettingsFrom(settings, specs);
+        try {
+            m_cfg.getSkipColumnHeaderOnAppendModel().loadSettingsFrom(settings);
+            m_skipColumnHeaderOnAppend.loadSettingsFrom(settings, specs);
+        } catch (InvalidSettingsException e) { // NOSONAR we ant to load the default here
+            m_cfg.getSkipColumnHeaderOnAppendModel().setBooleanValue(true);
+        }
+        m_cfg.getSkipColumnHeaderOnAppendModel().setEnabled(m_cfg.getWriteColHeaderModel().getBooleanValue());
         m_replaceMissings.loadSettingsFrom(settings, specs);
         m_missingValPattern.loadSettingsFrom(settings, specs);
         m_evaluateFormulas.loadSettingsFrom(settings, specs);
@@ -414,9 +460,123 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
         updateLocation();
     }
 
+    /**
+     * Reads from the currently selected file the list of worksheets (in a background thread) and selects the provided
+     * sheet (if not null - otherwise selects the first name). Calls {@link #sheetNameChanged()} after the update.
+     */
+    private void updateSheetListAndSelect() {
+        final var sheetNames = m_cfg.getSheetNames();
+        for (var i = 0; i < m_sheetNames.length; i++) {
+            final var item = (String)m_sheetNames[i].getSelectedItem();
+            if (!SCANNING.equals(item)) {
+                sheetNames[i] = (String)m_sheetNames[i].getSelectedItem();
+            }
+            m_sheetNames[i].setModel(new DefaultComboBoxModel<>(new String[]{SCANNING}));
+        }
+
+        // The id of the current update
+        // Note that this code and the doneWithContext is always executed by the same thread
+        // Therefore we only have to make sure that the doneWithContext belongs to the most current update
+        final long currentId = m_updateSheetListId.incrementAndGet();
+        if (m_updateSheet != null && !m_updateSheet.isDone()) {
+            m_updateSheet.cancel(true);
+        }
+        m_updateSheet = new SheetUpdater(currentId);
+        m_updateSheet.execute();
+    }
+
+    private class SheetUpdater extends SwingWorkerWithContext<Map<String, Boolean>, Object> {
+
+        final long m_ownId;
+
+        /**
+         * @param id the id of the updater which is used to decide whether to use the result.
+         */
+        SheetUpdater(final long id) {
+            m_ownId = id;
+        }
+
+        @Override
+        protected Map<String, Boolean> doInBackgroundWithContext() throws Exception {
+            try (final var accessor = m_fileChooser.getSettingsModel().createWritePathAccessor()) {
+                final var path = accessor.getOutputPath(x -> LOGGER.error(x.getMessage()));
+                if (!Files.exists(path)) {
+                    return Collections.emptyMap();
+                }
+
+                final var excelFormat = ExcelFormat.valueOf(m_cfg.getExcelFormatModel().getStringValue());
+
+                switch (excelFormat) {
+                    case XLS:
+                        final var bufferedInputStream = new BufferedInputStream(Files.newInputStream(path));
+                        try (final var workbook = WorkbookFactory.create(bufferedInputStream)) {
+                            return ExcelUtils.getSheetNames(workbook);
+                        }
+                    case XLSX:
+                        return readXLSXSheets(path);
+                    default:
+                        throw new InvalidSettingsException("Only .xls and .xlsx file formats are allowed");
+                }
+            }
+        }
+
+        private Map<String, Boolean> readXLSXSheets(final Path path)
+            throws IOException, SAXException, ParserConfigurationException, OpenXML4JException {
+            try (final var opc = OPCPackage.open(Files.newInputStream(path))) {
+                final var xssfReader = new XSSFReader(opc);
+                final var xmlReader = XMLHelper.newXMLReader();
+                // disable DTD to prevent almost all XXE attacks, XMLHelper.newXMLReader() did set further security features
+                xmlReader.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+                final var sharedStringsTable = new ReadOnlySharedStringsTable(opc, false);
+
+                return ExcelUtils.getSheetNames(xmlReader, xssfReader, sharedStringsTable);
+            }
+        }
+
+        @Override
+        protected void doneWithContext() {
+            if (m_ownId != m_updateSheetListId.get()) {
+                // Another update of the sheet list has started
+                // Do not update the sheet list
+                return;
+            }
+            Map<String, Boolean> sheetNames = new LinkedHashMap<>();
+            try {
+                sheetNames = get();
+            } catch (InterruptedException e) {
+                fixInterrupt();
+                // ignore
+            } catch (CancellationException e) { // NOSONAR: only indicates closing the dialog/newer updater
+                // ignore
+            } catch (ExecutionException e) { // NOSONAR: We are only interested in the cause
+                LOGGER.error("Could not get sheet names!", e.getCause());
+            }
+
+            for (var i = 0; i < m_sheetNames.length; i++) {
+                m_sheetNames[i].setModel(new DefaultComboBoxModel<>(sheetNames.keySet().toArray(new String[0])));
+                final var selectedSheet = m_cfg.getSheetNames()[i];
+                if (selectedSheet != null) {
+                    m_sheetNames[i].setSelectedItem(selectedSheet);
+                } else {
+                    m_sheetNames[i].setSelectedIndex(!sheetNames.isEmpty() ? 0 : -1);
+                }
+            }
+        }
+    }
+
     @Override
     public void onClose() {
         m_fileChooser.onClose();
+        if (m_updateSheet != null && !m_updateSheet.isDone()) {
+            m_updateSheet.cancel(true);
+        }
+    }
+
+    private static void fixInterrupt() {
+        final var currentThread = Thread.currentThread();
+        if (currentThread.isInterrupted()) {
+            currentThread.interrupt();
+        }
     }
 
 }

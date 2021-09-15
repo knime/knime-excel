@@ -53,7 +53,6 @@ import java.util.OptionalInt;
 import java.util.stream.IntStream;
 
 import org.apache.poi.ss.usermodel.CellType;
-import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.util.Units;
 import org.knime.core.data.DataCell;
@@ -91,7 +90,7 @@ public final class ExcelSheetWriter {
     public ExcelSheetWriter(final DataTableSpec spec, final ExcelImageWriter imageWriter,
         final ExcelCellWriterFactory cellWriterFactory, final boolean writeRowKey) {
         m_cellWriters = new ExcelCellWriter[spec.getNumColumns()];
-        for (int i = 0; i < m_cellWriters.length; i++) {
+        for (var i = 0; i < m_cellWriters.length; i++) {
             final DataType type = spec.getColumnSpec(i).getType();
             m_cellWriters[i] = cellWriterFactory.createCellWriter(type);
         }
@@ -107,9 +106,9 @@ public final class ExcelSheetWriter {
      * @param spec the spec containing the column header
      */
     public void writeColHeader(final Sheet sheet, final DataTableSpec spec) {
-        final Row excelRow = sheet.createRow(m_rowIdx);
+        final var excelRow = sheet.createRow(m_rowIdx);
         ++m_rowIdx;
-        int idx = 0;
+        var idx = 0;
         if (m_writeRowKey) {
             excelRow.createCell(idx, CellType.STRING).setCellValue("RowID");
             ++idx;
@@ -128,13 +127,13 @@ public final class ExcelSheetWriter {
      * @throws IOException - If the {@link DataRow} could not be written to the {@link Sheet}
      */
     public void writeRowToSheet(final Sheet sheet, final DataRow dataRow) throws IOException {
-        final Row excelRow = sheet.createRow(m_rowIdx);
-        int colIdxOffset = 0;
+        final var excelRow = sheet.createRow(m_rowIdx);
+        var colIdxOffset = 0;
         if (m_writeRowKey) {
             excelRow.createCell(colIdxOffset, CellType.STRING).setCellValue(dataRow.getKey().getString());
             ++colIdxOffset;
         }
-        int idx = 0;
+        var idx = 0;
         for (final DataCell dataCell : dataRow) {
             final int colIdx = idx + colIdxOffset;
             m_cellWriters[idx].write(dataCell, t -> excelRow.createCell(colIdx, t));
@@ -151,6 +150,22 @@ public final class ExcelSheetWriter {
     public void reset() {
         m_rowIdx = 0;
         m_imageWriter.reset();
+    }
+
+    /**
+     * Set the next row which will be written to.
+     *
+     * @param rowIdx the row index to set
+     */
+    public void setRowIndex(final int rowIdx) {
+        m_rowIdx = rowIdx;
+    }
+
+    /**
+     * @return the next row which will be written to.
+     */
+    public int getRowIndex() {
+        return m_rowIdx;
     }
 
     /**

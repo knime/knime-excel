@@ -51,6 +51,7 @@ package org.knime.ext.poi3.node.io.filehandling.excel.writer.table;
 import java.util.Optional;
 
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelFormat;
+import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.SheetNameExistsHandling;
 
 /**
  * The excel table configuration interface.
@@ -109,11 +110,33 @@ public interface ExcelTableConfig {
     boolean writeColHeaders();
 
     /**
+     * Flag indicating whether writing of column headers should be skipped if the sheet already exists.
+     * This option only has an effect if {@link #writeColHeaders()} is {@code true}
+     *
+     * @return {@code true} if the column headers should be skipped if the sheet already exists and {@code false} otherwise
+     */
+    default boolean shipColumnHeaderOnAppend() {
+        return true;
+    }
+
+    /**
      * Flag indicating whether or not overwriting sheets is allowed.
      *
      * @return {@code true} overwriting sheets is forbidden and the execution must be stopped
+     * @nooverride implement or use {@link #getSheetNameExistsHandling()} instead
      */
-    boolean abortIfSheetExists();
+    default boolean abortIfSheetExists() {
+        return getSheetNameExistsHandling() == SheetNameExistsHandling.FAIL;
+    }
+
+    /**
+     * Returns how sheets that already exist should be handled.
+     *
+     * @return {@code true} overwriting sheets is forbidden and the execution must be stopped
+     */
+    default SheetNameExistsHandling getSheetNameExistsHandling() {
+        return abortIfSheetExists() ? SheetNameExistsHandling.FAIL : SheetNameExistsHandling.OVERWRITE;
+    }
 
     /**
      * Flag indicating whether or not formulas have to be (re-)evaluated after all sheets have been written.
