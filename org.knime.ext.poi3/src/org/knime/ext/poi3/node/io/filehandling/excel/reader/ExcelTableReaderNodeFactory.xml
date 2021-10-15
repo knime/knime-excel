@@ -6,10 +6,6 @@
 	</shortDescription>
 	<fullDescription>
 		<intro>
-            <p><i>This node supports the 
-            </i><a href="https://docs.knime.com/latest/analytics_platform_file_handling_guide/index.html#path"><i>path flow variable.</i></a>
-            <i> For further information about file handling in general see the 
-            </i><a href="https://docs.knime.com/latest/analytics_platform_file_handling_guide/index.html"><i>File Handling Guide.</i></a><br/></p>
             <p>
 		      This node reads Excel files (xlsx, xlsm, xlsb, and xls format). It can read a single or multiple files at the 
 			  same time, however reading only 
@@ -25,6 +21,14 @@
 			  content shows the content of the file as it is displayed in Excel. This allows finding row numbers and column
 			  names easier to specify different settings.
 			</p>
+
+            <p>
+            <i>This node can access a variety of different</i>
+            <a href="https://docs.knime.com/2021-06/analytics_platform_file_handling_guide/index.html#analytics-platform-file-systems"><i>file systems.</i></a> 
+            <i>More information about file handling in KNIME can be found in the official</i> 
+            <a href="https://docs.knime.com/latest/analytics_platform_file_handling_guide/index.html"><i>File Handling Guide.</i></a>
+            </p>
+
 		</intro>
 		<tab name="Settings">
 			<option name="Read from">
