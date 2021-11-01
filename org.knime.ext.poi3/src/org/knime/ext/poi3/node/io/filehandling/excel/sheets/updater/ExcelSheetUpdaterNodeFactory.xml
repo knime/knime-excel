@@ -33,30 +33,26 @@
         </ul>
       </p>
       <p>
-        Each input table must have one column which contains the addresses (or
-        coordinates) of the sheet cells which should be updated. This column has
+        Each input table must have one column which contains the addresses
+        of the sheet cells which should be updated. This column has
         to have a string-compatible type and must contain
         Excel cell addresses as strings, e.g. "A5", "E96" or "OZ23124".
       </p>
       <p>
-        The rest of the cells in a table row determine which value should be
-        written. Each row must only contain at most one non-missing value that
-        contains the value which should be written into the specified Excel cell.
-        The type of the table row is used as the Excel type so a number column
-        should be used to write numbers etc.
-      </p>
-      <p>
-        The node will write a blank cell or the string specified in "Replace
-        missing values by" if all cells except for the address cell in a row are
-        missing.
+        The remaining columns contain the replacement values for the specified
+        cells. A replacement value should appear in at most one column per row,
+        and the column type should be the same as the (desired) column type in
+        the updated sheet. If all columns but the cell address contain a missing
+        value, the replacement value is a blank cell or the string specified in
+        the “Replace missing values by“ field.
       </p>
       <p>
         The formatting of existing cells, rows and columns in the Excel sheet will be preserved.
       </p>
       <p>
-        In the following a <b>?</b> stands for a missing value.
+        In the following table <b>?</b> stands for a missing value.
         This example table would write the string "Ok" to Excel cell A5 and the
-        number "50" to cell E96. The cell OZ23124 will be cleared if no
+        number 50 to cell E96. The cell OZ23124 will be cleared if no
         alternate missing value is defined.
       </p>
         <table>
@@ -64,23 +60,19 @@
             <th>Address</th>
             <th>String</th>
             <th>Integer</th>
-            <th>Date</th>
           </tr>
           <tr>
             <td>A5</td>
             <td>Ok</td>
-            <td><b>?</b></td>
             <td><b>?</b></td>
           </tr>
           <tr>
             <td>E96</td>
             <td><b>?</b></td>
             <td>50</td>
-            <td><b>?</b></td>
           </tr>
           <tr>
             <td>OZ23124</td>
-            <td><b>?</b></td>
             <td><b>?</b></td>
             <td><b>?</b></td>
           </tr>
@@ -226,13 +218,13 @@
       </option>
       <option name="Based on address column">
         Select the name of the column which contains the
-        addresses (or coordinates) of the cells which
+        addresses of the cells which
         should be updated.
       </option>
       <option name="Replaces missing values by">
         If selected, the node will write the specified value
         as a string to the address if only missing values
-        are found in that row, otherwise a blank cell is created.
+        are found in that row. Otherwise a blank cell is created.
       </option>
       <option name="Evaluate formulas">
         If checked, all formulas in the file will be
@@ -243,7 +235,7 @@
     </fullDescription>
     <ports>
       <inPort index="0" name="Input table">
-        The data table which contains the update data.
+        The data table which contains the update information.
       </inPort>
       <dynInPort insert-before="0" name="File system connection" group-identifier="File System Connection">
         The file system connection.
