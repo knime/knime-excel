@@ -46,7 +46,7 @@
  * History
  *  Aug 9, 2021 (Moditha Hewasinghage, KNIME GmbH, Berlin, Germany): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.sheets.updater;
+package org.knime.ext.poi3.node.io.filehandling.excel.updater.cell;
 
 import java.util.Optional;
 
@@ -60,11 +60,11 @@ import org.knime.core.node.port.PortType;
 import org.knime.filehandling.core.port.FileSystemPortObject;
 
 /**
- * {@link NodeFactory} creating the 'Excel Sheet Updater' node.
+ * {@link NodeFactory} creating the 'Excel Cell Updater' node.
  *
  * @author Moditha Hewasinghage,, KNIME GmbH, Berlin, Germany
  */
-public final class ExcelSheetUpdaterNodeFactory extends ConfigurableNodeFactory<ExcelSheetUpdaterNodeModel> {
+public final class ExcelCellUpdaterNodeFactory extends ConfigurableNodeFactory<ExcelCellUpdaterNodeModel> {
 
     /** The file system ports group id. */
     static final String FS_CONNECT_GRP_ID = "File System Connection";
@@ -81,13 +81,13 @@ public final class ExcelSheetUpdaterNodeFactory extends ConfigurableNodeFactory<
     }
 
     @Override
-    protected ExcelSheetUpdaterNodeModel createNodeModel(final NodeCreationConfiguration creationConfig) {
-        return new ExcelSheetUpdaterNodeModel(creationConfig.getPortConfig().orElseThrow(IllegalStateException::new));
+    protected ExcelCellUpdaterNodeModel createNodeModel(final NodeCreationConfiguration creationConfig) {
+        return new ExcelCellUpdaterNodeModel(creationConfig.getPortConfig().orElseThrow(IllegalStateException::new));
     }
 
     @Override
     protected NodeDialogPane createNodeDialogPane(final NodeCreationConfiguration creationConfig) {
-        return new ExcelSheetUpdaterNodeDialog(creationConfig.getPortConfig().orElseThrow(IllegalStateException::new));
+        return new ExcelCellUpdaterNodeDialog(creationConfig.getPortConfig().orElseThrow(IllegalStateException::new));
     }
 
     @Override
@@ -96,8 +96,8 @@ public final class ExcelSheetUpdaterNodeFactory extends ConfigurableNodeFactory<
     }
 
     @Override
-    public NodeView<ExcelSheetUpdaterNodeModel> createNodeView(final int viewIndex,
-        final ExcelSheetUpdaterNodeModel nodeModel) {
+    public NodeView<ExcelCellUpdaterNodeModel> createNodeView(final int viewIndex,
+        final ExcelCellUpdaterNodeModel nodeModel) {
         return null;
     }
 

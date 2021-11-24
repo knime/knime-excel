@@ -46,7 +46,7 @@
  * History
  *   Nov 6, 2020 (Mark Ortmann, KNIME GmbH, Berlin, Germany): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.writer.sheet;
+package org.knime.ext.poi3.node.io.filehandling.excel.writer.cellcoordinate;
 
 import java.io.IOException;
 import java.util.OptionalInt;

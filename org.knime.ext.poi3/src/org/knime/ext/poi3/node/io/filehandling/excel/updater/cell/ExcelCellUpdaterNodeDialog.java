@@ -46,7 +46,7 @@
  * History
  *   Nov 6, 2020 (Mark Ortmann, KNIME GmbH, Berlin, Germany): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.sheets.updater;
+package org.knime.ext.poi3.node.io.filehandling.excel.updater.cell;
 
 import java.awt.Component;
 import java.awt.GridBagLayout;
@@ -103,20 +103,20 @@ import org.knime.filehandling.core.util.GBCBuilder;
 import org.xml.sax.SAXException;
 
 /**
- * The dialog of the 'Excel Sheet Updater' node.
+ * The dialog of the 'Excel Cell Updater' node.
  *
  * @author Moditha Hewasinghage, KNIME GmbH, Berlin, Germany
  * @author Jannik Löscher, KNIME GmbH, Konstanz, Germany
  */
-final class ExcelSheetUpdaterNodeDialog extends NodeDialogPane {
+final class ExcelCellUpdaterNodeDialog extends NodeDialogPane {
 
     private static final String SCANNING = "/* scanning... */";
 
-    private static final NodeLogger LOGGER = NodeLogger.getLogger(ExcelSheetUpdaterNodeDialog.class);
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(ExcelCellUpdaterNodeDialog.class);
 
     private final int[] m_dataPortIndices;
 
-    private final ExcelSheetUpdaterConfig m_cfg;
+    private final ExcelCellUpdaterConfig m_cfg;
 
     private final DialogComponentReaderFileChooser m_srcFileChooser;
 
@@ -146,8 +146,8 @@ final class ExcelSheetUpdaterNodeDialog extends NodeDialogPane {
      * @param portsConfig the ports configuration
      */
     @SuppressWarnings("unchecked")
-    ExcelSheetUpdaterNodeDialog(final PortsConfiguration portsConfig) {
-        m_cfg = new ExcelSheetUpdaterConfig(portsConfig);
+    ExcelCellUpdaterNodeDialog(final PortsConfiguration portsConfig) {
+        m_cfg = new ExcelCellUpdaterConfig(portsConfig);
 
         final SettingsModelReaderFileChooser readerModel = m_cfg.getSrcFileChooserModel();
         final var readFvm =
@@ -161,7 +161,7 @@ final class ExcelSheetUpdaterNodeDialog extends NodeDialogPane {
             createFlowVariableModel(writerModel.getKeysForFSLocation(), FSLocationVariableType.INSTANCE);
         m_destFileChooser = new DialogComponentWriterFileChooser(writerModel, "excel_reader_writer", writeFvm);
 
-        m_dataPortIndices = portsConfig.getInputPortLocation().get(ExcelSheetUpdaterNodeFactory.SHEET_GRP_ID);
+        m_dataPortIndices = portsConfig.getInputPortLocation().get(ExcelCellUpdaterNodeFactory.SHEET_GRP_ID);
 
         m_coordinateColumns = Arrays.stream(m_dataPortIndices)//
             .mapToObj(i -> new DialogComponentColumnNameSelection(new SettingsModelString("x", ""),
@@ -300,10 +300,10 @@ final class ExcelSheetUpdaterNodeDialog extends NodeDialogPane {
         m_replaceMissings.saveSettingsTo(settings);
         m_missingValPattern.saveSettingsTo(settings);
         m_evaluateFormulas.saveSettingsTo(settings);
-        ExcelSheetUpdaterConfig.saveSheetNames(settings, Arrays.stream(m_sheetNames)//
+        ExcelCellUpdaterConfig.saveSheetNames(settings, Arrays.stream(m_sheetNames)//
             .map(JComboBox::getSelectedItem)//
             .toArray(String[]::new));
-        ExcelSheetUpdaterConfig.saveCoordinateColumnNames(settings, Arrays.stream(m_coordinateColumns)//
+        ExcelCellUpdaterConfig.saveCoordinateColumnNames(settings, Arrays.stream(m_coordinateColumns)//
             .map(DialogComponent::getModel)//
             .map(SettingsModelString.class::cast)//
             .map(SettingsModelString::getStringValue)//
@@ -318,7 +318,7 @@ final class ExcelSheetUpdaterNodeDialog extends NodeDialogPane {
         final var names = m_cfg.getCoordinateColumnNames();
         final var dummy = new NodeSettings("dummy");
         for (var idx = 0; idx < names.length; idx++) {
-            ExcelSheetUpdaterNodeModel.checkExistsOrSaveFirst((DataTableSpec)specs[m_dataPortIndices[idx]], names, idx);
+            ExcelCellUpdaterNodeModel.checkExistsOrSaveFirst((DataTableSpec)specs[m_dataPortIndices[idx]], names, idx);
 
             dummy.addString("x", names[idx]);
             m_coordinateColumns[idx].loadSettingsFrom(dummy, specs);
@@ -383,7 +383,7 @@ final class ExcelSheetUpdaterNodeDialog extends NodeDialogPane {
                     return Collections.emptyMap();
                 }
 
-                final var excelFormat = ExcelSheetUpdaterNodeModel.getExcelFormat(path.get().getFileName().toString());
+                final var excelFormat = ExcelCellUpdaterNodeModel.getExcelFormat(path.get().getFileName().toString());
 
                 switch (excelFormat) {
                     case XLS:
@@ -449,7 +449,7 @@ final class ExcelSheetUpdaterNodeDialog extends NodeDialogPane {
 
         private void updateWriterFileType() {
             final var path = Path.of(m_srcFileChooser.getSettingsModel().getLocation().getPath());
-            final var excelFormat = ExcelSheetUpdaterNodeModel.getExcelFormat(path.getFileName().toString());
+            final var excelFormat = ExcelCellUpdaterNodeModel.getExcelFormat(path.getFileName().toString());
             if (excelFormat != null) {
                 SettingsModelWriterFileChooser writerModel = m_destFileChooser.getSettingsModel();
                 writerModel.setFileExtensions(excelFormat.getFileExtension());

@@ -62,8 +62,8 @@ import org.knime.core.node.streamable.RowInput;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.core.util.Pair;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.cell.ExcelCellWriterFactory;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.sheet.ExcelSheetCoordinateWriter;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.sheet.ExcelSheetWriter;
+import org.knime.ext.poi3.node.io.filehandling.excel.writer.cellcoordinate.ExcelSheetCellCoordinateWriter;
+import org.knime.ext.poi3.node.io.filehandling.excel.writer.cellcoordinate.ExcelSheetWriter;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelProgressMonitor;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.SheetNameExistsHandling;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.SheetUtils;
@@ -151,13 +151,13 @@ abstract class AbstractExcelTableWriter implements ExcelTableWriter {
     }
 
     /**
-     * Creates an instance of {@link ExcelSheetCoordinateWriter}.
+     * Creates an instance of {@link ExcelSheetCellCoordinateWriter}.
      *
      * @param spec the {@link DataTableSpec} of the coordinates and values table
      * @param cellWriterFactory the {@link ExcelCellWriterFactory}
      * @return the {@link ExcelSheetWriter}
      */
-    abstract ExcelSheetCoordinateWriter createSheetCoordinateWriter(final DataTableSpec spec,
+    abstract ExcelSheetCellCoordinateWriter createSheetCoordinateWriter(final DataTableSpec spec,
         final ExcelCellWriterFactory cellWriterFactory);
 
     /**

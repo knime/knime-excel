@@ -46,7 +46,7 @@
  * History
  *   Aug 9, 2021 (Moditha Hewasinghage, KNIME GmbH, Berlin, Germany): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.sheets.updater;
+package org.knime.ext.poi3.node.io.filehandling.excel.updater.cell;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -85,7 +85,7 @@ import org.knime.core.node.streamable.RowInput;
 import org.knime.core.node.streamable.StreamableOperator;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.cell.ExcelCellWriterFactory;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.sheet.ExcelSheetUpdater;
+import org.knime.ext.poi3.node.io.filehandling.excel.writer.cellcoordinate.ExcelCellUpdater;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.ExcelTableConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.ExcelTableWriter;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.WorkbookCreator;
@@ -102,12 +102,12 @@ import org.knime.filehandling.core.defaultnodesettings.status.StatusMessage.Mess
  * @author Moditha Hewasinghage, KNIME GmbH, Berlin, Germany
  * @author Jannik Löscher, KNIME GmbH, Konstanz, Germany
  */
-public final class ExcelSheetUpdaterNodeModel extends NodeModel {
+public final class ExcelCellUpdaterNodeModel extends NodeModel {
 
     /** The maximum progress for creating the excel file. */
     private static final double MAX_EXCEL_PROGRESS = 0.75;
 
-    private final ExcelSheetUpdaterConfig m_cfg;
+    private final ExcelCellUpdaterConfig m_cfg;
 
     private final int[] m_dataPortIndices;
 
@@ -118,10 +118,10 @@ public final class ExcelSheetUpdaterNodeModel extends NodeModel {
     /**
      * Constructor.
      */
-    ExcelSheetUpdaterNodeModel(final PortsConfiguration portsConfig) {
+    ExcelCellUpdaterNodeModel(final PortsConfiguration portsConfig) {
         super(portsConfig.getInputPorts(), portsConfig.getOutputPorts());
-        m_cfg = new ExcelSheetUpdaterConfig(portsConfig);
-        m_dataPortIndices = portsConfig.getInputPortLocation().get(ExcelSheetUpdaterNodeFactory.SHEET_GRP_ID);
+        m_cfg = new ExcelCellUpdaterConfig(portsConfig);
+        m_dataPortIndices = portsConfig.getInputPortLocation().get(ExcelCellUpdaterNodeFactory.SHEET_GRP_ID);
         m_statusConsumer = new NodeModelStatusConsumer(EnumSet.of(MessageType.ERROR, MessageType.WARNING));
         m_coordinateColumnIndices = new int[m_dataPortIndices.length];
     }
@@ -227,7 +227,7 @@ public final class ExcelSheetUpdaterNodeModel extends NodeModel {
 
             exec.setMessage("Opening excel file");
             final var wbCreator = getWorkbookCreator(inputPath);
-            final var writer = new ExcelSheetUpdater(m_cfg);
+            final var writer = new ExcelCellUpdater(m_cfg);
             writer.writeTables(outputPath, tables, coordinateColumnIndices, wbCreator, exec, m);
         }
     }

@@ -46,7 +46,7 @@
  * History
  *   Nov 16, 2020 (Mark Ortmann, KNIME GmbH, Berlin, Germany): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.sheets.updater;
+package org.knime.ext.poi3.node.io.filehandling.excel.updater.cell;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -70,12 +70,12 @@ import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.Settin
 import org.knime.filehandling.core.defaultnodesettings.filtermode.SettingsModelFilterMode.FilterMode;
 
 /**
- * {@link ExcelTableConfig} of the 'Excel Sheet Updater' node.
+ * {@link ExcelTableConfig} of the 'Excel Cell Updater' node.
  *
  * @author Moditha Hewasinghage,, KNIME GmbH, Berlin, Germany
  * @author Jannik Löscher, KNIME GmbH, Konstanz, Germany
  */
-public final class ExcelSheetUpdaterConfig implements ExcelTableConfig {
+public final class ExcelCellUpdaterConfig implements ExcelTableConfig {
 
     private static final ExcelFormat DEFAULT_EXCEL_FORMAT = ExcelFormat.XLSX;
 
@@ -116,12 +116,12 @@ public final class ExcelSheetUpdaterConfig implements ExcelTableConfig {
      *
      * @param portsCfg the {@link PortsConfiguration}
      */
-    ExcelSheetUpdaterConfig(final PortsConfiguration portsCfg) {
+    ExcelCellUpdaterConfig(final PortsConfiguration portsCfg) {
         m_srcFileChooser = new SettingsModelReaderFileChooser(CFG_SRC_FILE_CHOOSER, portsCfg,
-            ExcelSheetUpdaterNodeFactory.FS_CONNECT_GRP_ID, EnumConfig.create(FilterMode.FILE));
+            ExcelCellUpdaterNodeFactory.FS_CONNECT_GRP_ID, EnumConfig.create(FilterMode.FILE));
 
         m_destFileChooser = new SettingsModelWriterFileChooser(CFG_DEST_FILE_CHOOSER, portsCfg,
-            ExcelSheetUpdaterNodeFactory.FS_CONNECT_GRP_ID, EnumConfig.create(FilterMode.FILE),
+            ExcelCellUpdaterNodeFactory.FS_CONNECT_GRP_ID, EnumConfig.create(FilterMode.FILE),
             EnumConfig.create(FileOverwritePolicy.FAIL, FileOverwritePolicy.OVERWRITE),
             DEFAULT_EXCEL_FORMAT.getFileExtension());
 
@@ -130,7 +130,7 @@ public final class ExcelSheetUpdaterConfig implements ExcelTableConfig {
         m_missingValPattern = new SettingsModelString(CFG_MISSING_VALUE_PATTERN, "");
         m_replaceMissings = new SettingsModelBoolean(CFG_REPLACE_MISSINGS, false);
         m_sheetNames = Stream.generate(() -> "")//
-            .limit(portsCfg.getInputPortLocation().get(ExcelSheetUpdaterNodeFactory.SHEET_GRP_ID).length)//
+            .limit(portsCfg.getInputPortLocation().get(ExcelCellUpdaterNodeFactory.SHEET_GRP_ID).length)//
             .toArray(String[]::new);
         m_coordinateColumnNames = Arrays.copyOf(m_sheetNames, m_sheetNames.length);
     }
@@ -149,8 +149,8 @@ public final class ExcelSheetUpdaterConfig implements ExcelTableConfig {
             final SettingsModelWriterFileChooser destClone = m_destFileChooser.createCloneWithValidatedValue(settings);
             var srcPath = srcClone.getLocation().getPath();
             var destPath = destClone.getLocation().getPath();
-            var srcExtension = Optional.ofNullable(ExcelSheetUpdaterNodeModel.getExcelFormat(srcPath));
-            var destExtension = Optional.ofNullable(ExcelSheetUpdaterNodeModel.getExcelFormat(destPath));
+            var srcExtension = Optional.ofNullable(ExcelCellUpdaterNodeModel.getExcelFormat(srcPath));
+            var destExtension = Optional.ofNullable(ExcelCellUpdaterNodeModel.getExcelFormat(destPath));
             CheckUtils.checkSetting(srcExtension.isPresent() && srcExtension.equals(destExtension),
                 "Source (%s) and destination (%s) file formats are not the same",
                 srcExtension.map(ExcelFormat::toString).orElse("unknown"),

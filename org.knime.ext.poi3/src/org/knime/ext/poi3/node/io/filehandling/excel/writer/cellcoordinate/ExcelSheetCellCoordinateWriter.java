@@ -46,7 +46,7 @@
  * History
  *   12.08.2021 (loescher): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.writer.sheet;
+package org.knime.ext.poi3.node.io.filehandling.excel.writer.cellcoordinate;
 
 import java.io.IOException;
 
@@ -71,9 +71,9 @@ import org.knime.ext.poi3.node.io.filehandling.excel.writer.image.ExcelImageWrit
  *
  * @author Moditha Hewasinghage, KNIME GmbH, Berlin, Germany
  * @author Jannik Löscher, KNIME GmbH, Konstanz, Germany
- * @see ExcelSheetCoordinateWriter#writeCellWithCoordinate(Sheet, DataRow, int)
+ * @see ExcelSheetCellCoordinateWriter#writeCellWithCoordinate(Sheet, DataRow, int)
  */
-public final class ExcelSheetCoordinateWriter extends ExcelSheetWriter {
+public final class ExcelSheetCellCoordinateWriter extends ExcelSheetWriter {
 
     /**
      * Constructor.
@@ -82,7 +82,7 @@ public final class ExcelSheetCoordinateWriter extends ExcelSheetWriter {
      * @param imageWriter the image writer that is used
      * @param cellWriterFactory the cell writer factory used to create writers that update and create cells
      */
-    public ExcelSheetCoordinateWriter(final DataTableSpec spec, final ExcelImageWriter imageWriter,
+    public ExcelSheetCellCoordinateWriter(final DataTableSpec spec, final ExcelImageWriter imageWriter,
         final ExcelCellWriterFactory cellWriterFactory) {
         super(spec, imageWriter, cellWriterFactory, false);
     }
@@ -114,7 +114,7 @@ public final class ExcelSheetCoordinateWriter extends ExcelSheetWriter {
         for (final DataCell dataCell : dataRow) {
             if (idx != coordinateColumn) {
                 if (!dataCell.isMissing() && !found) {
-                    writeCellToSheetAtCoordiante(sheet, cellCoordinate, dataCell, idx);
+                    writeCellToSheetAtCoordinate(sheet, cellCoordinate, dataCell, idx);
                     found = true;
                 } else if (!dataCell.isMissing()) {
                     CheckUtils.checkSetting(false, "Found second non-missing value at column %d for cell %s to update!",
@@ -124,20 +124,13 @@ public final class ExcelSheetCoordinateWriter extends ExcelSheetWriter {
             idx++;
         }
         if (!found) {
-            writeCellToSheetAtCoordiante(sheet, cellCoordinate, DataType.getMissingCell(), coordinateColumn);
+            writeCellToSheetAtCoordinate(sheet, cellCoordinate, DataType.getMissingCell(), coordinateColumn);
         }
     }
 
-    private void writeCellToSheetAtCoordiante(final Sheet sheet, final String cellCordinate, final DataCell dataCell,
+    private void writeCellToSheetAtCoordinate(final Sheet sheet, final String cellCoordinate, final DataCell dataCell,
         final int cellWriterIdx) throws IOException, InvalidSettingsException {
-        final CellAddress ref;
-        try {
-            ref = new CellAddress(cellCordinate);
-        } catch (NumberFormatException e) {
-            throw new InvalidSettingsException("Resolved address of '" + cellCordinate + "' has invalid row!");
-        }
-        CheckUtils.checkSetting(ref.getRow() >= 0 && ref.getColumn() >= 0,
-            "Resoved address (%s => column %d, row %d) is illegal", cellCordinate, ref.getColumn() + 1, ref.getRow() + 1);
+        final var ref = parseCellAddress(cellCoordinate);
         final var excelRow = sheet.getRow(ref.getRow());
         final CellStyle currentStyle;
         final Cell cell;
@@ -159,6 +152,39 @@ public final class ExcelSheetCoordinateWriter extends ExcelSheetWriter {
             final var newRow = sheet.createRow(ref.getRow());
             writeNewCell(dataCell, cellWriterIdx, ref, newRow, currentStyle);
         }
+    }
+
+    private static CellAddress parseCellAddress(final String cellCoordinate) throws InvalidSettingsException {
+        final CellAddress ref;
+        if (cellCoordinate.indexOf(':') != -1) {
+            final int col;
+            final int row;
+            final var parts = cellCoordinate.split(":");
+            CheckUtils.checkSetting(parts.length == 2,
+                "Expected cell address \"%s\" to be in \"<column number>:<row number>\" format", cellCoordinate);
+            try {
+                col = Integer.parseInt(parts[0].trim()) - 1;
+            } catch (NumberFormatException e) {
+                throw new InvalidSettingsException("Column in '" + cellCoordinate + "' is not an integer!");
+            }
+            try {
+                row = Integer.parseInt(parts[1].trim()) - 1;
+            } catch (NumberFormatException e) {
+                throw new InvalidSettingsException("Row in '" + cellCoordinate + "' is not an integer!");
+            }
+            ref = new CellAddress(row, col);
+        } else {
+            try {
+                ref = new CellAddress(cellCoordinate);
+            } catch (NumberFormatException e) {
+                throw new InvalidSettingsException("Resolved address of '" + cellCoordinate + "' has invalid row!");
+            }
+        }
+        CheckUtils.checkSetting(ref.getRow() >= 0 && ref.getColumn() >= 0,
+            "Resolved address (%s => column %d, row %d) is illegal", cellCoordinate, ref.getColumn() + 1,
+            ref.getRow() + 1);
+        return ref;
+
     }
 
     private void writeNewCell(final DataCell dataCell, final int idx, final CellAddress ref, final Row excelRow,

@@ -46,7 +46,7 @@
  * History
  *   Nov 6, 2020 (Mark Ortmann, KNIME GmbH, Berlin, Germany): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.writer.sheet;
+package org.knime.ext.poi3.node.io.filehandling.excel.writer.cellcoordinate;
 
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -58,8 +58,8 @@ import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.streamable.RowInput;
-import org.knime.ext.poi3.node.io.filehandling.excel.sheets.updater.ExcelSheetUpdaterConfig;
-import org.knime.ext.poi3.node.io.filehandling.excel.sheets.updater.ExcelSheetUpdaterNodeModel.AppendWorkbookCreator;
+import org.knime.ext.poi3.node.io.filehandling.excel.updater.cell.ExcelCellUpdaterConfig;
+import org.knime.ext.poi3.node.io.filehandling.excel.updater.cell.ExcelCellUpdaterNodeModel.AppendWorkbookCreator;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.cell.ExcelCellWriterFactory;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.ExcelTableConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.WorkbookCreator;
@@ -69,26 +69,27 @@ import org.knime.filehandling.core.connections.FSPath;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.FileOverwritePolicy;
 
 /**
- * This writer updates individual sheets of an excel file and finally stores this excel file to disc.
+ * This writer updates individual cells in sheets of an excel file and finally stores this excel file to disc.
  *
  * @author Moditha Hewasinghage,, KNIME GmbH, Berlin, Germany
  * @author Jannik Löscher, KNIME GmbH, Konstanz, Germany
  */
-final public class ExcelSheetUpdater {
+public final class ExcelCellUpdater {
 
-    private final ExcelSheetUpdaterConfig m_cfg;
+    private final ExcelCellUpdaterConfig m_cfg;
 
     /**
      * Constructor.
      *
      * @param cfg the {@link ExcelTableConfig}
      */
-    public ExcelSheetUpdater(final ExcelSheetUpdaterConfig cfg) {
+    public ExcelCellUpdater(final ExcelCellUpdaterConfig cfg) {
         m_cfg = cfg;
     }
 
     /**
-     * Writes the {@link RowInput}s to individual sheets of an excel file and finally stores this excel file to disc
+     * Writes the {@link RowInput}s to individual cells in sheets of an excel file and finally stores this excel file to
+     * disc
      *
      * @param outPath the location the excel file has to be written to
      * @param tables the tables to be written to individual sheets

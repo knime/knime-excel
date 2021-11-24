@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<knimeNode xmlns="http://knime.org/node/v4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" icon="./excel_sheet_updater.png" type="Sink" xsi:schemaLocation="http://knime.org/node/v4.1 http://knime.org/node/v4.1.xsd">
-  <name>Excel Sheet Updater</name>
+<knimeNode xmlns="http://knime.org/node/v4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" icon="./excel_cell_updater.png" type="Sink" xsi:schemaLocation="http://knime.org/node/v4.1 http://knime.org/node/v4.1.xsd">
+  <name>Excel Cell Updater</name>
   <shortDescription>
     Updates single cells in an Excel file
   </shortDescription>
@@ -9,7 +9,6 @@
       <p>
         This node updates cells in an existing Excel spreadsheet. The cell addresses and their
         new content are supplied by an input data table.
-        
       </p>
       <p>
         Adding additional table input ports allows to update multiple
@@ -35,8 +34,19 @@
       <p>
         Each input table must have one column which contains the addresses
         of the sheet cells which should be updated. This column has
-        to have a string-compatible type and must contain
-        Excel cell addresses as strings, e.g. "A5", "E96" or "OZ23124".
+        to have a string-compatible type. Two types of addresses are supported
+        and can be used interchangeably:
+        <ul>
+          <li>Excel cell addresses, e.g. "A5", "E96" or "OZ23914"</li>
+          <li>
+            Number addresses separated by a colon ":" with the first number
+            being the number of the column and the second the one of the row.
+            Both start counting with 1.
+            You can use the <tt>COLUMN()</tt> function in Excel or enable
+            Excel's R1C1 reference style to get the column number.
+            Examples: "1:5", "5:96" or "413:23914"
+          </li>
+        </ul>
       </p>
       <p>
         The remaining columns contain the replacement values for the specified
@@ -44,16 +54,17 @@
         and the column type should be the same as the (desired) column type in
         the updated sheet. If all columns but the cell address contain a missing
         value, the replacement value is a blank cell or the string specified in
-        the “Replace missing values by“ field.
+        the “Replace missing values by” field.
       </p>
       <p>
-        The formatting of existing cells, rows and columns in the Excel sheet will be preserved.
+        The formatting of existing cells, rows and columns in the Excel sheet
+        will be preserved.
       </p>
       <p>
         In the following table <b>?</b> stands for a missing value.
         This example table would write the string "Ok" to Excel cell A5 and the
-        number 50 to cell E96. The cell OZ23124 will be cleared if no
-        alternate missing value is defined.
+        number 50 to cell E96 (in number address style). The cell OZ23914
+        will be cleared if no alternate missing value is defined.
       </p>
         <table>
           <tr>
@@ -67,12 +78,12 @@
             <td><b>?</b></td>
           </tr>
           <tr>
-            <td>E96</td>
+            <td>5:96</td>
             <td><b>?</b></td>
             <td>50</td>
           </tr>
           <tr>
-            <td>OZ23124</td>
+            <td>OZ23914</td>
             <td><b>?</b></td>
             <td><b>?</b></td>
           </tr>

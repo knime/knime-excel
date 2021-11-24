@@ -21,7 +21,7 @@
       <node
             category-path="/io/read"
             deprecated="false"
-            factory-class="org.knime.ext.poi3.node.io.filehandling.excel.sheets.updater.ExcelSheetUpdaterNodeFactory">
+            factory-class="org.knime.ext.poi3.node.io.filehandling.excel.updater.cell.ExcelCellUpdaterNodeFactory">
       </node>
    </extension>
    <extension
