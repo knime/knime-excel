@@ -38,6 +38,7 @@ try {
                         "knime-database",
                         "knime-kerberos",
                         "knime-streaming",
+                        "knime-xml"
                         ]
                 ],
                 sidecarContainers: [
@@ -49,7 +50,13 @@ try {
             workflowTests.runFilehandlingTests (
                 dependencies: [
                     repositories: [
-                        "knime-excel", "knime-jep", "knime-js-base", "knime-datageneration", "knime-expressions", "knime-streaming"
+                        "knime-datageneration",
+                        "knime-excel",
+                        "knime-expressions",
+                        "knime-jep",
+                        "knime-js-base",
+                        "knime-streaming",
+                        "knime-xml"
                     ]
                 ],
             )
