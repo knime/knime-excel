@@ -50,11 +50,12 @@
       </p>
       <p>
         The remaining columns contain the replacement values for the specified
-        cells. A replacement value should appear in at most one column per row,
-        and the column type should be the same as the (desired) column type in
-        the updated sheet. If all columns but the cell address contain a missing
-        value, the replacement value is a blank cell or the string specified in
-        the “Replace missing values by” field.
+        cells. A replacement value should appear in at most one column per row
+        and the remaining cells should be left empty (i.e. only contain missing
+        values). The column type should be the same as the (desired) column
+        type in the updated sheet. If all cells in a row but the cell address
+        contain missing values, the replacement value is a blank cell or the
+        string specified in the “Replace missing values by” field.
       </p>
       <p>
         The formatting of existing cells, rows and columns in the Excel sheet

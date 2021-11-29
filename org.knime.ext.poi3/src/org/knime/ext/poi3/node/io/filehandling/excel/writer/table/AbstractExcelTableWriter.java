@@ -140,11 +140,12 @@ abstract class AbstractExcelTableWriter implements ExcelTableWriter {
         CheckUtils.checkSetting(curSheet != null, "No sheet called '%s' found!", sheetName);
 
         long rowIdx = 0;
+        final var spec = coordinatesAndValues.getDataTableSpec();
         DataRow row;
         while ((row = coordinatesAndValues.poll()) != null) {
             monitor.checkCanceled();
             monitor.updateProgress(sheetName, rowIdx);
-            sheetWriter.writeCellWithCoordinate(curSheet, row, coordinateColumnIndex);
+            sheetWriter.writeCellWithCoordinate(curSheet, row, coordinateColumnIndex, spec);
             ++rowIdx;
         }
         finalizeSheet(sheetWriter, curSheet);

@@ -71,7 +71,7 @@ import org.knime.ext.poi3.node.io.filehandling.excel.writer.image.ExcelImageWrit
  *
  * @author Moditha Hewasinghage, KNIME GmbH, Berlin, Germany
  * @author Jannik Löscher, KNIME GmbH, Konstanz, Germany
- * @see ExcelSheetCellCoordinateWriter#writeCellWithCoordinate(Sheet, DataRow, int)
+ * @see ExcelSheetCellCoordinateWriter#writeCellWithCoordinate(Sheet, DataRow, int, DataTableSpec)
  */
 public final class ExcelSheetCellCoordinateWriter extends ExcelSheetWriter {
 
@@ -97,11 +97,13 @@ public final class ExcelSheetCellCoordinateWriter extends ExcelSheetWriter {
      *            {@link XMLCellWriterFactory}.
      * @param coordinateColumn the index of the column that contains the coordinates. The coordinate value must be
      *            non-missing string value and will be parsed as a POI cell address.
+     * @param spec the table specification of the table containing the coordinates and values. It is used to provide
+     *            better error messages.
      * @throws IOException - If the cell could not be written
      * @throws InvalidSettingsException - If there are multiple values to insert found in the row
      */
-    public void writeCellWithCoordinate(final Sheet sheet, final DataRow dataRow, final int coordinateColumn)
-        throws IOException, InvalidSettingsException {
+    public void writeCellWithCoordinate(final Sheet sheet, final DataRow dataRow, final int coordinateColumn,
+        final DataTableSpec spec) throws IOException, InvalidSettingsException {
 
         var idx = 0;
         var found = false;
@@ -117,8 +119,9 @@ public final class ExcelSheetCellCoordinateWriter extends ExcelSheetWriter {
                     writeCellToSheetAtCoordinate(sheet, cellCoordinate, dataCell, idx);
                     found = true;
                 } else if (!dataCell.isMissing()) {
-                    CheckUtils.checkSetting(false, "Found second non-missing value at column %d for cell %s to update!",
-                        idx + 1, cellCoordinate);
+                    CheckUtils.checkSetting(false,
+                        "Found second non-missing value in row \"%s\" and column \"%s\" (%d) for cell %s to update!",
+                        dataRow.getKey(), spec.getColumnSpec(idx).getName(), idx + 1, cellCoordinate);
                 }
             }
             idx++;
@@ -177,7 +180,7 @@ public final class ExcelSheetCellCoordinateWriter extends ExcelSheetWriter {
             try {
                 ref = new CellAddress(cellCoordinate);
             } catch (NumberFormatException e) {
-                throw new InvalidSettingsException("Resolved address of '" + cellCoordinate + "' has invalid row!");
+                throw new InvalidSettingsException("Resolved address '" + cellCoordinate + "' is invalid!");
             }
         }
         CheckUtils.checkSetting(ref.getRow() >= 0 && ref.getColumn() >= 0,
