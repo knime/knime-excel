@@ -19,7 +19,7 @@
             factory-class="org.knime.ext.poi3.node.io.filehandling.excel.sheets.ExcelSheetReaderNodeFactory">
       </node>
       <node
-            category-path="/io/read"
+            category-path="/io/write"
             deprecated="false"
             factory-class="org.knime.ext.poi3.node.io.filehandling.excel.updater.cell.ExcelCellUpdaterNodeFactory">
       </node>
