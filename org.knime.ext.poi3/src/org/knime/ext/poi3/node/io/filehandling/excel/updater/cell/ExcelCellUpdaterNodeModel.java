@@ -84,11 +84,8 @@ import org.knime.core.node.streamable.PortOutput;
 import org.knime.core.node.streamable.RowInput;
 import org.knime.core.node.streamable.StreamableOperator;
 import org.knime.core.node.util.CheckUtils;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.cell.ExcelCellWriterFactory;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.cellcoordinate.ExcelCellUpdater;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.ExcelTableConfig;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.ExcelTableWriter;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.WorkbookCreator;
+import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.WorkbookHandler;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelFormat;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelProgressMonitor;
 import org.knime.filehandling.core.connections.FSFiles;
@@ -226,9 +223,10 @@ public final class ExcelCellUpdaterNodeModel extends NodeModel {
             checkOutputFile(outputPath, destFileChooser.getFileOverwritePolicy());
 
             exec.setMessage("Opening excel file");
-            final var wbCreator = getWorkbookCreator(inputPath);
             final var writer = new ExcelCellUpdater(m_cfg);
-            writer.writeTables(outputPath, tables, coordinateColumnIndices, wbCreator, exec, m);
+            try (final var wbHandler = getWorkbookHandler(inputPath)) {
+                writer.writeTables(outputPath, tables, coordinateColumnIndices, wbHandler, exec, m);
+            }
         }
     }
 
@@ -236,8 +234,8 @@ public final class ExcelCellUpdaterNodeModel extends NodeModel {
         return exec.createSubExecutionContext(MAX_EXCEL_PROGRESS);
     }
 
-    private static AppendWorkbookCreator getWorkbookCreator(final Path path) {
-        return new AppendWorkbookCreator(path);
+    private static AppendWorkbookHandler getWorkbookHandler(final Path path) {
+        return new AppendWorkbookHandler(path);
     }
 
     private static void createOutputFoldersIfMissing(final Path outputFolder, final boolean createMissingFolders)
@@ -334,32 +332,20 @@ public final class ExcelCellUpdaterNodeModel extends NodeModel {
     }
 
     /**
-     * {@link WorkbookCreator} for existing excel files.
+     * {@link WorkbookHandler} for existing excel files.
      *
      * @author Moditha Hewasinghage, KNIME GmbH, Berlin, Germany
      */
-    public static class AppendWorkbookCreator implements WorkbookCreator {
+    public static class AppendWorkbookHandler extends WorkbookHandler {
 
-        private final ExcelFormat m_format;
-
-        private final Path m_path;
-
-        AppendWorkbookCreator(final Path path) {
-            m_path = path;
-            m_format = getExcelFormat(path.getFileName().toString());
+        AppendWorkbookHandler(final Path path) {
+            super(getExcelFormat(path.getFileName().toString()), path);
         }
 
         @Override
         public Workbook createWorkbook() throws IOException {
-            final var input = new BufferedInputStream(Files.newInputStream(m_path));
+            final var input = new BufferedInputStream(Files.newInputStream(m_inputPath));
             return WorkbookFactory.create(input);
-        }
-
-        @Override
-        public ExcelTableWriter createTableWriter(final ExcelTableConfig cfg,
-            final ExcelCellWriterFactory cellWriterFactory) {
-            CheckUtils.checkState(m_format != null, "Cannot create a table writer before creating a workbook");
-            return m_format.createWriter(cfg, cellWriterFactory);
         }
 
     }
