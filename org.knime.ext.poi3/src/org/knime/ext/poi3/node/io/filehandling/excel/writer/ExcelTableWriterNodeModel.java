@@ -88,11 +88,8 @@ import org.knime.core.node.streamable.StreamableOperator;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.core.util.DesktopUtil;
 import org.knime.core.util.FileUtil;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.cell.ExcelCellWriterFactory;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.ExcelMultiTableWriter;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.ExcelTableConfig;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.ExcelTableWriter;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.WorkbookCreator;
+import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.WorkbookHandler;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelFormat;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelProgressMonitor;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.SheetUtils;
@@ -190,9 +187,13 @@ final class ExcelTableWriterNodeModel extends NodeModel {
             m_statusConsumer.setWarningsIfRequired(this::setWarningMessage);
             createOutputFoldersIfMissing(outputPath.toAbsolutePath().getParent(), fileChooser.isCreateMissingFolders());
             exec.setMessage("Opening excel file");
-            final WorkbookCreator wbCreator = getWorkbookCreator(fileChooser.getFileOverwritePolicy(), outputPath);
             final ExcelMultiTableWriter writer = new ExcelMultiTableWriter(m_cfg);
-            writer.writeTables(outputPath, tables, wbCreator, exec, m);
+
+            try (final WorkbookHandler wbHandler =
+                getWorkbookHandler(fileChooser.getFileOverwritePolicy(), outputPath)) {
+                writer.writeTables(outputPath, tables, wbHandler, exec, m);
+            }
+
             if (m_cfg.getOpenFileAfterExecModel().getBooleanValue() && !isHeadlessOrRemote()
                 && categoryIsSupported(outputPath.toFSLocation().getFSCategory())) {
                 openFile(fileChooser, outputPath);
@@ -253,18 +254,19 @@ final class ExcelTableWriterNodeModel extends NodeModel {
         return exec.createSubExecutionContext(MAX_EXCEL_PROGRESS);
     }
 
-    private WorkbookCreator getWorkbookCreator(final FileOverwritePolicy fileOverwritePolicy, final Path path)
+    private WorkbookHandler getWorkbookHandler(final FileOverwritePolicy fileOverwritePolicy, final Path path)
         throws IOException {
         final boolean fileExists = FSFiles.exists(path);
-        final ExcelFormat format = m_cfg.getExcelFormat();
+        final var format = m_cfg.getExcelFormat();
+
         if (fileExists && fileOverwritePolicy == FileOverwritePolicy.APPEND) {
-            return new WriteWorkbookCreator(format, path, m_cfg.evaluate());
+            return new WriteWorkbookHandler(format, path, m_cfg.evaluate());
         } else {
             if (fileExists && fileOverwritePolicy == FileOverwritePolicy.FAIL) {
                 throw new IOException(String.format(
                     "Output file '%s' exists and must not be overwritten due to user settings.", path.toString()));
             }
-            return new WriteWorkbookCreator(format, m_cfg.evaluate());
+            return new WriteWorkbookHandler(format, m_cfg.evaluate());
         }
     }
 
@@ -345,15 +347,11 @@ final class ExcelTableWriterNodeModel extends NodeModel {
     }
 
     /**
-     * {@link WorkbookCreator} for existing excel files.
+     * {@link WorkbookHandler} for existing excel files.
      *
      * @author Mark Ortmann, KNIME GmbH, Berlin, Germany
      */
-    private static class WriteWorkbookCreator implements WorkbookCreator {
-
-        private final ExcelFormat m_format;
-
-        private final Path m_path;
+    private static class WriteWorkbookHandler extends WorkbookHandler {
 
         private final boolean m_evaluateFormulas;
 
@@ -362,25 +360,24 @@ final class ExcelTableWriterNodeModel extends NodeModel {
          *
          * @param path path to the excel file
          */
-        WriteWorkbookCreator(final ExcelFormat format, final boolean evaluateFormulas) {
+        WriteWorkbookHandler(final ExcelFormat format, final boolean evaluateFormulas) {
             this(format, null, evaluateFormulas);
         }
 
-        WriteWorkbookCreator(final ExcelFormat format, final Path path, final boolean evaluateFormulas) {
-            m_format = format;
-            m_path = path;
+        WriteWorkbookHandler(final ExcelFormat format, final Path path, final boolean evaluateFormulas) {
+            super(format, path);
             m_evaluateFormulas = evaluateFormulas;
         }
 
         @Override
         @SuppressWarnings("resource")
         public Workbook createWorkbook() throws IOException {
-            if (m_path == null) {
+            if (m_inputPath == null) {
                 return m_format.getWorkbook();
             }
 
             // if create fails the input stream gets closed otherwise it's closed when invoking close on the workbook
-            final var inp = new BufferedInputStream(Files.newInputStream(m_path));
+            final var inp = new BufferedInputStream(Files.newInputStream(m_inputPath));
             var wb = WorkbookFactory.create(inp);
             if (wb instanceof HSSFWorkbook) {
                 if (m_format != ExcelFormat.XLS) {
@@ -388,7 +385,7 @@ final class ExcelTableWriterNodeModel extends NodeModel {
                     throw new IOException(String.format(
                         "Wrong format: The file '%s' is xls instead of xlsx or xlsm formatted. Please adapt the "
                             + "configuration",
-                        m_path));
+                        m_inputPath));
                 }
             } else if (wb instanceof XSSFWorkbook) {
                 if (m_format == ExcelFormat.XLS) {
@@ -396,24 +393,19 @@ final class ExcelTableWriterNodeModel extends NodeModel {
                     throw new IOException(String.format(
                         "Wrong format: The file '%s' is xlsx or xlsm instead of xls formatted. Please adapt the "
                             + "configuration",
-                        m_path));
+                        m_inputPath));
                 }
+                // if we need to evaluate formulas we cannot use the faster streaming model (SXSSF), but have to use
+                // the XSSF model, which keeps everything in memory
                 if (!m_evaluateFormulas) {
                     wb = new SXSSFWorkbook((XSSFWorkbook)wb);
                 }
             } else {
                 wb.close();
                 throw new IOException(
-                    String.format("Unsupported format: Unable to append spreadsheets to %s", m_path.toString()));
+                    String.format("Unsupported format: Unable to append spreadsheets to %s", m_inputPath.toString()));
             }
             return wb;
-        }
-
-        @Override
-        public ExcelTableWriter createTableWriter(final ExcelTableConfig cfg,
-            final ExcelCellWriterFactory cellWriterFactory) {
-            CheckUtils.checkState(m_format != null, "Cannot create a table writer before creating a workbook");
-            return m_format.createWriter(cfg, cellWriterFactory);
         }
 
     }

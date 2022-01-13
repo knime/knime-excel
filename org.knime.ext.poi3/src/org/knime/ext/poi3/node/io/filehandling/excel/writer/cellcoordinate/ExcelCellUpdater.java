@@ -48,25 +48,19 @@
  */
 package org.knime.ext.poi3.node.io.filehandling.excel.writer.cellcoordinate;
 
-import java.io.BufferedOutputStream;
 import java.io.IOException;
-import java.nio.file.Path;
 
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.streamable.RowInput;
 import org.knime.ext.poi3.node.io.filehandling.excel.updater.cell.ExcelCellUpdaterConfig;
-import org.knime.ext.poi3.node.io.filehandling.excel.updater.cell.ExcelCellUpdaterNodeModel.AppendWorkbookCreator;
+import org.knime.ext.poi3.node.io.filehandling.excel.updater.cell.ExcelCellUpdaterNodeModel.AppendWorkbookHandler;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.cell.ExcelCellWriterFactory;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.ExcelTableConfig;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.WorkbookCreator;
+import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.WorkbookHandler;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelProgressMonitor;
-import org.knime.filehandling.core.connections.FSFiles;
 import org.knime.filehandling.core.connections.FSPath;
-import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.FileOverwritePolicy;
 
 /**
  * This writer updates individual cells in sheets of an excel file and finally stores this excel file to disc.
@@ -94,7 +88,7 @@ public final class ExcelCellUpdater {
      * @param outPath the location the excel file has to be written to
      * @param tables the tables to be written to individual sheets
      * @param coordinateColumnIndices the indices of the columns in the tables containing the coordinates
-     * @param wbCreator the {@link WorkbookCreator}
+     * @param wbHandler the {@link WorkbookHandler}
      * @param exec the {@link ExecutionContext}
      * @param m the {@link ExcelProgressMonitor}
      * @throws IOException - If the file could not be written to the output path
@@ -103,55 +97,31 @@ public final class ExcelCellUpdater {
      * @throws InterruptedException - If the execution was canceled by the user
      */
     public void writeTables(final FSPath outPath, final RowInput[] tables, final int[] coordinateColumnIndices,
-        final AppendWorkbookCreator wbCreator, final ExecutionContext exec, final ExcelProgressMonitor m)
+        final AppendWorkbookHandler wbHandler, final ExecutionContext exec, final ExcelProgressMonitor m)
         throws IOException, InvalidSettingsException, CanceledExecutionException, InterruptedException {
         @SuppressWarnings("resource") // try-with-resources does not work in case of SXSSFWorkbooks
-        final var wb = wbCreator.createWorkbook();
+        final var wb = wbHandler.getWorkbook();
         final var creationHelper = wb.getCreationHelper();
         final var cellWriterFactory =
             ExcelCellWriterFactory.createFactory(wb, m_cfg.getMissingValPattern().orElse(null));
-        try {
 
-            final String[] sheetNames = m_cfg.getSheetNames();
-            for (var i = 0; i < tables.length; i++) {
-                exec.checkCanceled();
-                final var rowInput = tables[i];
-                final var writer = wbCreator.createTableWriter(m_cfg, cellWriterFactory);
-                writer.writeCellsFromCoordinates(wb, sheetNames[i], rowInput, coordinateColumnIndices[i], m);
-            }
-            if (m_cfg.evaluate()) {
-                final var formulaCtx = exec.createSubExecutionContext(0.05);
-                formulaCtx.setMessage("Evaluating formulas");
-                creationHelper.createFormulaEvaluator().evaluateAll();
-                formulaCtx.setProgress(1);
-            }
-
-            exec.setMessage(String.format("Saving excel file to '%s'", outPath.toString()));
-            saveFile(outPath, exec, wb);
-        } finally {
-            closeWorkbook(wb);
+        final String[] sheetNames = m_cfg.getSheetNames();
+        for (var i = 0; i < tables.length; i++) {
+            exec.checkCanceled();
+            final var rowInput = tables[i];
+            final var writer = wbHandler.createTableWriter(m_cfg, cellWriterFactory);
+            writer.writeCellsFromCoordinates(wb, sheetNames[i], rowInput, coordinateColumnIndices[i], m);
         }
-    }
-
-    private static void closeWorkbook(final Workbook wb) throws IOException {
-        if (wb instanceof SXSSFWorkbook) {
-            ((SXSSFWorkbook)wb).dispose();
+        if (m_cfg.evaluate()) {
+            final var formulaCtx = exec.createSubExecutionContext(0.05);
+            formulaCtx.setMessage("Evaluating formulas");
+            creationHelper.createFormulaEvaluator().evaluateAll();
+            formulaCtx.setProgress(1);
         }
-        wb.close();
-    }
 
-    private static void saveFile(final FSPath outPath, final ExecutionContext exec, final Workbook wb)
-        throws IOException {
-        saveWorkbook(wb, outPath);
-        closeWorkbook(wb);
+        exec.setMessage(String.format("Saving excel file to '%s'", outPath.toString()));
+        wbHandler.saveFile(outPath);
         exec.setProgress(1);
-    }
-
-    private static void saveWorkbook(final Workbook wb, final Path tmpFile) throws IOException {
-        try (final var out = FSFiles.newOutputStream(tmpFile, FileOverwritePolicy.OVERWRITE.getOpenOptions());
-                final var buffer = new BufferedOutputStream(out)) {
-            wb.write(buffer);
-        }
     }
 
 }
