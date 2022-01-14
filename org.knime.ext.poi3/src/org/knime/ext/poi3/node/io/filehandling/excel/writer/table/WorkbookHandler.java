@@ -52,8 +52,8 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.knime.core.node.NodeLogger;
@@ -150,7 +150,11 @@ public abstract class WorkbookHandler implements AutoCloseable {
             doSaveFile(savePath);
             close();
             if (savePath != outPath) {
-                Files.copy(savePath, outPath, StandardCopyOption.REPLACE_EXISTING);
+                // this is effectively a file copy, but we can't use Files.copy() because it tries
+                // to delete the target file, which fails for the Custom/KNIME URL file system
+                try (var in = Files.newInputStream(savePath); var out = Files.newOutputStream(outPath)) {
+                    IOUtils.copyLarge(in, out);
+                }
             }
         } finally {
             if (savePath != outPath) {
