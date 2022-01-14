@@ -60,6 +60,12 @@ import org.apache.poi.util.Units;
  */
 public final class ExcelConstants {
 
+    /** XLSX file extension */
+    public static final String XLSX = ".xlsx";
+
+    /** XLS file extension */
+    public static final String XLS = ".xls";
+
     /** Pattern storing all the characters that are prohibited for sheet name generation by excel. */
     public static final Pattern ILLEGAL_SHEET_NAME_PATTERN = Pattern.compile("[\\[\\]/\\?\\*\\\\:]");
 

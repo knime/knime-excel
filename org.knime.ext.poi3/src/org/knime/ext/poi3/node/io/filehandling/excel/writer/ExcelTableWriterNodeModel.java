@@ -258,13 +258,13 @@ final class ExcelTableWriterNodeModel extends NodeModel {
         final boolean fileExists = FSFiles.exists(path);
         final ExcelFormat format = m_cfg.getExcelFormat();
         if (fileExists && fileOverwritePolicy == FileOverwritePolicy.APPEND) {
-            return new WriteWorkbookCreator(format, path);
+            return new WriteWorkbookCreator(format, path, m_cfg.evaluate());
         } else {
             if (fileExists && fileOverwritePolicy == FileOverwritePolicy.FAIL) {
                 throw new IOException(String.format(
                     "Output file '%s' exists and must not be overwritten due to user settings.", path.toString()));
             }
-            return new WriteWorkbookCreator(format);
+            return new WriteWorkbookCreator(format, m_cfg.evaluate());
         }
     }
 
@@ -355,18 +355,21 @@ final class ExcelTableWriterNodeModel extends NodeModel {
 
         private final Path m_path;
 
+        private final boolean m_evaluateFormulas;
+
         /**
          * Constructor.
          *
          * @param path path to the excel file
          */
-        WriteWorkbookCreator(final ExcelFormat format) {
-            this(format, null);
+        WriteWorkbookCreator(final ExcelFormat format, final boolean evaluateFormulas) {
+            this(format, null, evaluateFormulas);
         }
 
-        WriteWorkbookCreator(final ExcelFormat format, final Path path) {
+        WriteWorkbookCreator(final ExcelFormat format, final Path path, final boolean evaluateFormulas) {
             m_format = format;
             m_path = path;
+            m_evaluateFormulas = evaluateFormulas;
         }
 
         @Override
@@ -375,9 +378,10 @@ final class ExcelTableWriterNodeModel extends NodeModel {
             if (m_path == null) {
                 return m_format.getWorkbook();
             }
+
             // if create fails the input stream gets closed otherwise it's closed when invoking close on the workbook
-            BufferedInputStream inp = new BufferedInputStream(Files.newInputStream(m_path));
-            Workbook wb = WorkbookFactory.create(inp);
+            final var inp = new BufferedInputStream(Files.newInputStream(m_path));
+            var wb = WorkbookFactory.create(inp);
             if (wb instanceof HSSFWorkbook) {
                 if (m_format != ExcelFormat.XLS) {
                     wb.close();
@@ -394,7 +398,9 @@ final class ExcelTableWriterNodeModel extends NodeModel {
                             + "configuration",
                         m_path));
                 }
-                wb = new SXSSFWorkbook((XSSFWorkbook)wb);
+                if (!m_evaluateFormulas) {
+                    wb = new SXSSFWorkbook((XSSFWorkbook)wb);
+                }
             } else {
                 wb.close();
                 throw new IOException(
