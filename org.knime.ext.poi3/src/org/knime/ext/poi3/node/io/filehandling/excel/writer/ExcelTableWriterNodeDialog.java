@@ -198,7 +198,7 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
         m_replaceMissings = new DialogComponentBoolean(m_cfg.getReplaceMissingsModel(), "Replace missing values by");
         m_missingValPattern = new DialogComponentString(m_cfg.getMissingValPatternModel(), null);
 
-        m_evaluateFormulas = new DialogComponentBoolean(m_cfg.getEvaluateFormulasModel(), "Evaluate formulas");
+        m_evaluateFormulas = new DialogComponentBoolean(m_cfg.getEvaluateFormulasModel(), "Evaluate formulas (leave unchecked if uncertain; see node description for details)");
 
         m_autoSize = new DialogComponentBoolean(m_cfg.getAutoSizeModel(), "Autosize columns");
         m_landscape = new DialogComponentButtonGroup(m_cfg.getLandscapeModel(), null, false, Orientation.values());

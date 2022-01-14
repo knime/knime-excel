@@ -165,7 +165,11 @@
         <option name="Evaluate formulas">
             If checked, all formulas in the file will be evaluated after the sheet has been written. This is useful
             if other sheets in the file refer to the data just written and their content needs updating. This option is
-            only relevant if the append option is selected.
+            only relevant if the append option is selected. This can cause errors when there are functions that are
+            not implemented by the underlying Apache POI 
+            library.
+            Note: For xlsx files, evaluation requires significantly more memory as the whole file 
+            needs to be kept in memory (xls files are anyway loaded completely into memory). 
         </option>
         <option name="Autosize columns">
         	Fits each column's width to its content.
