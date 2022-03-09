@@ -180,7 +180,7 @@ abstract class AbstractExcelTableWriter implements ExcelTableWriter {
     }
 
     private Pair<Sheet, Boolean> getSheet(final Workbook workbook, final String curSheetName,
-        final ExcelSheetWriter sheetWriter) {
+        final ExcelSheetWriter sheetWriter) throws InvalidSettingsException {
         final var pair = getOrCreateSheet(workbook, curSheetName, sheetWriter);
         final var sheet = pair.getFirst();
         if (m_cfg.useAutoSize() && sheet instanceof SXSSFSheet) {
@@ -192,7 +192,7 @@ abstract class AbstractExcelTableWriter implements ExcelTableWriter {
     }
 
     private Pair<Sheet, Boolean> getOrCreateSheet(final Workbook workbook, final String curSheetName,
-        final ExcelSheetWriter sheetWriter) {
+        final ExcelSheetWriter sheetWriter) throws InvalidSettingsException {
         final var sheetIdx = workbook.getSheetIndex(curSheetName);
         final Sheet sheet;
         var isNew = sheetIdx == -1;
@@ -204,9 +204,15 @@ abstract class AbstractExcelTableWriter implements ExcelTableWriter {
                 break;
             case OVERWRITE:
                 isNew = true;
+                // AP-18198: seems an Apache POI bug,
+                // therefore first create a new sheet then remove an existing sheet
+                sheet = workbook.createSheet();
+                workbook.setSheetOrder(sheet.getSheetName(), sheetIdx + 1);
                 workbook.removeSheetAt(sheetIdx);
-                // fallthrough
+                workbook.setSheetName(sheetIdx, curSheetName);
+                break;
             case FAIL:
+                isNew = true;
                 sheet = workbook.createSheet(curSheetName);
                 break;
             default:
