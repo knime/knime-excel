@@ -205,11 +205,30 @@ abstract class AbstractExcelTableWriter implements ExcelTableWriter {
             case OVERWRITE:
                 isNew = true;
                 // AP-18198: seems an Apache POI bug,
-                // therefore first create a new sheet then remove an existing sheet
-                sheet = workbook.createSheet();
-                workbook.setSheetOrder(sheet.getSheetName(), sheetIdx + 1);
+                //if the sheet that we remove was selected (e.g. active) the subsequent sheet is
+                //automatically selected which unhides it if it was hidden.
+                //Just to be sure we do the following procedure always since removing the sheet could cause
+                //other sheets to be unhidden if a sheet after the sheet that we overwrite was active and
+                //followed by a hidden sheet.
+
+                //We get the currently active sheet index
+                final int activeSheetIdx = workbook.getActiveSheetIndex();
+                //create a temp sheet at the end of the workbook
+                final Sheet tempSheet = workbook.createSheet();
+                //make the temp sheet the active sheet
+                final int tempSheetIdx = workbook.getSheetIndex(tempSheet);
+                workbook.setActiveSheet(tempSheetIdx);
+                //now that the temp sheet is active we can safely remove the sheet that should be overwritten
                 workbook.removeSheetAt(sheetIdx);
-                workbook.setSheetName(sheetIdx, curSheetName);
+                //create sheet with name during creation instead of setting it later which cause
+                //problems with references see AP-18801
+                sheet = workbook.createSheet(curSheetName);
+                //move the new sheet to its original position
+                workbook.setSheetOrder(curSheetName, sheetIdx);
+                //restore the active sheet
+                workbook.setActiveSheet(activeSheetIdx);
+                //remove the temporary sheet
+                workbook.removeSheetAt(tempSheetIdx);
                 break;
             case FAIL:
                 isNew = true;
