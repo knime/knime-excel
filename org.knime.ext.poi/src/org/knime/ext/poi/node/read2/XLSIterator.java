@@ -351,9 +351,9 @@ class XLSIterator extends CloseableRowIterator {
         }
         // determine the type
         switch (cell.getCellType()) {
-        case Cell.CELL_TYPE_BLANK:
+        case BLANK:
             return DataType.getMissingCell();
-        case Cell.CELL_TYPE_BOOLEAN:
+        case BOOLEAN:
             boolean b = cell.getBooleanCellValue();
             if (expectedType.isCompatible(StringValue.class)) {
                 return new StringCell(Boolean.toString(b));
@@ -363,7 +363,7 @@ class XLSIterator extends CloseableRowIterator {
                                 + ", sheet '" + m_settings.getSheetName(m_workBook)
                                 + "', row " + cell.getRowIndex());
             }
-        case Cell.CELL_TYPE_ERROR:
+        case ERROR:
             if (m_settings.getUseErrorPattern()) {
                 if (expectedType.isCompatible(StringValue.class)) {
                     return new StringCell(m_settings.getErrorPattern());
@@ -377,7 +377,7 @@ class XLSIterator extends CloseableRowIterator {
             } else {
                 return DataType.getMissingCell();
             }
-        case Cell.CELL_TYPE_FORMULA:
+        case FORMULA:
             CellValue cellValue = null;
             // Check if the formula is the replacement formula for infinity (see XLSWriter2.write())
             if (cell.getCellFormula().equals("1/0")) {
@@ -420,7 +420,7 @@ class XLSIterator extends CloseableRowIterator {
                 return errCell;
             }
             switch (cellValue.getCellType()) {
-            case Cell.CELL_TYPE_BOOLEAN:
+            case BOOLEAN:
                 boolean bvalue = cell.getBooleanCellValue();
                 if (expectedType.isCompatible(StringValue.class)) {
                     return new StringCell(Boolean.toString(bvalue));
@@ -430,7 +430,7 @@ class XLSIterator extends CloseableRowIterator {
                                     + ", sheet '" + m_settings.getSheetName(m_workBook)
                                     + "', row " + cell.getRowIndex());
                 }
-            case Cell.CELL_TYPE_NUMERIC:
+            case NUMERIC:
                 if (expectedType.isCompatible(DateAndTimeValue.class)) {
                     if (DateUtil.isCellDateFormatted(cell)) {
                         Date date = cell.getDateCellValue();
@@ -471,7 +471,7 @@ class XLSIterator extends CloseableRowIterator {
                                     + ", sheet '" + m_settings.getSheetName(m_workBook)
                                     + "', row " + cell.getRowIndex());
                 }
-            case Cell.CELL_TYPE_STRING:
+            case STRING:
                 if (expectedType.isCompatible(StringValue.class)) {
                     String s = cell.getRichStringCellValue().getString();
                     if (s == null || s.equals(m_settings.getMissValuePattern())) {
@@ -485,9 +485,9 @@ class XLSIterator extends CloseableRowIterator {
                                     + ", sheet '" + m_settings.getSheetName(m_workBook)
                                     + "', row " + cell.getRowIndex());
                 }
-            case Cell.CELL_TYPE_BLANK:
+            case BLANK:
                 return DataType.getMissingCell();
-            case Cell.CELL_TYPE_ERROR:
+            case ERROR:
                 if (m_settings.getUseErrorPattern()) {
                     if (expectedType.isCompatible(StringValue.class)) {
                         return new StringCell(m_settings.getErrorPattern());
@@ -501,13 +501,13 @@ class XLSIterator extends CloseableRowIterator {
                 } else {
                     return DataType.getMissingCell();
                 }
-            case Cell.CELL_TYPE_FORMULA:
+            case FORMULA:
                 throw new IllegalStateException(
                         "Invalid formula result type in column idx " + colIdx
                                 + ", sheet '" + m_settings.getSheetName(m_workBook)
                                 + "', row " + cell.getRowIndex());
             }
-        case Cell.CELL_TYPE_NUMERIC:
+        case NUMERIC:
             if (expectedType.isCompatible(DateAndTimeValue.class)) {
                 if (DateUtil.isCellDateFormatted(cell)) {
                     Date date = cell.getDateCellValue();
@@ -548,7 +548,7 @@ class XLSIterator extends CloseableRowIterator {
                                 + ", sheet '" + m_settings.getSheetName(m_workBook)
                                 + "', row " + cell.getRowIndex());
             }
-        case Cell.CELL_TYPE_STRING:
+        case STRING:
             if (expectedType.isCompatible(StringValue.class)) {
                 String s = cell.getRichStringCellValue().getString();
                 if (s == null || s.equals(m_settings.getMissValuePattern())) {

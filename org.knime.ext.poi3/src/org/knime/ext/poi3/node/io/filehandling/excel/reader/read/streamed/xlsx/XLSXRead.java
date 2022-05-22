@@ -54,9 +54,9 @@ import java.nio.file.Path;
 
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.apache.poi.ooxml.util.SAXHelper;
 import org.apache.poi.openxml4j.exceptions.OpenXML4JException;
 import org.apache.poi.openxml4j.opc.OPCPackage;
-import org.apache.poi.util.XMLHelper;
 import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
 import org.apache.poi.xssf.eventusermodel.XSSFReader;
 import org.apache.poi.xssf.eventusermodel.XSSFReader.SheetIterator;
@@ -99,7 +99,7 @@ public final class XLSXRead extends AbstractStreamedRead {
         try {
             m_opc = OPCPackage.open(inputStream);
             final XSSFReader xssfReader = new XSSFReader(m_opc);
-            final XMLReader xmlReader = XMLHelper.newXMLReader();
+            final XMLReader xmlReader = SAXHelper.newXMLReader();
             // disable DTD to prevent almost all XXE attacks, XMLHelper.newXMLReader() did set further security features
             xmlReader.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
             final ReadOnlySharedStringsTable sharedStringsTable = new ReadOnlySharedStringsTable(m_opc, false);

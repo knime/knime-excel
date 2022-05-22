@@ -73,10 +73,10 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.apache.poi.ooxml.util.SAXHelper;
 import org.apache.poi.openxml4j.exceptions.OpenXML4JException;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
-import org.apache.poi.util.XMLHelper;
 import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
 import org.apache.poi.xssf.eventusermodel.XSSFReader;
 import org.knime.core.node.InvalidSettingsException;
@@ -524,7 +524,7 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
             throws IOException, SAXException, ParserConfigurationException, OpenXML4JException {
             try (final var opc = OPCPackage.open(Files.newInputStream(path))) {
                 final var xssfReader = new XSSFReader(opc);
-                final var xmlReader = XMLHelper.newXMLReader();
+                final var xmlReader = SAXHelper.newXMLReader();
                 // disable DTD to prevent almost all XXE attacks, XMLHelper.newXMLReader() did set further security features
                 xmlReader.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
                 final var sharedStringsTable = new ReadOnlySharedStringsTable(opc, false);

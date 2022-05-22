@@ -93,8 +93,10 @@ import java.util.stream.Collectors;
 import org.apache.commons.io.input.CountingInputStream;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ooxml.util.SAXHelper;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.CellValue;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.DateUtil;
@@ -106,7 +108,6 @@ import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.ss.util.CellAddress;
 import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.util.LocaleUtil;
-import org.apache.poi.util.SAXHelper;
 import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
 import org.apache.poi.xssf.eventusermodel.XSSFReader;
 import org.apache.poi.xssf.eventusermodel.XSSFReader.SheetIterator;
@@ -674,7 +675,7 @@ final class CachedExcelTable {
      *            ).
      * @param use1904windowing
      */
-    private Content createContentFromXLCell(final Cell cell, final FormulaEvaluator evaluator, final int cellType, final boolean use1904windowing) {
+    private Content createContentFromXLCell(final Cell cell, final FormulaEvaluator evaluator, final CellType cellType, final boolean use1904windowing) {
         final int colIdx = cell.getColumnIndex();
         DataFormatter formatter = new DataFormatter();
         Format cellFormat;
@@ -684,16 +685,16 @@ final class CachedExcelTable {
             cellFormat = null;
         }
         switch (cellType) {
-            case Cell.CELL_TYPE_BLANK:
+            case BLANK:
                 return new Content(null, ActualDataType.MISSING);
-            case Cell.CELL_TYPE_BOOLEAN:
+            case BOOLEAN:
                 boolean b = cell.getBooleanCellValue();
                 return new Content(Boolean.toString(b),
                     cellFormat == null ? Boolean.toString(b) : cellFormat.format(Double.valueOf(b ? 1d : 0d)),
                     ActualDataType.BOOLEAN);
-            case Cell.CELL_TYPE_ERROR:
+            case ERROR:
                 return new Content(Integer.toString(cell.getErrorCellValue()), ActualDataType.ERROR);
-            case Cell.CELL_TYPE_FORMULA:
+            case FORMULA:
                 CellValue cellValue = null;
                 // Check if the formula is the replacement formula for infinity (see XLSWriter2.write())
                 if (cell.getCellFormula().equals("1/0")) {
@@ -704,7 +705,7 @@ final class CachedExcelTable {
                         Double.toString(Double.NEGATIVE_INFINITY), ActualDataType.NUMBER_DOUBLE_FORMULA);
                 }
                 if (evaluator == null) {
-                    CheckUtils.checkState(cell.getCachedFormulaResultType() != Cell.CELL_TYPE_FORMULA,
+                    CheckUtils.checkState(cell.getCachedFormulaResultType() != CellType.FORMULA,
                         "Formula cannot create another formula");
                     //Use cached value.
                     return createContentFromXLCell(cell, evaluator, cell.getCachedFormulaResultType(), use1904windowing);
@@ -715,12 +716,12 @@ final class CachedExcelTable {
                     return new Content(e.getMessage(), ActualDataType.ERROR_FORMULA);
                 }
                 switch (cellValue.getCellType()) {
-                    case Cell.CELL_TYPE_BOOLEAN:
+                    case BOOLEAN:
                         boolean bvalue = cellValue.getBooleanValue();
                         return new Content(Boolean.toString(bvalue),
                             cellFormat == null ? Boolean.toString(bvalue) : cellFormat.format(bvalue ? 1d : 0d),
                             ActualDataType.BOOLEAN_FORMULA);
-                    case Cell.CELL_TYPE_NUMERIC:
+                    case NUMERIC:
                         //Checking for data, based on  DateUtil#isCellDateFormatted(Cell)
                         double d = cellValue.getNumberValue();
                         if (DateUtil.isADateFormat(cell.getCellStyle().getDataFormat(), cell.getCellStyle().getDataFormatString())) {
@@ -743,18 +744,18 @@ final class CachedExcelTable {
                                     ActualDataType.NUMBER_DOUBLE_FORMULA);
                             }
                         }
-                    case Cell.CELL_TYPE_STRING:
+                    case STRING:
                         return new Content(cellValue.getStringValue(), ActualDataType.STRING_FORMULA);
-                    case Cell.CELL_TYPE_BLANK:
+                    case BLANK:
                         return new Content(null, ActualDataType.MISSING_FORMULA);
-                    case Cell.CELL_TYPE_ERROR:
+                    case ERROR:
                         return new Content("Err (#" + (cellValue.getErrorValue() & 0xff) + ")",
                             ActualDataType.ERROR_FORMULA);
-                    case Cell.CELL_TYPE_FORMULA:
+                    case FORMULA:
                         throw new IllegalStateException("Invalid formula result type in column idx " + colIdx
                         /*+ ", sheet '" + settings.getSheetName()*/ + "', row " + cell.getRowIndex());
                 }
-            case Cell.CELL_TYPE_NUMERIC:
+            case NUMERIC:
                 if (DateUtil.isCellDateFormatted(cell)) {
                     final Date date = cell.getDateCellValue();
                     final double d = cell.getNumericCellValue();
@@ -775,7 +776,7 @@ final class CachedExcelTable {
                             ActualDataType.NUMBER_DOUBLE);
                     }
                 }
-            case Cell.CELL_TYPE_STRING:
+            case STRING:
                 return new Content(cell.getRichStringCellValue().getString(), ActualDataType.STRING);
             default:
                 throw new IllegalStateException("Invalid cell type in column idx " + colIdx + ", sheet '"

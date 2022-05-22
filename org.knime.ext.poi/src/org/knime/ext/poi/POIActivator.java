@@ -45,9 +45,11 @@
 package org.knime.ext.poi;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.apache.poi.util.TempFile;
 import org.eclipse.core.runtime.Plugin;
+import org.knime.core.node.NodeLogger;
 import org.osgi.framework.BundleContext;
 
 /**
@@ -60,6 +62,8 @@ public class POIActivator extends Plugin {
 
     // The shared instance
     private static POIActivator plugin;
+
+    private static NodeLogger LOGGER = NodeLogger.getLogger(POIActivator.class);
 
     /**
      * The constructor.
@@ -101,10 +105,14 @@ public class POIActivator extends Plugin {
      */
     public static void mkTmpDirRW_Bug3301() {
         // Create
+        try {
         File tmpFile = TempFile.createTempFile("erase", "me");
         tmpFile.delete();
         File tmpDir = tmpFile.getParentFile();
         tmpDir.setWritable(true, false);
+        } catch (IOException ex) {
+            LOGGER.warn("Could not create temporary directory used by apache poi",  ex);
+        }
     }
 
 }

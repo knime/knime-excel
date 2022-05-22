@@ -73,8 +73,8 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.util.Units;
 import org.apache.poi.xssf.usermodel.XSSFClientAnchor;
-import org.apache.poi.xssf.usermodel.XSSFShape;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.knime.core.data.BooleanValue;
 import org.knime.core.data.DataCell;
@@ -423,7 +423,7 @@ public class XLSWriter2 {
     private ClientAnchor createAnchor(final int row, final int column, final double rowRatio, final double columnRatio,
                                       final CreationHelper helper) {
         ClientAnchor anchor = helper.createClientAnchor();
-        anchor.setAnchorType(ClientAnchor.MOVE_AND_RESIZE);
+        anchor.setAnchorType(ClientAnchor.AnchorType.MOVE_AND_RESIZE);
         anchor.setCol1(column);
         anchor.setRow1(row);
         anchor.setCol2(column);
@@ -436,8 +436,8 @@ public class XLSWriter2 {
             // each multiplied by XSSFShape.EMU_PER_PIXEL
             anchor.setDx1(1);
             anchor.setDy1(1);
-            anchor.setDx2((int)(1023 * XSSFShape.EMU_PER_PIXEL * columnRatio) - 1);
-            anchor.setDy2((int)(255 * XSSFShape.EMU_PER_PIXEL * rowRatio) - 1);
+            anchor.setDx2((int)(1023 * Units.EMU_PER_PIXEL * columnRatio) - 1);
+            anchor.setDy2((int)(255 * Units.EMU_PER_PIXEL * rowRatio) - 1);
         } else {
             // format is HSSF
             // full cell size is 1023 width and 255 height

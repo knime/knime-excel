@@ -53,7 +53,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.apache.poi.util.TempFile.DefaultTempFileCreationStrategy;
+import org.apache.poi.util.DefaultTempFileCreationStrategy;
 import org.apache.poi.util.TempFileCreationStrategy;
 import org.knime.core.util.PathUtils;
 
