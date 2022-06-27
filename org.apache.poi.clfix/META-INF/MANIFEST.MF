@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Apache POI classpath fix
+Bundle-SymbolicName: org.apache.poi.clfix
+Bundle-Version: 4.1.1.qualifier
+Fragment-Host: org.apache.poi;bundle-version="4.1.1"
+Automatic-Module-Name: org.apache.poi.clfix
+Bundle-RequiredExecutionEnvironment: JavaSE-11
+Import-Package: org.apache.poi.poifs.crypt.agile;version="4.1.1"
