@@ -48,17 +48,30 @@
  */
 package org.knime.ext.poi3.node.io.filehandling.excel.sheets;
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.Collection;
 import java.util.EnumSet;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.stream.Stream;
 
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.poi.hssf.eventusermodel.AbortableHSSFListener;
+import org.apache.poi.hssf.eventusermodel.HSSFEventFactory;
+import org.apache.poi.hssf.eventusermodel.HSSFRequest;
+import org.apache.poi.hssf.eventusermodel.HSSFUserException;
+import org.apache.poi.hssf.record.BoundSheetRecord;
+import org.apache.poi.hssf.record.Record;
+import org.apache.poi.openxml4j.exceptions.OpenXML4JException;
+import org.apache.poi.openxml4j.opc.OPCPackage;
+import org.apache.poi.openxml4j.opc.PackageAccess;
+import org.apache.poi.poifs.filesystem.POIFSFileSystem;
+import org.apache.poi.xssf.eventusermodel.XSSFBReader;
+import org.apache.poi.xssf.eventusermodel.XSSFReader;
 import org.knime.core.data.DataColumnSpecCreator;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.def.DefaultRow;
@@ -82,15 +95,20 @@ import org.knime.core.node.streamable.PortInput;
 import org.knime.core.node.streamable.PortOutput;
 import org.knime.core.node.streamable.RowOutput;
 import org.knime.core.node.streamable.StreamableOperator;
+import org.knime.core.util.FileUtil;
+import org.knime.filehandling.core.connections.FSConnection;
+import org.knime.filehandling.core.connections.FSFiles;
 import org.knime.filehandling.core.connections.FSLocation;
 import org.knime.filehandling.core.connections.FSPath;
+import org.knime.filehandling.core.connections.uriexport.URIExporterIDs;
+import org.knime.filehandling.core.connections.uriexport.noconfig.NoConfigURIExporterFactory;
 import org.knime.filehandling.core.data.location.FSLocationValueMetaData;
-import org.knime.filehandling.core.data.location.cell.SimpleFSLocationCellFactory;
 import org.knime.filehandling.core.data.location.cell.MultiSimpleFSLocationCellFactory;
-import org.knime.filehandling.core.defaultnodesettings.filechooser.reader.ReadPathAccessor;
+import org.knime.filehandling.core.data.location.cell.SimpleFSLocationCellFactory;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.reader.SettingsModelReaderFileChooser;
 import org.knime.filehandling.core.defaultnodesettings.status.NodeModelStatusConsumer;
 import org.knime.filehandling.core.defaultnodesettings.status.StatusMessage.MessageType;
+import org.knime.filehandling.core.util.IOESupplier;
 
 /**
  * Node model to extract the sheet names from a given excel file.
@@ -117,9 +135,9 @@ final class ExcelSheetReaderNodeModel extends NodeModel {
     }
 
     private DataTableSpec createSpec() {
-        final DataColumnSpecCreator colCreator = new DataColumnSpecCreator("Path", SimpleFSLocationCellFactory.TYPE);
-        final FSLocation location = m_filechooser.getLocation();
-        final FSLocationValueMetaData metaData = new FSLocationValueMetaData(location.getFileSystemCategory(),
+        final var colCreator = new DataColumnSpecCreator("Path", SimpleFSLocationCellFactory.TYPE);
+        final var location = m_filechooser.getLocation();
+        final var metaData = new FSLocationValueMetaData(location.getFileSystemCategory(),
             location.getFileSystemSpecifier().orElse(null));
         colCreator.addMetaData(metaData, true);
         return new DataTableSpec(colCreator.createSpec(),
@@ -128,8 +146,7 @@ final class ExcelSheetReaderNodeModel extends NodeModel {
 
     @Override
     protected PortObject[] execute(final PortObject[] inObjects, final ExecutionContext exec) throws Exception {
-        final BufferedDataTableRowOutput container =
-            new BufferedDataTableRowOutput(exec.createDataContainer(createSpec()));
+        final var container = new BufferedDataTableRowOutput(exec.createDataContainer(createSpec()));
         try {
             write(exec, container);
         } finally {
@@ -138,45 +155,164 @@ final class ExcelSheetReaderNodeModel extends NodeModel {
         return new BufferedDataTable[]{container.getDataTable()};
     }
 
-    private void write(final ExecutionContext exec, final RowOutput output)
-        throws IOException, InvalidSettingsException, InterruptedException, CanceledExecutionException {
-        try (ReadPathAccessor accessor = m_filechooser.createReadPathAccessor()) {
-            final MultiSimpleFSLocationCellFactory fac = new MultiSimpleFSLocationCellFactory();
-            final List<FSPath> inputPaths = accessor.getFSPaths(m_statusConsumer);
+    private void write(final ExecutionContext exec, final RowOutput output) throws IOException,
+        InvalidSettingsException, InterruptedException, CanceledExecutionException {
+        try (final var accessor = m_filechooser.createReadPathAccessor();
+                final var conn = m_filechooser.getConnection()) {
+
+            final var fac = new MultiSimpleFSLocationCellFactory();
+            final var inputPaths = accessor.getFSPaths(m_statusConsumer);
             m_statusConsumer.setWarningsIfRequired(this::setWarningMessage);
-            int rowOffset = 0;
+
+            var rowOffset = 0;
             double progressSteps = 1d / inputPaths.size();
-            int iter = 1;
-            for (final FSPath input : inputPaths) {
+            var iter = 1;
+
+            for (final var path : inputPaths) {
                 exec.checkCanceled();
-                exec.setMessage(() -> String.format("Processing file '%s'", input.toString()));
-                rowOffset += writeSheetNames(exec, output, fac, input, rowOffset);
+
+                // due to limitations of the POI streaming API we need a local java.io.File
+                // to read sheet names in a memory-efficient streaming way. getLocalFile()
+                // will fetch a local temp copy of any remote files and the closeable file container
+                // makes sure that it gets deleted
+                exec.setMessage(() -> String.format("Fetching file '%s'", path.toString()));
+                try (var fileContainer = getLocalFile(path, conn)) {
+                    exec.setMessage(() -> String.format("Processing file '%s'", path.toString()));
+                    final var localFile = fileContainer.retrieveLocalFile();
+                    rowOffset += writeSheetNames(exec, output, fac, localFile, path, rowOffset);
+                }
+
                 exec.setProgress(iter * progressSteps);
                 ++iter;
             }
+
+        } catch (OpenXML4JException | URISyntaxException e) {
+            throw new IOException(e);
         }
     }
 
-    private static int writeSheetNames(final ExecutionContext exec, final RowOutput output,
-        final MultiSimpleFSLocationCellFactory fac, final FSPath input, final int rowOffset)
-        throws InterruptedException, CanceledExecutionException, IOException {
-        try (final InputStream in = Files.newInputStream(input);
-                final BufferedInputStream buffered = new BufferedInputStream(in)) {
-            final FSLocation fsLocation = input.toFSLocation();
-            try (final Workbook wb = WorkbookFactory.create(buffered)) {
-                return pushRows(exec, fac, fsLocation, output, wb, rowOffset);
+    private static class LocalFileContainer implements AutoCloseable {
+
+        private final IOESupplier<File> m_localFileSupplier;
+        private final boolean m_deleteOnClose;
+        private File m_file;
+
+        LocalFileContainer(final IOESupplier<File> localFile, final boolean deleteOnClose) {
+            m_localFileSupplier = localFile;
+            m_deleteOnClose = deleteOnClose;
+            m_file = null; // null until retrieved
+        }
+
+        File retrieveLocalFile() throws IOException {
+            if (m_file == null) {
+                m_file = m_localFileSupplier.get();
+            }
+            return m_file;
+        }
+
+        @Override
+        public void close() {
+            if (m_deleteOnClose && m_file != null) {
+                FSFiles.deleteSafely(m_file.toPath());
             }
         }
     }
 
-    private static int pushRows(final ExecutionContext exec, final MultiSimpleFSLocationCellFactory fac,
-        final FSLocation fsLocation, final RowOutput output, final Workbook wb, final int rowOffset)
-        throws InterruptedException, CanceledExecutionException {
-        final int numOfRows = wb.getNumberOfSheets();
-        for (int i = 0; i < numOfRows; i++) {
+    private static final LocalFileContainer getLocalFile(final FSPath path, final FSConnection connection)
+        throws URISyntaxException {
+
+        final var factory = connection.getURIExporterFactory(URIExporterIDs.KNIME_FILE);
+        if (factory != null) { // we are local
+            final var uri = ((NoConfigURIExporterFactory)factory).getExporter().toUri(path);
+            return new LocalFileContainer(() -> Paths.get(uri).toFile(), false);
+        } else { // we aren't local or don't have access to a local path so we create a local copy
+            return new LocalFileContainer(() -> copyToLocalTempFile(path), true);
+        }
+    }
+
+    private static File copyToLocalTempFile(final FSPath path) throws IOException {
+        var tmpFile = FileUtil.createTempFile("knime-excel-snr", "." + FilenameUtils.getExtension(path.getFileName().toString()));
+        try {
+            Files.copy(path, tmpFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            return tmpFile;
+        } catch (IOException e) {
+            // cleanup the now obsolete temp file
+            FSFiles.deleteSafely(tmpFile.toPath());
+            throw e;
+        }
+    }
+
+
+    private static int writeSheetNames(final ExecutionContext exec, final RowOutput output,
+        final MultiSimpleFSLocationCellFactory fac, final File file, final FSPath path, final int rowOffset)
+        throws InterruptedException, CanceledExecutionException, IOException, OpenXML4JException {
+        final Collection<String> names;
+        switch (FilenameUtils.getExtension(path.toString()).toUpperCase()) {
+            case "XLS":
+                try (final var fs = new POIFSFileSystem(file, true)) {
+                    names = getSheetNamesHSSF(exec, fs);
+                }
+                break;
+            case "XLSB":
+                try (final var pak = OPCPackage.open(file, PackageAccess.READ)) {
+                    names = getSheetNamesXSSF(exec, new XSSFBReader(pak));
+                }
+                break;
+            default: // "XLSX", "XLSM"
+                try (final var pak = OPCPackage.open(file, PackageAccess.READ)) {
+                    names = getSheetNamesXSSF(exec, new XSSFReader(pak));
+                }
+        }
+        return pushRows(exec, fac, path.toFSLocation(), output, names, rowOffset);
+    }
+
+    private static Collection<String> getSheetNamesHSSF(final ExecutionContext exec, final POIFSFileSystem file)
+        throws CanceledExecutionException, IOException {
+        final var names = new LinkedHashSet<String>();
+        final var req = new HSSFRequest();
+        final var events = new HSSFEventFactory();
+        final var listener = new AbortableHSSFListener() {
+            @Override
+            public short abortableProcessRecord(final Record r) throws HSSFUserException {
+                try {
+                    exec.checkCanceled();
+                    names.add(((BoundSheetRecord)r).getSheetname());
+                    return 0;
+                } catch (final CanceledExecutionException ignored) { // NOSONAR
+                    // execution canceled is checked again before the method returns
+                    return 1;
+                }
+            }
+        };
+
+        req.addListener(listener, BoundSheetRecord.sid);
+        events.processWorkbookEvents(req, file);
+        exec.checkCanceled();
+        return names;
+    }
+
+    private static Collection<String> getSheetNamesXSSF(final ExecutionContext exec, final XSSFReader reader)
+        throws CanceledExecutionException, IOException, OpenXML4JException {
+        final var names = new LinkedHashSet<String>();
+        final var sheets = (XSSFReader.SheetIterator)reader.getSheetsData();
+        while (sheets.hasNext()) {
             exec.checkCanceled();
-            output.push(new DefaultRow("Row" + (i + rowOffset), fac.createCell(fsLocation),
-                StringCellFactory.create(wb.getSheetName(i))));
+            try (final var dummy = sheets.next()) {
+                names.add(sheets.getSheetName());
+            }
+        }
+        return names;
+    }
+
+    private static int pushRows(final ExecutionContext exec, final MultiSimpleFSLocationCellFactory fac,
+        final FSLocation fsLocation, final RowOutput output, final Collection<String> sheetsNames, final int rowOffset)
+        throws CanceledExecutionException, InterruptedException {
+        var numOfRows = 0;
+        for (final var name : sheetsNames) {
+            exec.checkCanceled();
+            output.push(new DefaultRow("Row" + (numOfRows + rowOffset), fac.createCell(fsLocation),
+                StringCellFactory.create(name)));
+            numOfRows++;
         }
         return numOfRows;
     }
