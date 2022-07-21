@@ -32,7 +32,6 @@ try {
                         "knime-exttool",
                         "knime-chemistry",
                         "knime-python",
-                        "knime-conda",
                         "knime-js-core",
                         "knime-js-base",
                         "knime-cloud",
