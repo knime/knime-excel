@@ -117,6 +117,8 @@ public abstract class AbstractStreamedParserRunnable extends ExcelParserRunnable
 
         private ExcelCell m_rowId;
 
+        private boolean m_endSheetCalled;
+
         /**
          * Constructor.
          *
@@ -141,6 +143,7 @@ public abstract class AbstractStreamedParserRunnable extends ExcelParserRunnable
                 outputEmptyRows(m_currentRowIdx - m_lastNonEmptyRowIdx - 1);
                 m_lastNonEmptyRowIdx = m_currentRowIdx;
                 m_hiddenColumns = getHiddenCols();
+                appendMissingCells();
                 // insert the row id at the beginning
                 insertRowIDAtBeginning(m_row, m_rowId);
                 // add the non-empty row the the queue
@@ -176,6 +179,14 @@ public abstract class AbstractStreamedParserRunnable extends ExcelParserRunnable
                 }
             } else if (isColRowID(m_currentCol)) {
                 m_rowId = excelCell;
+            }
+        }
+
+        @Override
+        public void endSheet() {
+            if (!m_endSheetCalled) {
+                outputEmptyRows(m_lastRowIdx - m_lastNonEmptyRowIdx);
+                m_endSheetCalled = true;
             }
         }
 
@@ -221,6 +232,16 @@ public abstract class AbstractStreamedParserRunnable extends ExcelParserRunnable
             final int thisCol = new CellReference(cellReference).getCol();
             final int missedCols = thisCol - currentColCount;
             for (int currentCol = currentColCount; currentCol < currentColCount + missedCols; currentCol++) {
+                if (isColIncluded(currentCol) && !isColHiddenAndSkipped(currentCol, getHiddenCols())
+                    && !isColRowID(currentCol)) {
+                    m_row.add(null);
+                }
+            }
+        }
+
+        private void appendMissingCells() {
+            m_currentCol++;
+            for (int currentCol = m_currentCol; currentCol <= m_lastCol; currentCol++) {
                 if (isColIncluded(currentCol) && !isColHiddenAndSkipped(currentCol, getHiddenCols())
                     && !isColRowID(currentCol)) {
                     m_row.add(null);

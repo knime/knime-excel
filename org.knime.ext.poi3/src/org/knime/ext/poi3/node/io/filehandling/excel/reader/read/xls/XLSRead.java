@@ -235,39 +235,33 @@ public final class XLSRead extends ExcelRead {
 
         @Override
         protected void parse() throws Exception {
-            int numEmptyRows = 0;
+            int lastNonEmptyRowIdx = -1;
             for (int i = 0; i <= m_sheet.getLastRowNum(); i++) {
                 m_rowId = null;
                 final Row row = m_sheet.getRow(i);
-                if (row == null) {
-                    // empty row
-                    numEmptyRows++;
-                } else {
+
+                if (row != null) {
                     final boolean isHiddenRow = m_skipHiddenRows && row.getZeroHeight();
                     // parse the row
                     final List<ExcelCell> cells = parseRow(row);
                     // if all cells of the row are null, the row is empty
-                    if (isRowEmpty(cells) && m_rowId == null) {
-                        // by not adding empty rows directly to the queue but waiting for the next non-empty row, we prevent
-                        // rows with only "empty-but-formatted/styled" cells being added (cells which had content
-                        // before and were set to empty later might still be counted as cells by Excel and Apache POI)
-                        numEmptyRows++;
-                    } else {
-                        outputEmptyRows(numEmptyRows);
-                        numEmptyRows = 0;
+                    if (!isRowEmpty(cells) || m_rowId != null) {
+                        outputEmptyRows(i - lastNonEmptyRowIdx - 1);
+                        lastNonEmptyRowIdx = i;
                         // insert the row id at the beginning
                         insertRowIDAtBeginning(cells, m_rowId);
                         addToQueue(cells, isHiddenRow);
                     }
                 }
             }
+            outputEmptyRows(m_lastRowIdx - lastNonEmptyRowIdx);
         }
 
         private List<ExcelCell> parseRow(final Row row) {
             final List<ExcelCell> cells = new ArrayList<>();
-            int numEmptyCells = 0;
-            for (int j = 0; j < row.getLastCellNum(); j++) {
-                final Cell cell = row.getCell(j, MissingCellPolicy.RETURN_BLANK_AS_NULL);
+            var numEmptyCells = 0;
+            for (var j = 0; j < row.getLastCellNum(); j++) {
+                final var cell = row.getCell(j, MissingCellPolicy.RETURN_BLANK_AS_NULL);
                 final boolean isColRowID = isColRowID(j);
                 if (isColRowID) {
                     m_rowId = cell == null ? null : parseCell(cell, cell.getCellType());
@@ -288,12 +282,23 @@ public final class XLSRead extends ExcelRead {
                     }
                 }
             }
+            appendMissingCells(row.getLastCellNum(), cells);
             return cells;
         }
 
         private void addNullsToList(final int n, final List<?> list) {
-            for (int i = 0; i < n; i++) {
+            for (var i = 0; i < n; i++) {
                 list.add(null);
+            }
+        }
+
+        private void appendMissingCells(final int startColIdx, final List<?> list) {
+            for (var j = startColIdx; j <= m_lastCol; j++) {
+                if (m_skipHiddenCols && m_sheet.isColumnHidden(j)) {
+                    m_hiddenColumns.add(j);
+                } else if (!isColRowID(j) && isColIncluded(j)) {
+                    list.add(null);
+                }
             }
         }
 

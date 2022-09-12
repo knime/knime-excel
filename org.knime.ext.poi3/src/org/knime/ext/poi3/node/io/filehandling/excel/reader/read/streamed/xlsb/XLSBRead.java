@@ -129,11 +129,14 @@ public final class XLSBRead extends AbstractStreamedRead {
         protected void parse() throws Exception {
             final ExcelTableReaderSheetContentsHandler sheetContentsHandler =
                 new ExcelTableReaderSheetContentsHandler(m_dataFormatter);
+
             final KNIMEXSSFBSheetXMLHandler sheetHandler = new KNIMEXSSFBSheetXMLHandler(m_countingSheetStream,
                 m_xssfReader.getXSSFBStylesTable(), m_sharedStringsTable, sheetContentsHandler, m_dataFormatter, false);
             sheetHandler.parse();
+
+            // XLSB library does not invoke {@link ExcelTableReaderSheetContentsHandler#endSheet()}
+            // therefore invoke endSheet() manually.
+            sheetContentsHandler.endSheet();
         }
-
     }
-
 }
