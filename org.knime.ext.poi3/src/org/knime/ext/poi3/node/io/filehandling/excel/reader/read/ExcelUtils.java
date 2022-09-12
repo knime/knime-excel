@@ -295,17 +295,17 @@ public final class ExcelUtils {
             "The last column must not be before the first column.");
     }
 
-    private static int columnToIdx(final String columnString, final int defaultValue) {
-        final String trimmedCol = columnString.trim();
-        int colIdx = defaultValue;
-        if (!trimmedCol.isEmpty()) {
+    private static int numberToIdx(final String numberString, final int defaultValue) {
+        final String trimmedNumb = numberString.trim();
+        int idx = defaultValue;
+        if (!trimmedNumb.isEmpty()) {
             try {
-                colIdx = Integer.parseInt(trimmedCol) - 1;
+                idx = Integer.parseInt(trimmedNumb) - 1;
             } catch (NumberFormatException e) {
-                colIdx = ExcelUtils.getColumnIndex(trimmedCol);
+                idx = ExcelUtils.getColumnIndex(trimmedNumb);
             }
         }
-        return colIdx;
+        return idx;
     }
 
     /**
@@ -316,7 +316,7 @@ public final class ExcelUtils {
      * @return the row ID index
      */
     public static int getRowIdColIdx(final String string) {
-        int rowIdColumn = columnToIdx(string, -1);
+        int rowIdColumn = numberToIdx(string, -1);
         CheckUtils.checkArgument(rowIdColumn >= 0,
             "The row ID column is invalid. It must be a number >= 1 or a name starting with A.");
         return rowIdColumn;
@@ -330,7 +330,7 @@ public final class ExcelUtils {
      * @return the index of the first included column
      */
     public static int getFirstColumnIdx(final String string) {
-        int firstColumn = columnToIdx(string, 0);
+        int firstColumn = numberToIdx(string, 0);
         CheckUtils.checkArgument(firstColumn >= 0,
             "The first column is invalid. It must be a number >= 1 or a name starting with A.");
         return firstColumn;
@@ -344,7 +344,18 @@ public final class ExcelUtils {
      * @return the index of the last included column
      */
     public static int getLastColumnIdx(final String string) {
-        return columnToIdx(string, -1);
+        return numberToIdx(string, -1);
+    }
+
+    /**
+     * Returns the index of the last row. If the string is invalid, an {@code IllegalArgumentException} is thrown.
+     * If the string is empty, -1 is returned.
+     *
+     * @param string the input string
+     * @return the index of the last row
+     */
+    public static int getLastRowIdx(final String string) {
+        return numberToIdx(string, -1);
     }
 
     /**

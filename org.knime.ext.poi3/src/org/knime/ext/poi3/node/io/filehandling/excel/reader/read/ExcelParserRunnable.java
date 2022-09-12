@@ -95,6 +95,9 @@ public abstract class ExcelParserRunnable implements Runnable {
     /** The index of the last included column or -1 if there is no max limit. */
     protected final int m_lastCol;
 
+    /** The index of the last included row or -1 if there is no max limit. */
+    protected final int m_lastRowIdx;
+
     private final boolean m_rawSettings;
 
     private int m_rowCount = 0;
@@ -117,6 +120,8 @@ public abstract class ExcelParserRunnable implements Runnable {
             ? ExcelUtils.getFirstColumnIdx(excelConfig.getReadFromCol()) : 0;
         m_lastCol = excelConfig.getAreaOfSheetToRead() == AreaOfSheetToRead.PARTIAL
             ? ExcelUtils.getLastColumnIdx(excelConfig.getReadToCol()) : -1;
+        m_lastRowIdx = excelConfig.getAreaOfSheetToRead() == AreaOfSheetToRead.PARTIAL
+                ? ExcelUtils.getLastRowIdx(excelConfig.getReadToRow()) : -1;
         m_rawSettings = excelConfig.isUseRawSettings();
     }
 
