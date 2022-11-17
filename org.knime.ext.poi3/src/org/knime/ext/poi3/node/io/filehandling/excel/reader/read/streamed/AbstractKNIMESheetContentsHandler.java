@@ -79,10 +79,10 @@ public abstract class AbstractKNIMESheetContentsHandler implements SheetContents
     }
 
     /**
-     * @param colIdx the column index to add to the set of hidden columns
+     * @param hiddenCols the hidden column indices
      */
-    public void addHiddenCol(final int colIdx) {
-        m_hiddenCols.add(colIdx);
+    public void setHiddenCols(final Set<Integer> hiddenCols) {
+        m_hiddenCols = hiddenCols;
     }
 
     Set<Integer> getHiddenCols() {

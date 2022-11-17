@@ -129,7 +129,7 @@ final class KNIMEXSSFSheetXMLHandler extends XSSFSheetXMLHandler {
     @Override
     public void endElement(final String uri, final String localName, final String qName) throws SAXException {
         m_output.nextCellType(m_nextDataType);
-        m_hiddenCols.stream().forEach(m_output::addHiddenCol);
+        m_output.setHiddenCols(m_hiddenCols);
         super.endElement(uri, localName, qName);
     }
 

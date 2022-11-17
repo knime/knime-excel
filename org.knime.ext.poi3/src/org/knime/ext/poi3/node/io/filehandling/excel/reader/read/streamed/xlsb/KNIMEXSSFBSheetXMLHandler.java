@@ -50,6 +50,8 @@ package org.knime.ext.poi3.node.io.filehandling.excel.reader.read.streamed.xlsb;
 
 import java.io.InputStream;
 import java.util.BitSet;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.poi.util.LittleEndian;
 import org.apache.poi.xssf.binary.XSSFBRecordType;
@@ -153,9 +155,11 @@ final class KNIMEXSSFBSheetXMLHandler extends XSSFBSheetHandler {
             int colIdx = (int)LittleEndian.getUInt(data, 0);
             // second 4-byte int: last column (inclusive) defined with record (directly after first) (can be the same)
             final int colIdxLst = (int)LittleEndian.getUInt(data, 4);
+            final Set<Integer> hiddenCols =  new HashSet<>();
             for (; colIdx <= colIdxLst; ++colIdx) {
-                m_output.addHiddenCol(colIdx);
+                hiddenCols.add(colIdx);
             }
+            m_output.setHiddenCols(hiddenCols);
         }
     }
 
