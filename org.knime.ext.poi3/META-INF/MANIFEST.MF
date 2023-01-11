@@ -9,9 +9,9 @@ Require-Bundle: org.apache.xmlbeans;bundle-version="3.1.0",
  org.apache.poi;bundle-version="[4.1.1,5.0.0)",
  org.apache.poi.ooxml;bundle-version="[4.1.1,5.0.0)",
  org.apache.poi.ooxml.schemas;bundle-version="[4.1.1,5.0.0)",
- org.knime.filehandling.core;bundle-version="[4.4.0,5.0.0)",
- org.knime.base;bundle-version="[4.4.0,5.0.0)",
- org.knime.time;bundle-version="[4.3.0,5.0.0)",
+ org.knime.filehandling.core;bundle-version="[5.0.0,6.0.0)",
+ org.knime.base;bundle-version="[5.0.0,6.0.0)",
+ org.knime.time;bundle-version="[5.0.0,6.0.0)",
  com.google.guava;bundle-version="[19.0.0,20.0.0)"
 Bundle-RequiredExecutionEnvironment: JavaSE-11
 Bundle-ActivationPolicy: lazy
