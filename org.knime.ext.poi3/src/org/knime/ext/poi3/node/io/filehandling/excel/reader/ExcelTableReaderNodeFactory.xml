@@ -284,4 +284,9 @@
 		  File being read with number and types of columns guessed automatically.
 		</outPort>
 	</ports>
+	<keywords>
+       <keyword>Spreadsheet</keyword>
+       <keyword>XLS Reader</keyword>
+       <keyword>Microsoft</keyword>
+	</keywords>
 </knimeNode>
