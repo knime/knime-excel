@@ -59,9 +59,9 @@ import org.knime.core.node.util.ButtonGroupEnumInterface;
 public enum FormulaErrorHandling implements ButtonGroupEnumInterface {
 
         /** Insert an error pattern. */
-        PATTERN("Insert an error pattern"),
+        PATTERN("String value"),
         /** Insert a missing cell. */
-        MISSING("Insert a missing cell");
+        MISSING("Missing value");
 
     private final String m_text;
 

@@ -59,9 +59,9 @@ import org.knime.core.node.util.ButtonGroupEnumInterface;
 public enum AreaOfSheetToRead implements ButtonGroupEnumInterface {
 
         /** Read entire data of the sheet. */
-        ENTIRE("Read entire data of the sheet"),
+        ENTIRE("Whole sheet"),
         /** Read only data in the specified column and row ranges. */
-        PARTIAL("Read only data in");
+        PARTIAL("Range by row and column:");
 
     private final String m_text;
 

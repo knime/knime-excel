@@ -59,9 +59,9 @@ import org.knime.core.node.util.ButtonGroupEnumInterface;
 public enum RowIDGeneration implements ButtonGroupEnumInterface {
 
         /** Generate row IDs. */
-        GENERATE("Generate row IDs"),
+        GENERATE("Enumerate rows (Row0, Row1, ...)"),
         /** Table contains row IDs in column. */
-        COLUMN("Table contains row IDs in column");
+        COLUMN("Use column");
 
     private final String m_text;
 

@@ -65,7 +65,7 @@ import org.knime.filehandling.core.node.table.reader.spec.TypedReaderTableSpec;
 public enum ColumnNameMode {
 
         /** Creates column headers with a number starting from 0 */
-        COL_INDEX("Use column index e.g. Col0, Col1, Col2") {
+        COL_INDEX("Enumerate columns (Col0, Col1, Col2, ...)") {
             @Override
             public ColumnNameCreator getColumnNameCreator(final TableReadConfig<ExcelTableReaderConfig> config,
                 final Set<Integer> hiddenColumns, final TypedReaderTableSpec<KNIMECellType> spec) {
@@ -73,7 +73,7 @@ public enum ColumnNameMode {
             }
         },
         /** Creates column headers with the corresponding excel column name */
-        EXCEL_COL_NAME("Use Excel column name e.g. A, B, C") {
+        EXCEL_COL_NAME("Use Excel column names (A, B, C, ...)") {
             @Override
             public ColumnNameCreator getColumnNameCreator(final TableReadConfig<ExcelTableReaderConfig> config,
                 final Set<Integer> hiddenColumns, final TypedReaderTableSpec<KNIMECellType> spec) {

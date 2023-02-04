@@ -24,13 +24,13 @@
 
             <p>
             <i>This node can access a variety of different</i>
-            <a href="https://docs.knime.com/2021-06/analytics_platform_file_handling_guide/index.html#analytics-platform-file-systems"><i>file systems.</i></a> 
+            <a href="https://docs.knime.com/latest/analytics_platform_file_handling_guide/index.html#analytics-platform-file-systems"><i>file systems.</i></a> 
             <i>More information about file handling in KNIME can be found in the official</i> 
             <a href="https://docs.knime.com/latest/analytics_platform_file_handling_guide/index.html"><i>File Handling Guide.</i></a>
             </p>
 
 		</intro>
-		<tab name="Settings">
+		<tab name="File and Sheet">
 			<option name="Read from">
 				Select a file system which stores the data you want to read. There are
 				four default file system options to choose from:
@@ -72,12 +72,13 @@
 				Only displayed if the mode <i>Files in folder</i> is selected.
 				Allows to specify which files should be included according to their file extension and/or name.
 				It is also possible to include hidden files.
-				The folder filter options enable you to specify which folders should be included based on their name and hidden status.
-				Note that the folders themselves will not be included, only the files they contain.
+				The folder filter options enable you to specify which folders should be included based on their name 
+				and hidden status. Note that the folders themselves will not be included, only the files they contain.
 			</option>
 			<option name="Include subfolders">
-				If this option is checked, the node will include all files from subfolders that satisfy the specified filter options.
-				If left unchecked, only the files in the selected folder will be included and all files from subfolders are ignored.
+				If this option is checked, the node will include all files from subfolders that satisfy the specified 
+				filter options. If left unchecked, only the files in the selected folder will be included and all 
+				files from subfolders are ignored.
 			</option>
 			<option name="File, Folder or URL">
 				Enter a URL when reading from <i>Custom/KNIME URL</i>, otherwise enter a path to a file or folder. The
@@ -100,70 +101,134 @@
                 </i><a href="https://docs.knime.com/latest/analytics_platform_file_handling_guide/index.html#path">
                 <i>path flow variable.</i></a>
 			</option>
-			<option name="Sheet selection">
+			<option name="Select Sheet">
 				<ul>
-					<li>Select first sheet with data: the first sheet of the selected file(s) that contains data will be 
+					<li>First with data: The first sheet of the selected file(s) that contains data will be 
 					read in. Containing data means not being empty. If all sheets of a file are empty, an empty table is 
 					read in.</li>
-					<li>Select sheet with name: the sheet with the selected name will be read in. If reading multiple 
+					<li>By name: The sheet with the selected name will be read in. If reading multiple 
 					files, the sheet names of the first file are shown and the node will fail if any of the other files 
 					does not contain a sheet with the selected name.</li>
-					<li>Select sheet at index: the sheet at the selected index will be read in. If reading multiple 
-					files, the node will fail if any of the files does not contain a sheet at the selected index. 
-					The index starts at 0, i.e. the first sheet is at index 0. The maximum index that can be selected
-					depends on the number of sheets available in the first read file.</li>
+					<li>By position: The sheet at the selected position will be read in. If reading multiple 
+					files, the node will fail if any of the files does not contain a sheet at the selected position. 
+					The position starts at 0, i.e. the first sheet is at position 0. The maximum position that can be 
+					selected depends on the number of sheets available in the first read file.</li>
 				</ul>
 				The order of the sheets is the same as displayed in Excel (i.e. not necessarily a lexicographic order).
 			</option>
-			<option name="Column header">
+		</tab>
+		<tab name="Data Area">
+            <option name="Read Area">
+                <ul>
+                    <li>Whole sheet: All the data contained in the sheet is read in. This includes 
+                    areas where diagrams, borders, coloring, etc. are placed and could create empty rows or columns.
+                    </li>
+                    <li>Range by row and column: Only the data in the specified area is read in. Both start and end 
+                    columns/rows are inclusive. For columns, enter their labels (&quot;A&quot;, &quot;B&quot;, etc.) or
+                    numbers (starting at 1). For rows, enter their numbers (starting at 1). By leaving a field
+                    empty, the start or end of the area is not restricted.</li>
+                </ul>
+            </option>
+			<option name="Column Names">
 				<ul>
-					<li>Excel column name e.g. A, B, C: the column names are generated based on the column names in Excel.</li>
-					<li>Use column index e.g. Col0, Col1, Col2: the column names are generated by the index of a column with the &quot;Col&quot; prefix.</li>
 					<li>
-						Table contains column names in row number: If checked, a row can be
-						selected that contains the column names. The first row has number 1.
-						The file content view can be helpful to find the correct row number
-						when filtering empty or hidden rows or
-						restricting the area that should be read.
+						Use values in row: If checked, a row can be selected that contains the column names. 
+						The first row has number 1. The file content view can be helpful to find the correct row number
+						when filtering empty or hidden rows or restricting the area that should be read.
 						<br />
-						In case multiple files are read, only the column names of the first
-						file will be used.
-						Rows with the specified number in all other files are not read and will be
-						ignored.
+						In case multiple files are read, only the column names of the first file will be used.
+						Rows with the specified number in all other files are not read and will be ignored.
 						<br />
-						If this option is not checked or in case the selected row contains missing values the column names will
-						be generated based on the before mentioned options. For the latter a custom prefix
-						can be added with the option below.
+						If the selected row contains missing values the empty column name prefix is used. 
+						Based on the selection of either the Excel column name or column index option it creates a 
+                        column name with this prefix.
 					</li>
-					<li>Empty column name prefix: Sets the column header prefix which is
-						used in case the selected row in
-						the before mentioned option contains missing values.
-						Based on the selection of either the Excel column name or column index option it creates a column
-						name with this prefix.
-					</li>
+					<li>Use Excel column names (A, B, C, ...): The column names are generated based on the column 
+					names in Excel.</li>
+					<li>Enumerate columns (Col0, Col1, Col2, ...): The column names are generated by the index of a 
+					column with the &quot;Col&quot; prefix.</li>
 				</ul>
 				<br />
 			</option>
-			<option name="Row ID">
-				<ul>
-					<li>Generate row IDs: row IDs are generated starting with <tt>Row0</tt>, <tt>Row1</tt>, etc.</li>
-					<li>Table contains row IDs in column: a column can be selected that contains row IDs. Enter the 
-					label (&quot;A&quot;, &quot;B&quot;, etc.) or the number (starting at 1) of the column.
-					The rowIDs in the sheet must be unique, otherwise the execution fails.</li>
-				</ul>
-			</option>
-			<option name="Sheet area">
-				<ul>
-					<li>Read entire data of the sheet: all the data contained in the sheet is read in. This includes 
-					areas where diagrams, borders, coloring, etc. are placed and could create empty rows or columns.
-					</li>
-					<li>Read only data in...: only the data in the specified area is read in. Both start and end 
-					columns/rows are inclusive.	For columns, enter their labels (&quot;A&quot;, &quot;B&quot;, etc.) or
-					numbers (starting at 1). For rows, enter their numbers (starting at 1). By leaving a field
-					empty, the start or end of the area is not restricted.</li>
-				</ul>
-			</option>
+			<option name="Skip">
+                <ul>
+                    <li>Empty rows: If checked, empty rows of the sheet will be skipped and not displayed in the 
+                    output.</li>
+                    <li>Empty columns: If checked, empty columns of the sheet will be skipped and not displayed in 
+                    the output. Whether a column is considered empty depends on the <i>Table specification</i> settings. 
+                    This means that if the cells of a column for all scanned rows were empty, the column is considered 
+                    empty, even if the sheet contains a non-empty cell after the scanned rows. Removing the limit of 
+                    scanned rows ensures empty and non-empty columns being detected correctly but also increases the 
+                    time required for scanning.</li>
+                    <li>Hidden rows: If checked, hidden rows of the sheet will be skipped and not displayed in the 
+                    output.</li>
+                    <li>Hidden columns: If checked, hidden columns of the sheet will be skipped and not displayed in 
+                    the output.</li>
+                </ul>
+                <br />
+            </option>
 		</tab>
+		<tab name="Advanced">
+		    <option name="File and Sheet">
+		        <ul>
+                    <li>File encryption: Allows you to specify a password to decrypt files that have been protected 
+                    with a password via Excel. None: only files without password protection can be read.
+                    Credentials: use a password set via workflow credentials. Password: specify a password. 
+                    Files without password protection can also be read if you set a password.</li>
+                    <li>Detect columns and data types: If you limit the number of scanned rows, only the specified 
+                    number of input <i>rows</i> are used to analyze the file (i.e to determine
+                    the column types). This option is recommended for long files where the first <i>n</i> rows are 
+                    representative for the whole file.
+                    <br />
+                    If "Support changing schemas" is checked, the reader will compute the table specification on 
+                    execution. This behavior is required if the content of the configured file/folder changes between 
+                    executions, i.e., columns are added/removed to/from file(s) or their types change.
+                    NOTE: When checked, the node will not output a table specification during configure and won't 
+                    apply transformations (therefore the transformation tab is disabled).
+                    <br />
+                    If "Fail if schemas differ" is checked, the node will fail if multiple files are read via the "Files 
+                    in folder" option and not all files have the same table structure, i.e. the same columns.
+                    </li>
+                    <li> If the "Append file path column" is checked, the node will append a path column with the 
+                    provided name to the output table. This column contains for each row which file it was read from.
+                    The node will fail if adding the column with the provided name causes a name collision with any of 
+                    the columns in the read table.
+                    </li>
+                </ul>
+            </option>
+            <option name="Data Area">
+                <ul>
+                    <li>Enumerate rows: Row IDs are generated starting with <tt>Row0</tt>, <tt>Row1</tt>, etc.</li>
+                    <li>Use column: A column can be selected that contains row IDs. Enter the 
+                    label (&quot;A&quot;, &quot;B&quot;, etc.) or the number (starting at 1) of the column.
+                    The row IDs in the sheet must be unique, otherwise the execution fails.</li>
+                </ul>
+            </option>
+		    <option name="Values">
+		        <ul>
+                    <li>Reevaluate formulas in all sheets: If checked, formulas are reevaluated and put into the 
+                    created table instead of using the cached values. This can cause errors when there are functions 
+                    that are not implemented by the underlying Apache POI library.
+                    <br />
+                    On error either insert the given String value or a Missing value. Inserting a string value
+                    causes the entire column to become a string column in case an error occurs. Whereas inserting a
+                    missing value is type innocent, but also unobtrusive.
+                    <br/>
+                    Note: Files with xlsb format do not support this option. For xlsx and xlsm files, reevaluation 
+                    requires significantly more memory as the whole file needs to be kept in memory (xls files are 
+                    anyway loaded completely into memory).
+                    </li>
+                    <li>Replace empty strings with missing values: If checked, empty strings (i.e. strings with 
+                    only whitespaces) are replaced with missing values. This option is also applied to formulas that 
+                    evaluate to strings.
+                    </li>
+                    <li>Use Excel 15 digits precision: If checked, numbers are read in with 15 digits precision which 
+                    is the same precision Excel is using to display numbers. This will prevent potential floating 
+                    point issues. For most numbers, no difference can be observed if this option is unchecked.
+                    </li>
+                </ul>
+		    </option>
+        </tab>
 		<tab name="Transformation">
 			<option name="Transformations">
 				This tab displays every column as a row in a table that allows modifying the structure of the output table.
@@ -194,83 +259,6 @@
 				to it. For filtering, ordering and renaming, this is straight forward. For type mapping the following is done: If there is an alternative converter to the specified KNIME type, then this converter is used,
 				otherwise we default to the default KNIME type for the new type. In our example we might have specified that [A, Integer] should be mapped to Long.
 				For the changed column [A, String] there is no converter to Long, so we default back to String and A becomes a String column in the output table.
-			</option>
-		</tab>
-		<tab name="Advanced Settings">
-			<option name="Skip empty columns">
-				If checked, empty columns of the sheet will be skipped and not displayed in the output. Whether a column
-				is considered empty depends on the <i>Table specification</i> settings. This means that if the cells of 
-				a column for all scanned rows were empty, the column is considered empty, even if the sheet contains a
-				non-empty cell after the scanned rows. Removing the limit of scanned rows ensures empty and non-empty
-				columns being detected correctly but also increases the time required for scanning.
-			</option>
-			<option name="Skip hidden columns">
-				If checked, hidden columns of the sheet will be skipped and not displayed in the output.
-			</option>
-			<option name="Skip empty rows">
-				If checked, empty rows of the sheet will be skipped and not displayed in the output.
-			</option>
-			<option name="Skip hidden rows">
-				If checked, hidden rows of the sheet will be skipped and not displayed in the output.
-			</option>
-			<option name="Use Excel 15 digits precision">
-				If checked, numbers are read in with 15 digits precision which is the same precision Excel is using
-				to display numbers. This will prevent potential floating point issues. For most numbers, no difference
-				can be observed if this option is unchecked.
-			</option>
-			<option name="Replace empty strings with missing values">
-				If checked, empty strings (i.e. strings with only whitespaces) are replaced with missing values. This
-				option is also applied to formulas that evaluate to strings.				
-			</option>
-			<option name="Reevaluate formulas">
-				If checked, formulas are reevaluated and put into the created table instead of using the cached values. 
-				This can cause errors when there are functions that are not	implemented by the underlying Apache POI 
-				library.<br/>
-				Note: Files with xlsb format do not support this option. For xlsx and xlsm files, reevaluation requires
-				significantly more memory as the whole file
-				needs to be	kept in memory (xls files are anyway loaded completely into memory).
-			</option>
-			<option name="Formula error handling">
-				Specify the handling of formula error cells contained in a sheet or of errors occurring during formula 
-				reevaluation.
-				<ul>
-					<li>Insert an error pattern: the defined pattern is inserted in place of an error cell. This
-		            causes the entire column to become a string column in case an error occurs.</li>
-					<li>Insert a missing cell: a missing cell is inserted in place of an error cell. A missing value is
-					type innocent, but also unobtrusive.</li>
-				</ul>
-			</option>
-			<option name="Table specification">
-			  If enabled, only the specified number of input <i>rows</i> are used to analyze the file (i.e to determine
-	          the column types). This option is recommended for long files where the first <i>n</i> rows are 
-	          representative for the whole file.
-			</option>
-			<option name="Support changing file schemas">
-			  If selected, the reader will compute the table specification on execution.
-			  This behavior is required if the content of the configured file/folder changes between executions, 
-			  i.e., columns are added/removed to/from file(s) or their types change.
-			  NOTE: When checked, the node will not output a table specification during configure and won't apply transformations
-			  (therefore the transformation tab is disabled).
-			</option>
-			<option name="Fail on differing specs">
-				If checked, the node will fail if multiple files are read via the Files in folder option and not all 
-				files have the same table structure, i.e. the same columns.
-			</option>
-			<option name="Path column">
-			    If checked, the node will append a path column with the provided name to the output table.
-			    This column contains for each row which file it was read from.
-			    The node will fail if adding the column with the provided name causes a name collision with any of the columns in the read table.
-			</option>
-		</tab>
-		<tab name="Encryption">
-			<option name="Password for protected files">
-				Allows you to specify a password to decrypt files that have been protected with a password via Excel.
-				<ul>
-					<li>None: only files without password protection can be read.</li>
-					<li>Credentials: use a password set via workflow credentials. Files without password protection can
-					also be read.</li>
-					<li>Password: specify a password. Files without password protection can	also be read.</li>
-				</ul>
 			</option>
 		</tab>
 	</fullDescription>

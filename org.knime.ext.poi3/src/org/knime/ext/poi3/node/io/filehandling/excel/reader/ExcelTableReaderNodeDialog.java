@@ -75,7 +75,6 @@ import javax.swing.JSpinner;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
-import javax.swing.SwingConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.DocumentEvent;
@@ -150,13 +149,13 @@ final class ExcelTableReaderNodeDialog
     private JSpinner m_sheetIndexSelection = new JSpinner(new SpinnerNumberModel(0, 0, Integer.MAX_VALUE, 1));
 
     // text has trailing space to not be cut on Windows because of italic font
-    private final JLabel m_sheetIdxNoteLabel = new JLabel("(Sheet indexes start with 0.) ");
+    private final JLabel m_sheetIdxNoteLabel = new JLabel("(Position start with 0.) ");
 
-    private JCheckBox m_failOnDifferingSpecs = new JCheckBox("Fail if specs differ");
+    private JCheckBox m_failOnDifferingSpecs = new JCheckBox("Fail if schemas differ");
 
-    private final SourceIdentifierColumnPanel m_pathColumnPanel = new SourceIdentifierColumnPanel("Path");
+    private final SourceIdentifierColumnPanel m_pathColumnPanel = new SourceIdentifierColumnPanel("file path");
 
-    private final JCheckBox m_columnHeaderCheckBox = new JCheckBox("Table contains column names in row number", true);
+    private final JCheckBox m_columnHeaderCheckBox = new JCheckBox("Use values in row", true);
 
     private final JSpinner m_columnHeaderSpinner = new JSpinner(
         new SpinnerNumberModel(Long.valueOf(1), Long.valueOf(1), Long.valueOf(Long.MAX_VALUE), Long.valueOf(1)));
@@ -171,20 +170,13 @@ final class ExcelTableReaderNodeDialog
 
     private final ButtonGroup m_emptyColHeaderBtnGrp = new ButtonGroup();
 
-    // text has trailing space to not be cut on Windows because of italic font
-    private final JLabel m_columnHeaderNoteLabel =
-        new JLabel("(Row numbers start with 1. See \"File Content\" tab to identify row numbers.) ");
+    private final JCheckBox m_skipHiddenCols = new JCheckBox("Hidden columns", true);
 
-    private final JCheckBox m_skipHiddenCols = new JCheckBox("Skip hidden columns", true);
+    private final JCheckBox m_skipHiddenRows = new JCheckBox("Hidden rows", true);
 
-    private final JCheckBox m_skipHiddenRows = new JCheckBox("Skip hidden rows", true);
+    private final JCheckBox m_skipEmptyRows = new JCheckBox("Empty rows", true);
 
-    private final JCheckBox m_skipEmptyRows = new JCheckBox("Skip empty rows", true);
-
-    private final JCheckBox m_skipEmptyCols = new JCheckBox(
-        "Skip empty columns (whether a column is considered empty depends on the \"Table specification\" settings "
-            + "below)",
-        false);
+    private final JCheckBox m_skipEmptyCols = new JCheckBox("Empty columns", false);
 
     private final JCheckBox m_replaceEmptyStringsWithMissings =
         new JCheckBox("Replace empty strings with missing values", true);
@@ -192,7 +184,7 @@ final class ExcelTableReaderNodeDialog
     private boolean m_updatingSheetSelection = false;
 
     private final JCheckBox m_reevaluateFormulas =
-        new JCheckBox("Reevaluate formulas (leave unchecked if uncertain; see node description for details)");
+        new JCheckBox("Reevaluate formulas in all sheets.   On error insert:");
 
     private final JRadioButton m_radioButtonInsertErrorPattern =
         new JRadioButton(FormulaErrorHandling.PATTERN.getText(), true);
@@ -211,13 +203,11 @@ final class ExcelTableReaderNodeDialog
 
     private final ButtonGroup m_buttonGroupSheetArea = new ButtonGroup();
 
-    private final JLabel m_fromColLabel = new JLabel("columns from");
+    private final JLabel m_fromColLabel = new JLabel("Column");
 
     private final JLabel m_toColLabel = new JLabel("to");
 
-    private final JLabel m_andLabel = new JLabel("and");
-
-    private final JLabel m_fromRowLabel = new JLabel("rows from");
+    private final JLabel m_fromRowLabel = new JLabel("and row");
 
     private final JLabel m_toRowLabel = new JLabel("to");
 
@@ -242,12 +232,12 @@ final class ExcelTableReaderNodeDialog
 
     private final JTextField m_rowIDColumn = new JTextField("A");
 
-    private final JCheckBox m_limitAnalysisChecker = new JCheckBox("Limit data rows scanned", true);
+    private final JCheckBox m_limitAnalysisChecker = new JCheckBox("Limit scanned rows", true);
 
     private final JSpinner m_limitAnalysisSpinner = new JSpinner(
         new SpinnerNumberModel(Long.valueOf(50), Long.valueOf(1), Long.valueOf(Long.MAX_VALUE), Long.valueOf(50)));
 
-    private final JCheckBox m_supportChangingFileSchemas = new JCheckBox("Support changing file schemas");
+    private final JCheckBox m_supportChangingFileSchemas = new JCheckBox("Support changing schemas");
 
     private final DialogComponentAuthentication m_passwordComponent;
 
@@ -284,12 +274,13 @@ final class ExcelTableReaderNodeDialog
 
         m_authenticationSettingsModel = m_config.getReaderSpecificConfig().getAuthenticationSettingsModel();
         m_passwordComponent = new DialogComponentAuthentication(m_authenticationSettingsModel, null,
-            AuthenticationType.PWD, AuthenticationType.CREDENTIALS, AuthenticationType.NONE);
+            Arrays.asList(AuthenticationType.PWD, AuthenticationType.CREDENTIALS, AuthenticationType.NONE),
+            Map.of(), true);
+        m_passwordComponent.setPasswordOnlyLabel("");
 
         final Font italicFont = new Font(m_firstSheetWithDataLabel.getFont().getName(), Font.ITALIC,
             m_firstSheetWithDataLabel.getFont().getSize());
         m_firstSheetWithDataLabel.setFont(italicFont);
-        m_columnHeaderNoteLabel.setFont(italicFont);
         m_sheetIdxNoteLabel.setFont(italicFont);
         m_readAreaNoteLabel.setFont(italicFont);
         m_sheetSelectionButtonGroup.add(m_radioButtonFirstSheetWithData);
@@ -309,10 +300,10 @@ final class ExcelTableReaderNodeDialog
         m_fileContentPreviewController = new FileContentPreviewController<>(readFactory, analysisComponentModel,
             m_previewModel, this::createItemAccessor);
 
-        addTab("Settings", createGeneralSettingsTab());
+        addTab("File and Sheet", createFileAndSheetSettingsTab());
+        addTab("Data Area", createDataAreaSettingsTab());
+        addTab("Advanced", createAdvancedSettingsTab());
         addTab(TRANSFORMATION_TAB, createTransformationTab());
-        addTab("Advanced Settings", createAdvancedSettingsTab());
-        addTab("Encryption", createEncryptionSettingsTab());
         registerDialogChangeListeners();
         registerPreviewChangeListeners();
         registerTabbedPaneChangeListeners();
@@ -334,9 +325,12 @@ final class ExcelTableReaderNodeDialog
         m_columnHeaderCheckBox.addChangeListener(l -> {
             final boolean isSelected = m_columnHeaderCheckBox.isSelected();
             m_columnHeaderSpinner.setEnabled(isSelected);
-            m_columnHeaderNoteLabel.setEnabled(isSelected);
             m_emptyColHeaderPrefix.setEnabled(isSelected);
             m_emptyColHeaderLabel.setEnabled(isSelected);
+
+            //disable radio buttons if use column header is selected
+            m_emptyColHeaderExcelColName.setEnabled(!isSelected);
+            m_emptyColHeaderIndex.setEnabled(!isSelected);
         });
 
         m_radioButtonInsertErrorPattern
@@ -359,7 +353,6 @@ final class ExcelTableReaderNodeDialog
         m_fromCol.setEnabled(selected);
         m_toColLabel.setEnabled(selected);
         m_toCol.setEnabled(selected);
-        m_andLabel.setEnabled(selected);
         m_fromRowLabel.setEnabled(selected);
         m_fromRow.setEnabled(selected);
         m_toRowLabel.setEnabled(selected);
@@ -441,10 +434,41 @@ final class ExcelTableReaderNodeDialog
         m_updatingSheetSelection = false;
     }
 
-    private JPanel createFilePanel() {
+    private JPanel createColumnHeaderEmptyPrefixPanel() {
+        final JPanel panel = new JPanel(new GridBagLayout());
+        final GBCBuilder gbcBuilder = new GBCBuilder().resetPos().anchorFirstLineStart();
+
+        setHeightToComponentHeight(m_emptyColHeaderLabel, m_emptyColHeaderPrefix);
+        setWidthTo(m_emptyColHeaderPrefix, 75);
+        panel.add(m_emptyColHeaderLabel, gbcBuilder.insetLeft(5).setWeightX(0).build());
+        panel.add(m_emptyColHeaderPrefix, gbcBuilder.incX().build());
+        panel.add(Box.createHorizontalBox(), gbcBuilder.incX().setWeightX(1).build());
+
+        return panel;
+    }
+
+    static void setHeightToComponentHeight(final JComponent compHeightToSet, final JComponent refComp) {
+        compHeightToSet.setPreferredSize(new Dimension((int)compHeightToSet.getPreferredSize().getWidth(),
+            (int)refComp.getPreferredSize().getHeight()));
+    }
+
+    static void setWidthTo(final JComponent comp, final int width) {
+        comp.setPreferredSize(new Dimension(width, (int)comp.getPreferredSize().getHeight()));
+    }
+
+    private final JPanel createFileAndSheetSettingsTab() {
+        final JPanel panel = new JPanel(new GridBagLayout());
+        final GBCBuilder gbcBuilder = new GBCBuilder().resetPos().anchorFirstLineStart().setWeightX(1).fillHorizontal();
+        panel.add(createFileAndSheetInputLocationPanel(), gbcBuilder.build());
+        panel.add(createFileAndSheetSelectSheetPanel(), gbcBuilder.incY().build());
+        panel.add(createPreviewComponent(), gbcBuilder.incY().fillBoth().setWeightY(1).build());
+        return panel;
+    }
+
+    private JPanel createFileAndSheetInputLocationPanel() {
         final JPanel filePanel = new JPanel();
         filePanel.setLayout(new BoxLayout(filePanel, BoxLayout.X_AXIS));
-        filePanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Input location"));
+        filePanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Input Location"));
         filePanel.setMaximumSize(
             new Dimension(Integer.MAX_VALUE, m_filePanel.getComponentPanel().getPreferredSize().height));
         filePanel.add(m_filePanel.getComponentPanel());
@@ -452,9 +476,9 @@ final class ExcelTableReaderNodeDialog
         return filePanel;
     }
 
-    private JPanel createSheetSelectionPanel() {
+    private JPanel createFileAndSheetSelectSheetPanel() {
         final JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Sheet selection"));
+        panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Select Sheet"));
         final Insets insets = new Insets(5, 5, 0, 0);
         final GBCBuilder gbcBuilder = new GBCBuilder(insets).resetPos().anchorFirstLineStart();
 
@@ -471,26 +495,51 @@ final class ExcelTableReaderNodeDialog
         return panel;
     }
 
-    private JPanel createColumnHeaderPanel() {
+    private JPanel createDataAreaSettingsTab() {
         final JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Column header"));
-        final Insets insets = new Insets(5, 5, 0, 0);
-        final GBCBuilder gbcBuilder = new GBCBuilder(insets).resetPos().setWeightX(1).anchorFirstLineStart();
-
-        panel.add(createColumnNameModePanel(), gbcBuilder.build());
-        panel.add(createColumnHeaderRowPanel(), gbcBuilder.incY().build());
-        panel.add(createColumnHeaderEmptyPrefixPanel(), gbcBuilder.insetBottom(5).incY().build());
-
+        final GBCBuilder gbcBuilder = new GBCBuilder().resetPos().anchorFirstLineStart().setWeightX(1).fillHorizontal();
+        panel.add(createDataAreaReadAreaPanel(), gbcBuilder.build());
+        panel.add(createDataAreaColumnNamesPanel(), gbcBuilder.incY().build());
+        panel.add(createDataAreaSkipPanel(), gbcBuilder.incY().build());
+        panel.add(createPreviewComponent(), gbcBuilder.incY().fillBoth().setWeightY(1).build());
         return panel;
     }
 
-    private JPanel createColumnNameModePanel() {
+    private JPanel createDataAreaReadAreaPanel() {
         final JPanel panel = new JPanel(new GridBagLayout());
-        final GBCBuilder gbcBuilder = new GBCBuilder().resetPos().anchorFirstLineStart();
+        panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Read Area"));
+        final Insets insets = new Insets(0, 5, 0, 0);
+        final GBCBuilder gbcBuilder = new GBCBuilder(insets).resetPos().anchorFirstLineStart();
 
-        panel.add(m_emptyColHeaderExcelColName,  gbcBuilder.incX().build());
-        panel.add(m_emptyColHeaderIndex,  gbcBuilder.incX().build());
+        panel.add(m_radioButtonReadEntireSheet, gbcBuilder.build());
+        panel.add(m_radioButtonReadPartOfSheet, gbcBuilder.incY().build());
 
+        setWidthTo(m_fromCol, 50);
+        setWidthTo(m_toCol, 50);
+        setWidthTo(m_fromRow, 50);
+        setWidthTo(m_toRow, 50);
+
+        final Insets lableInsets = new Insets(5, 5, 0, 0);
+        panel.add(m_fromColLabel, gbcBuilder.setInsets(lableInsets).incX().build());
+        panel.add(m_fromCol, gbcBuilder.setInsets(insets).incX().build());
+        panel.add(m_toColLabel, gbcBuilder.setInsets(lableInsets).incX().build());
+        panel.add(m_toCol, gbcBuilder.setInsets(insets).incX().build());
+        panel.add(m_fromRowLabel, gbcBuilder.setInsets(lableInsets).incX().setWeightX(0).build());
+        panel.add(m_fromRow, gbcBuilder.setInsets(insets).incX().build());
+        panel.add(m_toRowLabel, gbcBuilder.setInsets(lableInsets).incX().build());
+        panel.add(m_toRow, gbcBuilder.setInsets(insets).incX().build());
+        panel.add(m_dotLabel, gbcBuilder.setInsets(lableInsets).incX().setWeightX(1).fillHorizontal().build());
+        return panel;
+    }
+
+    private JPanel createDataAreaColumnNamesPanel() {
+        final JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Column Names"));
+        final Insets insets = new Insets(5, 5, 0, 0);
+        final GBCBuilder gbcBuilder = new GBCBuilder(insets).resetPos().setWeightX(1).anchorFirstLineStart();
+        panel.add(createColumnHeaderRowPanel(),  gbcBuilder.build());
+        panel.add(m_emptyColHeaderExcelColName,  gbcBuilder.incY().build());
+        panel.add(m_emptyColHeaderIndex, gbcBuilder.incY().build());
         return panel;
     }
 
@@ -506,94 +555,76 @@ final class ExcelTableReaderNodeDialog
         final JComponent editor = m_columnHeaderSpinner.getEditor();
         final JFormattedTextField tf = ((JSpinner.DefaultEditor)editor).getTextField();
         tf.setColumns(6);
-
-        m_columnHeaderNoteLabel
-            .setPreferredSize(new Dimension((int)m_columnHeaderNoteLabel.getPreferredSize().getWidth(),
-                (int)m_columnHeaderCheckBox.getPreferredSize().getHeight()));
         panel.add(m_columnHeaderCheckBox, gbcBuilder.build());
         panel.add(m_columnHeaderSpinner, gbcBuilder.incX().build());
-        panel.add(m_columnHeaderNoteLabel, gbcBuilder.incX().insetLeft(5).setWeightX(1).build());
+        panel.add(createColumnHeaderEmptyPrefixPanel(), gbcBuilder.insetLeft(5).incX().build());
         return panel;
     }
 
-    private JPanel createColumnHeaderEmptyPrefixPanel() {
+    private JPanel createDataAreaSkipPanel() {
         final JPanel panel = new JPanel(new GridBagLayout());
-        final GBCBuilder gbcBuilder = new GBCBuilder().resetPos().anchorFirstLineStart();
-
-        setHeightToComponentHeight(m_emptyColHeaderLabel, m_emptyColHeaderPrefix);
-        setWidthTo(m_emptyColHeaderPrefix, 75);
-        panel.add(m_emptyColHeaderLabel, gbcBuilder.insetLeft(5).setWeightX(0).build());
-        panel.add(m_emptyColHeaderPrefix, gbcBuilder.incX().build());
-        panel.add(Box.createHorizontalBox(), gbcBuilder.incX().setWeightX(1).build());
-
+        panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Skip"));
+        final GBCBuilder gbcBuilder =
+            new GBCBuilder(new Insets(5, 5, 0, 5)).resetPos().anchorFirstLineStart();
+        panel.add(m_skipEmptyRows, gbcBuilder.build());
+        panel.add(m_skipEmptyCols, gbcBuilder.incX().build());
+        panel.add(m_skipHiddenRows, gbcBuilder.incX().build());
+        panel.add(m_skipHiddenCols, gbcBuilder.incX().setWeightX(1).fillHorizontal().build());
         return panel;
     }
 
-    private JPanel createRowIDPanel() {
+    private JPanel createAdvancedSettingsTab() {
+            final JPanel panel = new JPanel(new GridBagLayout());
+            final GBCBuilder gbcBuilder = new GBCBuilder().resetPos().anchorFirstLineStart().setWeightX(1).fillHorizontal();
+            panel.add(createAdvancedFileAndSheetPanel(), gbcBuilder.build());
+            panel.add(createAdvancedDataArePanel(), gbcBuilder.incY().build());
+            panel.add(createAdvancedValuesPanel(), gbcBuilder.incY().build());
+            panel.add(createPreviewComponent(), gbcBuilder.incY().fillBoth().setWeightY(1).build());
+            return panel;
+        }
+
+    private JPanel createAdvancedFileAndSheetPanel() {
         final JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Row ID"));
+        panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "File and Sheet"));
+        final GBCBuilder gbcBuilder = new GBCBuilder(new Insets(5, 5, 0, 5)).resetPos().anchorFirstLineStart();
+        panel.add(new JLabel("File encryption"), gbcBuilder.build());
+        panel.add(m_passwordComponent.getComponentPanel(), gbcBuilder.setWidth(4).incY().insetLeft(20).build());
+        panel.add(new JLabel("Detect columns and data types"), gbcBuilder.setWidth(4).insetLeft(5).incY().build());
+        panel.add(m_limitAnalysisChecker, gbcBuilder.incY().setWidth(1).insetLeft(20).build());
+        setWidthTo(m_limitAnalysisSpinner, 100);
+        panel.add(m_limitAnalysisSpinner, gbcBuilder.incX().insetLeft(5).fillNone().build());
+        panel.add(m_supportChangingFileSchemas, gbcBuilder.incX().build());
+        panel.add(m_failOnDifferingSpecs, gbcBuilder.incX().setWeightX(1).fillHorizontal().build());
+        //remove the border
+        m_pathColumnPanel.setBorder(null);
+        panel.add(m_pathColumnPanel, gbcBuilder.resetX().insetLeft(5).incY().setWidth(4).build());
+        return panel;
+    }
+
+    private JPanel createAdvancedDataArePanel() {
+        final JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Data Area"));
         final GBCBuilder gbcBuilder = new GBCBuilder(new Insets(5, 5, 0, 0)).resetPos().anchorFirstLineStart();
-
-        panel.add(m_radioButtonGenerateRowIDs, gbcBuilder.build());
-        panel.add(m_radioButtonReadRowIDsFromCol, gbcBuilder.incX().setInsets(new Insets(5, 5, 5, 0)).build());
+        panel.add(new JLabel("RowID"), gbcBuilder.build());
+        panel.add(m_radioButtonGenerateRowIDs, gbcBuilder.setInsets(new Insets(0, 5, 0, 0)).incX().build());
+        panel.add(m_radioButtonReadRowIDsFromCol, gbcBuilder.incX().setInsets(new Insets(0, 5, 5, 0)).build());
         setWidthTo(m_rowIDColumn, 50);
         panel.add(m_rowIDColumn, gbcBuilder.incX().setWeightX(1).build());
         return panel;
     }
 
-    private JPanel createSheetAreaPanel() {
+    private JPanel createAdvancedValuesPanel() {
         final JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Sheet area"));
-        final Insets insets = new Insets(5, 5, 0, 0);
-        final GBCBuilder gbcBuilder = new GBCBuilder(insets).resetPos().anchorFirstLineStart();
-
-        panel.add(m_radioButtonReadEntireSheet, gbcBuilder.build());
-        panel.add(m_radioButtonReadPartOfSheet, gbcBuilder.incX().setWidth(1).build());
-
-        setHeightToComponentHeight(m_fromColLabel, m_radioButtonReadPartOfSheet);
-        setHeightToComponentHeight(m_toColLabel, m_radioButtonReadPartOfSheet);
-        setHeightToComponentHeight(m_andLabel, m_radioButtonReadPartOfSheet);
-        setWidthTo(m_fromCol, 50);
-        setWidthTo(m_toCol, 50);
-        setWidthTo(m_fromRow, 50);
-        setWidthTo(m_toRow, 50);
-
-        panel.add(m_fromColLabel, gbcBuilder.incX().setInsets(new Insets(5, 0, 0, 5)).build());
-        panel.add(m_fromCol, gbcBuilder.incX().build());
-        panel.add(m_toColLabel, gbcBuilder.incX().build());
-        panel.add(m_toCol, gbcBuilder.incX().build());
-        panel.add(m_andLabel, gbcBuilder.incX().setWidth(2).setWeightX(1).build());
-        m_fromRowLabel.setHorizontalAlignment(SwingConstants.RIGHT);
-        m_fromRowLabel.setPreferredSize(new Dimension((int)m_fromColLabel.getPreferredSize().getWidth(),
-            (int)m_fromRowLabel.getPreferredSize().getHeight()));
-        panel.add(m_fromRowLabel, gbcBuilder.incY().resetX().incX().incX().setWidth(1).setWeightX(0)
-            .setInsets(new Insets(5, 0, 5, 5)).build());
-        panel.add(m_fromRow, gbcBuilder.incX().build());
-        panel.add(m_toRowLabel, gbcBuilder.incX().build());
-        panel.add(m_toRow, gbcBuilder.incX().build());
-        panel.add(m_dotLabel, gbcBuilder.incX().build());
-        panel.add(m_readAreaNoteLabel, gbcBuilder.incX().build());
-        return panel;
-    }
-
-    static void setHeightToComponentHeight(final JComponent compHeightToSet, final JComponent refComp) {
-        compHeightToSet.setPreferredSize(new Dimension((int)compHeightToSet.getPreferredSize().getWidth(),
-            (int)refComp.getPreferredSize().getHeight()));
-    }
-
-    static void setWidthTo(final JComponent comp, final int width) {
-        comp.setPreferredSize(new Dimension(width, (int)comp.getPreferredSize().getHeight()));
-    }
-
-    private final JPanel createGeneralSettingsTab() {
-        final JPanel panel = new JPanel(new GridBagLayout());
-        final GBCBuilder gbcBuilder = new GBCBuilder().resetPos().anchorFirstLineStart().setWeightX(1).fillHorizontal();
-        panel.add(createFilePanel(), gbcBuilder.build());
-        panel.add(createSheetSelectionPanel(), gbcBuilder.incY().build());
-        panel.add(createColumnHeaderPanel(), gbcBuilder.incY().build());
-        panel.add(createRowIDPanel(), gbcBuilder.incY().build());
-        panel.add(createSheetAreaPanel(), gbcBuilder.incY().build());
-        panel.add(createPreviewComponent(), gbcBuilder.incY().fillBoth().setWeightY(1).build());
+        panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Values"));
+        final GBCBuilder gbcBuilder = new GBCBuilder(new Insets(5, 5, 0, 0)).resetPos().anchorFirstLineStart();
+        panel.add(m_reevaluateFormulas, gbcBuilder.build());
+        panel.add(m_radioButtonInsertErrorPattern, gbcBuilder.incX().setInsets(new Insets(5, 0, 0, 5)).build());
+        setWidthTo(m_formulaErrorPattern, 150);
+        panel.add(m_formulaErrorPattern, gbcBuilder.incX().build());
+        panel.add(m_radioButtonInsertMissingCell, gbcBuilder.incX().setInsets(new Insets(5, 5, 0, 5)).build());
+        panel.add(m_replaceEmptyStringsWithMissings, gbcBuilder.resetX().incY().build());
+        panel.add(m_use15DigitsPrecision,
+            gbcBuilder.incX().setInsets(new Insets(5, 0, 0, 5)).setWidth(3).setWeightX(1).fillHorizontal().build());
         return panel;
     }
 
@@ -607,86 +638,6 @@ final class ExcelTableReaderNodeDialog
         tabbedPane.add("File Content", createFileContentPreview());
         m_tabbedPreviewPaneList.add(tabbedPane);
         return tabbedPane;
-    }
-
-    private JPanel createAdvancedSettingsTab() {
-        final JPanel panel = new JPanel(new GridBagLayout());
-        final GBCBuilder gbcBuilder = new GBCBuilder().resetPos().anchorFirstLineStart().setWeightX(1).fillHorizontal();
-        panel.add(createAdvancedReaderOptionsPanel(), gbcBuilder.build());
-        panel.add(createFormulaEvaluationErrorOptionsPanel(), gbcBuilder.incY().build());
-        panel.add(createDataRowsSpecLimitPanel(), gbcBuilder.incY().build());
-        panel.add(createSpecFailingOptionsPanel(), gbcBuilder.incY().build());
-        panel.add(m_pathColumnPanel, gbcBuilder.incY().build());
-        panel.add(createPreviewComponent(), gbcBuilder.incY().fillBoth().setWeightY(1).build());
-        return panel;
-    }
-
-    private JPanel createEncryptionSettingsTab() {
-        final JPanel panel = new JPanel(new GridBagLayout());
-        final GBCBuilder gbcBuilder = new GBCBuilder().resetPos().anchorFirstLineStart().setWeightX(1).fillHorizontal();
-        panel.add(createEncryptionPanel(), gbcBuilder.build());
-        panel.add(createPreviewComponent(), gbcBuilder.incY().fillBoth().setWeightY(1).build());
-        return panel;
-    }
-
-    private JPanel createAdvancedReaderOptionsPanel() {
-        final JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Reading options"));
-        final GBCBuilder gbcBuilder =
-            new GBCBuilder(new Insets(5, 5, 0, 5)).resetPos().anchorFirstLineStart().setWeightX(1).fillHorizontal();
-        panel.add(m_skipEmptyCols, gbcBuilder.build());
-        panel.add(m_skipHiddenCols, gbcBuilder.incY().build());
-        panel.add(m_skipEmptyRows, gbcBuilder.incY().build());
-        panel.add(m_skipHiddenRows, gbcBuilder.incY().build());
-        panel.add(m_use15DigitsPrecision, gbcBuilder.incY().build());
-        panel.add(m_replaceEmptyStringsWithMissings, gbcBuilder.incY().build());
-        panel.add(m_reevaluateFormulas, gbcBuilder.incY().setInsets(new Insets(5, 5, 5, 5)).build());
-        return panel;
-    }
-
-    private JPanel createEncryptionPanel() {
-        final JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(
-            BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Password for protected files"));
-        final GBCBuilder gbcBuilder =
-            new GBCBuilder(new Insets(0, 5, 0, 5)).resetPos().anchorFirstLineStart().fillBoth();
-        panel.add(m_passwordComponent.getComponentPanel(), gbcBuilder.build());
-        panel.add(Box.createHorizontalBox(), gbcBuilder.incX().setWeightX(1).build());
-        return panel;
-    }
-
-    private JPanel createDataRowsSpecLimitPanel() {
-        final JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Table specification"));
-        final GBCBuilder gbcBuilder =
-            new GBCBuilder(new Insets(5, 5, 0, 5)).resetPos().anchorFirstLineStart().fillHorizontal();
-        panel.add(m_limitAnalysisChecker, gbcBuilder.build());
-        setWidthTo(m_limitAnalysisSpinner, 100);
-        panel.add(m_limitAnalysisSpinner, gbcBuilder.incX().setWeightX(1).fillNone().build());
-        panel.add(m_supportChangingFileSchemas, gbcBuilder.incY().resetX().setWidth(2).build());
-        return panel;
-    }
-
-    private JPanel createFormulaEvaluationErrorOptionsPanel() {
-        final JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Formula error handling"));
-        final GBCBuilder gbcBuilder = new GBCBuilder(new Insets(5, 5, 0, 5)).resetPos().anchorFirstLineStart();
-        panel.add(m_radioButtonInsertErrorPattern, gbcBuilder.build());
-        setWidthTo(m_formulaErrorPattern, 150);
-        panel.add(m_formulaErrorPattern, gbcBuilder.incX().setWeightX(1).setInsets(new Insets(7, 0, 0, 5)).build());
-        panel.add(m_radioButtonInsertMissingCell,
-            gbcBuilder.setWeightX(0).resetX().incY().setInsets(new Insets(5, 5, 5, 5)).build());
-        return panel;
-    }
-
-    private JPanel createSpecFailingOptionsPanel() {
-        final JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(
-            BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Options for multiple files"));
-        final GBCBuilder gbcBuilder =
-            new GBCBuilder(new Insets(5, 5, 5, 5)).resetPos().anchorFirstLineStart().setWeightX(1).fillHorizontal();
-        panel.add(m_failOnDifferingSpecs, gbcBuilder.build());
-        return panel;
     }
 
     private void toggleFailOnDifferingCheckBox() {
@@ -997,6 +948,11 @@ final class ExcelTableReaderNodeDialog
         m_skipEmptyRows.setSelected(tableReadConfig.skipEmptyRows());
         m_skipEmptyCols.setSelected(m_config.skipEmptyColumns());
         m_columnHeaderCheckBox.setSelected(tableReadConfig.useColumnHeaderIdx());
+
+        //enable disable radio button
+        m_emptyColHeaderExcelColName.setEnabled(!m_columnHeaderCheckBox.isSelected());
+        m_emptyColHeaderIndex.setEnabled(!m_columnHeaderCheckBox.isSelected());
+
         m_columnHeaderSpinner.setValue(tableReadConfig.getColumnHeaderIdx() + 1);
         m_radioButtonReadRowIDsFromCol.setSelected(tableReadConfig.useRowIDIdx());
         m_limitAnalysisChecker.setSelected(tableReadConfig.limitRowsForSpec());
