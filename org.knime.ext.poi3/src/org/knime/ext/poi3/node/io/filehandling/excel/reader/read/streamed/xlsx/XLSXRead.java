@@ -105,6 +105,9 @@ public final class XLSXRead extends AbstractStreamedRead {
             final ReadOnlySharedStringsTable sharedStringsTable = new ReadOnlySharedStringsTable(m_opc, false);
 
             m_sheetNames = ExcelUtils.getSheetNames(xmlReader, xssfReader, sharedStringsTable);
+
+            m_namedRanges = ExcelUtils.getNamedRanges(xmlReader, xssfReader, sharedStringsTable);
+
             final SheetIterator sheetsData = (SheetIterator)xssfReader.getSheetsData();
             m_countingSheetStream = getSheetStreamWithSheetName(sheetsData, getSelectedSheet());
             m_sheetSize = m_countingSheetStream.available();

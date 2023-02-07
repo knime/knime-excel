@@ -86,6 +86,7 @@ import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCellUtils;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelParserRunnable;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelRead;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelUtils;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.NamedRange;
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
 
 /**
@@ -107,6 +108,8 @@ public final class XLSRead extends ExcelRead {
 
     private Set<Integer> m_hiddenColumns;
 
+    private Map<String, NamedRange> m_namedRanges;
+
     /**
      * Constructor.
      *
@@ -125,6 +128,7 @@ public final class XLSRead extends ExcelRead {
             final BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream);
             m_workbook = checkFileFormatAndCreateWorkbook(bufferedInputStream);
             m_sheetNames = ExcelUtils.getSheetNames(m_workbook);
+            m_namedRanges = ExcelUtils.getNamedRanges(m_workbook);
             final Sheet sheet = m_workbook.getSheet(getSelectedSheet());
             m_numMaxRows = sheet.getLastRowNum() + 1L;
             final FormulaEvaluator formulaEvaluator = m_config.getReaderSpecificConfig().isReevaluateFormulas()
@@ -157,6 +161,11 @@ public final class XLSRead extends ExcelRead {
     @Override
     public Map<String, Boolean> getSheetNames() {
         return m_sheetNames;
+    }
+
+    @Override
+    public Map<String, NamedRange> getNamedRanges() {
+        return m_namedRanges;
     }
 
     /**

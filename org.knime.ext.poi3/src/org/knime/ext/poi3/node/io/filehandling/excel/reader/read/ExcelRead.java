@@ -298,6 +298,14 @@ public abstract class ExcelRead implements Read<ExcelCell> {
      */
     public abstract Map<String, Boolean> getSheetNames();
 
+
+    /**
+     * Returns a map that contains the names of the sheets as keys and whether it is the first non-empty sheet as value.
+     *
+     * @return the map of sheet names with names as keys being in the same order as in the workbook
+     */
+    public abstract Map<String, NamedRange> getNamedRanges();
+
     /**
      * Returns the name of the selected sheet based on the configuration.
      *

@@ -92,6 +92,7 @@ import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.util.ViewUtils;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelUtils;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.NamedRange;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.columnnames.ColumnNameMode;
 import org.knime.filehandling.core.connections.FSPath;
 import org.knime.filehandling.core.data.location.variable.FSLocationVariableType;
@@ -140,6 +141,8 @@ final class ExcelTableReaderNodeDialog
 
     private final JRadioButton m_radioButtonSheetByIndex = new JRadioButton(SheetSelection.INDEX.getText());
 
+    private final JRadioButton m_radioButtonNamedRanges= new JRadioButton("By named ranges");
+
     private final ButtonGroup m_sheetSelectionButtonGroup = new ButtonGroup();
 
     private final JLabel m_firstSheetWithDataLabel = new JLabel();
@@ -150,6 +153,8 @@ final class ExcelTableReaderNodeDialog
 
     // text has trailing space to not be cut on Windows because of italic font
     private final JLabel m_sheetIdxNoteLabel = new JLabel("(Position start with 0.) ");
+
+    private JComboBox<String> m_namedRangeSelection = new JComboBox<>();
 
     private JCheckBox m_failOnDifferingSpecs = new JCheckBox("Fail if schemas differ");
 
@@ -286,6 +291,7 @@ final class ExcelTableReaderNodeDialog
         m_sheetSelectionButtonGroup.add(m_radioButtonFirstSheetWithData);
         m_sheetSelectionButtonGroup.add(m_radioButtonSheetByName);
         m_sheetSelectionButtonGroup.add(m_radioButtonSheetByIndex);
+        m_sheetSelectionButtonGroup.add(m_radioButtonNamedRanges);
         m_buttonGroupFormulaError.add(m_radioButtonInsertErrorPattern);
         m_buttonGroupFormulaError.add(m_radioButtonInsertMissingCell);
         m_buttonGroupSheetArea.add(m_radioButtonReadEntireSheet);
@@ -319,6 +325,9 @@ final class ExcelTableReaderNodeDialog
             .setEnabled(m_radioButtonSheetByName.isEnabled() && m_radioButtonSheetByName.isSelected()));
         m_radioButtonSheetByIndex.addChangeListener(l -> m_sheetIndexSelection
             .setEnabled(m_radioButtonSheetByIndex.isEnabled() && m_radioButtonSheetByIndex.isSelected()));
+        m_radioButtonNamedRanges.addChangeListener(l -> m_namedRangeSelection
+            .setEnabled(m_radioButtonNamedRanges.isEnabled() && m_radioButtonNamedRanges.isSelected()));
+
 
         m_filePanel.getSettingsModel().getFilterModeModel().addChangeListener(l -> toggleFailOnDifferingCheckBox());
 
@@ -372,9 +381,11 @@ final class ExcelTableReaderNodeDialog
             m_tableReader.setChangeListener(l -> {
                 m_tableReader.setChangeListener(null);
                 ViewUtils.invokeLaterInEDT(this::setSheetNameList);
+                ViewUtils.invokeLaterInEDT(this::setNameRangeList);
             });
             m_radioButtonFirstSheetWithData.setSelected(true);
             m_radioButtonSheetByName.setEnabled(false);
+            m_radioButtonNamedRanges.setEnabled(false);
             m_radioButtonSheetByIndex.setEnabled(false);
             m_firstSheetWithDataLabel.setText(null);
             updatePreviewOrFileContentView(isTablePreviewInForeground);
@@ -431,6 +442,28 @@ final class ExcelTableReaderNodeDialog
 
         m_radioButtonSheetByIndex.setEnabled(true);
         m_radioButtonSheetByName.setEnabled(true);
+        m_radioButtonNamedRanges.setEnabled(true);
+        m_updatingSheetSelection = false;
+    }
+
+
+    private void setNameRangeList() {
+        Map<String, NamedRange> namedRanges = m_tableReader.getNamedRanges();
+        final String selectedRange = (String)m_namedRangeSelection.getSelectedItem();
+        m_namedRangeSelection.setModel(new DefaultComboBoxModel<>(namedRanges.keySet().toArray(new String[0])));
+        if (!namedRanges.isEmpty()) {
+            if (selectedRange != null) {
+                m_namedRangeSelection.setSelectedItem(selectedRange);
+            } else {
+                m_namedRangeSelection.setSelectedIndex(0);
+            }
+        } else {
+            m_namedRangeSelection.setSelectedIndex(-1);
+        }
+
+        m_radioButtonSheetByIndex.setEnabled(true);
+        m_radioButtonSheetByName.setEnabled(true);
+        m_radioButtonNamedRanges.setEnabled(true);
         m_updatingSheetSelection = false;
     }
 
@@ -492,6 +525,8 @@ final class ExcelTableReaderNodeDialog
         m_sheetIdxNoteLabel.setPreferredSize(new Dimension((int)m_sheetIdxNoteLabel.getPreferredSize().getWidth(),
             (int)m_sheetIndexSelection.getPreferredSize().getHeight()));
         panel.add(m_sheetIdxNoteLabel, gbcBuilder.incX().setWeightX(1 - smallDouble).build());
+        panel.add(m_radioButtonNamedRanges, gbcBuilder.incY().resetX().build());
+        panel.add(m_namedRangeSelection, gbcBuilder.incX().setWeightX(1 - smallDouble).build());
         return panel;
     }
 
@@ -680,6 +715,7 @@ final class ExcelTableReaderNodeDialog
         m_radioButtonFirstSheetWithData.addActionListener(actionListenerFileContent);
         m_radioButtonSheetByName.addActionListener(actionListenerFileContent);
         m_radioButtonSheetByIndex.addActionListener(actionListenerFileContent);
+        m_radioButtonNamedRanges.addActionListener(actionListenerFileContent);
         m_sheetNameSelection.addActionListener(actionListenerFileContent);
         m_limitAnalysisChecker.addActionListener(actionListenerFileContent);
         m_limitAnalysisSpinner.addChangeListener(changeListenerFileContent);
@@ -1101,4 +1137,5 @@ final class ExcelTableReaderNodeDialog
         m_fileContentPreviewController.onClose();
         m_filePanel.onClose();
     }
+
 }

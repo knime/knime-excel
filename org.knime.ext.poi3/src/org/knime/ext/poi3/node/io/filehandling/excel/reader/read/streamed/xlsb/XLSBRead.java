@@ -96,6 +96,9 @@ public final class XLSBRead extends AbstractStreamedRead {
             final XSSFBSharedStringsTable sst = new XSSFBSharedStringsTable(m_opc);
 
             m_sheetNames = ExcelUtils.getSheetNames(xssfbReader, sst);
+
+            m_namedRanges = ExcelUtils.getNamedRanges(xssfbReader, sst);
+
             final SheetIterator sheetsData = (SheetIterator)xssfbReader.getSheetsData();
             m_countingSheetStream = getSheetStreamWithSheetName(sheetsData, getSelectedSheet());
             m_sheetSize = m_countingSheetStream.available();

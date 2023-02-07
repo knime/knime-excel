@@ -50,7 +50,9 @@ package org.knime.ext.poi3.node.io.filehandling.excel.reader.read;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
@@ -58,11 +60,15 @@ import java.util.regex.Pattern;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.Name;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Row.MissingCellPolicy;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.ss.util.AreaReference;
 import org.apache.poi.xssf.binary.XSSFBSheetHandler;
+import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
 import org.apache.poi.xssf.eventusermodel.XSSFBReader;
 import org.apache.poi.xssf.eventusermodel.XSSFReader;
 import org.apache.poi.xssf.eventusermodel.XSSFReader.SheetIterator;
@@ -70,6 +76,7 @@ import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler;
 import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler.SheetContentsHandler;
 import org.apache.poi.xssf.model.SharedStrings;
 import org.apache.poi.xssf.usermodel.XSSFComment;
+import org.apache.xmlbeans.XmlException;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.AreaOfSheetToRead;
@@ -77,6 +84,10 @@ import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConf
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
 import org.knime.filehandling.core.node.table.reader.read.IntervalRead;
 import org.knime.filehandling.core.node.table.reader.read.Read;
+import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTDefinedName;
+import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTDefinedNames;
+import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTWorkbook;
+import org.openxmlformats.schemas.spreadsheetml.x2006.main.WorkbookDocument;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
@@ -201,6 +212,73 @@ public final class ExcelUtils {
             }
         }
         return sheetNames;
+    }
+
+    /**
+     * Returns a map that contains the names of the sheets contained in the specified {@link Workbook} as keys and
+     * whether it is the first non-empty sheet as value.
+     *
+     * @param workbook the workbook
+     * @return the map of sheet names and whether a sheet is the first with data
+     */
+    public static Map<String, NamedRange> getNamedRanges(final Workbook workbook) {
+        final List<? extends Name> allNames = workbook.getAllNames();
+        final Map<String, NamedRange> map = new LinkedHashMap<>(allNames.size());
+        for (Name n : allNames) {
+            final String toFormula = n.getRefersToFormula();
+            if (!AreaReference.isContiguous(toFormula)) {
+                //skip all none-contiguous ranges
+                continue;
+            }
+            map.put(n.getNameName(), new NamedRange(n.getSheetIndex(), n.getNameName(), toFormula));
+        }
+        return map;
+    }
+
+    /**
+     * @param xssfbReader
+     * @param sst
+     * @return
+     */
+    public static Map<String, NamedRange> getNamedRanges(final XSSFBReader reader, final SharedStrings sharedStrings)
+            throws InvalidFormatException, IOException, SAXException {
+        try (InputStream workbookData = reader.getWorkbookData()) {
+            final Workbook wb = WorkbookFactory.create(workbookData);
+            List<? extends Name> allNames = wb.getAllNames();
+            return new LinkedHashMap<>();
+        }
+    }
+
+
+    /**
+     * @param xmlReader
+     * @param xssfReader
+     * @param sharedStringsTable
+     * @return
+     * @throws XmlException
+     */
+    public static Map<String, NamedRange> getNamedRanges(final XMLReader xmlReader, final XSSFReader reader,
+        final ReadOnlySharedStringsTable sharedStrings) throws InvalidFormatException, IOException {
+        try (InputStream workbookXml = reader.getWorkbookData()) {
+            WorkbookDocument doc = WorkbookDocument.Factory.parse(workbookXml);
+            final CTWorkbook wb = doc.getWorkbook();
+            final CTDefinedNames definedNames = wb.getDefinedNames();
+            final List<CTDefinedName> definedNameList = definedNames != null ? definedNames.getDefinedNameList()
+                : Collections.emptyList();
+            final Map<String, NamedRange> map = new LinkedHashMap<>(definedNameList.size());
+            for (CTDefinedName ctName : definedNameList) {
+                final String toFormula = ctName.getStringValue();
+                if (!AreaReference.isContiguous(toFormula)) {
+                    //skip all none-contiguous ranges
+                    continue;
+                }
+                final String name = ctName.getName();
+                map.put(name, new NamedRange(ctName.getLocalSheetId(), name, toFormula));
+            }
+            return map;
+        } catch (XmlException | IOException e) {
+            throw new IOException(e);
+        }
     }
 
     /**
@@ -368,6 +446,7 @@ public final class ExcelUtils {
     public static Read<ExcelCell> decorateRowFilterReads(Read<ExcelCell> read,
         final TableReadConfig<ExcelTableReaderConfig> config) {
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
+
         if (excelConfig.getAreaOfSheetToRead() == AreaOfSheetToRead.PARTIAL) {
             read = new IntervalRead<>(read, getFirstIncludedRowIdx(config), getLastIncludedRowIdx(config) + 1L);
         }

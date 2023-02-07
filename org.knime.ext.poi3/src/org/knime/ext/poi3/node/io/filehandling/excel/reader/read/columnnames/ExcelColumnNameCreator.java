@@ -102,6 +102,8 @@ final class ExcelColumnNameCreator implements ColumnNameCreator {
         final Set<Integer> hiddenColumns) {
         int filteredIdx;
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
+
+
         final int startColIdx;
         // get the start index
         if (excelConfig.getAreaOfSheetToRead() == AreaOfSheetToRead.PARTIAL) {

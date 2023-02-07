@@ -116,6 +116,7 @@ public abstract class ExcelParserRunnable implements Runnable {
         m_skipHiddenRows = excelConfig.isSkipHiddenRows();
         m_replaceEmptyStringsWithMissings = excelConfig.isReplaceEmptyStringsWithMissings();
         m_rowIdIdx = config.useRowIDIdx() ? ExcelUtils.getRowIdColIdx(excelConfig.getRowIDCol()) : -1;
+
         m_firstCol = excelConfig.getAreaOfSheetToRead() == AreaOfSheetToRead.PARTIAL
             ? ExcelUtils.getFirstColumnIdx(excelConfig.getReadFromCol()) : 0;
         m_lastCol = excelConfig.getAreaOfSheetToRead() == AreaOfSheetToRead.PARTIAL

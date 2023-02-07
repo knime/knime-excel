@@ -67,6 +67,7 @@ import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelRead;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelUtils;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.NamedRange;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.WrapperExtractColumnHeaderRead;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.columnnames.ExcelColNameUtils;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.streamed.xlsb.XLSBRead;
@@ -101,6 +102,8 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
     /** Contains the names of the sheets as keys and whether it is the first non-empty sheet as value. */
     private Map<String, Boolean> m_sheetNames;
 
+    private Map<String, NamedRange> m_namedRanges;
+
     @SuppressWarnings("resource") // decorated read will be closed in AbstractReadDecorator#close
     @Override
     public Read<ExcelCell> read(final FSPath path, final TableReadConfig<ExcelTableReaderConfig> config)
@@ -116,6 +119,7 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
         try (ExcelRead read = getExcelRead(path, config)) {
             // sheet names are already retrieved, notify a potential listener from the dialog
             m_sheetNames = read.getSheetNames();
+            m_namedRanges = read.getNamedRanges();
             notifyChangeListener();
             return ExcelColNameUtils.assignNamesIfMissing(
                 guesser.guessSpec(decorateReadForSpecGuessing(read, config), config, exec, path), config,
@@ -261,4 +265,10 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
         return m_sheetNames;
     }
 
+    Map<String, NamedRange> getNamedRanges() {
+        if (m_namedRanges == null) {
+            return Collections.emptyMap();
+        }
+        return m_namedRanges;
+    }
 }

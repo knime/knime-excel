@@ -70,6 +70,7 @@ import org.knime.core.node.defaultnodesettings.SettingsModelAuthentication.Authe
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelParserRunnable;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelRead;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.NamedRange;
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
 
 /**
@@ -108,6 +109,8 @@ public abstract class AbstractStreamedRead extends ExcelRead {
     private AbstractStreamedParserRunnable m_streamedParser;
 
     private POIFSFileSystem m_poiFS;
+
+    protected Map<String, NamedRange> m_namedRanges;
 
     @SuppressWarnings("resource") // resources closed in #closeResources
     @Override
@@ -197,6 +200,11 @@ public abstract class AbstractStreamedRead extends ExcelRead {
     @Override
     public Map<String, Boolean> getSheetNames() {
         return m_sheetNames;
+    }
+
+    @Override
+    public Map<String, NamedRange> getNamedRanges() {
+        return m_namedRanges;
     }
 
     @Override
