@@ -327,10 +327,6 @@ final class ExcelTableReaderNodeDialog
             m_columnHeaderSpinner.setEnabled(isSelected);
             m_emptyColHeaderPrefix.setEnabled(isSelected);
             m_emptyColHeaderLabel.setEnabled(isSelected);
-
-            //disable radio buttons if use column header is selected
-            m_emptyColHeaderExcelColName.setEnabled(!isSelected);
-            m_emptyColHeaderIndex.setEnabled(!isSelected);
         });
 
         m_radioButtonInsertErrorPattern
@@ -538,8 +534,6 @@ final class ExcelTableReaderNodeDialog
         final Insets insets = new Insets(5, 5, 0, 0);
         final GBCBuilder gbcBuilder = new GBCBuilder(insets).resetPos().setWeightX(1).anchorFirstLineStart();
         panel.add(createColumnHeaderRowPanel(),  gbcBuilder.build());
-        panel.add(m_emptyColHeaderExcelColName,  gbcBuilder.incY().build());
-        panel.add(m_emptyColHeaderIndex, gbcBuilder.incY().build());
         return panel;
     }
 
@@ -557,7 +551,6 @@ final class ExcelTableReaderNodeDialog
         tf.setColumns(6);
         panel.add(m_columnHeaderCheckBox, gbcBuilder.build());
         panel.add(m_columnHeaderSpinner, gbcBuilder.incX().build());
-        panel.add(createColumnHeaderEmptyPrefixPanel(), gbcBuilder.insetLeft(5).incX().build());
         return panel;
     }
 
@@ -588,7 +581,7 @@ final class ExcelTableReaderNodeDialog
         panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "File and Sheet"));
         final GBCBuilder gbcBuilder = new GBCBuilder(new Insets(5, 5, 0, 5)).resetPos().anchorFirstLineStart();
         panel.add(new JLabel("File encryption"), gbcBuilder.build());
-        panel.add(m_passwordComponent.getComponentPanel(), gbcBuilder.setWidth(4).incY().insetLeft(20).build());
+        panel.add(m_passwordComponent.getComponentPanel(), gbcBuilder.setWidth(4).incY().insetLeft(20).insetTop(0).build());
         panel.add(new JLabel("Detect columns and data types"), gbcBuilder.setWidth(4).insetLeft(5).incY().build());
         panel.add(m_limitAnalysisChecker, gbcBuilder.incY().setWidth(1).insetLeft(20).build());
         setWidthTo(m_limitAnalysisSpinner, 100);
@@ -597,20 +590,36 @@ final class ExcelTableReaderNodeDialog
         panel.add(m_failOnDifferingSpecs, gbcBuilder.incX().setWeightX(1).fillHorizontal().build());
         //remove the border
         m_pathColumnPanel.setBorder(null);
-        panel.add(m_pathColumnPanel, gbcBuilder.resetX().insetLeft(5).incY().setWidth(4).build());
+        panel.add(m_pathColumnPanel, gbcBuilder.resetX().insetLeft(5).insetTop(5).incY().setWidth(4).build());
         return panel;
     }
 
     private JPanel createAdvancedDataArePanel() {
         final JPanel panel = new JPanel(new GridBagLayout());
         panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Data Area"));
-        final GBCBuilder gbcBuilder = new GBCBuilder(new Insets(5, 5, 0, 0)).resetPos().anchorFirstLineStart();
+        final Insets lableInsets = new Insets(5, 5, 0, 0);
+        final GBCBuilder gbcBuilder = new GBCBuilder(lableInsets).resetPos().anchorFirstLineStart();
         panel.add(new JLabel("RowID"), gbcBuilder.build());
-        panel.add(m_radioButtonGenerateRowIDs, gbcBuilder.setInsets(new Insets(0, 5, 0, 0)).incX().build());
-        panel.add(m_radioButtonReadRowIDsFromCol, gbcBuilder.incX().setInsets(new Insets(0, 5, 5, 0)).build());
-        setWidthTo(m_rowIDColumn, 50);
-        panel.add(m_rowIDColumn, gbcBuilder.incX().setWeightX(1).build());
+        final Insets buttonInsets = new Insets(0, 5, 0, 0);
+        panel.add(m_radioButtonGenerateRowIDs, gbcBuilder.setInsets(buttonInsets).incX().build());
+        panel.add(createRowIDFromColPanel(), gbcBuilder.incX().build());
+
+        panel.add(new JLabel("Column names"), gbcBuilder.setInsets(lableInsets).resetX().incY().build());
+        panel.add(m_emptyColHeaderExcelColName, gbcBuilder.setInsets(buttonInsets).incX().build());
+        panel.add(m_emptyColHeaderIndex, gbcBuilder.incX().build());
+        panel.add(createColumnHeaderEmptyPrefixPanel(), gbcBuilder.setWidth(1).insetLeft(5).incX().build());
+        panel.add(new JPanel(), gbcBuilder.setWeightX(1.0).fillHorizontal().incX().build());
         return panel;
+    }
+
+
+    private JPanel createRowIDFromColPanel() {
+        final GBCBuilder gbcBuilder = new GBCBuilder().resetPos().anchorFirstLineStart();
+        final JPanel rowIdFromCol = new JPanel(new GridBagLayout());
+        rowIdFromCol.add(m_radioButtonReadRowIDsFromCol, gbcBuilder.build());
+        setWidthTo(m_rowIDColumn, 50);
+        rowIdFromCol.add(m_rowIDColumn, gbcBuilder.incX().build());
+        return rowIdFromCol;
     }
 
     private JPanel createAdvancedValuesPanel() {
@@ -948,10 +957,6 @@ final class ExcelTableReaderNodeDialog
         m_skipEmptyRows.setSelected(tableReadConfig.skipEmptyRows());
         m_skipEmptyCols.setSelected(m_config.skipEmptyColumns());
         m_columnHeaderCheckBox.setSelected(tableReadConfig.useColumnHeaderIdx());
-
-        //enable disable radio button
-        m_emptyColHeaderExcelColName.setEnabled(!m_columnHeaderCheckBox.isSelected());
-        m_emptyColHeaderIndex.setEnabled(!m_columnHeaderCheckBox.isSelected());
 
         m_columnHeaderSpinner.setValue(tableReadConfig.getColumnHeaderIdx() + 1);
         m_radioButtonReadRowIDsFromCol.setSelected(tableReadConfig.useRowIDIdx());
