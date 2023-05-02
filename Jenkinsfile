@@ -22,6 +22,7 @@ try {
             workflowTests.runTests (
                 dependencies: [
                     repositories: [
+                        "knime-aws",
                         "knime-excel",
                         "knime-timeseries",
                         "knime-jep",
