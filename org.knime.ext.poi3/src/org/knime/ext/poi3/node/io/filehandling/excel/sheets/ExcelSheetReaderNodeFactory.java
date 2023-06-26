@@ -73,7 +73,7 @@ public final class ExcelSheetReaderNodeFactory extends ConfigurableNodeFactory<E
     static final String FS_CONNECT_GRP_ID = "File System Connection";
 
     /** The supported file extensions. */
-    private static final String[] FILE_EXTENSIONS = new String[]{".xlsx", ".xlsm", ".xls"};
+    private static final String[] FILE_EXTENSIONS = new String[]{".xlsx", ".xlsm", ".xlsb", ".xls"};
 
     @Override
     protected Optional<PortsConfigurationBuilder> createPortsConfigBuilder() {
