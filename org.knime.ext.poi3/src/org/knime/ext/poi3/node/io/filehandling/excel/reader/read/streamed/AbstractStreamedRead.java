@@ -48,7 +48,7 @@
  */
 package org.knime.ext.poi3.node.io.filehandling.excel.reader.read.streamed;
 
-import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
@@ -58,8 +58,10 @@ import java.util.OptionalLong;
 import java.util.Set;
 
 import org.apache.commons.io.input.CountingInputStream;
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.openxml4j.exceptions.NotOfficeXmlFileException;
 import org.apache.poi.openxml4j.opc.OPCPackage;
+import org.apache.poi.openxml4j.opc.PackageAccess;
 import org.apache.poi.poifs.crypt.Decryptor;
 import org.apache.poi.poifs.crypt.EncryptionInfo;
 import org.apache.poi.poifs.filesystem.FileMagic;
@@ -93,11 +95,8 @@ public abstract class AbstractStreamedRead extends ExcelRead {
         // don't do any initializations here, super constructor will call #createParser(InputStream)
     }
 
-    /** The opc package containing/holding the sheet that is read. */
-    protected OPCPackage m_opc;
-
-    /** The counting sheet stream. */
-    protected CountingInputStream m_countingSheetStream;
+    /** The sheet stream. */
+    protected CountingInputStream m_sheetStream;
 
     /** The size of the sheet to read. */
     protected long m_sheetSize;
@@ -107,66 +106,63 @@ public abstract class AbstractStreamedRead extends ExcelRead {
 
     private AbstractStreamedParserRunnable m_streamedParser;
 
-    private POIFSFileSystem m_poiFS;
-
-    @SuppressWarnings("resource") // resources closed in #closeResources
     @Override
-    protected ExcelParserRunnable createParser(final InputStream inputStream) throws IOException {
-        m_streamedParser = createStreamedParser(checkEncryptionAndDecrypt(inputStream));
+    protected ExcelParserRunnable createParser(final File file) throws IOException {
+        try {
+            m_streamedParser = switch (FileMagic.valueOf(file)) {
+                case OLE2 ->  createParserFromOLE2(file); // NOSONAR indentation is OK
+                case OOXML ->  // NOSONAR indentation is OK
+                    // this case means we actually have an unencrypted file, so just open the package without decryption
+                    // OPCPackage will be closed by parser
+                    createStreamedParser(OPCPackage.open(file, PackageAccess.READ));
+                // will be caught and output with a user-friendly error message
+                default -> throw new NotOfficeXmlFileException(""); // NOSONAR indentation is OK
+            };
+        } catch (GeneralSecurityException | InvalidFormatException e) {
+            throw new IOException(e.getMessage(), e);
+        }
+
         return m_streamedParser;
     }
 
-    private InputStream checkEncryptionAndDecrypt(final InputStream inputStream) throws IOException {
+    @SuppressWarnings("resource") // OPCPackage will be closed by parser
+    private AbstractStreamedParserRunnable createParserFromOLE2(final File file)
+            throws IOException, GeneralSecurityException, InvalidFormatException {
+        // encrypted OOXML files are stored as encrypted OLE2 files that contain the xml content
+        // xls files are also OLE files
         final SettingsModelAuthentication authenticationSettingsModel =
-            m_config.getReaderSpecificConfig().getAuthenticationSettingsModel();
-        final AuthenticationType authenticationType = authenticationSettingsModel.getAuthenticationType();
-        if (authenticationType == AuthenticationType.NONE) {
-            return inputStream;
-        }
-
-        // we need an input stream that supports #mark and #reset
-        final BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream);
-        switch (FileMagic.valueOf(bufferedInputStream)) {
-            case OLE2:
-                // encrypted OOXML files are stored as encrypted OLE2 files that contain the xml content
-                return decrypt(bufferedInputStream);
-            case OOXML:
-                // this case means we actually have a not encrypted file, so just return the stream without decryption
-                return bufferedInputStream;
-            default:
-                // will be caught and output with a user-friendly error message
-                throw new NotOfficeXmlFileException("");
-        }
-    }
-
-    private InputStream decrypt(final BufferedInputStream bufferedInputStream) throws IOException {
-        try {
-            m_poiFS = new POIFSFileSystem(bufferedInputStream);
-            final EncryptionInfo encryptionInfo = new EncryptionInfo(m_poiFS);
-            final Decryptor d = Decryptor.getInstance(encryptionInfo);
-            final SettingsModelAuthentication authenticationSettingsModel =
                 m_config.getReaderSpecificConfig().getAuthenticationSettingsModel();
+        final var authenticationType = authenticationSettingsModel.getAuthenticationType();
+        if (authenticationType == AuthenticationType.NONE) {
+            return createStreamedParser(OPCPackage.open(file, PackageAccess.READ));
+        }
+
+        try (final var poiFS = new POIFSFileSystem(file, true)) {
+            final var encryptionInfo = new EncryptionInfo(poiFS);
+            final var decryptor = Decryptor.getInstance(encryptionInfo);
             final String password =
                 authenticationSettingsModel.getPassword(m_config.getReaderSpecificConfig().getCredentialsProvider());
-            if (!d.verifyPassword(password)) {
-                bufferedInputStream.close();
-                m_poiFS.close();
+            if (!decryptor.verifyPassword(password)) {
                 throw createPasswordIncorrectException(null);
             }
-            return d.getDataStream(m_poiFS);
-        } catch (GeneralSecurityException e) {
-            throw new IOException(e.getMessage(), e);
+
+            try (final var decryptedStream = decryptor.getDataStream(poiFS)) {
+                // encrypted files will be buffered in memory fully, since we have to use OPCPackage.open(InputStream)
+                // Using `AesZipFileZipEntrySource.createZipEntrySource(decryptedStream)` to buffer the file on disk
+                // fails with "Truncated ZIP file"
+                return createStreamedParser(OPCPackage.open(decryptedStream));
+            }
         }
     }
 
     /**
      * Creates and returns a {@link AbstractStreamedParserRunnable}.
      *
-     * @param inputStream the input stream of the file being read
+     * @param opc the {@link OPCPackage} representing the Excel file being read
      * @return the created {@link AbstractStreamedParserRunnable}
      * @throws IOException if an I/O error occurs
      */
-    protected abstract AbstractStreamedParserRunnable createStreamedParser(InputStream inputStream) throws IOException;
+    protected abstract AbstractStreamedParserRunnable createStreamedParser(final OPCPackage opc) throws IOException;
 
     /**
      * @param sheetsData the sheet iterator
@@ -206,14 +202,8 @@ public abstract class AbstractStreamedRead extends ExcelRead {
 
     @Override
     public void closeResources() throws IOException {
-        if (m_countingSheetStream != null) {
-            m_countingSheetStream.close();
-        }
-        if (m_opc != null) {
-            m_opc.close();
-        }
-        if (m_poiFS != null) {
-            m_poiFS.close();
+        if (m_sheetStream != null) {
+            m_sheetStream.close();
         }
     }
 
@@ -224,7 +214,7 @@ public abstract class AbstractStreamedRead extends ExcelRead {
 
     @Override
     public long getProgress() {
-        return m_countingSheetStream.getByteCount();
+        return m_sheetStream.getByteCount();
     }
 
 }

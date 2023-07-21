@@ -127,24 +127,25 @@ public abstract class ExcelParserRunnable implements Runnable {
 
     @Override
     public void run() {
-        LOGGER.debug("Thread parsing an Excel spreadsheet started.");
+        LOGGER.debug("Thread parsing an Excel sheet started.");
         try {
             parse();
             m_read.addToQueue(ExcelRead.POISON_PILL);
-            LOGGER.debug("Thread parsing an Excel spreadsheet finished successfully.");
+            LOGGER.debug("Thread parsing an Excel sheet finished successfully.");
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            closeAndSwallowExceptions();
+            closeAndSwallowExceptions(e);
         } catch (ParsingInterruptedException e) { // NOSONAR ignore ParsingInterruptedException, they are thrown by us
-            closeAndSwallowExceptions();
+            closeAndSwallowExceptions(e);
         } catch (Throwable e) { // NOSONAR we want to catch any Throwable
             m_read.setThrowable(e);
             // cannot do anything with the IO exceptions besides logging
-            closeAndSwallowExceptions();
+            closeAndSwallowExceptions(e);
         }
     }
 
-    private void closeAndSwallowExceptions() {
+    private void closeAndSwallowExceptions(final Throwable e) {
+        LOGGER.debug("Problem while parsing Excel sheet, closing read...", e);
         try {
             m_read.close();
         } catch (IOException ioe) {

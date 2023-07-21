@@ -48,9 +48,11 @@
  */
 package org.knime.ext.poi3.node.io.filehandling.excel.reader.read;
 
+import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
@@ -58,6 +60,10 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -66,10 +72,13 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.openxml4j.exceptions.InvalidOperationException;
+import org.apache.poi.openxml4j.opc.OPCPackage;
+import org.knime.core.node.NodeLogger;
+import org.knime.core.util.FileUtil;
 import org.knime.core.util.ThreadUtils;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
-import org.knime.filehandling.core.connections.FSFiles;
+import org.knime.filehandling.core.connections.FSPath;
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
 import org.knime.filehandling.core.node.table.reader.randomaccess.RandomAccessible;
 import org.knime.filehandling.core.node.table.reader.randomaccess.RandomAccessibleUtils;
@@ -81,6 +90,8 @@ import org.knime.filehandling.core.node.table.reader.read.Read;
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
  */
 public abstract class ExcelRead implements Read<ExcelCell> {
+
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(ExcelRead.class);
 
     private static final int BLOCKING_QUEUE_SIZE = 100;
 
@@ -113,8 +124,9 @@ public abstract class ExcelRead implements Read<ExcelCell> {
     /** The Excel table read config. */
     protected final TableReadConfig<ExcelTableReaderConfig> m_config;
 
-    /** The input stream of the file. */
-    private final InputStream m_inputStream;
+    /** The (local) file to read from. */
+    // it is a future so the download task can be canceled with the same mechanism as the parser
+    private Future<File> m_localFile;
 
     /**
      * Constructor
@@ -126,23 +138,92 @@ public abstract class ExcelRead implements Read<ExcelCell> {
     protected ExcelRead(final Path path, final TableReadConfig<ExcelTableReaderConfig> config) throws IOException {
         m_path = path;
         m_config = config;
-        m_inputStream = FSFiles.newInputStream(path);
-        try {
-            startParserThread();
-        } catch (Exception e) { // NOSONAR catch any exception to make sure the stream is closed
-            m_inputStream.close();
-            throw e;
+
+        if (path instanceof FSPath fsPath) {
+            // our code always calls the ExcelRead with FSPath instances
+            m_localFile = resolveToLocalOrTempFile(fsPath);
+        } else {
+            // in the rare case that we get a non-FSPath, we just assume that the file is already local
+            m_localFile = CompletableFuture.completedFuture(path.toFile());
         }
+
+        startParserThread();
     }
 
     /**
-     * Creates a {@code ExcelParserRunnable}.
+     * Resolves the given path to a local file if possible or creates a temporary copy of the referenced file.
+     * The temporary file is deleted when the current file system is closed.
      *
-     * @param inputStream the file input stream
+     * @return future for local file or temporary local file with contents of path
+     * @throws IOException I/O exception while resolving local file, creating temporary file, or transferring contents
+     */
+    /* AP-20714: We need to cache the file locally, since the InputStream-based API of OPCPackage puts the whole
+         decompressed contents into main memory, which can exceed the heap space (and was observed to do for
+         some files with ~80-300 MiB on disk).
+         Using the file-based API, the OPCPackage is able to do random I/O on the contents of the compressed
+         file.
+         What did not work:
+         - Using something like SharedStrings to deduplicate strings in memory is not possible,
+           since this applies _after_ opening the OPCPackage -- and opening is the problem.
+         - POI 5.1.0 adds some possibility to cache package parts (metadata, sheets, etc.) in (encrypted) temp
+           files if they are above a certain threshold by setting
+           `ZipInputStreamZipEntrySource#setThresholdBytesForTempFiles` and `ZipPackage#setUseTempFilePackageParts`:
+           - (default) -1: "temp files are not used and that zip entries with more than 2GB of data after
+                            decompressing will fail"
+           - 0: "all zip entries are stored in temp files"
+           When using the InputStream-based API, the contents get wrapped in "zip archive fake entries".
+           For caching in temp files, this asks its wrapped ZipArchiveEntry for its size, which reports a size
+           of -1 (SIZE_UNKNOWN) until it was decompressed fully. From the ZipArchiveEntry Javadoc (commons-compress):
+           "Note: ZipArchiveInputStream may create entries that return SIZE_UNKNOWN as long as the entry hasn't been
+            read completely."
+           This is the case in the constructor of `ZipArchiveFakeEntry`.
+
+           Hence, the reported size of -1 is not above any threshold that one can set to enable caching (anything >= 0).
+           (see https://github.com/apache/poi/blob/trunk/poi-ooxml/src/main/java/org/apache/poi/openxml4j/util/ZipArchiveFakeEntry.java#L60) // NOSONAR
+
+           But even if using InputStream would work, we would unnecessarily cache local files in temp files just
+           because we have to go through InputStream.
+           (for configuration options of POI see https://poi.apache.org/components/configuration.html)
+     */
+    private static Future<File> resolveToLocalOrTempFile(final FSPath path) throws IOException {
+        if (!Files.isRegularFile(path)) {
+            throw new IllegalArgumentException(
+                "Can only resolve regular files, not path denoting: \"%s\"".formatted(path.toString()));
+        }
+        return path.resolveToLocal()
+                .<Future<File>>map(local -> CompletableFuture.completedFuture(local.toFile()))
+                .orElse(
+                    // package the download (copy to temp file) into a callable to make it cancelable through the UI
+                    CACHED_THREAD_POOL.submit(ThreadUtils.callableWithContext(new Callable<File>() {
+                        @Override
+                        public File call() throws IOException {
+                            final var tempFile = FileUtil.createTempFile("ExcelRead-tempfile", ".bin",
+                                FileUtil.getWorkflowTempDir(), true);
+                            final var tempPath = tempFile.toPath();
+                            try (final var fileSystem = path.getFileSystem()) {
+                                fileSystem.registerCloseable(() -> Files.deleteIfExists(tempPath));
+                            }
+                            LOGGER.debug(() -> "Caching Excel file at \"%s\" to temporary file \"%s\"".formatted(path,
+                                tempFile));
+                            Files.copy(path, tempPath, StandardCopyOption.REPLACE_EXISTING,
+                                StandardCopyOption.COPY_ATTRIBUTES);
+                            return tempFile;
+                        }
+                    }))
+                );
+    }
+
+    /**
+     * Creates a {@code ExcelParserRunnable} on a local file.
+     *
+     * @param localFile the file to read from
      * @return the {@code ExcelParserRunnable}
      * @throws IOException if an I/O exception occurs
+     *
+     * @see OPCPackage#open(File)
+     * @see OPCPackage#open(java.io.InputStream)
      */
-    protected abstract ExcelParserRunnable createParser(final InputStream inputStream) throws IOException;
+    protected abstract ExcelParserRunnable createParser(final File localFile) throws IOException;
 
     /**
      * Closes resources.
@@ -187,18 +268,40 @@ public abstract class ExcelRead implements Read<ExcelCell> {
     private void startParserThread() throws IOException {
         try {
             // create and start the thread
-            final ExcelParserRunnable runnable = createParser(m_inputStream);
+            final ExcelParserRunnable runnable = createParser(getFile());
             m_parserThread = CACHED_THREAD_POOL.submit(ThreadUtils.runnableWithContext(runnable));
         } catch (InvalidOperationException e) {
             throw new IllegalStateException(e.getMessage(), e);
         }
     }
 
+    private File getFile() throws IOException {
+        try {
+            return m_localFile.get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Waiting for local file to be available was interrupted: " + e.getMessage(), e);
+        } catch (ExecutionException e) {
+            throw new IOException("Task supplying the local file was aborted by exception: " + e.getMessage(), e);
+        }
+    }
+
     @Override
     public final void close() throws IOException {
         // cancel the thread
-        if (m_parserThread != null) {
-            m_parserThread.cancel(true);
+        if (m_parserThread != null && m_parserThread.cancel(true)) {
+            LOGGER.debug("Canceled parser thread");
+            try {
+                // wait for the parser thread to cancel, to avoid it still reading from the (sheet) input stream
+                // that we will make sure is closed as well (in closeResources)
+                m_parserThread.get();
+            } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } catch (final ExecutionException e) {
+                LOGGER.debug("While waiting for parser thread to cancel", e);
+            } catch (final CancellationException e) { // NOSONAR
+                // ignore since we wanted to cancel it
+            }
         }
         // free the queue so that any put call by the canceled thread is not blocking the cancellation
         m_queueRandomAccessibles.clear();
@@ -209,9 +312,6 @@ public abstract class ExcelRead implements Read<ExcelCell> {
         // close resources
         try {
             closeResources();
-            if (m_inputStream != null) {
-                m_inputStream.close();
-            }
         } catch (IOException e) {
             // an exception during parsing has priority
             if (throwable == null) {

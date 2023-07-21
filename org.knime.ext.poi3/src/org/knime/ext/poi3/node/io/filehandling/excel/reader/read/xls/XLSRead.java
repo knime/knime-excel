@@ -48,7 +48,7 @@
  */
 package org.knime.ext.poi3.node.io.filehandling.excel.reader.read.xls;
 
-import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
@@ -120,10 +120,9 @@ public final class XLSRead extends ExcelRead {
     }
 
     @Override
-    public ExcelParserRunnable createParser(final InputStream inputStream) throws IOException {
+    public ExcelParserRunnable createParser(final File file) throws IOException {
         try {
-            final BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream);
-            m_workbook = checkFileFormatAndCreateWorkbook(bufferedInputStream);
+            m_workbook = checkFileFormatAndCreateWorkbook(file);
             m_sheetNames = ExcelUtils.getSheetNames(m_workbook);
             final Sheet sheet = m_workbook.getSheet(getSelectedSheet());
             m_numMaxRows = sheet.getLastRowNum() + 1L;
@@ -164,8 +163,8 @@ public final class XLSRead extends ExcelRead {
      * need to parse the message of the exception thrown there, we check ourselves and provide a more user-friendly
      * error message.
      */
-    private Workbook checkFileFormatAndCreateWorkbook(final BufferedInputStream inputStream) throws IOException {
-        switch (FileMagic.valueOf(inputStream)) {
+    private Workbook checkFileFormatAndCreateWorkbook(final File file) throws IOException {
+        switch (FileMagic.valueOf(file)) {
             case OLE2:
             case OOXML:
                 break;
@@ -177,7 +176,7 @@ public final class XLSRead extends ExcelRead {
             m_config.getReaderSpecificConfig().getAuthenticationSettingsModel();
         if (authenticationSettingsModel.getAuthenticationType() == AuthenticationType.NONE) {
             try {
-                return WorkbookFactory.create(inputStream);
+                return WorkbookFactory.create(file, null, true);
             } catch (EncryptedDocumentException e) {
                 throw createPasswordProtectedFileException(e);
             }
@@ -185,7 +184,7 @@ public final class XLSRead extends ExcelRead {
             try {
                 final String password = authenticationSettingsModel
                     .getPassword(m_config.getReaderSpecificConfig().getCredentialsProvider());
-                return WorkbookFactory.create(inputStream, password);
+                return WorkbookFactory.create(file, password, true);
             } catch (EncryptedDocumentException e) {
                 throw createPasswordIncorrectException(e);
             }

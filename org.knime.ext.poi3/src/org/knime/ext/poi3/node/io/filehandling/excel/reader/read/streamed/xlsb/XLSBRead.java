@@ -49,11 +49,11 @@
 package org.knime.ext.poi3.node.io.filehandling.excel.reader.read.streamed.xlsb;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Path;
 
 import org.apache.poi.openxml4j.exceptions.OpenXML4JException;
 import org.apache.poi.openxml4j.opc.OPCPackage;
+import org.apache.poi.openxml4j.opc.PackageAccess;
 import org.apache.poi.xssf.binary.XSSFBSharedStringsTable;
 import org.apache.poi.xssf.eventusermodel.XSSFBReader;
 import org.apache.poi.xssf.eventusermodel.XSSFBReader.SheetIterator;
@@ -88,20 +88,21 @@ public final class XLSBRead extends AbstractStreamedRead {
     }
 
     @Override
-    public AbstractStreamedParserRunnable createStreamedParser(final InputStream inputStream) throws IOException {
+    public AbstractStreamedParserRunnable createStreamedParser(final OPCPackage opc) throws IOException {
         try {
-            m_opc = OPCPackage.open(inputStream);
-
-            final XSSFBReader xssfbReader = new XSSFBReader(m_opc);
-            final XSSFBSharedStringsTable sst = new XSSFBSharedStringsTable(m_opc);
+            final var xssfbReader = new XSSFBReader(opc);
+            final var sst = new XSSFBSharedStringsTable(opc);
 
             m_sheetNames = ExcelUtils.getSheetNames(xssfbReader, sst);
             final SheetIterator sheetsData = (SheetIterator)xssfbReader.getSheetsData();
-            m_countingSheetStream = getSheetStreamWithSheetName(sheetsData, getSelectedSheet());
-            m_sheetSize = m_countingSheetStream.available();
+            m_sheetStream = getSheetStreamWithSheetName(sheetsData, getSelectedSheet());
+            // The underlying compressed (zip) input stream always reports "available" as 1 until fully consumed
+            // Hence, we get the size from the part (zip entry) itself and use the bytes passed through the counting
+            // sheet stream to estimate the progress.
+            m_sheetSize = sheetsData.getSheetPart().getSize();
 
             // create the parser
-            return new XLSBParserRunnable(this, m_config, xssfbReader, sst);
+            return new XLSBParserRunnable(this, m_config, opc, xssfbReader, sst);
         } catch (SAXException | OpenXML4JException e) {
             throw new IllegalStateException(e.getMessage(), e);
         }
@@ -115,9 +116,12 @@ public final class XLSBRead extends AbstractStreamedRead {
 
         private final KNIMEDataFormatter m_dataFormatter;
 
+        private OPCPackage m_opc;
+
         XLSBParserRunnable(final ExcelRead read, final TableReadConfig<ExcelTableReaderConfig> config,
-            final XSSFBReader xssfReader, final SharedStrings sharedStringsTable) {
+            final OPCPackage opc, final XSSFBReader xssfReader, final SharedStrings sharedStringsTable) {
             super(read, config);
+            m_opc = opc;
             m_xssfReader = xssfReader;
             m_sharedStringsTable = sharedStringsTable;
             // Note: Apache POI does not yet support reading out the information whether 1904 windowing us used or not
@@ -127,16 +131,27 @@ public final class XLSBRead extends AbstractStreamedRead {
 
         @Override
         protected void parse() throws Exception {
-            final ExcelTableReaderSheetContentsHandler sheetContentsHandler =
-                new ExcelTableReaderSheetContentsHandler(m_dataFormatter);
+            try {
+                final var sheetContentsHandler = new ExcelTableReaderSheetContentsHandler(m_dataFormatter);
 
-            final KNIMEXSSFBSheetXMLHandler sheetHandler = new KNIMEXSSFBSheetXMLHandler(m_countingSheetStream,
-                m_xssfReader.getXSSFBStylesTable(), m_sharedStringsTable, sheetContentsHandler, m_dataFormatter, false);
-            sheetHandler.parse();
+                final var sheetHandler = new KNIMEXSSFBSheetXMLHandler(m_sheetStream,
+                    m_xssfReader.getXSSFBStylesTable(), m_sharedStringsTable, sheetContentsHandler, m_dataFormatter,
+                    false);
+                sheetHandler.parse();
 
-            // XLSB library does not invoke {@link ExcelTableReaderSheetContentsHandler#endSheet()}
-            // therefore invoke endSheet() manually.
-            sheetContentsHandler.endSheet();
+                // XLSB library does not invoke {@link ExcelTableReaderSheetContentsHandler#endSheet()}
+                // therefore invoke endSheet() manually.
+                sheetContentsHandler.endSheet();
+            } finally {
+                // read-only OPCPackages should be reverted, not closed, but in case it was opened from an InputStream
+                // it is in READ-WRITE mode... (see OPCPackage.open(InputStream))
+                // OPCPackage.close checks for that but issues a warning if we're closing a READ-only package
+                if (m_opc.getPackageAccess() == PackageAccess.READ) {
+                    m_opc.revert();
+                } else {
+                    m_opc.close();
+                }
+            }
         }
     }
 }

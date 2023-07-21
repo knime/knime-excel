@@ -48,8 +48,12 @@
  */
 package org.knime.ext.poi3.node.io.filehandling.excel.reader.read.streamed.xlsx;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOError;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -57,6 +61,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.apache.poi.ooxml.util.SAXHelper;
 import org.apache.poi.openxml4j.exceptions.OpenXML4JException;
 import org.apache.poi.openxml4j.opc.OPCPackage;
+import org.apache.poi.openxml4j.opc.PackageAccess;
 import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
 import org.apache.poi.xssf.eventusermodel.XSSFReader;
 import org.apache.poi.xssf.eventusermodel.XSSFReader.SheetIterator;
@@ -95,22 +100,25 @@ public final class XLSXRead extends AbstractStreamedRead {
     }
 
     @Override
-    public AbstractStreamedParserRunnable createStreamedParser(final InputStream inputStream) throws IOException {
+    public AbstractStreamedParserRunnable createStreamedParser(final OPCPackage opc) throws IOException {
         try {
-            m_opc = OPCPackage.open(inputStream);
-            final XSSFReader xssfReader = new XSSFReader(m_opc);
-            final XMLReader xmlReader = SAXHelper.newXMLReader();
+            final var xssfReader = new XSSFReader(opc);
+            final var xmlReader = SAXHelper.newXMLReader();
             // disable DTD to prevent almost all XXE attacks, XMLHelper.newXMLReader() did set further security features
             xmlReader.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-            final ReadOnlySharedStringsTable sharedStringsTable = new ReadOnlySharedStringsTable(m_opc, false);
+            final var sharedStringsTable = new ReadOnlySharedStringsTable(opc, false);
 
             m_sheetNames = ExcelUtils.getSheetNames(xmlReader, xssfReader, sharedStringsTable);
             final SheetIterator sheetsData = (SheetIterator)xssfReader.getSheetsData();
-            m_countingSheetStream = getSheetStreamWithSheetName(sheetsData, getSelectedSheet());
-            m_sheetSize = m_countingSheetStream.available();
+            m_sheetStream = getSheetStreamWithSheetName(sheetsData, getSelectedSheet());
+            // The underlying compressed (zip) input stream (InflaterInputStream) always reports "available" as 1
+            // until fully consumed, in which case it returns 0
+            // Hence, we get the size from the part (zip entry) itself and use the bytes passed through the counting
+            // sheet stream to estimate the progress.
+            m_sheetSize = sheetsData.getSheetPart().getSize();
 
             // create the parser
-            return new XLSXParserRunnable(this, m_config, xmlReader, xssfReader, sharedStringsTable,
+            return new XLSXParserRunnable(this, m_config, opc, xmlReader, xssfReader, sharedStringsTable,
                 use1904Windowing(xssfReader));
         } catch (SAXException | OpenXML4JException | ParserConfigurationException e) {
             throw new IllegalStateException(e.getMessage(), e);
@@ -139,10 +147,21 @@ public final class XLSXRead extends AbstractStreamedRead {
 
         private final XMLReader m_xmlReader;
 
+        private OPCPackage m_opc;
+
+        private final String m_stackTraceAtConstructor;
+
         XLSXParserRunnable(final ExcelRead read, final TableReadConfig<ExcelTableReaderConfig> config,
-            final XMLReader xmlReader, final XSSFReader xssfReader, final ReadOnlySharedStringsTable sharedStringsTable,
-            final boolean use1904Windowing) {
+            final OPCPackage opc, final XMLReader xmlReader, final XSSFReader xssfReader,
+            final ReadOnlySharedStringsTable sharedStringsTable, final boolean use1904Windowing) {
             super(read, config);
+            try (final var bos = new ByteArrayOutputStream(); final var ps = new PrintStream(bos, true, "UTF-8")) {
+                new Throwable().printStackTrace(ps);
+                m_stackTraceAtConstructor = new String(bos.toByteArray(), StandardCharsets.UTF_8);
+            } catch (IOException e) {
+                throw new IOError(e);
+            }
+            m_opc = opc;
             m_xmlReader = xmlReader;
             m_xssfReader = xssfReader;
             m_sharedStringsTable = sharedStringsTable;
@@ -151,11 +170,21 @@ public final class XLSXRead extends AbstractStreamedRead {
 
         @Override
         protected void parse() throws Exception {
-            final ExcelTableReaderSheetContentsHandler sheetContentsHandler =
-                new ExcelTableReaderSheetContentsHandler(m_dataFormatter);
-            m_xmlReader.setContentHandler(new KNIMEXSSFSheetXMLHandler(m_xssfReader.getStylesTable(),
-                m_sharedStringsTable, sheetContentsHandler, m_dataFormatter, false));
-            m_xmlReader.parse(new InputSource(m_countingSheetStream));
+            try {
+                final var sheetContentsHandler = new ExcelTableReaderSheetContentsHandler(m_dataFormatter);
+                m_xmlReader.setContentHandler(new KNIMEXSSFSheetXMLHandler(m_xssfReader.getStylesTable(),
+                    m_sharedStringsTable, sheetContentsHandler, m_dataFormatter, false));
+                m_xmlReader.parse(new InputSource(m_sheetStream));
+            } finally {
+                // read-only OPCPackages should be reverted, not closed, but in case it was opened from an InputStream
+                // it is in READ-WRITE mode... (see OPCPackage.open(InputStream))
+                // OPCPackage.close checks for that but issues a warning if we're closing a READ-only package
+                if (m_opc.getPackageAccess() == PackageAccess.READ) {
+                    m_opc.revert();
+                } else {
+                    m_opc.close();
+                }
+            }
         }
 
     }

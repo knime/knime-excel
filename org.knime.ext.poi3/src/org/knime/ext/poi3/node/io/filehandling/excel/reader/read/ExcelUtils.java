@@ -157,7 +157,7 @@ public final class ExcelUtils {
             new XSSFSheetXMLHandler(reader.getStylesTable(), sharedStrings, new IsEmpty(), new DataFormatter(), false));
         final SheetIterator sheetsData = (SheetIterator)reader.getSheetsData();
         while (sheetsData.hasNext()) {
-            try (final InputStream inputStream = sheetsData.next()) {
+            try (final var inputStream = sheetsData.next()) {
                 if (nonEmptySheetFound) {
                     sheetNames.put(sheetsData.getSheetName(), false);
                 } else {
@@ -400,6 +400,14 @@ public final class ExcelUtils {
         return endRowIdx;
     }
 
+    /**
+     * Determines whether the sheet is empty, closing the input stream at the end.
+     * @param xmlReader
+     * @param inputStream
+     * @return
+     * @throws IOException
+     * @throws SAXException
+     */
     private static boolean isSheetEmpty(final XMLReader xmlReader, final InputStream inputStream)
         throws IOException, SAXException {
         try {
