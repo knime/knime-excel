@@ -60,7 +60,6 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -192,25 +191,30 @@ public abstract class ExcelRead implements Read<ExcelCell> {
         }
         return path.resolveToLocal()
                 .<Future<File>>map(local -> CompletableFuture.completedFuture(local.toFile()))
-                .orElse(
+                .orElseGet(() ->
                     // package the download (copy to temp file) into a callable to make it cancelable through the UI
-                    CACHED_THREAD_POOL.submit(ThreadUtils.callableWithContext(new Callable<File>() {
-                        @Override
-                        public File call() throws IOException {
-                            final var tempFile = FileUtil.createTempFile("ExcelRead-tempfile", ".bin",
-                                FileUtil.getWorkflowTempDir(), true);
-                            final var tempPath = tempFile.toPath();
-                            try (final var fileSystem = path.getFileSystem()) {
-                                fileSystem.registerCloseable(() -> Files.deleteIfExists(tempPath));
-                            }
-                            LOGGER.debug(() -> "Caching Excel file at \"%s\" to temporary file \"%s\"".formatted(path,
-                                tempFile));
-                            Files.copy(path, tempPath, StandardCopyOption.REPLACE_EXISTING,
-                                StandardCopyOption.COPY_ATTRIBUTES);
-                            return tempFile;
-                        }
-                    }))
-                );
+                    CACHED_THREAD_POOL.submit(ThreadUtils.callableWithContext(() -> copyToTemp(path))
+                ));
+    }
+
+    /**
+     * Copies the given file to a temp file using {@link Files#copy(Path, Path, java.nio.file.CopyOption...)}.
+     * The temp file is deleted when the file system of the given path is closed (or the JVM exits).
+     *
+     * @param path path to copy
+     * @return temp file
+     * @throws IOException while copying
+     * @see {@link Files#copy(Path, Path, java.nio.file.CopyOption...)}
+     */
+    private static File copyToTemp(final FSPath path) throws IOException {
+        final var tempFile = FileUtil.createTempFile("ExcelRead-tempfile", ".bin", FileUtil.getWorkflowTempDir(), true);
+        final var tempPath = tempFile.toPath();
+        try (final var fileSystem = path.getFileSystem()) {
+            fileSystem.registerCloseable(() -> Files.deleteIfExists(tempPath));
+        }
+        LOGGER.debug(() -> "Caching Excel file at \"%s\" to temporary file \"%s\"".formatted(path, tempFile));
+        Files.copy(path, tempPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
+        return tempFile;
     }
 
     /**
