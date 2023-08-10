@@ -230,7 +230,7 @@ public abstract class ExcelRead implements Read<ExcelCell> {
     protected abstract ExcelParserRunnable createParser(final File localFile) throws IOException;
 
     /**
-     * Closes resources.
+     * Closes resources after parser thread is gone (either normally or abnormally).
      *
      * @throws IOException if an I/O exception occurs
      */
@@ -312,8 +312,8 @@ public abstract class ExcelRead implements Read<ExcelCell> {
         // as we just cleared the queue, we can use #add to insert the poison pill
         m_queueRandomAccessibles.add(POISON_PILL);
 
-        final Throwable throwable = m_throwableDuringParsing.get();
-        // close resources
+        final var throwable = m_throwableDuringParsing.get();
+        // at this point we are sure the parser thread is gone (either normally or abnormally)
         try {
             closeResources();
         } catch (IOException e) {
@@ -325,10 +325,10 @@ public abstract class ExcelRead implements Read<ExcelCell> {
 
         // if an exception occurred during parsing, throw it
         if (throwable != null) {
-            if (throwable instanceof RuntimeException) {
-                throw (RuntimeException)throwable;
-            } else if (throwable instanceof Error) {
-                throw (Error)throwable;
+            if (throwable instanceof RuntimeException rex) {
+                throw rex;
+            } else if (throwable instanceof Error err) {
+                throw err;
             }
             throw new IllegalStateException(throwable.getMessage(), throwable);
         }

@@ -98,6 +98,9 @@ public abstract class AbstractStreamedRead extends ExcelRead {
     /** The sheet stream. */
     protected CountingInputStream m_sheetStream;
 
+    /** The package where the sheet stream originates from. */
+    private OPCPackage m_opc;
+
     /** The size of the sheet to read. */
     protected long m_sheetSize;
 
@@ -106,26 +109,27 @@ public abstract class AbstractStreamedRead extends ExcelRead {
 
     private AbstractStreamedParserRunnable m_streamedParser;
 
+
     @Override
     protected ExcelParserRunnable createParser(final File file) throws IOException {
         try {
             m_streamedParser = switch (FileMagic.valueOf(file)) {
                 case OLE2 ->  createParserFromOLE2(file); // NOSONAR indentation is OK
-                case OOXML ->  // NOSONAR indentation is OK
+                case OOXML ->  {// NOSONAR indentation is OK
                     // this case means we actually have an unencrypted file, so just open the package without decryption
                     // OPCPackage will be closed by parser
-                    createStreamedParser(OPCPackage.open(file, PackageAccess.READ));
+                    m_opc = OPCPackage.open(file, PackageAccess.READ); // NOSONAR indentation is OK
+                    yield createStreamedParser(m_opc);
+                }
                 // will be caught and output with a user-friendly error message
                 default -> throw new NotOfficeXmlFileException(""); // NOSONAR indentation is OK
             };
         } catch (GeneralSecurityException | InvalidFormatException e) {
             throw new IOException(e.getMessage(), e);
         }
-
         return m_streamedParser;
     }
 
-    @SuppressWarnings("resource") // OPCPackage will be closed by parser
     private AbstractStreamedParserRunnable createParserFromOLE2(final File file)
             throws IOException, GeneralSecurityException, InvalidFormatException {
         // encrypted OOXML files are stored as encrypted OLE2 files that contain the xml content
@@ -134,9 +138,9 @@ public abstract class AbstractStreamedRead extends ExcelRead {
                 m_config.getReaderSpecificConfig().getAuthenticationSettingsModel();
         final var authenticationType = authenticationSettingsModel.getAuthenticationType();
         if (authenticationType == AuthenticationType.NONE) {
-            return createStreamedParser(OPCPackage.open(file, PackageAccess.READ));
+            m_opc = OPCPackage.open(file, PackageAccess.READ);
+            return createStreamedParser(m_opc);
         }
-
         try (final var poiFS = new POIFSFileSystem(file, true)) {
             final var encryptionInfo = new EncryptionInfo(poiFS);
             final var decryptor = Decryptor.getInstance(encryptionInfo);
@@ -145,12 +149,12 @@ public abstract class AbstractStreamedRead extends ExcelRead {
             if (!decryptor.verifyPassword(password)) {
                 throw createPasswordIncorrectException(null);
             }
-
             try (final var decryptedStream = decryptor.getDataStream(poiFS)) {
                 // encrypted files will be buffered in memory fully, since we have to use OPCPackage.open(InputStream)
                 // Using `AesZipFileZipEntrySource.createZipEntrySource(decryptedStream)` to buffer the file on disk
                 // fails with "Truncated ZIP file"
-                return createStreamedParser(OPCPackage.open(decryptedStream));
+                m_opc = OPCPackage.open(decryptedStream);
+                return createStreamedParser(m_opc);
             }
         }
     }
@@ -204,6 +208,16 @@ public abstract class AbstractStreamedRead extends ExcelRead {
     public void closeResources() throws IOException {
         if (m_sheetStream != null) {
             m_sheetStream.close();
+        }
+        if (m_opc != null) {
+            // read-only OPCPackages should be reverted, not closed, but in case it was opened from an InputStream
+            // it is in READ-WRITE mode... (see OPCPackage.open(InputStream))
+            // OPCPackage.close checks for that but issues a warning if we're closing a READ-only package
+            if (m_opc.getPackageAccess() == PackageAccess.READ) {
+                m_opc.revert();
+            } else {
+                m_opc.close();
+            }
         }
     }
 
