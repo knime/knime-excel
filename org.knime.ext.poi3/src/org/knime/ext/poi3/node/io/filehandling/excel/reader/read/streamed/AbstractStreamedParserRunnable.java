@@ -80,13 +80,12 @@ public abstract class AbstractStreamedParserRunnable extends ExcelParserRunnable
     /**
      * Constructor.
      *
-     * @param read the excel read
-     * @param config the config
+     * @param r the excel read
+     * @param cfg the config
      */
-    protected AbstractStreamedParserRunnable(final ExcelRead read,
-        final TableReadConfig<ExcelTableReaderConfig> config) {
-        super(read, config);
-        m_config = config;
+    protected AbstractStreamedParserRunnable(final ExcelRead r, final TableReadConfig<ExcelTableReaderConfig> cfg) {
+        super(r, cfg);
+        m_config = cfg;
     }
 
     /**

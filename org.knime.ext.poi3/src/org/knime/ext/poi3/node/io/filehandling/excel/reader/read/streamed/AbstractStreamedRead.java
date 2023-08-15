@@ -48,18 +48,23 @@
  */
 package org.knime.ext.poi3.node.io.filehandling.excel.reader.read.streamed;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.util.Map;
 import java.util.OptionalLong;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.apache.commons.io.input.CountingInputStream;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.openxml4j.exceptions.NotOfficeXmlFileException;
+import org.apache.poi.openxml4j.exceptions.OLE2NotOfficeXmlFileException;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.openxml4j.opc.PackageAccess;
 import org.apache.poi.poifs.crypt.Decryptor;
@@ -67,11 +72,12 @@ import org.apache.poi.poifs.crypt.EncryptionInfo;
 import org.apache.poi.poifs.filesystem.FileMagic;
 import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.apache.poi.xssf.eventusermodel.XSSFReader.SheetIterator;
-import org.knime.core.node.defaultnodesettings.SettingsModelAuthentication;
 import org.knime.core.node.defaultnodesettings.SettingsModelAuthentication.AuthenticationType;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.FSZipPackage;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelParserRunnable;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelRead;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelUtils;
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
 
 /**
@@ -96,10 +102,13 @@ public abstract class AbstractStreamedRead extends ExcelRead {
     }
 
     /** The sheet stream. */
-    protected CountingInputStream m_sheetStream;
+    protected CountingInputStream m_countingSheetStream;
 
     /** The package where the sheet stream originates from. */
     private OPCPackage m_opc;
+
+    /** The channel from which the OPCPackage is opened. */
+    private SeekableByteChannel m_channel;
 
     /** The size of the sheet to read. */
     protected long m_sheetSize;
@@ -110,52 +119,81 @@ public abstract class AbstractStreamedRead extends ExcelRead {
     private AbstractStreamedParserRunnable m_streamedParser;
 
 
+
     @Override
-    protected ExcelParserRunnable createParser(final File file) throws IOException {
-        try {
-            m_streamedParser = switch (FileMagic.valueOf(file)) {
-                case OLE2 ->  createParserFromOLE2(file); // NOSONAR indentation is OK
-                case OOXML ->  {// NOSONAR indentation is OK
-                    // this case means we actually have an unencrypted file, so just open the package without decryption
-                    // OPCPackage will be closed by parser
-                    m_opc = OPCPackage.open(file, PackageAccess.READ); // NOSONAR indentation is OK
-                    yield createStreamedParser(m_opc);
-                }
-                // will be caught and output with a user-friendly error message
-                default -> throw new NotOfficeXmlFileException(""); // NOSONAR indentation is OK
-            };
-        } catch (GeneralSecurityException | InvalidFormatException e) {
-            throw new IOException(e.getMessage(), e);
-        }
+    protected ExcelParserRunnable createParser(final Path path) throws IOException {
+        m_channel = Files.newByteChannel(path);
+        m_opc = openPackage(m_channel);
+        m_streamedParser = createStreamedParser(m_opc);
         return m_streamedParser;
     }
 
-    private AbstractStreamedParserRunnable createParserFromOLE2(final File file)
-            throws IOException, GeneralSecurityException, InvalidFormatException {
-        // encrypted OOXML files are stored as encrypted OLE2 files that contain the xml content
-        // xls files are also OLE files
-        final SettingsModelAuthentication authenticationSettingsModel =
-                m_config.getReaderSpecificConfig().getAuthenticationSettingsModel();
-        final var authenticationType = authenticationSettingsModel.getAuthenticationType();
-        if (authenticationType == AuthenticationType.NONE) {
-            m_opc = OPCPackage.open(file, PackageAccess.READ);
-            return createStreamedParser(m_opc);
+    /**
+     * Tries to open an OPCPackage backed by the given channel.
+     *
+     * @param channel channel to read contents from
+     * @return opened {@link OPCPackage} backed by the given channel
+     * @throws IOException
+     */
+    private OPCPackage openPackage(final SeekableByteChannel channel) throws IOException {
+        try {
+            final var fileType = ExcelUtils.sniffFileType(channel);
+            if (fileType == FileMagic.OLE2) {
+                // OLE2 file could contain:
+                // - encrypted XML content (OOXML)
+                // - XLS file with XLSX extension
+                final var asm = m_config.getReaderSpecificConfig().getAuthenticationSettingsModel();
+                final var authType = asm.getAuthenticationType();
+                if (authType == AuthenticationType.NONE) {
+                    channel.close();
+                    // This exception would previously be thrown by OPCPackage.open(File),
+                    // but is not by OPCPackage.open(InputStream), so we have to throw it ourselves!
+                    // The ExcelTableReader catches this and switches to the XLSRead
+                    throw new OLE2NotOfficeXmlFileException("OLE2 file but trying to open as OOXML-based file.");
+                }
+                final var password = asm.getPassword(m_config.getReaderSpecificConfig().getCredentialsProvider());
+                return openDecrypting(channel, password, () -> createPasswordIncorrectException(null));
+            } else if (fileType == FileMagic.OOXML) {
+                // this case means we actually have an unencrypted file, so just open the package without decryption
+                return openFromZIP(channel);
+            }
+            // will be caught and output with a user-friendly error message
+            throw new NotOfficeXmlFileException("");
+        } catch (GeneralSecurityException | InvalidFormatException e) {
+            throw new IOException(e.getMessage(), e);
         }
-        try (final var poiFS = new POIFSFileSystem(file, true)) {
+    }
+
+    @SuppressWarnings("resource") // FSZipPackage will be closed by OPCPackage's close method
+    private static OPCPackage openFromZIP(final SeekableByteChannel chan) throws IOException, InvalidFormatException {
+        return OPCPackage.open(new FSZipPackage(chan));
+    }
+
+    private static OPCPackage openDecrypting(final SeekableByteChannel chan, final String password,
+            final Supplier<IOException> passwordIncorrect) throws IOException, GeneralSecurityException,
+            InvalidFormatException {
+        try (final var poiFS = newPOIFS(chan)) {
             final var encryptionInfo = new EncryptionInfo(poiFS);
             final var decryptor = Decryptor.getInstance(encryptionInfo);
-            final String password =
-                authenticationSettingsModel.getPassword(m_config.getReaderSpecificConfig().getCredentialsProvider());
             if (!decryptor.verifyPassword(password)) {
-                throw createPasswordIncorrectException(null);
+                throw passwordIncorrect.get();
             }
             try (final var decryptedStream = decryptor.getDataStream(poiFS)) {
-                // encrypted files will be buffered in memory fully, since we have to use OPCPackage.open(InputStream)
-                // Using `AesZipFileZipEntrySource.createZipEntrySource(decryptedStream)` to buffer the file on disk
-                // fails with "Truncated ZIP file"
-                m_opc = OPCPackage.open(decryptedStream);
-                return createStreamedParser(m_opc);
+                // encrypted files will be buffered in memory fully, since we have to use
+                // OPCPackage.open(InputStream), because Decryptor only operates on streams (and not channels)
+                // Using `AesZipFileZipEntrySource.createZipEntrySource(decryptedStream)` to buffer the file on
+                // disk fails with "Truncated ZIP file"
+                return OPCPackage.open(decryptedStream);
             }
+        }
+    }
+
+    private static POIFSFileSystem newPOIFS(final SeekableByteChannel chan) throws IOException {
+        if (chan instanceof FileChannel fchan) {
+            return new POIFSFileSystem(fchan);
+        }
+        try (final var in = Channels.newInputStream(chan)) {
+            return new POIFSFileSystem(in);
         }
     }
 
@@ -206,8 +244,8 @@ public abstract class AbstractStreamedRead extends ExcelRead {
 
     @Override
     public void closeResources() throws IOException {
-        if (m_sheetStream != null) {
-            m_sheetStream.close();
+        if (m_countingSheetStream != null) {
+            m_countingSheetStream.close();
         }
         if (m_opc != null) {
             // read-only OPCPackages should be reverted, not closed, but in case it was opened from an InputStream
@@ -219,6 +257,10 @@ public abstract class AbstractStreamedRead extends ExcelRead {
                 m_opc.close();
             }
         }
+        if (m_channel != null) {
+            m_channel.close();
+            m_channel = null;
+        }
     }
 
     @Override
@@ -228,7 +270,7 @@ public abstract class AbstractStreamedRead extends ExcelRead {
 
     @Override
     public long getProgress() {
-        return m_sheetStream.getByteCount();
+        return m_countingSheetStream.getByteCount();
     }
 
 }

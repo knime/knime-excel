@@ -48,9 +48,12 @@
  */
 package org.knime.ext.poi3.node.io.filehandling.excel.reader.read.xls;
 
-import java.io.File;
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.channels.Channels;
+import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -99,13 +102,17 @@ public final class XLSRead extends ExcelRead {
 
     private long m_numMaxRows;
 
-    private int m_rowsRead = 0;
+    private int m_rowsRead;
 
     private Workbook m_workbook;
+
+    /** The channel from which the workbook was opened. */
+    private SeekableByteChannel m_channel;
 
     private Map<String, Boolean> m_sheetNames;
 
     private Set<Integer> m_hiddenColumns;
+
 
     /**
      * Constructor.
@@ -120,11 +127,12 @@ public final class XLSRead extends ExcelRead {
     }
 
     @Override
-    public ExcelParserRunnable createParser(final File file) throws IOException {
+    public ExcelParserRunnable createParser(final Path path) throws IOException {
         try {
-            m_workbook = checkFileFormatAndCreateWorkbook(file);
+            m_channel = Files.newByteChannel(path);
+            m_workbook = checkFileFormatAndCreateWorkbook(m_channel);
             m_sheetNames = ExcelUtils.getSheetNames(m_workbook);
-            final Sheet sheet = m_workbook.getSheet(getSelectedSheet());
+            final var sheet = m_workbook.getSheet(getSelectedSheet());
             m_numMaxRows = sheet.getLastRowNum() + 1L;
             final FormulaEvaluator formulaEvaluator = m_config.getReaderSpecificConfig().isReevaluateFormulas()
                 ? m_workbook.getCreationHelper().createFormulaEvaluator() : null;
@@ -140,11 +148,9 @@ public final class XLSRead extends ExcelRead {
      */
     private static boolean use1904Windowing(final Workbook workbook) {
         boolean date1904;
-        if (workbook instanceof XSSFWorkbook) {
-            final XSSFWorkbook xssfWorkbook = (XSSFWorkbook)workbook;
+        if (workbook instanceof XSSFWorkbook xssfWorkbook) {
             date1904 = xssfWorkbook.isDate1904();
-        } else if (workbook instanceof HSSFWorkbook) {
-            final HSSFWorkbook hssfWorkbook = (HSSFWorkbook)workbook;
+        } else if (workbook instanceof HSSFWorkbook hssfWorkbook) {
             date1904 = hssfWorkbook.getInternalWorkbook().isUsing1904DateWindowing();
         } else {
             // Probably unsupported
@@ -163,30 +169,33 @@ public final class XLSRead extends ExcelRead {
      * need to parse the message of the exception thrown there, we check ourselves and provide a more user-friendly
      * error message.
      */
-    private Workbook checkFileFormatAndCreateWorkbook(final File file) throws IOException {
-        switch (FileMagic.valueOf(file)) {
-            case OLE2:
-            case OOXML:
-                break;
-            default:
-                // will be caught and output with a user-friendly error message
-                throw new NotOfficeXmlFileException("");
-        }
-        final SettingsModelAuthentication authenticationSettingsModel =
-            m_config.getReaderSpecificConfig().getAuthenticationSettingsModel();
-        if (authenticationSettingsModel.getAuthenticationType() == AuthenticationType.NONE) {
-            try {
-                return WorkbookFactory.create(file, null, true);
-            } catch (EncryptedDocumentException e) {
-                throw createPasswordProtectedFileException(e);
+    private Workbook checkFileFormatAndCreateWorkbook(final SeekableByteChannel channel) throws IOException {
+        try (final var in = new BufferedInputStream(Channels.newInputStream(channel))) {
+            // FileMagic needs mark/reset-able input stream
+            switch (FileMagic.valueOf(in)) {
+                case OLE2:
+                case OOXML:
+                    break;
+                default:
+                    // will be caught and output with a user-friendly error message
+                    throw new NotOfficeXmlFileException("");
             }
-        } else {
-            try {
-                final String password = authenticationSettingsModel
-                    .getPassword(m_config.getReaderSpecificConfig().getCredentialsProvider());
-                return WorkbookFactory.create(file, password, true);
-            } catch (EncryptedDocumentException e) {
-                throw createPasswordIncorrectException(e);
+            final SettingsModelAuthentication authenticationSettingsModel =
+                m_config.getReaderSpecificConfig().getAuthenticationSettingsModel();
+            if (authenticationSettingsModel.getAuthenticationType() == AuthenticationType.NONE) {
+                try {
+                    return WorkbookFactory.create(in);
+                } catch (EncryptedDocumentException e) {
+                    throw createPasswordProtectedFileException(e);
+                }
+            } else {
+                try {
+                    final String password = authenticationSettingsModel
+                        .getPassword(m_config.getReaderSpecificConfig().getCredentialsProvider());
+                    return WorkbookFactory.create(in, password);
+                } catch (EncryptedDocumentException e) {
+                    throw createPasswordIncorrectException(e);
+                }
             }
         }
     }
@@ -210,6 +219,10 @@ public final class XLSRead extends ExcelRead {
     public void closeResources() throws IOException {
         if (m_workbook != null) {
             m_workbook.close();
+        }
+        if (m_channel != null) {
+            m_channel.close();
+            m_channel = null;
         }
     }
 

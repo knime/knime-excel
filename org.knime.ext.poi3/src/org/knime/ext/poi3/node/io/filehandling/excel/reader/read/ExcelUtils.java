@@ -48,14 +48,18 @@
  */
 package org.knime.ext.poi3.node.io.filehandling.excel.reader.read;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.channels.Channels;
+import java.nio.channels.SeekableByteChannel;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.poi.poifs.filesystem.FileMagic;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.Row;
@@ -70,6 +74,7 @@ import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler;
 import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler.SheetContentsHandler;
 import org.apache.poi.xssf.model.SharedStrings;
 import org.apache.poi.xssf.usermodel.XSSFComment;
+import org.knime.core.data.util.NonClosableInputStream;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.AreaOfSheetToRead;
@@ -489,6 +494,25 @@ public final class ExcelUtils {
 
         private static final long serialVersionUID = 1L;
 
+    }
+
+    /**
+     * Sniffs the file type from the given channel starting at its current position and resets its position afterwards.
+     *
+     * @param channel channel to sniff file type from
+     * @return FileType sniffed from given channel
+     * @throws IOException in case of I/O exceptions while working with the channel
+     */
+    public static FileMagic sniffFileType(final SeekableByteChannel channel) throws IOException {
+        final var pos = channel.position();
+        try (final var sniffStream =
+                new NonClosableInputStream(new BufferedInputStream(Channels.newInputStream(channel)))) {
+            // sniff file type to open appropriately, marks and resets the given stream...
+            final var fileType = FileMagic.valueOf(sniffStream);
+            // ... but does not reset the underlying channel
+            channel.position(pos);
+            return fileType;
+        }
     }
 
 }

@@ -100,7 +100,7 @@ public abstract class ExcelParserRunnable implements Runnable {
 
     private final boolean m_rawSettings;
 
-    private int m_rowCount = 0;
+    private int m_rowCount;
 
     /**
      * Constructor.
@@ -108,7 +108,7 @@ public abstract class ExcelParserRunnable implements Runnable {
      * @param read the {@link ExcelRead}
      * @param config the config
      */
-    public ExcelParserRunnable(final ExcelRead read, final TableReadConfig<ExcelTableReaderConfig> config) {
+    protected ExcelParserRunnable(final ExcelRead read, final TableReadConfig<ExcelTableReaderConfig> config) {
         m_read = read;
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
         m_use15DigitsPrecision = excelConfig.isUse15DigitsPrecision();
@@ -127,29 +127,30 @@ public abstract class ExcelParserRunnable implements Runnable {
 
     @Override
     public void run() {
-        LOGGER.debug("Thread parsing an Excel sheet started.");
+        LOGGER.debug("Thread parsing an Excel spreadsheet started.");
         try {
             parse();
             m_read.addToQueue(ExcelRead.POISON_PILL);
-            LOGGER.debug("Thread parsing an Excel sheet finished successfully.");
-        } catch (InterruptedException e) {
+            LOGGER.debug("Thread parsing an Excel spreadsheet finished successfully.");
+        } catch (final InterruptedException e) {
+            // while adding to queue
             Thread.currentThread().interrupt();
-            closeAndSwallowExceptions(e);
-        } catch (ParsingInterruptedException e) { // NOSONAR ignore ParsingInterruptedException, they are thrown by us
-            closeAndSwallowExceptions(e);
-        } catch (Throwable e) { // NOSONAR we want to catch any Throwable
+            closeAndSwallowExceptions();
+        } catch (final ParsingInterruptedException e) { // NOSONAR ignore, they are thrown by us
+            // thrown e.g. in #addToQueue, ExcelUtils.IsEmpty#cell
+            closeAndSwallowExceptions();
+        } catch (final Throwable e) { // NOSONAR we want to catch any Throwable and let it be rethrown by the read later
             m_read.setThrowable(e);
             // cannot do anything with the IO exceptions besides logging
-            closeAndSwallowExceptions(e);
+            closeAndSwallowExceptions();
         }
     }
 
-    private void closeAndSwallowExceptions(final Throwable e) {
-        LOGGER.debug("Problem while parsing Excel sheet, closing read...", e);
+    private void closeAndSwallowExceptions() {
         try {
             m_read.close();
         } catch (IOException ioe) {
-            LOGGER.debug(ioe);
+            LOGGER.debug("Exception while closing read due to parser problem.", ioe);
         }
     }
 
@@ -188,7 +189,7 @@ public abstract class ExcelParserRunnable implements Runnable {
      * @param numMissingsRows the number of missing rows to add
      */
     protected void outputEmptyRows(final int numMissingsRows) {
-        for (int i = 0; i < numMissingsRows; i++) {
+        for (var i = 0; i < numMissingsRows; i++) {
             final List<ExcelCell> cells = new ArrayList<>();
             if (m_rowIdIdx >= 0 && !m_rawSettings) {
                 // make sure the empty row ID is added

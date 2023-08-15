@@ -109,7 +109,7 @@ public final class XLSXRead extends AbstractStreamedRead {
 
             m_sheetNames = ExcelUtils.getSheetNames(xmlReader, xssfReader, sharedStringsTable);
             final SheetIterator sheetsData = (SheetIterator)xssfReader.getSheetsData();
-            m_sheetStream = getSheetStreamWithSheetName(sheetsData, getSelectedSheet());
+            m_countingSheetStream = getSheetStreamWithSheetName(sheetsData, getSelectedSheet());
             // The underlying compressed (zip) input stream (InflaterInputStream) always reports "available" as 1
             // until fully consumed, in which case it returns 0
             // Hence, we get the size from the part (zip entry) itself and use the bytes passed through the counting
@@ -169,7 +169,7 @@ public final class XLSXRead extends AbstractStreamedRead {
             final var sheetContentsHandler = new ExcelTableReaderSheetContentsHandler(m_dataFormatter);
             m_xmlReader.setContentHandler(new KNIMEXSSFSheetXMLHandler(m_xssfReader.getStylesTable(),
                 m_sharedStringsTable, sheetContentsHandler, m_dataFormatter, false));
-            m_xmlReader.parse(new InputSource(m_sheetStream));
+            m_xmlReader.parse(new InputSource(m_countingSheetStream));
         }
 
     }
