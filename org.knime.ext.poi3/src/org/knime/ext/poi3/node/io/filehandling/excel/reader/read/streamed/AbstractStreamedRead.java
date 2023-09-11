@@ -121,10 +121,13 @@ public abstract class AbstractStreamedRead extends ExcelRead {
 
 
 
+    @SuppressWarnings("resource") // nonCloseable does not need to be closed
     @Override
     protected ExcelParserRunnable createParser(final Path path) throws IOException {
         m_channel = Files.newByteChannel(path);
-        m_opc = openPackage(m_channel);
+        // wrap the channel so we control that it is closed exactly once by the Read
+        final var nonCloseable = new NonCloseableReadOnlySeekableByteChannel(m_channel);
+        m_opc = openPackage(nonCloseable);
         m_streamedParser = createStreamedParser(m_opc);
         return m_streamedParser;
     }
