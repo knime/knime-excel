@@ -126,7 +126,7 @@ public final class XLSBRead extends AbstractStreamedRead {
         }
 
         @Override
-        protected void parse() throws Exception {
+        protected void parse() throws IOException {
             final var sheetContentsHandler = new ExcelTableReaderSheetContentsHandler(m_dataFormatter);
 
             final var sheetHandler = new KNIMEXSSFBSheetXMLHandler(m_countingSheetStream,

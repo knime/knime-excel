@@ -59,6 +59,7 @@ import java.nio.file.Path;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.poi.ooxml.util.SAXHelper;
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.openxml4j.exceptions.OpenXML4JException;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
@@ -165,7 +166,7 @@ public final class XLSXRead extends AbstractStreamedRead {
         }
 
         @Override
-        protected void parse() throws Exception {
+        protected void parse() throws IOException, InvalidFormatException, SAXException {
             final var sheetContentsHandler = new ExcelTableReaderSheetContentsHandler(m_dataFormatter);
             m_xmlReader.setContentHandler(new KNIMEXSSFSheetXMLHandler(m_xssfReader.getStylesTable(),
                 m_sharedStringsTable, sheetContentsHandler, m_dataFormatter, false));

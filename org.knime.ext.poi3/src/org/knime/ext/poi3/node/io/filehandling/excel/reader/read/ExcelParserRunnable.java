@@ -53,6 +53,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.knime.core.node.NodeLogger;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.AreaOfSheetToRead;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
@@ -61,6 +62,7 @@ import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelUtils.Pars
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
 import org.knime.filehandling.core.node.table.reader.randomaccess.RandomAccessible;
 import org.knime.filehandling.core.node.table.reader.randomaccess.RandomAccessibleUtils;
+import org.xml.sax.SAXException;
 
 /**
  * Abstract implementation of a {@link Runnable} that parses Excel files and adds the parsed rows as
@@ -130,18 +132,27 @@ public abstract class ExcelParserRunnable implements Runnable {
         LOGGER.debug("Thread parsing an Excel spreadsheet started.");
         try {
             parse();
-            m_read.addToQueue(ExcelRead.POISON_PILL);
+            indicateFinished();
             LOGGER.debug("Thread parsing an Excel spreadsheet finished successfully.");
+        } catch (final ParsingInterruptedException e) { // NOSONAR ignore, they are thrown by us to indicate parsing should stop
+            // thrown e.g. in ExcelParserRunnable#addToQueue, ExcelUtils.IsEmpty#cell
+            closeAndSwallowExceptions();
+//        } catch (final ClosedByInterruptException e) { // NOSONAR different line for documentation reasons
+//            // parser was interrupted while blocked in I/O operation and channel was closed
+//            closeAndSwallowExceptions();
+        } catch (final IOException | SAXException | InvalidFormatException e) {
+            // rethrow later by Read
+            m_read.setThrowable(e);
+            closeAndSwallowExceptions();
+        }
+    }
+
+    private void indicateFinished() {
+        try {
+            m_read.addToQueue(ExcelRead.POISON_PILL);
         } catch (final InterruptedException e) {
             // while adding to queue
             Thread.currentThread().interrupt();
-            closeAndSwallowExceptions();
-        } catch (final ParsingInterruptedException e) { // NOSONAR ignore, they are thrown by us
-            // thrown e.g. in #addToQueue, ExcelUtils.IsEmpty#cell
-            closeAndSwallowExceptions();
-        } catch (final Throwable e) { // NOSONAR we want to catch any Throwable and let it be rethrown by the read later
-            m_read.setThrowable(e);
-            // cannot do anything with the IO exceptions besides logging
             closeAndSwallowExceptions();
         }
     }
@@ -157,9 +168,12 @@ public abstract class ExcelParserRunnable implements Runnable {
     /**
      * Start parsing.
      *
-     * @throws Throwable if any error occurs
+     * @throws IOException when an I/O problem occurs
+     * @throws InvalidFormatException the file does not adhere to the Excel format to be parsed
+     * @throws SAXException general SAX parsing exception for XML-based Excel files
+     *
      */
-    protected abstract void parse() throws Throwable; // NOSONAR throw anything and treat it in the main thread
+    protected abstract void parse() throws IOException, InvalidFormatException, SAXException;
 
     /**
      * Adds the {@link RandomAccessible} to the blocking queue of the runnable.

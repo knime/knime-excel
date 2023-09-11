@@ -246,7 +246,7 @@ public final class XLSRead extends ExcelRead {
         }
 
         @Override
-        protected void parse() throws Exception {
+        protected void parse() throws IOException {
             int lastNonEmptyRowIdx = -1;
             for (int i = 0; i <= m_sheet.getLastRowNum(); i++) {
                 m_rowId = null;

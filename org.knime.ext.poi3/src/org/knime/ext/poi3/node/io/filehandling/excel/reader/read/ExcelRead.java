@@ -145,7 +145,7 @@ public abstract class ExcelRead implements Read<ExcelCell> {
     protected abstract ExcelParserRunnable createParser(final Path path) throws IOException;
 
     /**
-     * Closes resources after parser thread is gone (either normally or abnormally).
+     * Closes resources after parser thread is gone (either normally or abruptly).
      *
      * @throws IOException if an I/O exception occurs
      */
@@ -226,6 +226,8 @@ public abstract class ExcelRead implements Read<ExcelCell> {
             // an exception during parsing has priority
             if (throwable == null) {
                 throw e;
+            } else {
+                throwable.addSuppressed(e);
             }
         }
 

@@ -61,12 +61,14 @@ import java.util.OptionalLong;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import org.apache.commons.compress.archivers.zip.ZipFile;
 import org.apache.commons.io.input.CountingInputStream;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.openxml4j.exceptions.NotOfficeXmlFileException;
 import org.apache.poi.openxml4j.exceptions.OLE2NotOfficeXmlFileException;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.openxml4j.opc.PackageAccess;
+import org.apache.poi.openxml4j.util.ZipFileZipEntrySource;
 import org.apache.poi.poifs.crypt.Decryptor;
 import org.apache.poi.poifs.crypt.EncryptionInfo;
 import org.apache.poi.poifs.filesystem.FileMagic;
@@ -74,7 +76,6 @@ import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.apache.poi.xssf.eventusermodel.XSSFReader.SheetIterator;
 import org.knime.core.node.defaultnodesettings.SettingsModelAuthentication.AuthenticationType;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
-import org.knime.ext.poi3.node.io.filehandling.excel.reader.FSZipPackage;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelParserRunnable;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelRead;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelUtils;
@@ -164,9 +165,9 @@ public abstract class AbstractStreamedRead extends ExcelRead {
         }
     }
 
-    @SuppressWarnings("resource") // FSZipPackage will be closed by OPCPackage's close method
+    @SuppressWarnings("resource") // resources will be closed by OPCPackage's close/revert method
     private static OPCPackage openFromZIP(final SeekableByteChannel chan) throws IOException, InvalidFormatException {
-        return OPCPackage.open(new FSZipPackage(chan));
+        return OPCPackage.open(new ZipFileZipEntrySource(new ZipFile(chan)));
     }
 
     private static OPCPackage openDecrypting(final SeekableByteChannel chan, final String password,
