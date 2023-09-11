@@ -190,4 +190,10 @@
             Additional data table to write.
         </dynInPort>
     </ports>
+	<keywords>
+       <keyword>Spreadsheet</keyword>
+       <keyword>XLS Writer</keyword>
+       <keyword>Microsoft</keyword>
+       <keyword>write excel file</keyword>
+	</keywords>
 </knimeNode>
