@@ -54,8 +54,10 @@ import java.io.InputStream;
 import java.nio.channels.Channels;
 import java.nio.channels.SeekableByteChannel;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
@@ -459,13 +461,23 @@ public final class ExcelUtils {
     }
 
     /**
+     * Returns true if the row is empty, i.e., it contains only nulls or no elements.
+     *
+     * @param row the row
+     * @return whether the row is empty
+     */
+    public static boolean isRowEmpty(final List<ExcelCell> row) {
+        return row.isEmpty() || row.stream().allMatch(Objects::isNull);
+    }
+
+    /**
      * Checks whether the sheet is empty or not.
      */
     static class IsEmpty implements SheetContentsHandler {
 
         @Override
         public void cell(final String cellReference, final String formattedValue, final XSSFComment comment) {
-            throw new ParsingInterruptedException();
+            throw new ParsingInterruptedException("Empty sheet");
         }
 
         @Override
@@ -490,9 +502,21 @@ public final class ExcelUtils {
      *
      * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
      */
-    static class ParsingInterruptedException extends RuntimeException {
+    public static final class ParsingInterruptedException extends RuntimeException {
 
         private static final long serialVersionUID = 1L;
+
+        public ParsingInterruptedException(final String message) {
+            super(message);
+        }
+
+        public ParsingInterruptedException(final Throwable cause) {
+            super(cause);
+        }
+
+        public ParsingInterruptedException(final String message, final Throwable cause) {
+            super(message, cause);
+        }
 
     }
 
@@ -514,5 +538,6 @@ public final class ExcelUtils {
             return fileType;
         }
     }
+
 
 }

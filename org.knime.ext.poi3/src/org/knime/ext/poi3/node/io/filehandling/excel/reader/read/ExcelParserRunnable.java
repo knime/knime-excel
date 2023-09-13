@@ -193,7 +193,7 @@ public abstract class ExcelParserRunnable implements Runnable {
             Thread.currentThread().interrupt();
             LOGGER.debug("Thread parsing an Excel spreadsheet interrupted.");
             // throw a runtime exception as the interrupting the thread does not stop it
-            throw new ParsingInterruptedException();
+            throw new ParsingInterruptedException(e);
         }
     }
 

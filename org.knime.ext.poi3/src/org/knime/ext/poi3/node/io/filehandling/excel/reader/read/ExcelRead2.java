@@ -44,31 +44,26 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Oct 20, 2020 (Simon Schmid, KNIME GmbH, Konstanz, Germany): created
+ *   12 Sep 2023 (Manuel Hotz, KNIME GmbH, Konstanz, Germany): created
  */
 package org.knime.ext.poi3.node.io.filehandling.excel.reader.read;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Set;
+import java.util.OptionalLong;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.function.LongSupplier;
 
+import org.apache.commons.lang3.Functions;
 import org.apache.poi.EncryptedDocumentException;
-import org.apache.poi.openxml4j.exceptions.InvalidOperationException;
-import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.util.ThreadUtils;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
@@ -79,21 +74,17 @@ import org.knime.filehandling.core.node.table.reader.randomaccess.RandomAccessib
 import org.knime.filehandling.core.node.table.reader.read.Read;
 
 /**
- * Abstract class for {@link Read}s that read Excel files/spreadsheets.
+ * {@link Read}s that read Excel files/spreadsheets .
  *
- * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
+ * @author Manuel Hotz, KNIME GmbH, Konstanz, Germany
  */
-public abstract class ExcelRead implements Read<ExcelCell> {
+public final class ExcelRead2 implements Read<ExcelCell> {
 
-    private static final NodeLogger LOGGER = NodeLogger.getLogger(ExcelRead.class);
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(ExcelRead2.class);
 
     private static final int BLOCKING_QUEUE_SIZE = 100;
 
     private static final AtomicLong CACHED_THREAD_POOL_INDEX = new AtomicLong();
-
-    /** Threadpool that can be used to parse new sheets. */
-    private static final ExecutorService CACHED_THREAD_POOL = Executors.newCachedThreadPool(
-        r -> ThreadUtils.threadWithContext(r, "KNIME-Excel-Parser-" + CACHED_THREAD_POOL_INDEX.getAndIncrement()));
 
     /** The poison pill put into the blocking to indicate end of parsing. */
     static final RandomAccessible<ExcelCell> POISON_PILL =
@@ -104,9 +95,8 @@ public abstract class ExcelRead implements Read<ExcelCell> {
         new ArrayBlockingQueue<>(BLOCKING_QUEUE_SIZE);
 
     /** The thread running the parser. */
-    private Future<?> m_parserThread;
+    private Thread m_parserThread;
 
-    /** Atomic reference used to communicate exceptions between parser thread and main thread. */
     private final AtomicReference<Throwable> m_throwableDuringParsing = new AtomicReference<>();
 
     /** Iterator collecting RandomAccessibles from the parser thread. */
@@ -116,45 +106,32 @@ public abstract class ExcelRead implements Read<ExcelCell> {
     private final Path m_path;
 
     /** The Excel table read config. */
-    protected final TableReadConfig<ExcelTableReaderConfig> m_config;
+    private final TableReadConfig<ExcelTableReaderConfig> m_config;
+
+
+    private LongSupplier m_currentProgress;
+
+    private Consumer<Map<String, Boolean>> m_sheetNamesConsumer;
 
     /**
      * Constructor
      *
      * @param path the path of the file to read
      * @param config the Excel table read config
-     * @throws IOException if a stream can not be created from the provided file.
+     * @param sheetNamesConsumer
      */
-    protected ExcelRead(final Path path, final TableReadConfig<ExcelTableReaderConfig> config) throws IOException {
+    public ExcelRead2(final Path path, final TableReadConfig<ExcelTableReaderConfig> config,
+            final Consumer<Map<String, Boolean>> sheetNamesConsumer) {
         m_path = path;
         m_config = config;
+        m_sheetNamesConsumer = sheetNamesConsumer;
         startParserThread();
     }
 
-    /**
-     * Creates a {@code ExcelParserRunnable} on a channel.
-     *
-     * @param path the channel to read from
-     * @return the {@code ExcelParserRunnable}
-     * @throws IOException if an I/O exception occurs
-     *
-     * @see OPCPackage#open(File)
-     * @see OPCPackage#open(java.io.InputStream)
-     */
-    protected abstract ExcelParserRunnable createParser(final Path path) throws IOException;
-
-    /**
-     * Closes resources after parser thread is gone (either normally or abruptly).
-     *
-     * @throws IOException if an I/O exception occurs
-     */
-    protected abstract void closeResources() throws IOException;
-
     @Override
-    public final RandomAccessible<ExcelCell> next() throws IOException {
-        // check and return next element
+    public RandomAccessible<ExcelCell> next() throws IOException {
         final boolean hasNext = m_randomAccessibleIterator.hasNext();
-        if (m_throwableDuringParsing.get() != null) {
+        if (!m_parserThread.isAlive()) {
             close();
         }
         return hasNext ? m_randomAccessibleIterator.next() : null;
@@ -183,55 +160,49 @@ public abstract class ExcelRead implements Read<ExcelCell> {
         return new IOException(String.format("The supplied password is incorrect for file '%s'.", m_path), e);
     }
 
-    private void startParserThread() throws IOException {
-        try {
-            // create and start the thread
-            final ExcelParserRunnable runnable = createParser(m_path);
-            m_parserThread = CACHED_THREAD_POOL.submit(ThreadUtils.runnableWithContext(runnable));
-        } catch (InvalidOperationException e) {
-            throw new IllegalStateException(e.getMessage(), e);
+    private void startParserThread() {
+        m_parserThread = ThreadUtils.threadWithContext(createParser(m_throwableDuringParsing::set),
+            "KNIME-Excel-Parser-" + CACHED_THREAD_POOL_INDEX.getAndIncrement());
+        m_parserThread.start();
+    }
+
+    public class CellConsumer implements Functions.FailableConsumer<RandomAccessible<ExcelCell>, InterruptedException> {
+
+        void finished() throws InterruptedException {
+            addToQueue(POISON_PILL);
+        }
+
+        @Override
+        public void accept(final RandomAccessible<ExcelCell> row) throws InterruptedException {
+            addToQueue(row);
         }
     }
 
+    /**
+     * @param path
+     * @return
+     */
+    private ExcelParserRunnable2 createParser(final Consumer<Throwable> exceptionHandler) {
+        return new ExcelParserRunnable2(m_path, m_config, new CellConsumer(), m_sheetNamesConsumer, exceptionHandler);
+    }
+
     @Override
-    public final void close() throws IOException {
-        // cancel the thread
-        if (m_parserThread != null && m_parserThread.cancel(true)) {
-            LOGGER.debug("Canceled parser thread");
-            try {
-                // wait for the parser thread to cancel, to avoid it still reading from the (sheet) input stream
-                // that we will make sure is closed as well (in closeResources)
-                m_parserThread.get();
-            } catch (final InterruptedException e) {
-                LOGGER.debug("Interrupt while waiting for parser thread to cancel", e);
-                Thread.currentThread().interrupt();
-            } catch (final ExecutionException e) {
-                LOGGER.debug("While waiting for parser thread to cancel", e);
-            } catch (final CancellationException e) { // NOSONAR
-                // ignore since we wanted to cancel it
-            }
-        }
-
-        // free the queue so that any put call by the canceled thread is not blocking the cancellation
-        m_queueRandomAccessibles.clear();
-        // as we just cleared the queue, we can use #add to insert the poison pill
-        m_queueRandomAccessibles.add(POISON_PILL);
-
-        final var throwable = m_throwableDuringParsing.get();
-        // at this point we are sure the parser thread is gone (either normally or abruptly)
+    public void close() throws IOException {
+        // make sure the thread is finished so it has freed its resources
+        m_parserThread.interrupt();
+        InterruptedException ownException = null;
         try {
-            closeResources();
-        } catch (IOException e) {
-            // an exception during parsing has priority
-            if (throwable == null) {
-                throw e;
-            } else {
-                throwable.addSuppressed(e);
-            }
+            m_parserThread.join();
+        } catch (InterruptedException e) {
+            ownException = e;
         }
 
-        // if an exception occurred during parsing, throw it
+        // if an exception occurred during parsing, throw it preferably
+        final var throwable = m_throwableDuringParsing.get();
         if (throwable != null) {
+            if (ownException != null) {
+                throwable.addSuppressed(ownException);
+            }
             if (throwable instanceof RuntimeException rex) {
                 throw rex;
             } else if (throwable instanceof Error err) {
@@ -239,9 +210,12 @@ public abstract class ExcelRead implements Read<ExcelCell> {
             }
             final var msg = throwable.getMessage();
             if (msg != null) {
-                throw new IllegalStateException(msg, throwable);
-            } else {
-                throw new IllegalStateException(throwable);
+                throw new IOException(msg, throwable);
+            }
+            throw new IOException(throwable);
+        } else {
+            if (ownException != null) {
+                throw new IOException(ownException);
             }
         }
     }
@@ -257,15 +231,6 @@ public abstract class ExcelRead implements Read<ExcelCell> {
     }
 
     /**
-     * Sets the throwable.
-     *
-     * @param throwable the {@link Throwable} to set
-     */
-    protected void setThrowable(final Throwable throwable) {
-        m_throwableDuringParsing.set(throwable);
-    }
-
-    /**
      * Iterator that collects all parsed rows. If an exception occurred during parsing or the parsing is finished,
      * {@link #hasNext()} will return {@code false}. Otherwise, it will wait for more rows becoming available to iterate
      * over.
@@ -274,11 +239,11 @@ public abstract class ExcelRead implements Read<ExcelCell> {
 
         private final LinkedList<RandomAccessible<ExcelCell>> m_randomAccessibles = new LinkedList<>();
 
-        private boolean m_encounteredPoisonPill = false;
+        private boolean m_encounteredPoisonPill;
 
         @Override
         public boolean hasNext() {
-            if (m_encounteredPoisonPill || m_throwableDuringParsing.get() != null) {
+            if (m_encounteredPoisonPill) {
                 return false;
             }
             // TODO in my experiments, the size of the queue was never bigger than 1 -> wouldn't a simple #take be faster?
@@ -307,30 +272,14 @@ public abstract class ExcelRead implements Read<ExcelCell> {
 
     }
 
-    /**
-     * Returns a map that contains the names of the sheets as keys and whether it is the first non-empty sheet as value.
-     *
-     * @return the map of sheet names with names as keys being in the same order as in the workbook
-     */
-    public abstract Map<String, Boolean> getSheetNames();
-
-    /**
-     * Returns the name of the selected sheet based on the configuration.
-     *
-     * @return the name of the selected sheet
-     * @throws IOException if the configured sheet is not available
-     */
-    protected String getSelectedSheet() throws IOException {
-        final Map<String, Boolean> sheetNames = getSheetNames();
-        final ExcelTableReaderConfig excelConfig = m_config.getReaderSpecificConfig();
-        return excelConfig.getSheetSelection().getSelectedSheet(sheetNames, excelConfig, m_path);
+    @Override
+    public OptionalLong getMaxProgress() {
+        return OptionalLong.empty();
     }
 
-    /**
-     * Returns the indexes of the hidden columns.
-     *
-     * @return the indexes of the hidden columns in a {@link Set}
-     */
-    public abstract Set<Integer> getHiddenColumns();
+    @Override
+    public long getProgress() {
+        return m_currentProgress.getAsLong();
+    }
 
 }

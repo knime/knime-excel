@@ -52,20 +52,19 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import org.apache.poi.UnsupportedFileFormatException;
-import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
-import org.apache.poi.openxml4j.exceptions.ODFNotOfficeXmlFileException;
 import org.apache.poi.openxml4j.exceptions.OLE2NotOfficeXmlFileException;
-import org.apache.poi.xssf.XLSBUnsupportedException;
 import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.NodeLogger;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelRead;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelRead2;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelUtils;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.WrapperExtractColumnHeaderRead;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.columnnames.ExcelColNameUtils;
@@ -104,8 +103,8 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
     @SuppressWarnings("resource") // decorated read will be closed in AbstractReadDecorator#close
     @Override
     public Read<ExcelCell> read(final FSPath path, final TableReadConfig<ExcelTableReaderConfig> config)
-        throws IOException {
-        return decorateRead(getExcelRead(path, config), config);
+            throws IOException {
+        return decorateRead(getExcelRead(path, config, null), config);
     }
 
     @SuppressWarnings("resource") // decorated read will be closed in AbstractReadDecorator#close
@@ -113,18 +112,19 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
     public TypedReaderTableSpec<KNIMECellType> readSpec(final FSPath path,
         final TableReadConfig<ExcelTableReaderConfig> config, final ExecutionMonitor exec) throws IOException {
         final TableSpecGuesser<FSPath, KNIMECellType, ExcelCell> guesser = createGuesser();
-        try (ExcelRead read = getExcelRead(path, config)) {
+        try (ExcelRead2 read = getExcelRead(path, config, this::setSheetNames)) {
             // sheet names are already retrieved, notify a potential listener from the dialog
-            m_sheetNames = read.getSheetNames();
-            notifyChangeListener();
+//            m_sheetNames = read.getSheetNames();
+//            notifyChangeListener();
             return ExcelColNameUtils.assignNamesIfMissing(
                 guesser.guessSpec(decorateReadForSpecGuessing(read, config), config, exec, path), config,
-                read.getHiddenColumns());
+                Collections.emptySet());// TODO
+//                read.getHiddenColumns());
         }
     }
 
     @SuppressWarnings("resource") // decorated reads will be closed in AbstractReadDecorator#close
-    private static Read<ExcelCell> decorateRead(final ExcelRead excelRead,
+    private static Read<ExcelCell> decorateRead(final ExcelRead2 excelRead,
         final TableReadConfig<ExcelTableReaderConfig> config) {
         Read<ExcelCell> read = excelRead;
         if (config.useColumnHeaderIdx()) {
@@ -134,7 +134,7 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
     }
 
     @SuppressWarnings("resource") // decorated reads will be closed in AbstractReadDecorator#close
-    private static ExtractColumnHeaderRead<ExcelCell> decorateReadForSpecGuessing(final ExcelRead excelRead,
+    private static ExtractColumnHeaderRead<ExcelCell> decorateReadForSpecGuessing(final ExcelRead2 excelRead,
         final TableReadConfig<ExcelTableReaderConfig> config) {
         final ExtractColumnHeaderRead<ExcelCell> extractColHeaderRead =
             new DefaultExtractColumnHeaderRead<>(excelRead, config);
@@ -142,44 +142,46 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
         return new WrapperExtractColumnHeaderRead(read, extractColHeaderRead::getColumnHeaders);
     }
 
-    private static ExcelRead getExcelRead(final FSPath path, final TableReadConfig<ExcelTableReaderConfig> config)
-        throws IOException {
+    private static ExcelRead2 getExcelRead(final FSPath path, final TableReadConfig<ExcelTableReaderConfig> config,
+            final Consumer<Map<String, Boolean>> sheetNamesConsumer) throws IOException {
         final boolean reevaluateFormulas = config.getReaderSpecificConfig().isReevaluateFormulas();
         try {
-            final String pathLowerCase = path.toString().toLowerCase();
-            if (pathLowerCase.endsWith(".xlsb")) {
-                return createXLSBRead(path, config);
-            }
-            if (!reevaluateFormulas && (pathLowerCase.endsWith(".xlsx") || pathLowerCase.endsWith(".xlsm"))) {
-                return createXLSXRead(path, config);
-            }
-            return new XLSRead(path, config);
-        } catch (ODFNotOfficeXmlFileException e) {
-            // ODF (open office) files are xml files and, hence, not detected as invalid file format by the above check
-            // however, ODF files are not supported
-            throw createUnsupportedFileFormatException(e, path, "ODF");
-        } catch (XLSBUnsupportedException e) { // NOSONAR
-            // we handle this exception by creating the proper Read.
-            // user must have specified a file not ending with ".xlsb" but being an xlsb file
-            final XLSBRead xlsbRead = new XLSBRead(path, config);
-            if (reevaluateFormulas) {
-                // we just put a debug message as it is also written when creating the preview and we don't want to
-                // spam the console (of regular users)
-                LOGGER.debugWithFormat(
-                    "The format of the file '%s' is XLSB which does not support formula reevaluation. The file is read "
-                        + "without reevaluating formulas.",
-                    path);
-            }
-            return xlsbRead;
+            return new ExcelRead2(path, config, sheetNamesConsumer);
+//            final String pathLowerCase = path.toString().toLowerCase();
+//            if (pathLowerCase.endsWith(".xlsb")) {
+//                return createXLSBRead(path, config);
+//            }
+//            if (!reevaluateFormulas && (pathLowerCase.endsWith(".xlsx") || pathLowerCase.endsWith(".xlsm"))) {
+//                return createXLSXRead(path, config);
+//            }
+//            return new XLSRead(path, config);
+//        } catch (ODFNotOfficeXmlFileException e) {
+//            // ODF (open office) files are xml files and, hence, not detected as invalid file format by the above check
+//            // however, ODF files are not supported
+//            throw createUnsupportedFileFormatException(e, path, "ODF");
+//        } catch (XLSBUnsupportedException e) { // NOSONAR
+//            // we handle this exception by creating the proper Read.
+//            // user must have specified a file not ending with ".xlsb" but being an xlsb file
+//            final XLSBRead xlsbRead = new XLSBRead(path, config);
+//            if (reevaluateFormulas) {
+//                // we just put a debug message as it is also written when creating the preview and we don't want to
+//                // spam the console (of regular users)
+//                LOGGER.debugWithFormat(
+//                    "The format of the file '%s' is XLSB which does not support formula reevaluation. The file is read "
+//                        + "without reevaluating formulas.",
+//                    path);
+//            }
+//            return xlsbRead;
         } catch (UnsupportedFileFormatException e) {
             throw createUnsupportedFileFormatException(e, path, null);
-        } catch (IOException e) {
-            // happens, e.g., with .table files
-            if (e.getCause() instanceof InvalidFormatException) {
-                throw createUnsupportedFileFormatException(e, path, null);
-            }
-            throw e;
         }
+//        catch (IOException e) {
+//            // happens, e.g., with .table files
+//            if (e.getCause() instanceof InvalidFormatException) {
+//                throw createUnsupportedFileFormatException(e, path, null);
+//            }
+//            throw e;
+//        }
     }
 
     private static ExcelRead createXLSBRead(final FSPath path, final TableReadConfig<ExcelTableReaderConfig> config)
@@ -246,6 +248,11 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
 
     void setChangeListener(final ChangeListener l) {
         m_listener = l;
+    }
+
+    private void setSheetNames(final Map<String, Boolean> sheetNames) {
+        m_sheetNames = sheetNames;
+        notifyChangeListener();
     }
 
     private void notifyChangeListener() {

@@ -67,7 +67,7 @@ import org.xml.sax.SAXException;
  *
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
  */
-final class KNIMEXSSFSheetXMLHandler extends XSSFSheetXMLHandler {
+public final class KNIMEXSSFSheetXMLHandler extends XSSFSheetXMLHandler {
 
     private final AbstractKNIMESheetContentsHandler m_output;
 
@@ -84,7 +84,7 @@ final class KNIMEXSSFSheetXMLHandler extends XSSFSheetXMLHandler {
      * @see XSSFSheetXMLHandler#XSSFSheetXMLHandler(StylesTable, ReadOnlySharedStringsTable, SheetContentsHandler,
      *      boolean)
      */
-    KNIMEXSSFSheetXMLHandler(final StylesTable styles, final ReadOnlySharedStringsTable strings,
+    public KNIMEXSSFSheetXMLHandler(final StylesTable styles, final ReadOnlySharedStringsTable strings,
         final AbstractKNIMESheetContentsHandler sheetContentsHandler, final KNIMEDataFormatter dataFormatter,
         final boolean formulasNotResults) {
         super(styles, strings, sheetContentsHandler, dataFormatter, formulasNotResults);
