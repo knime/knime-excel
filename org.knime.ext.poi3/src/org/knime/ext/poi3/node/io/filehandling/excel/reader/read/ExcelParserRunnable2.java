@@ -54,7 +54,8 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -73,6 +74,8 @@ import org.apache.poi.xssf.eventusermodel.XSSFReader.SheetIterator;
 import org.knime.core.node.NodeLogger;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelRead2.CellConsumer;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelRead2.SheetMetadata;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelRead2.WorkbookMetadata;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelUtils.ParsingInterruptedException;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.streamed.ExcelTableReaderSheetContentsHandler;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.streamed.KNIMEDataFormatter;
@@ -96,14 +99,16 @@ public class ExcelParserRunnable2 implements Runnable {
     private final TableReadConfig<ExcelTableReaderConfig> m_config;
     private final CellConsumer m_output;
 
-    private final AtomicLong m_progress = new AtomicLong();
     private final Consumer<Throwable> m_exceptionHandler;
+    private CompletableFuture<WorkbookMetadata> m_metadata;
 
     public ExcelParserRunnable2(final Path path, final TableReadConfig<ExcelTableReaderConfig> config,
-            final CellConsumer output, final Consumer<Map<String, Boolean>> sheetNamesConsumer, final Consumer<Throwable> exceptionHandler) {
+            final CellConsumer output, final CompletableFuture<WorkbookMetadata> metadata,
+            final Consumer<Throwable> exceptionHandler) {
         m_path = path;
         m_config = config;
         m_output = output;
+        m_metadata = metadata;
         m_exceptionHandler = exceptionHandler;
     }
 
@@ -148,16 +153,12 @@ public class ExcelParserRunnable2 implements Runnable {
 
         private CountingInputStream m_countingSheetStream;
 
-        private final OPCPackage m_pkg;
         private final XSSFReader m_xssfReader;
         private final XMLReader m_xmlReader;
         private final ReadOnlySharedStringsTable m_sharedStringsTable;
 
-        private long m_sheetSize = -1;
-        private Map<String, Boolean> m_sheetNames;
 
-        XLSXParser(final OPCPackage pkg) throws IOException, OpenXML4JException, SAXException, ParserConfigurationException {
-            m_pkg = pkg;
+        private XLSXParser(final OPCPackage pkg) throws IOException, OpenXML4JException, SAXException, ParserConfigurationException {
             m_xssfReader = new XSSFReader(pkg);
             m_xmlReader = SAXHelper.newXMLReader();
             // disable DTD to prevent almost all XXE attacks, XMLHelper.newXMLReader() did set further security features
@@ -165,15 +166,8 @@ public class ExcelParserRunnable2 implements Runnable {
             m_sharedStringsTable = new ReadOnlySharedStringsTable(pkg, false);
         }
 
-        Map<String, Boolean> getSheetNames() throws InvalidFormatException, IOException, SAXException {
-            if (m_sheetNames == null) {
-                m_sheetNames = ExcelUtils.getSheetNames(m_xmlReader, m_xssfReader, m_sharedStringsTable);
-            }
-            return m_sheetNames;
-        }
-
-        long getSheetSize() throws InvalidFormatException, IOException, SAXException {
-            return m_sheetSize;
+        private Map<String, Boolean> getSheetNames() throws InvalidFormatException, IOException, SAXException {
+            return ExcelUtils.getSheetNames(m_xmlReader, m_xssfReader, m_sharedStringsTable);
         }
 
         /**
@@ -182,15 +176,17 @@ public class ExcelParserRunnable2 implements Runnable {
          * @throws InvalidFormatException
          *
          */
-        private void openSelectedSheet() throws InvalidFormatException, IOException, SAXException {
-            if (m_countingSheetStream == null) {
-                final var sheetNames = getSheetNames();
-                final ExcelTableReaderConfig excelConfig = m_config.getReaderSpecificConfig();
-                final var sheet = excelConfig.getSheetSelection().getSelectedSheet(sheetNames, excelConfig, m_path);
-                final SheetIterator sheetsData = (SheetIterator)m_xssfReader.getSheetsData();
-                m_countingSheetStream = getSheetStreamByName(sheetsData, sheet);
-                m_sheetSize = sheetsData.getSheetPart().getSize();
+        private long openSelectedSheet() throws InvalidFormatException, IOException, SAXException {
+            if (m_countingSheetStream != null) {
+                throw new IllegalStateException("Stream of selected sheet is already open!");
             }
+            final var sheetNames = getSheetNames();
+            final ExcelTableReaderConfig excelConfig = m_config.getReaderSpecificConfig();
+            final var sheet = excelConfig.getSheetSelection().getSelectedSheet(sheetNames, excelConfig, m_path);
+            final SheetIterator sheetsData = (SheetIterator)m_xssfReader.getSheetsData();
+            m_countingSheetStream = getSheetStreamByName(sheetsData, sheet);
+            return sheetsData.getSheetPart().getSize();
+
         }
 
         private static boolean use1904Windowing(final XSSFReader xssfReader) {
@@ -206,18 +202,30 @@ public class ExcelParserRunnable2 implements Runnable {
         }
 
         void parse() throws InvalidFormatException, IOException, SAXException {
-            getSheetNames();
-            openSelectedSheet();
-            getSheetSize();
+            final var sheetNames = getSheetNames();
+            final var sheetSize = openSelectedSheet();
 
 
             final var dataFormatter = new KNIMEDataFormatter(use1904Windowing(m_xssfReader),
                 m_config.getReaderSpecificConfig().isUse15DigitsPrecision());
 
+            final var sheetMeta = new CompletableFuture<SheetMetadata>();
+
+            final Consumer<Set<Integer>> onHiddenColumns  = hiddenColumns ->
+                sheetMeta.complete(new SheetMetadata(sheetSize, hiddenColumns));
+
+            sheetMeta.whenComplete((sheet, ex) -> {
+                if (ex != null) {
+                    m_metadata.completeExceptionally(ex);
+                } else {
+                    m_metadata.complete(new WorkbookMetadata(sheetNames, sheet));
+                }
+            });
+
             final var sheetContentsHandler = new ExcelTableReaderSheetContentsHandler(m_output, m_config,
-                dataFormatter);
+                dataFormatter, this::getProgress);
             m_xmlReader.setContentHandler(new KNIMEXSSFSheetXMLHandler(m_xssfReader.getStylesTable(),
-                m_sharedStringsTable, sheetContentsHandler, dataFormatter, false));
+                m_sharedStringsTable, sheetContentsHandler, dataFormatter, false, onHiddenColumns));
             m_xmlReader.parse(new InputSource(m_countingSheetStream));
         }
 
@@ -245,6 +253,13 @@ public class ExcelParserRunnable2 implements Runnable {
             m_countingSheetStream.close();
         }
 
+        long getProgress() {
+            if (m_countingSheetStream == null) {
+                throw new IllegalStateException("Sheet stream is not open!");
+            }
+            return m_countingSheetStream.getByteCount();
+        }
+
     }
 
 
@@ -267,9 +282,4 @@ public class ExcelParserRunnable2 implements Runnable {
             default -> throw new NotOfficeXmlFileException("");
         };
     }
-
-    public long getProgress() {
-        return m_progress.get();
-    }
-
 }

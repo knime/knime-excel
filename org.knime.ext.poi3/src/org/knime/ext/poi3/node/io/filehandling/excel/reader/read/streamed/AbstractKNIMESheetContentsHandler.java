@@ -48,7 +48,6 @@
  */
 package org.knime.ext.poi3.node.io.filehandling.excel.reader.read.streamed;
 
-import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler.SheetContentsHandler;
@@ -63,7 +62,8 @@ public abstract class AbstractKNIMESheetContentsHandler implements SheetContents
 
     private KNIMEXSSFDataType m_dataType;
 
-    private Set<Integer> m_hiddenCols = new HashSet<>();
+    // TODO remove
+    private Set<Integer> m_hiddenCols;
 
     private boolean m_isHiddenRow;
 

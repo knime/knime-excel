@@ -50,9 +50,8 @@ package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Map;
-import java.util.function.Consumer;
+import java.util.concurrent.ExecutionException;
 
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -104,7 +103,7 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
     @Override
     public Read<ExcelCell> read(final FSPath path, final TableReadConfig<ExcelTableReaderConfig> config)
             throws IOException {
-        return decorateRead(getExcelRead(path, config, null), config);
+        return decorateRead(getExcelRead(path, config), config);
     }
 
     @SuppressWarnings("resource") // decorated read will be closed in AbstractReadDecorator#close
@@ -112,14 +111,16 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
     public TypedReaderTableSpec<KNIMECellType> readSpec(final FSPath path,
         final TableReadConfig<ExcelTableReaderConfig> config, final ExecutionMonitor exec) throws IOException {
         final TableSpecGuesser<FSPath, KNIMECellType, ExcelCell> guesser = createGuesser();
-        try (ExcelRead2 read = getExcelRead(path, config, this::setSheetNames)) {
-            // sheet names are already retrieved, notify a potential listener from the dialog
-//            m_sheetNames = read.getSheetNames();
-//            notifyChangeListener();
+        try (ExcelRead2 read = getExcelRead(path, config)) {
+            final var metadata = read.getWorkbookMetadata();
+            m_sheetNames = metadata.sheetNames();
+            notifyChangeListener();
+            final var hiddenCols = metadata.sheetMeta().hiddenColumns();
             return ExcelColNameUtils.assignNamesIfMissing(
                 guesser.guessSpec(decorateReadForSpecGuessing(read, config), config, exec, path), config,
-                Collections.emptySet());// TODO
-//                read.getHiddenColumns());
+                hiddenCols);
+        } catch (InterruptedException | ExecutionException e) {
+            throw new IOException(e); // TODO correct?
         }
     }
 
@@ -142,11 +143,11 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
         return new WrapperExtractColumnHeaderRead(read, extractColHeaderRead::getColumnHeaders);
     }
 
-    private static ExcelRead2 getExcelRead(final FSPath path, final TableReadConfig<ExcelTableReaderConfig> config,
-            final Consumer<Map<String, Boolean>> sheetNamesConsumer) throws IOException {
+    private static ExcelRead2 getExcelRead(final FSPath path, final TableReadConfig<ExcelTableReaderConfig> config)
+            throws IOException {
         final boolean reevaluateFormulas = config.getReaderSpecificConfig().isReevaluateFormulas();
         try {
-            return new ExcelRead2(path, config, sheetNamesConsumer);
+            return new ExcelRead2(path, config);
 //            final String pathLowerCase = path.toString().toLowerCase();
 //            if (pathLowerCase.endsWith(".xlsb")) {
 //                return createXLSBRead(path, config);
@@ -262,9 +263,6 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
     }
 
     Map<String, Boolean> getSheetNames() {
-        if (m_sheetNames == null) {
-            return Collections.emptyMap();
-        }
         return m_sheetNames;
     }
 

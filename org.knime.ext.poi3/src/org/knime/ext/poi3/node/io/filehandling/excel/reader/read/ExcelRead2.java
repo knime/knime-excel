@@ -55,14 +55,16 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.OptionalLong;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.function.LongSupplier;
+import java.util.function.LongConsumer;
 
-import org.apache.commons.lang3.Functions;
 import org.apache.poi.EncryptedDocumentException;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.util.ThreadUtils;
@@ -74,7 +76,7 @@ import org.knime.filehandling.core.node.table.reader.randomaccess.RandomAccessib
 import org.knime.filehandling.core.node.table.reader.read.Read;
 
 /**
- * {@link Read}s that read Excel files/spreadsheets .
+ * {@link Read}s that read Excel files/spreadsheets using a companion thread for the parser.
  *
  * @author Manuel Hotz, KNIME GmbH, Konstanz, Germany
  */
@@ -91,9 +93,32 @@ public final class ExcelRead2 implements Read<ExcelCell> {
         RandomAccessibleUtils.createFromArray(new ExcelCell(KNIMECellType.STRING, "POISON"));
 
     /** Queue that uses the TRF to consume rows produced by the parser thread. */
-    private final BlockingQueue<RandomAccessible<ExcelCell>> m_queueRandomAccessibles =
-        new ArrayBlockingQueue<>(BLOCKING_QUEUE_SIZE);
 
+    private final BlockingQueue<RandomAccessible<ExcelCell>> m_queueRandomAccessibles =
+            new ArrayBlockingQueue<>(BLOCKING_QUEUE_SIZE);
+
+    /* Why a companion thread?
+     *
+     * - XLS:
+     *   The only way to read thos is to open the workbook, which means we could read them iterator/pull-based, not
+     *   needing a separate thread.
+     *
+     * - XLSX:
+     *   POI's solution to read XLSX in a memory-efficient way is to delegate to SAX or StaX (very low level).
+     *   For SAX it already offers event handlers that do almost everything that we need.
+     *
+     *   SAX is event/push-based, whereas StaX is iterator/pull-based. Since we currently use the former, we need the
+     *   companion thread to host the parser.
+     *   Technically, we could read sheets from XLSX files by opening it as ZIP and reading the sheet's XML file with
+     *   a SAX/StaX parser. So there is currently no technical reason to use SAX other than that the implementation is
+     *   already there. If we wanted to remove the companion thread, we would need to refactor the event-based handlers
+     *   into a StaX parser.
+     *
+     * - XLSB:
+     *   POI currently only offers an event-based handler for binary Excel files and nothing iterative.
+     *   Therefore, in order to move away from the companion thread we would need to adopt the handler and transform
+     *   it into a iterator-based parser.
+    **/
     /** The thread running the parser. */
     private Thread m_parserThread;
 
@@ -109,22 +134,27 @@ public final class ExcelRead2 implements Read<ExcelCell> {
     private final TableReadConfig<ExcelTableReaderConfig> m_config;
 
 
-    private LongSupplier m_currentProgress;
+    private AtomicLong m_currentProgress = new AtomicLong();
 
-    private Consumer<Map<String, Boolean>> m_sheetNamesConsumer;
+    private CompletableFuture<WorkbookMetadata> m_metadata = new CompletableFuture<>();
+
+    public record SheetMetadata(long sizeInBytes, Set<Integer> hiddenColumns) {}
+
+    /**
+     * Record for holding metadata about the workbook and current sheet
+     */
+    public record WorkbookMetadata(Map<String, Boolean> sheetNames, SheetMetadata sheetMeta) {}
+
 
     /**
      * Constructor
      *
      * @param path the path of the file to read
      * @param config the Excel table read config
-     * @param sheetNamesConsumer
      */
-    public ExcelRead2(final Path path, final TableReadConfig<ExcelTableReaderConfig> config,
-            final Consumer<Map<String, Boolean>> sheetNamesConsumer) {
+    public ExcelRead2(final Path path, final TableReadConfig<ExcelTableReaderConfig> config) {
         m_path = path;
         m_config = config;
-        m_sheetNamesConsumer = sheetNamesConsumer;
         startParserThread();
     }
 
@@ -161,29 +191,41 @@ public final class ExcelRead2 implements Read<ExcelCell> {
     }
 
     private void startParserThread() {
-        m_parserThread = ThreadUtils.threadWithContext(createParser(m_throwableDuringParsing::set),
+        m_parserThread = ThreadUtils.threadWithContext(createParser(m_throwableDuringParsing::set, m_metadata),
             "KNIME-Excel-Parser-" + CACHED_THREAD_POOL_INDEX.getAndIncrement());
         m_parserThread.start();
     }
 
-    public class CellConsumer implements Functions.FailableConsumer<RandomAccessible<ExcelCell>, InterruptedException> {
+
+    public class CellConsumer {
+
+        private final LongConsumer m_progress;
+
+        public CellConsumer(final LongConsumer progress) {
+            m_progress = progress;
+        }
 
         void finished() throws InterruptedException {
             addToQueue(POISON_PILL);
         }
 
-        @Override
-        public void accept(final RandomAccessible<ExcelCell> row) throws InterruptedException {
+        public void accept(final RandomAccessible<ExcelCell> row, final long progress) throws InterruptedException {
             addToQueue(row);
+            if (m_progress != null) {
+                m_progress.accept(progress);
+            }
         }
     }
 
     /**
+     * @param metadata
      * @param path
      * @return
      */
-    private ExcelParserRunnable2 createParser(final Consumer<Throwable> exceptionHandler) {
-        return new ExcelParserRunnable2(m_path, m_config, new CellConsumer(), m_sheetNamesConsumer, exceptionHandler);
+    private ExcelParserRunnable2 createParser(final Consumer<Throwable> exceptionHandler,
+            final CompletableFuture<WorkbookMetadata> metadata) {
+        return new ExcelParserRunnable2(m_path, m_config, new CellConsumer(m_currentProgress::set), metadata,
+            exceptionHandler);
     }
 
     @Override
@@ -274,12 +316,32 @@ public final class ExcelRead2 implements Read<ExcelCell> {
 
     @Override
     public OptionalLong getMaxProgress() {
-        return OptionalLong.empty();
+        try {
+            return OptionalLong.of(m_metadata.get().sheetMeta.sizeInBytes);
+        } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return OptionalLong.empty();
+        } catch (final ExecutionException e) {
+            LOGGER.debug("Could not determine max progress", e);
+            return OptionalLong.empty();
+        }
     }
 
     @Override
     public long getProgress() {
-        return m_currentProgress.getAsLong();
+        return m_currentProgress.get();
+    }
+
+//    public Map<String, Boolean> getSheetNames() {
+//        try {
+//            return m_metadata.get().sheetNames;
+//        } catch (InterruptedException | ExecutionException e) {
+//            return Collections.emptyMap();
+//        }
+//    }
+
+    public WorkbookMetadata getWorkbookMetadata() throws InterruptedException, ExecutionException {
+        return m_metadata.get();
     }
 
 }

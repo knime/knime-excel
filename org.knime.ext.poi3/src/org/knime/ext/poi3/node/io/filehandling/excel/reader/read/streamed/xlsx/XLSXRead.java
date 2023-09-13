@@ -169,7 +169,7 @@ public final class XLSXRead extends AbstractStreamedRead {
         protected void parse() throws IOException, InvalidFormatException, SAXException {
             final var sheetContentsHandler = new ExcelTableReaderSheetContentsHandler(m_dataFormatter);
             m_xmlReader.setContentHandler(new KNIMEXSSFSheetXMLHandler(m_xssfReader.getStylesTable(),
-                m_sharedStringsTable, sheetContentsHandler, m_dataFormatter, false));
+                m_sharedStringsTable, sheetContentsHandler, m_dataFormatter, false, null));
             m_xmlReader.parse(new InputSource(m_countingSheetStream));
         }
 

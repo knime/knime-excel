@@ -52,7 +52,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.Future;
+import java.util.function.LongSupplier;
 
 import org.apache.poi.ss.util.CellAddress;
 import org.apache.poi.ss.util.CellReference;
@@ -116,10 +116,9 @@ public class ExcelTableReaderSheetContentsHandler extends AbstractKNIMESheetCont
 
     private final CellConsumer m_output;
 
+    private final LongSupplier m_progress;
+
     private TableReadConfig<ExcelTableReaderConfig> m_config;
-
-    private Future<Set<Integer>> m_hiddenColumns;
-
 
     /**
      * Constructor.
@@ -127,10 +126,12 @@ public class ExcelTableReaderSheetContentsHandler extends AbstractKNIMESheetCont
      * @param dataFormatter the data formatter taking care of numeric and date&time cells
      */
     public ExcelTableReaderSheetContentsHandler(final CellConsumer output,
-            final TableReadConfig<ExcelTableReaderConfig> config, final KNIMEDataFormatter dataFormatter) {
+            final TableReadConfig<ExcelTableReaderConfig> config, final KNIMEDataFormatter dataFormatter,
+            final LongSupplier progress) {
         m_output = output;
         m_config = config;
         m_dataFormatter = dataFormatter;
+        m_progress = progress;
 
         final var excelConfig = config.getReaderSpecificConfig();
         m_firstCol = excelConfig.getAreaOfSheetToRead() == AreaOfSheetToRead.PARTIAL
@@ -209,7 +210,8 @@ public class ExcelTableReaderSheetContentsHandler extends AbstractKNIMESheetCont
         }
         try {
             m_output.accept(VisibilityAwareRandomAccessible.createUnsafe(
-                RandomAccessibleUtils.createFromArrayUnsafe(cells.toArray(new ExcelCell[0])), isRowHidden));
+                RandomAccessibleUtils.createFromArrayUnsafe(cells.toArray(new ExcelCell[0])), isRowHidden),
+                m_progress.getAsLong());
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new ParsingInterruptedException(e);

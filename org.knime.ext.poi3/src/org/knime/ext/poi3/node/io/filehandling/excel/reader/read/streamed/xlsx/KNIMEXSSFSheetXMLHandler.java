@@ -50,6 +50,7 @@ package org.knime.ext.poi3.node.io.filehandling.excel.reader.read.streamed.xlsx;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
 import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
@@ -75,20 +76,24 @@ public final class KNIMEXSSFSheetXMLHandler extends XSSFSheetXMLHandler {
 
     private Set<Integer> m_hiddenCols = new HashSet<>();
 
+    private Consumer<Set<Integer>> m_onHiddenColumns;
+
     /**
      * @param styles The styles to use.
      * @param strings The {@link String}s.
      * @param sheetContentsHandler The sheet contents.
      * @param dataFormatter Special {@link KNIMEDataFormatter}.
      * @param formulasNotResults Results in formulae instead of their values (usually {@code false}).
+     * @param onHiddenColumns
      * @see XSSFSheetXMLHandler#XSSFSheetXMLHandler(StylesTable, ReadOnlySharedStringsTable, SheetContentsHandler,
      *      boolean)
      */
     public KNIMEXSSFSheetXMLHandler(final StylesTable styles, final ReadOnlySharedStringsTable strings,
         final AbstractKNIMESheetContentsHandler sheetContentsHandler, final KNIMEDataFormatter dataFormatter,
-        final boolean formulasNotResults) {
+        final boolean formulasNotResults, final Consumer<Set<Integer>> onHiddenColumns) {
         super(styles, strings, sheetContentsHandler, dataFormatter, formulasNotResults);
         m_output = sheetContentsHandler;
+        m_onHiddenColumns = onHiddenColumns;
     }
 
     @Override
@@ -130,6 +135,9 @@ public final class KNIMEXSSFSheetXMLHandler extends XSSFSheetXMLHandler {
     public void endElement(final String uri, final String localName, final String qName) throws SAXException {
         m_output.nextCellType(m_nextDataType);
         m_output.setHiddenCols(m_hiddenCols);
+        if (m_onHiddenColumns != null) {
+            m_onHiddenColumns.accept(m_hiddenCols);
+        }
         super.endElement(uri, localName, qName);
     }
 
