@@ -65,7 +65,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
-import org.apache.poi.EncryptedDocumentException;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.util.ThreadUtils;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
@@ -167,28 +166,6 @@ public final class ExcelRead2 implements Read<ExcelCell> {
         return hasNext ? m_randomAccessibleIterator.next() : null;
     }
 
-    /**
-     * Creates and returns an {@link IOException} with an error message telling the user which file requires a password
-     * to be opened.
-     *
-     * @param e the {@link EncryptedDocumentException} to re-throw, can be {@code null}
-     * @return an {@link IOException} with a nice error message
-     */
-    protected IOException createPasswordProtectedFileException(final EncryptedDocumentException e) {
-        return new IOException(String
-            .format("The file '%s' is password protected. Supply a password via the encryption settings.", m_path), e);
-    }
-
-    /**
-     * Creates and returns an {@link IOException} with an error message telling the user for which file the password is
-     * incorrect.
-     *
-     * @param e the {@link EncryptedDocumentException} to re-throw, can be {@code null}
-     * @return an {@link IOException} with a nice error message
-     */
-    protected IOException createPasswordIncorrectException(final EncryptedDocumentException e) {
-        return new IOException(String.format("The supplied password is incorrect for file '%s'.", m_path), e);
-    }
 
     private void startParserThread() {
         m_parserThread = ThreadUtils.threadWithContext(createParser(m_throwableDuringParsing::set, m_metadata),
