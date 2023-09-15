@@ -134,9 +134,11 @@ public abstract class ExcelParserRunnable implements Runnable {
             LOGGER.debug("Thread parsing an Excel sheet finished successfully.");
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            closeAndSwallowExceptions(e);
+            LOGGER.debug("Parsing stopped by interrupt", e);
+            closeAndSwallowExceptions(null);
         } catch (ParsingInterruptedException e) { // NOSONAR ignore ParsingInterruptedException, they are thrown by us
-            closeAndSwallowExceptions(e);
+            LOGGER.debug("Parsing interrupted by us", e);
+            closeAndSwallowExceptions(null);
         } catch (Throwable e) { // NOSONAR we want to catch any Throwable
             m_read.setThrowable(e);
             // cannot do anything with the IO exceptions besides logging
@@ -145,7 +147,9 @@ public abstract class ExcelParserRunnable implements Runnable {
     }
 
     private void closeAndSwallowExceptions(final Throwable e) {
-        LOGGER.debug("Problem while parsing Excel sheet, closing read...", e);
+        if (e != null) {
+            LOGGER.debug("Problem while parsing Excel sheet, closing read...", e);
+        }
         try {
             m_read.close();
         } catch (IOException ioe) {

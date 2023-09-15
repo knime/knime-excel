@@ -50,6 +50,7 @@ package org.knime.ext.poi3.node.io.filehandling.excel.reader.read;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -57,6 +58,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -75,9 +77,14 @@ import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.util.FileUtil;
 import org.knime.core.util.ThreadUtils;
+import org.knime.core.util.exception.ResourceAccessException;
+import org.knime.core.util.pathresolve.ResolverUtil;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
 import org.knime.filehandling.core.connections.FSPath;
+import org.knime.filehandling.core.connections.meta.FSDescriptorRegistry;
+import org.knime.filehandling.core.connections.uriexport.URIExporterIDs;
+import org.knime.filehandling.core.connections.uriexport.noconfig.EmptyURIExporterConfig;
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
 import org.knime.filehandling.core.node.table.reader.randomaccess.RandomAccessible;
 import org.knime.filehandling.core.node.table.reader.randomaccess.RandomAccessibleUtils;
@@ -184,17 +191,44 @@ public abstract class ExcelRead implements Read<ExcelCell> {
            because we have to go through InputStream.
            (for configuration options of POI see https://poi.apache.org/components/configuration.html)
      */
-    private static Future<File> resolveToLocalOrTempFile(final FSPath path) throws IOException {
+    private static Future<File> resolveToLocalOrTempFile(final FSPath path) {
         if (!Files.isRegularFile(path)) {
             throw new IllegalArgumentException(
                 "Can only resolve regular files, not path denoting: \"%s\"".formatted(path.toString()));
         }
-        return path.resolveToLocal()
-                .<Future<File>>map(local -> CompletableFuture.completedFuture(local.toFile()))
+        return resolveToLocal(path)
+                .<Future<File>>map(CompletableFuture::completedFuture)
                 .orElseGet(() ->
                     // package the download (copy to temp file) into a callable to make it cancelable through the UI
                     CACHED_THREAD_POOL.submit(ThreadUtils.callableWithContext(() -> copyToTemp(path))
                 ));
+    }
+
+    /**
+     * Tries to resolve the given path to a file on the local machine.
+     * @param path path to a file
+     * @return file on the local machine or {@link Optional#empty()} if the file could not be resolved to a local file
+     */
+    private static Optional<File> resolveToLocal(final FSPath path) {
+        try {
+            @SuppressWarnings("resource") // Don't close the FS since we're not the ones that opened it
+            final var desc = FSDescriptorRegistry.getFSDescriptor(path.getFileSystem().getFSType()).orElseThrow();
+            final var knimeFile = desc.getURIExporterFactory(URIExporterIDs.KNIME_FILE);
+            if (knimeFile != null) {
+                // e.g. when using Local File System Connector as File System In Port
+                final var exporter = knimeFile.createExporter(EmptyURIExporterConfig.getInstance());
+                return Optional.of(new File(exporter.toUri(path)));
+            }
+            final var legacy = desc.getURIExporterFactory(URIExporterIDs.LEGACY_KNIME_URL);
+            if (legacy != null) {
+                final var exporter = legacy.createExporter(EmptyURIExporterConfig.getInstance());
+                return Optional.ofNullable(ResolverUtil.resolveURItoLocalFile(exporter.toUri(path)));
+            }
+            return Optional.empty();
+        } catch (final ResourceAccessException | URISyntaxException e) {
+            LOGGER.debug("Problem resolving FSPath to local file, assuming non-local", e);
+            return Optional.empty();
+        }
     }
 
     /**
