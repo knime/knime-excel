@@ -199,9 +199,9 @@ public final class ExcelRead2 implements Read<ExcelCell> {
      * @param path
      * @return
      */
-    private ExcelParserRunnable2 createParser(final Consumer<Throwable> exceptionHandler,
+    private ExcelParser createParser(final Consumer<Throwable> exceptionHandler,
             final CompletableFuture<WorkbookMetadata> metadata) {
-        return new ExcelParserRunnable2(m_path, m_config, new CellConsumer(m_currentProgress::set), metadata,
+        return new ExcelParser(m_path, m_config, new CellConsumer(m_currentProgress::set), metadata,
             exceptionHandler);
     }
 

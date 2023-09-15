@@ -60,6 +60,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
+import org.apache.poi.UnsupportedFileFormatException;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.poifs.filesystem.FileMagic;
 import org.apache.poi.ss.usermodel.Cell;
@@ -518,6 +519,12 @@ public final class ExcelUtils {
             super(message, cause);
         }
 
+    }
+
+    public static final class NotExcelFileException extends UnsupportedFileFormatException {
+        protected NotExcelFileException(final String s) {
+            super(s);
+        }
     }
 
     /**

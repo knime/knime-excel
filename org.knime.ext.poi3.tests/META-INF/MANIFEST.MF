@@ -1,0 +1,14 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Unit-Tests for org.knime.ext.poi3
+Bundle-SymbolicName: org.knime.ext.poi3.tests;singleton:=true
+Bundle-Version: 5.2.0.qualifier
+Bundle-Vendor: KNIME AG, Zurich, Switzerland
+Fragment-Host: org.knime.ext.poi3;bundle-version="[5.1.0,6.0.0)"
+Require-Bundle: junit-jupiter-api;bundle-version="5.9.2",
+ junit-jupiter-engine;bundle-version="5.9.2",
+ junit-jupiter-params;bundle-version="5.9.2",
+ org.junit;bundle-version="[4.8.1,5.0.0)",
+ org.knime.testing;bundle-version="[5.1.0,6.0.0)"
+Bundle-RequiredExecutionEnvironment: JavaSE-17
+Automatic-Module-Name: org.knime.ext.poi3.tests
