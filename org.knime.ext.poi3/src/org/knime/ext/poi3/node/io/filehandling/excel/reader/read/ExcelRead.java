@@ -71,6 +71,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.openxml4j.exceptions.InvalidOperationException;
 import org.apache.poi.openxml4j.opc.OPCPackage;
@@ -241,7 +242,12 @@ public abstract class ExcelRead implements Read<ExcelCell> {
      * @see {@link Files#copy(Path, Path, java.nio.file.CopyOption...)}
      */
     private static File copyToTemp(final FSPath path) throws IOException {
-        final var tempFile = FileUtil.createTempFile("ExcelRead-tempfile", ".bin", FileUtil.getWorkflowTempDir(), true);
+        final var fileName = path.getFileName().toString();
+        // we derive the temp file name from the basename so error message make sense
+        final var baseName = FilenameUtils.getBaseName(fileName);
+        // we use the real extension so any file type detection that uses the extension will work
+        final var ext = FilenameUtils.getExtension(fileName);
+        final var tempFile = FileUtil.createTempFile(baseName, "." + ext, FileUtil.getWorkflowTempDir(), true);
         final var tempPath = tempFile.toPath();
         try (final var fileSystem = path.getFileSystem()) {
             fileSystem.registerCloseable(() -> Files.deleteIfExists(tempPath));
