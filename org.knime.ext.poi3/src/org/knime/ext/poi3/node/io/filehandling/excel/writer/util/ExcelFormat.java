@@ -60,7 +60,7 @@ import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.XlsTableWriter
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.XlsxTableWriter;
 
 /**
- * The support excel formats by the 'Excel table writer' node.
+ * The supported excel formats by the 'Excel table writer' node.
  *
  * @author Mark Ortmann, KNIME GmbH, Berlin, Germany
  */

@@ -60,6 +60,7 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Optional;
 
+import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
@@ -88,7 +89,8 @@ import org.knime.core.node.streamable.StreamableOperator;
 import org.knime.core.node.util.CheckUtils;
 import org.knime.core.util.DesktopUtil;
 import org.knime.core.util.FileUtil;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.ExcelMultiTableWriter;
+import org.knime.ext.poi3.node.io.filehandling.excel.CryptUtil;
+import org.knime.ext.poi3.node.io.filehandling.excel.ExcelMultiRowInputWriter;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.WorkbookHandler;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelFormat;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelProgressMonitor;
@@ -150,9 +152,7 @@ final class ExcelTableWriterNodeModel extends NodeModel {
             .toArray();
         // validate sheet names
         validateSheetNames(tableSizes);
-        final ExcelProgressMonitor m =
-            new ExcelProgressMonitor(getExcelWriteSubProgress(exec), Arrays.stream(tableSizes)//
-                .sum());
+        final var m = new ExcelProgressMonitor(getExcelWriteSubProgress(exec), Arrays.stream(tableSizes).sum());
         final RowInput[] tables = Arrays.stream(bufferedTables)//
             .map(DataTableRowInput::new)//
             .toArray(RowInput[]::new);
@@ -187,10 +187,8 @@ final class ExcelTableWriterNodeModel extends NodeModel {
             m_statusConsumer.setWarningsIfRequired(this::setWarningMessage);
             createOutputFoldersIfMissing(outputPath.toAbsolutePath().getParent(), fileChooser.isCreateMissingFolders());
             exec.setMessage("Opening excel file");
-            final ExcelMultiTableWriter writer = new ExcelMultiTableWriter(m_cfg);
-
-            try (final WorkbookHandler wbHandler =
-                getWorkbookHandler(fileChooser.getFileOverwritePolicy(), outputPath)) {
+            final var writer = new ExcelMultiRowInputWriter(m_cfg);
+            try (final var wbHandler = getWorkbookHandler(fileChooser.getFileOverwritePolicy(), outputPath)) {
                 writer.writeTables(outputPath, tables, wbHandler, exec, m);
             }
 
@@ -255,18 +253,20 @@ final class ExcelTableWriterNodeModel extends NodeModel {
     }
 
     private WorkbookHandler getWorkbookHandler(final FileOverwritePolicy fileOverwritePolicy, final Path path)
-        throws IOException {
+            throws IOException {
         final boolean fileExists = FSFiles.exists(path);
         final var format = m_cfg.getExcelFormat();
 
+        final var auth = m_cfg.getAuthentication();
+        final var pw = CryptUtil.getPassword(auth, getCredentialsProvider());
         if (fileExists && fileOverwritePolicy == FileOverwritePolicy.APPEND) {
-            return new WriteWorkbookHandler(format, path, m_cfg.evaluate());
+            return new WriteWorkbookHandler(format, path, m_cfg.evaluate(), pw);
         } else {
             if (fileExists && fileOverwritePolicy == FileOverwritePolicy.FAIL) {
                 throw new IOException(String.format(
                     "Output file '%s' exists and must not be overwritten due to user settings.", path.toString()));
             }
-            return new WriteWorkbookHandler(format, m_cfg.evaluate());
+            return new WriteWorkbookHandler(format, m_cfg.evaluate(), pw);
         }
     }
 
@@ -360,52 +360,67 @@ final class ExcelTableWriterNodeModel extends NodeModel {
          *
          * @param path path to the excel file
          */
-        WriteWorkbookHandler(final ExcelFormat format, final boolean evaluateFormulas) {
-            this(format, null, evaluateFormulas);
+        WriteWorkbookHandler(final ExcelFormat format, final boolean evaluateFormulas, final String password) {
+            this(format, null, evaluateFormulas, password);
         }
 
-        WriteWorkbookHandler(final ExcelFormat format, final Path path, final boolean evaluateFormulas) {
-            super(format, path);
+        WriteWorkbookHandler(final ExcelFormat format, final Path path, final boolean evaluateFormulas,
+                final String password) {
+            super(format, path, password);
             m_evaluateFormulas = evaluateFormulas;
         }
 
         @Override
         @SuppressWarnings("resource")
-        public Workbook createWorkbook() throws IOException {
+        public Workbook createWorkbook(final String secretPassword) throws IOException {
+            // Overwrite/create file
             if (m_inputPath == null) {
                 return m_format.getWorkbook();
             }
 
-            // if create fails the input stream gets closed otherwise it's closed when invoking close on the workbook
-            final var inp = new BufferedInputStream(Files.newInputStream(m_inputPath));
-            var wb = WorkbookFactory.create(inp);
-            if (wb instanceof HSSFWorkbook) {
-                if (m_format != ExcelFormat.XLS) {
-                    wb.close();
-                    throw new IOException(String.format(
-                        "Wrong format: The file '%s' is xls instead of xlsx or xlsm formatted. Please adapt the "
-                            + "configuration",
-                        m_inputPath));
-                }
-            } else if (wb instanceof XSSFWorkbook) {
-                if (m_format == ExcelFormat.XLS) {
-                    wb.close();
-                    throw new IOException(String.format(
-                        "Wrong format: The file '%s' is xlsx or xlsm instead of xls formatted. Please adapt the "
-                            + "configuration",
-                        m_inputPath));
-                }
-                // if we need to evaluate formulas we cannot use the faster streaming model (SXSSF), but have to use
-                // the XSSF model, which keeps everything in memory
-                if (!m_evaluateFormulas) {
-                    wb = new SXSSFWorkbook((XSSFWorkbook)wb);
-                }
-            } else {
-                wb.close();
+            // Append to existing file
+            final var formatIsXLS = m_format == ExcelFormat.XLS;
+            final var formatIsXLSX = m_format == ExcelFormat.XLSX;
+            if (!(formatIsXLS || formatIsXLSX)) {
                 throw new IOException(
                     String.format("Unsupported format: Unable to append spreadsheets to %s", m_inputPath.toString()));
             }
-            return wb;
+            // if create fails the input stream gets closed otherwise it's closed when invoking close on the workbook
+            final var bufferedInputStream = new BufferedInputStream(Files.newInputStream(m_inputPath));
+            try {
+                final var wb = WorkbookFactory.create(bufferedInputStream, secretPassword);
+
+                // Check that the loaded workbook's format equals the expected format
+                if (wb instanceof HSSFWorkbook) {
+                    if (formatIsXLSX) {
+                        wb.close();
+                        throw new IOException(String.format(
+                            "Wrong format: The file '%s' is xls instead of xlsx or xlsm formatted. Please adapt the "
+                                + "configuration", m_inputPath));
+                    }
+                } else if (wb instanceof XSSFWorkbook xssfWorkbook) {
+                    if (formatIsXLS) {
+                        wb.close();
+                        throw new IOException(String.format(
+                            "Wrong format: The file '%s' is xlsx or xlsm instead of xls formatted. Please adapt the "
+                                + "configuration", m_inputPath));
+                    }
+                    // if we need to evaluate formulas we cannot use the faster streaming model (SXSSF), but have to use
+                    // the XSSF model, which keeps everything in memory
+                    if (!m_evaluateFormulas) {
+                        return new SXSSFWorkbook(xssfWorkbook);
+                    }
+                } else {
+                    wb.close();
+                    throw new IOException(String.format("Unsupported format: Unable to append spreadsheets to %s",
+                        m_inputPath.toString()));
+                }
+                return wb;
+            } catch (final EncryptedDocumentException e) {
+                final var msg = "The file to append to is encrypted, but "
+                        + (secretPassword == null ? "no password was supplied." : "supplied password is invalid.");
+                throw new EncryptedDocumentException(msg, e);
+            }
         }
 
     }

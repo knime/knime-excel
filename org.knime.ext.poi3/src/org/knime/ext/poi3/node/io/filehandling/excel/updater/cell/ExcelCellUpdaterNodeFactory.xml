@@ -96,154 +96,167 @@
           <a href="https://docs.knime.com/latest/analytics_platform_file_handling_guide/index.html"><i>File Handling Guide.</i></a>
         </p>
       </intro>
-      <option name="Read from">
-        Select a file system which stores the data you want to read from and
-        potentially update. There are four default file system options to
-        choose from:
-        <br />
-        <ul>
-          <li>
-            <i>Local File System:</i>
-            Allows you to select a file/folder from your
-            local system.
-          </li>
-          <li>
-            <i>Mountpoint:</i>
-            Allows you to read from a mountpoint.
-            When selected, a new drop-down menu appears to choose the
-            mountpoint. Unconnected mountpoints are greyed out but can
-            still be selected (note that browsing is disabled in this case).
-            Go to the KNIME Explorer and connect to the mountpoint to enable
-            browsing. A mountpoint is displayed in red if it was
-            previously selected but is no longer available. You won't be
-            able to save the dialog as long as you don't select a valid, i.e.
-            known mountpoint.
-          </li>
-          <li>
-            <i>Relative to:</i>
-            Allows you to choose whether to resolve the path
-            relative to the current mountpoint, current workflow or the
-            current workflow's data area. When selected a new drop-down
-            menu appears to choose which of the three options to use.
-          </li>
-          <li>
-            <i>Custom/KNIME URL:</i>
-            Allows to specify a URL (e.g. file://, http:// or knime://
-            protocol).
-            When selected, a spinner appears that allows you to specify
-            the desired connection and read timeout in milliseconds. In
-            case it takes longer to connect to the host / read the file,
-            the node fails to execute. Browsing is disabled for this
-            option.
-          </li>
-        </ul>
-        To read from other file systems, click on
-        <b>...</b>
-        in the bottom left corner of the node icon followed by
-        <i>Add File System Connection port.</i>
-        Afterwards, connect the desired file system connector
-        node to the newly added input port. The file system
-        connection will then be shown in the drop-down menu.
-        It is greyed out if the file system is not connected in
-        which case you have to (re)execute the connector node first.
-        Note: The default file systems listed above can't be
-        selected if a file system is provided via the input port.
-      </option>
-      <option name="File/URL">
-        Enter a URL when writing to
-        <i>
-          Custom/KNIME URL,
-        </i>
-        otherwise enter a path to a file. The
-        required syntax of a path depends on the chosen file system,
-        such as "C:\path\to\file" (Local File System on
-        Windows) or "/path/to/file" (Local File System
-        on Linux/MacOS and Mountpoint). For file systems connected via
-        input port, the node description of the
-        respective connector node describes the required path format.
-        You can also choose a previously selected file from the
-        drop-down list, or select a location from the
-        "Browse..." dialog. Note that browsing is
-        disabled in some cases:
-        <ul>
-          <li>
-            <i>Custom/KNIME URL:</i>
-            Browsing is always disabled.
-          </li>
-          <li>
-            <i>Mountpoint:</i>
-            Browsing is disabled if the selected mountpoint isn't
-            connected.
-            Go to the KNIME Explorer and connect to the mountpoint
-            to enable browsing.
-          </li>
-          <li>
-            <i>File systems provided via input port:</i>
-            Browsing is disabled if the connector node hasn't
-            been executed since the workflow has been opened.
-            (Re)execute the connector node to enable browsing.
-          </li>
-        </ul>
-        <i>
-          The location can be exposed as or automatically set
-          via a
-        </i>
-        <a href="https://docs.knime.com/latest/analytics_platform_file_handling_guide/index.html#path">
-          <i>path flow variable.</i>
-        </a>
-      </option>
-      <option name="Create a new file">
-        If this option is selected, create a copy of the
-        original file which is updated instead of the original
-        file. The newly created file must have the same file
-        type as the original file.
-      </option>
-      <option name="Write to">
-        Provide the path to new file that should be used.
-        This has the same file system and file options
-        as "Read from".
-      </option>
-      <option name="Create missing folders">
-        Select if the folders of the selected output location
-        should be created when they do not already exist. If this
-        option is unchecked, the node will fail if a folder does
-        not exist.
-      </option>
-      <option name="If exists">
-        Specify the behavior of the node in case the output file
-        already exists.
-        <ul>
-          <li>
-            <i>Overwrite:</i>
-            Will replace any existing file.
-          </li>
-          <li>
-            <i>Fail:</i>
-            Will issue an error during the node's execution
-            (to prevent unintentional overwrite).
-          </li>
-        </ul>
-      </option>
-      <option name="Excel sheet">
-        Specify which sheet should be update by the
-        corresponding input table.
-      </option>
-      <option name="Based on address column">
-        Select the name of the column which contains the
-        addresses of the cells which
-        should be updated.
-      </option>
-      <option name="Replaces missing values by">
-        If selected, the node will write the specified value
-        as a string to the address if only missing values
-        are found in that row. Otherwise a blank cell is created.
-      </option>
-      <option name="Evaluate formulas">
-        If checked, all formulas in the file will be
-        evaluated after the sheet's updates have been
-        performed. This is useful if values that are
-        used in formulas in the sheets have been updated.
-      </option>
+      <tab name="Settings">
+       <option name="Read from">
+         Select a file system which stores the data you want to read from and
+         potentially update. There are four default file system options to
+         choose from:
+         <br />
+         <ul>
+           <li>
+             <i>Local File System:</i>
+             Allows you to select a file/folder from your
+             local system.
+           </li>
+           <li>
+             <i>Mountpoint:</i>
+             Allows you to read from a mountpoint.
+             When selected, a new drop-down menu appears to choose the
+             mountpoint. Unconnected mountpoints are greyed out but can
+             still be selected (note that browsing is disabled in this case).
+             Go to the KNIME Explorer and connect to the mountpoint to enable
+             browsing. A mountpoint is displayed in red if it was
+             previously selected but is no longer available. You won't be
+             able to save the dialog as long as you don't select a valid, i.e.
+             known mountpoint.
+           </li>
+           <li>
+             <i>Relative to:</i>
+             Allows you to choose whether to resolve the path
+             relative to the current mountpoint, current workflow or the
+             current workflow's data area. When selected a new drop-down
+             menu appears to choose which of the three options to use.
+           </li>
+           <li>
+             <i>Custom/KNIME URL:</i>
+             Allows to specify a URL (e.g. file://, http:// or knime://
+             protocol).
+             When selected, a spinner appears that allows you to specify
+             the desired connection and read timeout in milliseconds. In
+             case it takes longer to connect to the host / read the file,
+             the node fails to execute. Browsing is disabled for this
+             option.
+           </li>
+         </ul>
+         To read from other file systems, click on
+         <b>...</b>
+         in the bottom left corner of the node icon followed by
+         <i>Add File System Connection port.</i>
+         Afterwards, connect the desired file system connector
+         node to the newly added input port. The file system
+         connection will then be shown in the drop-down menu.
+         It is greyed out if the file system is not connected in
+         which case you have to (re)execute the connector node first.
+         Note: The default file systems listed above can't be
+         selected if a file system is provided via the input port.
+       </option>
+       <option name="File/URL">
+         Enter a URL when writing to
+         <i>
+           Custom/KNIME URL,
+         </i>
+         otherwise enter a path to a file. The
+         required syntax of a path depends on the chosen file system,
+         such as "C:\path\to\file" (Local File System on
+         Windows) or "/path/to/file" (Local File System
+         on Linux/MacOS and Mountpoint). For file systems connected via
+         input port, the node description of the
+         respective connector node describes the required path format.
+         You can also choose a previously selected file from the
+         drop-down list, or select a location from the
+         "Browse..." dialog. Note that browsing is
+         disabled in some cases:
+         <ul>
+           <li>
+             <i>Custom/KNIME URL:</i>
+             Browsing is always disabled.
+           </li>
+           <li>
+             <i>Mountpoint:</i>
+             Browsing is disabled if the selected mountpoint isn't
+             connected.
+             Go to the KNIME Explorer and connect to the mountpoint
+             to enable browsing.
+           </li>
+           <li>
+             <i>File systems provided via input port:</i>
+             Browsing is disabled if the connector node hasn't
+             been executed since the workflow has been opened.
+             (Re)execute the connector node to enable browsing.
+           </li>
+         </ul>
+         <i>
+           The location can be exposed as or automatically set
+           via a
+         </i>
+         <a href="https://docs.knime.com/latest/analytics_platform_file_handling_guide/index.html#path">
+           <i>path flow variable.</i>
+         </a>
+       </option>
+       <option name="Create a new file">
+         If this option is selected, create a copy of the
+         original file which is updated instead of the original
+         file. The newly created file must have the same file
+         type as the original file.
+       </option>
+       <option name="Write to">
+         Provide the path to new file that should be used.
+         This has the same file system and file options
+         as "Read from".
+       </option>
+       <option name="Create missing folders">
+         Select if the folders of the selected output location
+         should be created when they do not already exist. If this
+         option is unchecked, the node will fail if a folder does
+         not exist.
+       </option>
+       <option name="If exists">
+         Specify the behavior of the node in case the output file
+         already exists.
+         <ul>
+           <li>
+             <i>Overwrite:</i>
+             Will replace any existing file.
+           </li>
+           <li>
+             <i>Fail:</i>
+             Will issue an error during the node's execution
+             (to prevent unintentional overwrite).
+           </li>
+         </ul>
+       </option>
+       <option name="Excel sheet">
+         Specify which sheet should be update by the
+         corresponding input table.
+       </option>
+       <option name="Based on address column">
+         Select the name of the column which contains the
+         addresses of the cells which
+         should be updated.
+       </option>
+       <option name="Replaces missing values by">
+         If selected, the node will write the specified value
+         as a string to the address if only missing values
+         are found in that row. Otherwise a blank cell is created.
+       </option>
+       <option name="Evaluate formulas">
+         If checked, all formulas in the file will be
+         evaluated after the sheet's updates have been
+         performed. This is useful if values that are
+         used in formulas in the sheets have been updated.
+       </option>
+      </tab>
+      <tab name="Encryption">
+        <option name="Password to protect files">
+          <p>Allows you to specify a password to decrypt existing files that have been protected with a password 
+             via Excel.</p>
+          <ul>
+            <li>None: only files without password protection can be updated</li>
+            <li>Credentials: use a password set via workflow credentials</li>
+            <li>Password: specify a password</li>
+          </ul>
+        </option>
+      </tab>
     </fullDescription>
     <ports>
       <inPort index="0" name="Input table">

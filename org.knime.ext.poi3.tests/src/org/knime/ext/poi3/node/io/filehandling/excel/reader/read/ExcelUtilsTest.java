@@ -44,75 +44,58 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Nov 9, 2020 (Mark Ortmann, KNIME GmbH, Berlin, Germany): created
+ *   24 Oct 2023 (Manuel Hotz, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.writer.util;
+package org.knime.ext.poi3.node.io.filehandling.excel.reader.read;
 
-import java.util.function.Supplier;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import org.knime.core.node.CanceledExecutionException;
-import org.knime.core.node.ExecutionContext;
-import org.knime.core.node.NodeProgressMonitor;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.ExcelTableWriter;
+import java.io.IOException;
+import java.util.List;
+
+import org.apache.poi.EncryptedDocumentException;
+import org.apache.poi.openxml4j.exceptions.OpenXML4JException;
+import org.apache.poi.openxml4j.opc.OPCPackage;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.xssf.eventusermodel.XSSFReader;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.knime.ext.poi3.Fixtures;
 
 /**
- * It allows {@link ExcelTableWriter}s to conveniently update the overall progress.
+ * Tests for {@link ExcelUtils}.
  *
- * @author Mark Ortmann, KNIME GmbH, Berlin, Germany
+ * @author Manuel Hotz, KNIME GmbH, Konstanz, Germany
  */
-public final class ExcelProgressMonitor {
+@SuppressWarnings("static-method")
+final class ExcelUtilsTest {
 
-    private final ExecutionContext m_exec;
-
-    private final long m_rowCount;
-
-    private double m_curIdx;
-
-    /**
-     * Constructor.
-     *
-     * @param exec the execution context
-     */
-    public ExcelProgressMonitor(final ExecutionContext exec) {
-        this(exec, -1);
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param exec the execution context
-     * @param rowCount the row count
-     */
-    public ExcelProgressMonitor(final ExecutionContext exec, final long rowCount) {
-        m_exec = exec;
-        m_rowCount = rowCount;
-        m_curIdx = 0;
-    }
-
-    /**
-     * Throws an exception in case the users canceled the execution.
-     *
-     * @see NodeProgressMonitor#checkCanceled()
-     * @throws CanceledExecutionException which indicated the execution will be canceled by this call.
-     */
-    public void checkCanceled() throws CanceledExecutionException {
-        m_exec.checkCanceled();
-    }
-
-    /**
-     * Updates the progress.
-     *
-     * @param sheetName the name of the sheet currently written to
-     * @param rowIdx the index of the row currently written
-     */
-    public void updateProgress(final String sheetName, final long rowIdx) {
-        final Supplier<String> messageSupplier = () -> String.format("Writing sheet '%s' row %d", sheetName, rowIdx);
-        if (m_rowCount > 0) {
-            ++m_curIdx;
-            m_exec.setProgress(m_curIdx / m_rowCount, messageSupplier);
-        } else {
-            m_exec.setMessage(messageSupplier);
+    @ParameterizedTest
+    @ValueSource(strings = { Fixtures.XLSX, Fixtures.XLS, Fixtures.XLSX_ENC, Fixtures.XLS_ENC })
+    void testReadSheetNames(final String filePath) throws IOException, OpenXML4JException {
+        try (final var in = ExcelUtilsTest.class.getResourceAsStream(filePath)) {
+            final var names = ExcelUtils.readSheetNames(in, Fixtures.TEST_PW);
+            assertThat(names).as("sheet names").isEqualTo(List.of("knime", "knime2"));
         }
     }
 
+    @Test
+    void testListSheetNamesOOXML() throws IOException, OpenXML4JException {
+        try (final var in = ExcelUtilsTest.class.getResourceAsStream(Fixtures.XLSX);
+                final var pkg = OPCPackage.open(in)) {
+            final var reader = new XSSFReader(pkg);
+            final var names = ExcelUtils.listSheetNames(reader);
+            assertThat(names).as("sheet names").isEqualTo(List.of("knime", "knime2"));
+        }
+    }
+
+    @Test
+    void testListSheetNamesOLE2() throws EncryptedDocumentException, IOException {
+        try (final var in = ExcelUtilsTest.class.getResourceAsStream(Fixtures.XLSX);
+                final var wb = WorkbookFactory.create(in)) {
+            final var names = ExcelUtils.listSheetNames(wb);
+            assertThat(names).as("sheet names").isEqualTo(List.of("knime", "knime2"));
+        }
+    }
 }

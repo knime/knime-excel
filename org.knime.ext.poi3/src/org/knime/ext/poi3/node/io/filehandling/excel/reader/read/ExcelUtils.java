@@ -50,18 +50,26 @@ package org.knime.ext.poi3.node.io.filehandling.excel.reader.read;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
+import java.util.stream.IntStream;
 
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.poi.openxml4j.exceptions.OpenXML4JException;
+import org.apache.poi.openxml4j.opc.OPCPackage;
+import org.apache.poi.poifs.filesystem.FileMagic;
+import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Row.MissingCellPolicy;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.xssf.binary.XSSFBSheetHandler;
 import org.apache.poi.xssf.eventusermodel.XSSFBReader;
 import org.apache.poi.xssf.eventusermodel.XSSFReader;
@@ -72,6 +80,7 @@ import org.apache.poi.xssf.model.SharedStrings;
 import org.apache.poi.xssf.usermodel.XSSFComment;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.util.CheckUtils;
+import org.knime.ext.poi3.node.io.filehandling.excel.CryptUtil;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.AreaOfSheetToRead;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
@@ -138,6 +147,16 @@ public final class ExcelUtils {
     }
 
     /**
+     * Lists the sheet names contained in the given workbook.
+     * @param workbook workbook to list sheet names of
+     * @return list of sheet names
+     */
+    public static List<String> listSheetNames(final Workbook workbook) {
+        final var num = workbook.getNumberOfSheets();
+        return IntStream.range(0, num).mapToObj(workbook::getSheetName).toList();
+    }
+
+    /**
      * Returns a map that contains the names of the sheets contained in the file read by the specified
      * {@link XSSFReader} as keys and whether it is the first non-empty sheet as value.
      *
@@ -171,6 +190,25 @@ public final class ExcelUtils {
     }
 
     /**
+     * Lists the sheet names obtained from the given reader.
+     *
+     * @param reader the reader to get the sheet names from
+     * @return the contained sheet names
+     * @throws InvalidFormatException
+     * @throws IOException
+     */
+    public static List<String> listSheetNames(final XSSFReader reader) throws InvalidFormatException, IOException {
+        final var sheetNames = new ArrayList<String>();
+        final var sheetsData = (SheetIterator)reader.getSheetsData();
+        while (sheetsData.hasNext()) {
+            try (final var in = sheetsData.next()) {
+                sheetNames.add(sheetsData.getSheetName());
+            }
+        }
+        return sheetNames;
+    }
+
+    /**
      * Returns a map that contains the names of the sheets contained in the file read by the specified
      * {@link XSSFBReader} as keys and whether it is the first non-empty sheet as value.
      *
@@ -179,10 +217,9 @@ public final class ExcelUtils {
      * @return the map of sheet names and whether a sheet is the first with data
      * @throws InvalidFormatException
      * @throws IOException
-     * @throws SAXException
      */
     public static Map<String, Boolean> getSheetNames(final XSSFBReader reader, final SharedStrings sharedStrings)
-        throws InvalidFormatException, IOException, SAXException {
+        throws InvalidFormatException, IOException {
         final Map<String, Boolean> sheetNames = new LinkedHashMap<>(); // LinkedHashMap to retain order
         boolean nonEmptySheetFound = false;
         final SheetIterator sheetsData = (SheetIterator)reader.getSheetsData();
@@ -201,6 +238,54 @@ public final class ExcelUtils {
             }
         }
         return sheetNames;
+    }
+
+    /**
+     * Reads Excel sheet names from the given stream.
+     * If possible, prefer the more specialized methods {@code #listSheetNames(...)}.
+     *
+     * @param input Excel file contents
+     * @param password nullable password to use for decryption
+     * @return list of sheet names
+     * @throws IOException
+     * @throws OpenXML4JException
+     */
+    public static List<String> readSheetNames(final InputStream input, final String password)
+            throws IOException, OpenXML4JException {
+        try (final var in = FileMagic.prepareToCheckMagic(input)) {
+            final var format = FileMagic.valueOf(in);
+            return switch (format) {
+                // XLS file or encrypted XLSX
+                case OLE2 -> getSheetNamesFromOLE2(in, password);
+                // unencrypted XLSX
+                case OOXML -> getSheetNamesForXLSX(in);
+                default -> throw new IOException(
+                    "Unsupported file format \"%s\"".formatted(format));
+            };
+        }
+    }
+
+    private static List<String> getSheetNamesFromOLE2(final InputStream in, final String password)
+            throws IOException, OpenXML4JException {
+        try (final var fs = new POIFSFileSystem(in)) {
+            final var root = fs.getRoot();
+            if (CryptUtil.isEncryptedOOXML(root)) {
+                try (final var stream = CryptUtil.getDecryptedStream(root, password)) {
+                    return getSheetNamesForXLSX(stream);
+                }
+            } else {
+                try (final var workbook = WorkbookFactory.create(root, password)) {
+                    return ExcelUtils.listSheetNames(workbook);
+                }
+            }
+        }
+    }
+
+    private static List<String> getSheetNamesForXLSX(final InputStream inputStream)
+            throws IOException, OpenXML4JException {
+        try (final var opc = OPCPackage.open(inputStream)) {
+            return ExcelUtils.listSheetNames(new XSSFReader(opc));
+        }
     }
 
     /**

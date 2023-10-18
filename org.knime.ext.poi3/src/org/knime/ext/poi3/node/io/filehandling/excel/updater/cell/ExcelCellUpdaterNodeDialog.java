@@ -50,32 +50,27 @@ package org.knime.ext.poi3.node.io.filehandling.excel.updater.cell;
 
 import java.awt.Component;
 import java.awt.GridBagLayout;
-import java.io.BufferedInputStream;
-import java.io.IOException;
+import java.awt.Insets;
 import java.nio.file.Files;
-import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import javax.swing.BorderFactory;
+import javax.swing.Box;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.xml.parsers.ParserConfigurationException;
 
-import org.apache.poi.ooxml.util.SAXHelper;
-import org.apache.poi.openxml4j.exceptions.OpenXML4JException;
-import org.apache.poi.openxml4j.opc.OPCPackage;
-import org.apache.poi.ss.usermodel.WorkbookFactory;
-import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
-import org.apache.poi.xssf.eventusermodel.XSSFReader;
+import org.apache.poi.EncryptedDocumentException;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.data.StringValue;
 import org.knime.core.node.InvalidSettingsException;
@@ -87,20 +82,31 @@ import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.NotConfigurableException;
 import org.knime.core.node.context.ports.PortsConfiguration;
 import org.knime.core.node.defaultnodesettings.DialogComponent;
+import org.knime.core.node.defaultnodesettings.DialogComponentAuthentication;
 import org.knime.core.node.defaultnodesettings.DialogComponentBoolean;
 import org.knime.core.node.defaultnodesettings.DialogComponentColumnNameSelection;
 import org.knime.core.node.defaultnodesettings.DialogComponentString;
+import org.knime.core.node.defaultnodesettings.SettingsModelAuthentication;
+import org.knime.core.node.defaultnodesettings.SettingsModelAuthentication.AuthenticationType;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.core.node.port.PortObjectSpec;
+import org.knime.core.node.util.SharedIcons;
 import org.knime.core.util.SwingWorkerWithContext;
+import org.knime.ext.poi3.node.io.filehandling.excel.CryptUtil;
+import org.knime.ext.poi3.node.io.filehandling.excel.DecryptionAwareReaderStatusMessageReporter;
+import org.knime.ext.poi3.node.io.filehandling.excel.DialogUtil;
+import org.knime.ext.poi3.node.io.filehandling.excel.StatusMessageReporterChain;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelUtils;
+import org.knime.filehandling.core.connections.FSFiles;
 import org.knime.filehandling.core.data.location.variable.FSLocationVariableType;
+import org.knime.filehandling.core.defaultnodesettings.filechooser.StatusMessageReporter;
+import org.knime.filehandling.core.defaultnodesettings.filechooser.reader.DefaultReaderStatusMessageReporter;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.reader.DialogComponentReaderFileChooser;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.reader.SettingsModelReaderFileChooser;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.DialogComponentWriterFileChooser;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.SettingsModelWriterFileChooser;
+import org.knime.filehandling.core.defaultnodesettings.status.StatusMessage;
 import org.knime.filehandling.core.util.GBCBuilder;
-import org.xml.sax.SAXException;
 
 /**
  * The dialog of the 'Excel Cell Updater' node.
@@ -126,19 +132,25 @@ final class ExcelCellUpdaterNodeDialog extends NodeDialogPane {
 
     private final JComboBox<String>[] m_sheetNames;
 
+    private final JLabel m_sheetNamesUpdateErr;
+
     private final DialogComponentColumnNameSelection[] m_coordinateColumns;
 
     private final AtomicLong m_updateSheetListId = new AtomicLong(0);
 
-    private SheetUpdater m_updateSheet = null;
-
-    private final JLabel m_previewMsg = new JLabel();
+    private SheetUpdater m_updateSheet;
 
     private final DialogComponentBoolean m_evaluateFormulas;
 
     private final DialogComponentBoolean m_replaceMissings;
 
     private final DialogComponentString m_missingValPattern;
+
+    private final DialogComponentAuthentication m_passwordComponent;
+
+    private final SettingsModelAuthentication m_authenticationSettingsModel;
+
+    static final String CFG_PASSWORD = "password";
 
     /**
      * Constructor.
@@ -149,10 +161,25 @@ final class ExcelCellUpdaterNodeDialog extends NodeDialogPane {
     ExcelCellUpdaterNodeDialog(final PortsConfiguration portsConfig) {
         m_cfg = new ExcelCellUpdaterConfig(portsConfig);
 
+        m_authenticationSettingsModel = m_cfg.getAuthentication();
+
         final SettingsModelReaderFileChooser readerModel = m_cfg.getSrcFileChooserModel();
         final var readFvm =
             createFlowVariableModel(readerModel.getKeysForFSLocation(), FSLocationVariableType.INSTANCE);
-        m_srcFileChooser = new DialogComponentReaderFileChooser(readerModel, "excel_reader_writer", readFvm);
+
+        final Supplier<String> passwordProvider =
+            () -> CryptUtil.getPassword(m_authenticationSettingsModel, getCredentialsProvider());
+
+        final Function<SettingsModelReaderFileChooser, StatusMessageReporter> reporter =
+            fc -> StatusMessageReporterChain
+                .<SettingsModelReaderFileChooser> first(new DefaultReaderStatusMessageReporter(fc))
+                // no need to check if the default reporter has a problem (e.g. file does not exist)
+                .success(
+                    new DecryptionAwareReaderStatusMessageReporter(fc, passwordProvider, m_cfg::getExcelFormat,
+                        DialogUtil::decryptionErrorHandler))
+                .build(fc);
+
+        m_srcFileChooser = new DialogComponentReaderFileChooser(readerModel, "excel_reader_writer", readFvm, reporter);
 
         m_createNewFile = new DialogComponentBoolean(m_cfg.isCreateNewFile(), "Create new file");
 
@@ -160,6 +187,7 @@ final class ExcelCellUpdaterNodeDialog extends NodeDialogPane {
         final var writeFvm =
             createFlowVariableModel(writerModel.getKeysForFSLocation(), FSLocationVariableType.INSTANCE);
         m_destFileChooser = new DialogComponentWriterFileChooser(writerModel, "excel_reader_writer", writeFvm);
+        toggleDestFileChooser();
 
         m_dataPortIndices = portsConfig.getInputPortLocation().get(ExcelCellUpdaterNodeFactory.SHEET_GRP_ID);
 
@@ -171,18 +199,31 @@ final class ExcelCellUpdaterNodeDialog extends NodeDialogPane {
             .limit(m_dataPortIndices.length)// number of input tables
             .toArray(JComboBox[]::new);
 
+        m_sheetNamesUpdateErr = new JLabel("");
+        m_sheetNamesUpdateErr.setIcon(SharedIcons.ERROR.get());
+        m_sheetNamesUpdateErr.setVisible(false);
+
         m_evaluateFormulas = new DialogComponentBoolean(m_cfg.getEvaluateFormulasModel(), "Evaluate formulas");
         m_replaceMissings = new DialogComponentBoolean(m_cfg.getReplaceMissingsModel(), "Replace missing values by");
         m_missingValPattern = new DialogComponentString(m_cfg.getMissingValPatternModel(), null);
 
         addTab("Settings", createSettings());
+
+        m_passwordComponent = new DialogComponentAuthentication(m_authenticationSettingsModel, null,
+            AuthenticationType.PWD, AuthenticationType.CREDENTIALS, AuthenticationType.NONE);
+        addTab("Encryption", createEncryptionSettingsTab());
+
         registerDialogChangeListeners();
-        toggleDestFileChooser();
     }
 
     private void registerDialogChangeListeners() {
         m_srcFileChooser.getSettingsModel().addChangeListener(l -> updateSheetListAndSelect());
         m_createNewFile.getModel().addChangeListener(l -> toggleDestFileChooser());
+
+        m_passwordComponent.getModel().addChangeListener(e -> {
+            m_srcFileChooser.updateComponent();
+            updateSheetListAndSelect();
+        });
     }
 
     private void toggleDestFileChooser() {
@@ -241,6 +282,11 @@ final class ExcelCellUpdaterNodeDialog extends NodeDialogPane {
         p.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Update"));
         final var gbc = new GBCBuilder().resetY().anchorLineStart().setWeightX(0).setWeightY(0).fillNone();
 
+        gbc.widthRemainder().insetLeft(4);
+        p.add(m_sheetNamesUpdateErr, gbc.build());
+        gbc.incY();
+        gbc.setWidth(1);
+
         for (var i = 0; i < m_sheetNames.length; i++) {
             gbc.resetX().incY().insetLeft(4);
             p.add(new JLabel((i + 1) + ". Excel sheet"), gbc.build());
@@ -291,6 +337,25 @@ final class ExcelCellUpdaterNodeDialog extends NodeDialogPane {
         return p;
     }
 
+    // Encryption Tab
+    private JPanel createEncryptionSettingsTab() {
+        final var panel = new JPanel(new GridBagLayout());
+        final var gbcBuilder =
+            new GBCBuilder().resetPos().anchorFirstLineStart().setWeightX(1).setWeightY(1).fillHorizontal();
+        panel.add(createEncryptionPanel(), gbcBuilder.build());
+        return panel;
+    }
+
+    private JPanel createEncryptionPanel() {
+        final var panel = new JPanel(new GridBagLayout());
+        panel.setBorder(
+            BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Password to protect files"));
+        final var gbcBuilder = new GBCBuilder(new Insets(0, 5, 0, 5)).resetPos().anchorFirstLineStart().fillBoth();
+        panel.add(m_passwordComponent.getComponentPanel(), gbcBuilder.build());
+        panel.add(Box.createHorizontalBox(), gbcBuilder.incX().setWeightX(1).build());
+        return panel;
+    }
+
     @Override
     protected void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
         m_srcFileChooser.saveSettingsTo(settings);
@@ -308,6 +373,8 @@ final class ExcelCellUpdaterNodeDialog extends NodeDialogPane {
             .map(SettingsModelString.class::cast)//
             .map(SettingsModelString::getStringValue)//
             .toArray(String[]::new));
+        m_authenticationSettingsModel.saveSettingsTo(settings);
+        m_passwordComponent.saveSettingsTo(settings);
     }
 
     @Override
@@ -325,11 +392,20 @@ final class ExcelCellUpdaterNodeDialog extends NodeDialogPane {
         }
         m_srcFileChooser.loadSettingsFrom(settings, specs);
         m_destFileChooser.loadSettingsFrom(settings, specs);
+
         m_createNewFile.loadSettingsFrom(settings, specs);
         m_replaceMissings.loadSettingsFrom(settings, specs);
         m_missingValPattern.loadSettingsFrom(settings, specs);
         m_evaluateFormulas.loadSettingsFrom(settings, specs);
-        updateSheetListAndSelect();
+
+        try {
+            m_authenticationSettingsModel.loadSettingsFrom(settings);
+        } catch (InvalidSettingsException e) { // NOSONAR we want to load the default here
+            m_authenticationSettingsModel.setValues(AuthenticationType.NONE, null, null, null);
+        }
+        // Needs only be loaded
+        m_passwordComponent.loadSettingsFrom(settings, specs, getCredentialsProvider());
+
         toggleDestFileChooser();
     }
 
@@ -347,10 +423,8 @@ final class ExcelCellUpdaterNodeDialog extends NodeDialogPane {
      * sheet (if not null - otherwise selects the first name). Calls {@link #sheetNameChanged()} after the update.
      */
     private void updateSheetListAndSelect() {
-        m_previewMsg.setText("Loading input file...");
-
         for (var i = 0; i < m_sheetNames.length; i++) {
-            m_sheetNames[i].setModel(new DefaultComboBoxModel<>(new String[]{SCANNING}));
+            m_sheetNames[i].setModel(new DefaultComboBoxModel<>(new String[]{SCANNING})); // NOSONAR
         }
 
         // The id of the current update
@@ -364,7 +438,7 @@ final class ExcelCellUpdaterNodeDialog extends NodeDialogPane {
         m_updateSheet.execute();
     }
 
-    private class SheetUpdater extends SwingWorkerWithContext<Map<String, Boolean>, Object> {
+    private class SheetUpdater extends SwingWorkerWithContext<List<String>, Object> {
 
         final long m_ownId;
 
@@ -375,40 +449,33 @@ final class ExcelCellUpdaterNodeDialog extends NodeDialogPane {
             m_ownId = id;
         }
 
-        @Override
-        protected Map<String, Boolean> doInBackgroundWithContext() throws Exception {
-            try (final var accessor = m_srcFileChooser.getSettingsModel().createReadPathAccessor()) {
-                final var path = accessor.getFSPaths(x -> m_previewMsg.setText(x.getMessage())).stream().findFirst();
-                if (path.isEmpty() || !Files.exists(path.get())) {
-                    return Collections.emptyMap();
-                }
-
-                final var excelFormat = ExcelCellUpdaterNodeModel.getExcelFormat(path.get().getFileName().toString());
-
-                switch (excelFormat) {
-                    case XLS:
-                        final var bufferedInputStream = new BufferedInputStream(Files.newInputStream(path.get()));
-                        try (final var workbook = WorkbookFactory.create(bufferedInputStream)) {
-                            return ExcelUtils.getSheetNames(workbook);
-                        }
-                    case XLSX:
-                        return readXLSXSheets(path.get());
-                    default:
-                        throw new InvalidSettingsException("Only .xls and .xlsx file formats are allowed");
-                }
+        private void logStatusMessage(final StatusMessage msg) {
+            final var m = msg.getMessage();
+            switch (msg.getType()) {
+                case ERROR -> LOGGER.error(m);
+                case INFO -> LOGGER.info(m);
+                case WARNING -> LOGGER.warn(m);
             }
         }
 
-        private Map<String, Boolean> readXLSXSheets(final Path path)
-            throws IOException, SAXException, ParserConfigurationException, OpenXML4JException {
-            try (final var opc = OPCPackage.open(Files.newInputStream(path))) {
-                final var xssfReader = new XSSFReader(opc);
-                final var xmlReader = SAXHelper.newXMLReader();
-                // disable DTD to prevent almost all XXE attacks, XMLHelper.newXMLReader() did set further security features
-                xmlReader.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-                final var sharedStringsTable = new ReadOnlySharedStringsTable(opc, false);
-
-                return ExcelUtils.getSheetNames(xmlReader, xssfReader, sharedStringsTable);
+        @Override
+        protected List<String> doInBackgroundWithContext() throws Exception {
+            LOGGER.debug("Refreshing sheet names...");
+            try (final var accessor = m_srcFileChooser.getSettingsModel().createReadPathAccessor()) {
+                final var optPath = accessor.getFSPaths(this::logStatusMessage).stream().findFirst();
+                if (optPath.isEmpty() || !Files.exists(optPath.get())) {
+                    return Collections.emptyList();
+                }
+                final var path = optPath.get();
+                final var pw = CryptUtil.getPassword(m_authenticationSettingsModel, getCredentialsProvider());
+                try (final var in = FSFiles.newInputStream(path)) {
+                    return ExcelUtils.readSheetNames(in, pw);
+                } catch (final EncryptedDocumentException e) {
+                    // provide an error message in the same style as the Excel Reader node
+                    throw new EncryptedDocumentException(
+                        "\"%s\" is password protected. Supply a valid password via the \"Encryption\" settings."
+                            .formatted(path), e);
+                }
             }
         }
 
@@ -419,20 +486,21 @@ final class ExcelCellUpdaterNodeDialog extends NodeDialogPane {
                 // Do not update the sheet list
                 return;
             }
-            Map<String, Boolean> sheetNames = new LinkedHashMap<>();
+            List<String> sheetNames = new ArrayList<>();
             try {
                 sheetNames = get();
+                clearSheetUpdateError();
             } catch (InterruptedException e) {
                 fixInterrupt();
                 // ignore
             } catch (CancellationException e) { // NOSONAR: only indicates closing the dialog/newer updater
                 // ignore
             } catch (ExecutionException e) { // NOSONAR: We are only interested in the cause
-                LOGGER.error("Could not get sheet names!", e.getCause());
+                setSheetUpdateError(e);
             }
 
             for (var i = 0; i < m_sheetNames.length; i++) {
-                m_sheetNames[i].setModel(new DefaultComboBoxModel<>(sheetNames.keySet().toArray(new String[0])));
+                m_sheetNames[i].setModel(new DefaultComboBoxModel<>(sheetNames.toArray(new String[0])));
                 final var selectedSheet = m_cfg.getSheetNames()[i];
                 if (!sheetNames.isEmpty()) {
                     if (selectedSheet != null) {
@@ -444,16 +512,24 @@ final class ExcelCellUpdaterNodeDialog extends NodeDialogPane {
                     m_sheetNames[i].setSelectedIndex(-1);
                 }
             }
-            updateWriterFileType();
         }
 
-        private void updateWriterFileType() {
-            final var path = Path.of(m_srcFileChooser.getSettingsModel().getLocation().getPath());
-            final var excelFormat = ExcelCellUpdaterNodeModel.getExcelFormat(path.getFileName().toString());
-            if (excelFormat != null) {
-                SettingsModelWriterFileChooser writerModel = m_destFileChooser.getSettingsModel();
-                writerModel.setFileExtensions(excelFormat.getFileExtension());
+        private void setSheetUpdateError(final Exception e) {
+            final var cause = e.getCause();
+            String statusMsg = null;
+            if (cause != null) {
+                statusMsg = cause.getMessage();
             }
+            final var prefix = "Unable to read sheet names: ";
+            m_sheetNamesUpdateErr.setIcon(SharedIcons.ERROR.get());
+            m_sheetNamesUpdateErr.setText(prefix + (statusMsg == null ? "Reason unknown." : statusMsg));
+            m_sheetNamesUpdateErr.setVisible(true);
+        }
+
+        private void clearSheetUpdateError() {
+            m_sheetNamesUpdateErr.setIcon(null);
+            m_sheetNamesUpdateErr.setText(null);
+            m_sheetNamesUpdateErr.setVisible(false);
         }
     }
 

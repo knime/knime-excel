@@ -1,6 +1,5 @@
 /*
  * ------------------------------------------------------------------------
- *
  *  Copyright by KNIME AG, Zurich, Switzerland
  *  Website: http://www.knime.com; Email: contact@knime.com
  *
@@ -44,75 +43,16 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Nov 9, 2020 (Mark Ortmann, KNIME GmbH, Berlin, Germany): created
+ *   20.11.2010 (meinl): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.writer.util;
+package org.knime.ext.poi3;
 
-import java.util.function.Supplier;
-
-import org.knime.core.node.CanceledExecutionException;
-import org.knime.core.node.ExecutionContext;
-import org.knime.core.node.NodeProgressMonitor;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.ExcelTableWriter;
+import org.knime.testing.core.AbstractTestcaseCollector;
 
 /**
- * It allows {@link ExcelTableWriter}s to conveniently update the overall progress.
  *
- * @author Mark Ortmann, KNIME GmbH, Berlin, Germany
+ * @author Thorsten Meinl, University of Konstanz
  */
-public final class ExcelProgressMonitor {
-
-    private final ExecutionContext m_exec;
-
-    private final long m_rowCount;
-
-    private double m_curIdx;
-
-    /**
-     * Constructor.
-     *
-     * @param exec the execution context
-     */
-    public ExcelProgressMonitor(final ExecutionContext exec) {
-        this(exec, -1);
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param exec the execution context
-     * @param rowCount the row count
-     */
-    public ExcelProgressMonitor(final ExecutionContext exec, final long rowCount) {
-        m_exec = exec;
-        m_rowCount = rowCount;
-        m_curIdx = 0;
-    }
-
-    /**
-     * Throws an exception in case the users canceled the execution.
-     *
-     * @see NodeProgressMonitor#checkCanceled()
-     * @throws CanceledExecutionException which indicated the execution will be canceled by this call.
-     */
-    public void checkCanceled() throws CanceledExecutionException {
-        m_exec.checkCanceled();
-    }
-
-    /**
-     * Updates the progress.
-     *
-     * @param sheetName the name of the sheet currently written to
-     * @param rowIdx the index of the row currently written
-     */
-    public void updateProgress(final String sheetName, final long rowIdx) {
-        final Supplier<String> messageSupplier = () -> String.format("Writing sheet '%s' row %d", sheetName, rowIdx);
-        if (m_rowCount > 0) {
-            ++m_curIdx;
-            m_exec.setProgress(m_curIdx / m_rowCount, messageSupplier);
-        } else {
-            m_exec.setMessage(messageSupplier);
-        }
-    }
-
+public class POI3TestcaseCollector extends AbstractTestcaseCollector {
+    // yes, it is empty
 }

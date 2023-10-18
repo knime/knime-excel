@@ -45,8 +45,9 @@
  *
  * History
  *   Nov 6, 2020 (Mark Ortmann, KNIME GmbH, Berlin, Germany): created
+ *   12 Oct 2023 (Manuel Hotz, KNIME GmbH, Konstanz, Germany): refactored
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.writer.table;
+package org.knime.ext.poi3.node.io.filehandling.excel;
 
 import java.io.IOException;
 
@@ -55,29 +56,36 @@ import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.streamable.RowInput;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.cell.ExcelCellWriterFactory;
+import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.ExcelTableConfig;
+import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.WorkbookHandler;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelProgressMonitor;
 import org.knime.filehandling.core.connections.FSPath;
 
 /**
- * This writer writes {@link RowInput} to individual sheets of an excel file and finally stores this excel file to disc.
+ * Writer for writing RowInput(s) to individual sheets of an Excel file,
+ * optionally only updating cells using coordinates.
+ *
+ * Finally, the workbook is saved to disk.
  *
  * @author Mark Ortmann, KNIME GmbH, Berlin, Germany
+ * @author Moditha Hewasinghage,, KNIME GmbH, Berlin, Germany
+ * @author Jannik Löscher, KNIME GmbH, Konstanz, Germany
+ * @author Manuel Hotz, KNIME GmbH, Konstanz, Germany
  */
-public class ExcelMultiTableWriter {
+public class ExcelMultiRowInputWriter {
 
     private final ExcelTableConfig m_cfg;
 
     /**
-     * Constructor.
-     *
-     * @param cfg the {@link ExcelTableConfig}
+     * Creates a new writer using the given config.
+     * @param cfg config to use when writing
      */
-    public ExcelMultiTableWriter(final ExcelTableConfig cfg) {
+    public ExcelMultiRowInputWriter(final ExcelTableConfig cfg) {
         m_cfg = cfg;
     }
 
     /**
-     * Writes the {@link RowInput}s to individual sheets of an excel file and finally stores this excel file to disc
+     * Writes the {@link RowInput}s to individual sheets of an excel file and finally stores this excel file to disk.
      *
      * @param outPath the location the excel file has to be written to
      * @param tables the tables to be written to individual sheets
@@ -90,7 +98,28 @@ public class ExcelMultiTableWriter {
      * @throws InterruptedException - If the execution was canceled by the user
      */
     public void writeTables(final FSPath outPath, final RowInput[] tables, final WorkbookHandler wbHandler,
-        final ExecutionContext exec, final ExcelProgressMonitor m)
+        final ExecutionContext exec, final ExcelProgressMonitor m) throws IOException, InvalidSettingsException,
+        CanceledExecutionException, InterruptedException {
+        writeTables(outPath, tables, null, wbHandler, exec, m);
+    }
+
+    /**
+     * Writes the {@link RowInput}s to individual cells in sheets of an excel file and finally stores this excel file to
+     * disc.
+     *
+     * @param outPath the location the excel file has to be written to
+     * @param tables the tables to be written to individual sheets
+     * @param coordinateColumnIndices the indices of the columns in the tables containing the coordinates
+     * @param wbHandler the {@link WorkbookHandler}
+     * @param exec the {@link ExecutionContext}
+     * @param m the {@link ExcelProgressMonitor}
+     * @throws IOException - If the file could not be written to the output path
+     * @throws InvalidSettingsException - If the sheet names cannot be made unique
+     * @throws CanceledExecutionException - If the execution was canceled by the user
+     * @throws InterruptedException - If the execution was canceled by the user
+     */
+    public void writeTables(final FSPath outPath, final RowInput[] tables, final int[] coordinateColumnIndices,
+            final WorkbookHandler wbHandler, final ExecutionContext exec, final ExcelProgressMonitor m)
         throws IOException, InvalidSettingsException, CanceledExecutionException, InterruptedException {
         @SuppressWarnings("resource") // try-with-resources does not work in case of SXSSFWorkbooks
         final var wb = wbHandler.getWorkbook();
@@ -102,11 +131,15 @@ public class ExcelMultiTableWriter {
         for (var i = 0; i < tables.length; i++) {
             exec.checkCanceled();
             final var rowInput = tables[i];
-            final ExcelTableWriter excelWriter = wbHandler.createTableWriter(m_cfg, cellWriterFactory);
-            excelWriter.writeTable(wb, sheetNames[i], rowInput, m);
+            final var writer = wbHandler.createTableWriter(m_cfg, cellWriterFactory);
+            if (coordinateColumnIndices != null) {
+                writer.writeCellsFromCoordinates(wb, sheetNames[i], rowInput, coordinateColumnIndices[i], m);
+            } else {
+                writer.writeTable(wb, sheetNames[i], rowInput, m);
+            }
         }
         if (m_cfg.evaluate()) {
-            var formulaCtx = exec.createSubExecutionContext(0.05);
+            final var formulaCtx = exec.createSubExecutionContext(0.05);
             formulaCtx.setMessage("Evaluating formulas");
             creationHelper.createFormulaEvaluator().evaluateAll();
             formulaCtx.setProgress(1);

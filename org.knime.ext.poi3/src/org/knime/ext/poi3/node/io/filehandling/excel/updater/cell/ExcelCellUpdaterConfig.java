@@ -58,6 +58,8 @@ import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.context.ports.PortsConfiguration;
+import org.knime.core.node.defaultnodesettings.SettingsModelAuthentication;
+import org.knime.core.node.defaultnodesettings.SettingsModelAuthentication.AuthenticationType;
 import org.knime.core.node.defaultnodesettings.SettingsModelBoolean;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.core.node.util.CheckUtils;
@@ -95,6 +97,8 @@ public final class ExcelCellUpdaterConfig implements ExcelTableConfig {
 
     private static final String CFG_EVALUATE_FORMULAS = "evaluate_formulas";
 
+    private static final String CFG_AUTHENTICATION_METHOD = "authentication_method";
+
     private final SettingsModelReaderFileChooser m_srcFileChooser;
 
     private final SettingsModelWriterFileChooser m_destFileChooser;
@@ -110,6 +114,8 @@ public final class ExcelCellUpdaterConfig implements ExcelTableConfig {
     private String[] m_sheetNames;
 
     private String[] m_coordinateColumnNames;
+
+    private final SettingsModelAuthentication m_authenticationSettingsModel;
 
     /**
      * Constructor.
@@ -133,6 +139,12 @@ public final class ExcelCellUpdaterConfig implements ExcelTableConfig {
             .limit(portsCfg.getInputPortLocation().get(ExcelCellUpdaterNodeFactory.SHEET_GRP_ID).length)//
             .toArray(String[]::new);
         m_coordinateColumnNames = Arrays.copyOf(m_sheetNames, m_sheetNames.length);
+        m_authenticationSettingsModel =
+                new SettingsModelAuthentication(CFG_AUTHENTICATION_METHOD, AuthenticationType.NONE);
+    }
+
+    SettingsModelAuthentication getAuthentication() {
+        return m_authenticationSettingsModel;
     }
 
     /**
@@ -156,10 +168,12 @@ public final class ExcelCellUpdaterConfig implements ExcelTableConfig {
                 srcExtension.map(ExcelFormat::toString).orElse("unknown"),
                 destExtension.map(ExcelFormat::toString).orElse("unknown"));
         }
-
         m_replaceMissings.validateSettings(settings);
         m_missingValPattern.validateSettings(settings);
         m_evaluateFormulas.validateSettings(settings);
+        if (settings.containsKey(CFG_AUTHENTICATION_METHOD)) {
+            m_authenticationSettingsModel.loadSettingsFrom(settings);
+        }
     }
 
     /**
@@ -177,6 +191,12 @@ public final class ExcelCellUpdaterConfig implements ExcelTableConfig {
         m_missingValPattern.loadSettingsFrom(settings);
         loadSheetNamesForModel(settings);
         loadCoordinateColumnNamesForModel(settings);
+        // If the authentication model is already stored in the settings,
+        // we can just load it. If not, we do nothing, as it is set with
+        // the default values in the constructor.
+        if (settings.containsKey(CFG_AUTHENTICATION_METHOD)) {
+            m_authenticationSettingsModel.loadSettingsFrom(settings);
+        }
     }
 
     private void loadSheetNamesForModel(final NodeSettingsRO settings) throws InvalidSettingsException {
@@ -204,6 +224,7 @@ public final class ExcelCellUpdaterConfig implements ExcelTableConfig {
         m_missingValPattern.saveSettingsTo(settings);
         saveSheetNames(settings, m_sheetNames);
         saveCoordinateColumnNames(settings, m_coordinateColumnNames);
+        m_authenticationSettingsModel.saveSettingsTo(settings);
     }
 
     /**

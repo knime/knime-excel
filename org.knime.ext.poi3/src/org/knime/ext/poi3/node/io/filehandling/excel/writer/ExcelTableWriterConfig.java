@@ -60,6 +60,8 @@ import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.context.ports.PortsConfiguration;
 import org.knime.core.node.defaultnodesettings.SettingsModel;
+import org.knime.core.node.defaultnodesettings.SettingsModelAuthentication;
+import org.knime.core.node.defaultnodesettings.SettingsModelAuthentication.AuthenticationType;
 import org.knime.core.node.defaultnodesettings.SettingsModelBoolean;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.ExcelTableConfig;
@@ -114,6 +116,9 @@ final class ExcelTableWriterConfig implements ExcelTableConfig {
 
     private static final String CFG_OPEN_FILE_AFTER_EXEC = "open_file_after_exec" + SettingsModel.CFGKEY_INTERNAL;
 
+    private static final String CFG_AUTHENTICATION_METHOD = "authentication_method";
+
+
     private final SettingsModelString m_excelFormat;
 
     private final SettingsModelWriterFileChooser m_fileChooser;
@@ -141,6 +146,8 @@ final class ExcelTableWriterConfig implements ExcelTableConfig {
     private final SettingsModelString m_landscape;
 
     private final SettingsModelBoolean m_openFileAfterExec;
+
+    private final SettingsModelAuthentication m_authenticationSettingsModel;
 
     /**
      * Constructor.
@@ -211,6 +218,12 @@ final class ExcelTableWriterConfig implements ExcelTableConfig {
                 }
             }
         };
+        m_authenticationSettingsModel =
+                new SettingsModelAuthentication(CFG_AUTHENTICATION_METHOD, AuthenticationType.NONE);
+    }
+
+    SettingsModelAuthentication getAuthentication() {
+        return m_authenticationSettingsModel;
     }
 
     private static String createDefaultSheetName(final int idx) {
@@ -423,6 +436,9 @@ final class ExcelTableWriterConfig implements ExcelTableConfig {
         m_landscape.validateSettings(settings);
         m_paperSize.validateSettings(settings);
         m_openFileAfterExec.validateSettings(settings);
+        if (settings.containsKey(CFG_AUTHENTICATION_METHOD)) {
+            m_authenticationSettingsModel.loadSettingsFrom(settings);
+        }
     }
 
     private void validateSheets(final NodeSettingsRO settings) throws InvalidSettingsException {
@@ -475,6 +491,12 @@ final class ExcelTableWriterConfig implements ExcelTableConfig {
         m_landscape.loadSettingsFrom(settings);
         m_paperSize.loadSettingsFrom(settings);
         m_openFileAfterExec.loadSettingsFrom(settings);
+        // If the authentication model is already stored in the settings,
+        // we can just load it. If not, we do nothing, as it is set with
+        // the default values in the constructor.
+        if (settings.containsKey(CFG_AUTHENTICATION_METHOD)) {
+            m_authenticationSettingsModel.loadSettingsFrom(settings);
+        }
     }
 
     private void loadSheetNamesForModel(final NodeSettingsRO settings) throws InvalidSettingsException {
@@ -503,6 +525,7 @@ final class ExcelTableWriterConfig implements ExcelTableConfig {
         m_landscape.saveSettingsTo(settings);
         m_paperSize.saveSettingsTo(settings);
         m_openFileAfterExec.saveSettingsTo(settings);
+        m_authenticationSettingsModel.saveSettingsTo(settings);
     }
 
     /**

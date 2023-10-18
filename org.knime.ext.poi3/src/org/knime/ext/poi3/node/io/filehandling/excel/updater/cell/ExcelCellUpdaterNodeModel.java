@@ -60,6 +60,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.apache.commons.io.FilenameUtils;
+import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.knime.core.data.DataTableSpec;
@@ -84,7 +85,8 @@ import org.knime.core.node.streamable.PortOutput;
 import org.knime.core.node.streamable.RowInput;
 import org.knime.core.node.streamable.StreamableOperator;
 import org.knime.core.node.util.CheckUtils;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.cellcoordinate.ExcelCellUpdater;
+import org.knime.ext.poi3.node.io.filehandling.excel.CryptUtil;
+import org.knime.ext.poi3.node.io.filehandling.excel.ExcelMultiRowInputWriter;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.WorkbookHandler;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelFormat;
 import org.knime.ext.poi3.node.io.filehandling.excel.writer.util.ExcelProgressMonitor;
@@ -223,7 +225,7 @@ public final class ExcelCellUpdaterNodeModel extends NodeModel {
             checkOutputFile(outputPath, destFileChooser.getFileOverwritePolicy());
 
             exec.setMessage("Opening excel file");
-            final var writer = new ExcelCellUpdater(m_cfg);
+            final var writer = new ExcelMultiRowInputWriter(m_cfg);
             try (final var wbHandler = getWorkbookHandler(inputPath)) {
                 writer.writeTables(outputPath, tables, coordinateColumnIndices, wbHandler, exec, m);
             }
@@ -234,8 +236,10 @@ public final class ExcelCellUpdaterNodeModel extends NodeModel {
         return exec.createSubExecutionContext(MAX_EXCEL_PROGRESS);
     }
 
-    private static AppendWorkbookHandler getWorkbookHandler(final Path path) {
-        return new AppendWorkbookHandler(path);
+    private AppendWorkbookHandler getWorkbookHandler(final Path path) {
+        final var auth = m_cfg.getAuthentication();
+        final var pw = CryptUtil.getPassword(auth, getCredentialsProvider());
+        return new AppendWorkbookHandler(path, pw);
     }
 
     private static void createOutputFoldersIfMissing(final Path outputFolder, final boolean createMissingFolders)
@@ -338,14 +342,20 @@ public final class ExcelCellUpdaterNodeModel extends NodeModel {
      */
     public static class AppendWorkbookHandler extends WorkbookHandler {
 
-        AppendWorkbookHandler(final Path path) {
-            super(getExcelFormat(path.getFileName().toString()), path);
+        AppendWorkbookHandler(final Path path, final String secretPassword) {
+            super(getExcelFormat(path.getFileName().toString()), path, secretPassword);
         }
 
         @Override
-        public Workbook createWorkbook() throws IOException {
+        public Workbook createWorkbook(final String secretPassword) throws IOException {
             final var input = new BufferedInputStream(Files.newInputStream(m_inputPath));
-            return WorkbookFactory.create(input);
+            try {
+                return WorkbookFactory.create(input, secretPassword);
+            } catch (final EncryptedDocumentException e) {
+                final var msg = "The file to update is encrypted, but "
+                    + (secretPassword == null ? "no password was supplied." : "supplied password is invalid.");
+                throw new EncryptedDocumentException(msg, e);
+            }
         }
 
     }

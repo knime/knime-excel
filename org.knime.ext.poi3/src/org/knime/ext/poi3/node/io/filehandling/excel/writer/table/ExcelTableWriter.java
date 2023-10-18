@@ -81,11 +81,11 @@ public interface ExcelTableWriter {
         throws IOException, InvalidSettingsException, CanceledExecutionException, InterruptedException;
 
     /**
-     * Updates a given sheet using coordinates and values in {@code coordinatesAndValues}. One column contains the coordinates
-     * and as to be of type string and the other columns contain the values and can be of varying type. The coordinate must be non-missing.
-     * Each row must at most contain one other non-missing value that is not the coordinate. The cells at the specified coordinate will
-     * be updated with the value and type in that column.
-     * If each non-coordinate value is missing, the cell will be cleared.
+     * Updates a given sheet using coordinates and values in {@code coordinatesAndValues}. One column contains the
+     * coordinates and has to be of type string and the other columns contain the values and can be of varying type. The
+     * coordinate must be non-missing. Each row must at most contain one other non-missing value that is not the
+     * coordinate. The cells at the specified coordinate will be updated with the value and type in that column. If each
+     * non-coordinate value is missing, the cell will be cleared.
      *
      * @param workbook the {@link Workbook}
      * @param sheetName the name of the sheet to be created and filled

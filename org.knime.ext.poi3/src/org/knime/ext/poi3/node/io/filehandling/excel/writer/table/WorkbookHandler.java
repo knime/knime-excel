@@ -52,8 +52,13 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.GeneralSecurityException;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.poi.hssf.record.crypto.Biff8EncryptionKey;
+import org.apache.poi.poifs.crypt.EncryptionInfo;
+import org.apache.poi.poifs.crypt.EncryptionMode;
+import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.knime.core.node.NodeLogger;
@@ -86,13 +91,17 @@ public abstract class WorkbookHandler implements AutoCloseable {
 
     private Workbook m_workbook;
 
+    private String m_password;
+
     /**
      * @param format The excel format.
      * @param inputPath The path to an existing excel file which should be loaded into the {@link Workbook}.
+     * @param secretPassword password to use for encrypted Excel file, or {@code null} for unencrypted file
      */
-    protected WorkbookHandler(final ExcelFormat format, final Path inputPath) {
+    protected WorkbookHandler(final ExcelFormat format, final Path inputPath, final String secretPassword) {
         m_format = format;
         m_inputPath = inputPath;
+        m_password = secretPassword;
     }
 
     /**
@@ -101,18 +110,19 @@ public abstract class WorkbookHandler implements AutoCloseable {
      */
     public Workbook getWorkbook() throws IOException {
         if (m_workbook == null) {
-            m_workbook = createWorkbook();
+            m_workbook = createWorkbook(m_password);
         }
         return m_workbook;
     }
 
     /**
      * Creates the {@link Workbook}.
+     * @param secretPassword
      *
      * @return the workbook
      * @throws IOException - If the workbook could not be created
      */
-    protected abstract Workbook createWorkbook() throws IOException;
+    protected abstract Workbook createWorkbook(String secretPassword) throws IOException;
 
     /**
      * Creates the {@link ExcelTableWriter} associated with the created workbook.
@@ -120,7 +130,7 @@ public abstract class WorkbookHandler implements AutoCloseable {
      * @param cfg the {@link ExcelTableConfig} config
      * @param cellWriterFactory the {@link ExcelCellWriterFactory}
      * @return an instance of {@link ExcelTableWriter} that fits with the {@link Workbook} created by
-     *         {@link #createWorkbook()}
+     *         {@link #createWorkbook(String)}
      */
     public ExcelTableWriter createTableWriter(final ExcelTableConfig cfg,
         final ExcelCellWriterFactory cellWriterFactory) {
@@ -164,6 +174,50 @@ public abstract class WorkbookHandler implements AutoCloseable {
     }
 
     private void doSaveFile(final Path path) throws IOException {
+        if (m_password == null) {
+            writeWorkbook(path);
+            return;
+        }
+
+        // password present -> write with encryption
+        if (m_format == ExcelFormat.XLS) {
+            Biff8EncryptionKey.setCurrentUserPassword(m_password);
+            writeWorkbook(path);
+            Biff8EncryptionKey.setCurrentUserPassword(null);
+            return;
+        }
+        if (m_format == ExcelFormat.XLSX) {
+            writeEncryptedWorkbookToXLSX(path);
+            return;
+        }
+        throw new IllegalStateException("Unsupported format: \"%s\"".formatted(m_format));
+    }
+
+    private void writeEncryptedWorkbookToXLSX(final Path path) throws IOException {
+        // see https://poi.apache.org/encryption.html
+        var info = new EncryptionInfo(EncryptionMode.agile);
+        var enc = info.getEncryptor();
+        enc.confirmPassword(m_password);
+        try (final var fs = new POIFSFileSystem()) {
+            try (final var os = enc.getDataStream(fs)) {
+                m_workbook.write(os);
+            } catch (final GeneralSecurityException e) {
+                throw new IOException("Encryption of Excel file failed.", e);
+            }
+            // must close enc output stream before writing file system
+            try (final var fos = Files.newOutputStream(path)) {
+                fs.writeFilesystem(fos);
+            }
+        }
+    }
+
+    /**
+     * Write the workbook to the given path, using the workbook's write method.
+     *
+     * @param path destination
+     * @throws IOException if writing the workbook fails
+     */
+    private void writeWorkbook(final Path path) throws IOException {
         try (final var out = FSFiles.newOutputStream(path, FileOverwritePolicy.OVERWRITE.getOpenOptions());
                 final var buffer = new BufferedOutputStream(out)) {
             m_workbook.write(buffer);

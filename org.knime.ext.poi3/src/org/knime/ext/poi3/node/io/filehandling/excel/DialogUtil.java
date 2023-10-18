@@ -44,75 +44,38 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Nov 9, 2020 (Mark Ortmann, KNIME GmbH, Berlin, Germany): created
+ *   25 Oct 2023 (Manuel Hotz, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.writer.util;
+package org.knime.ext.poi3.node.io.filehandling.excel;
 
-import java.util.function.Supplier;
+import java.nio.file.Path;
 
-import org.knime.core.node.CanceledExecutionException;
-import org.knime.core.node.ExecutionContext;
-import org.knime.core.node.NodeProgressMonitor;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.ExcelTableWriter;
+import org.apache.poi.EncryptedDocumentException;
+import org.knime.filehandling.core.defaultnodesettings.status.DefaultStatusMessage;
+import org.knime.filehandling.core.defaultnodesettings.status.StatusMessage;
 
 /**
- * It allows {@link ExcelTableWriter}s to conveniently update the overall progress.
+ * Utility for Excel dialogs.
  *
- * @author Mark Ortmann, KNIME GmbH, Berlin, Germany
+ * @author Manuel Hotz, KNIME GmbH, Konstanz, Germany
  */
-public final class ExcelProgressMonitor {
+public final class DialogUtil {
 
-    private final ExecutionContext m_exec;
-
-    private final long m_rowCount;
-
-    private double m_curIdx;
-
-    /**
-     * Constructor.
-     *
-     * @param exec the execution context
-     */
-    public ExcelProgressMonitor(final ExecutionContext exec) {
-        this(exec, -1);
+    private DialogUtil() {
+        // hidden
     }
 
     /**
-     * Constructor.
+     * Error handler to provide status messages for decryption exceptions.
      *
-     * @param exec the execution context
-     * @param rowCount the row count
+     * @param path path to file
+     * @param ex exception when the file cannot be decrypted
+     * @return status message indicating the problem
      */
-    public ExcelProgressMonitor(final ExecutionContext exec, final long rowCount) {
-        m_exec = exec;
-        m_rowCount = rowCount;
-        m_curIdx = 0;
-    }
-
-    /**
-     * Throws an exception in case the users canceled the execution.
-     *
-     * @see NodeProgressMonitor#checkCanceled()
-     * @throws CanceledExecutionException which indicated the execution will be canceled by this call.
-     */
-    public void checkCanceled() throws CanceledExecutionException {
-        m_exec.checkCanceled();
-    }
-
-    /**
-     * Updates the progress.
-     *
-     * @param sheetName the name of the sheet currently written to
-     * @param rowIdx the index of the row currently written
-     */
-    public void updateProgress(final String sheetName, final long rowIdx) {
-        final Supplier<String> messageSupplier = () -> String.format("Writing sheet '%s' row %d", sheetName, rowIdx);
-        if (m_rowCount > 0) {
-            ++m_curIdx;
-            m_exec.setProgress(m_curIdx / m_rowCount, messageSupplier);
-        } else {
-            m_exec.setMessage(messageSupplier);
-        }
+    public static StatusMessage decryptionErrorHandler(final Path path, final EncryptedDocumentException ex) {
+        return DefaultStatusMessage.mkError("Unable to open password protected file \"%s\": %s. "
+            + "Supply a valid password via the \"Encryption\" settings.",
+            path.toString(), ex.getMessage() != null ? ex.getMessage() : "Reason unknown.");
     }
 
 }

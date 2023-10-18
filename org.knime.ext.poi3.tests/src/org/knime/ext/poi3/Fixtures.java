@@ -44,75 +44,27 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Nov 9, 2020 (Mark Ortmann, KNIME GmbH, Berlin, Germany): created
+ *   24 Oct 2023 (Manuel Hotz, KNIME GmbH, Konstanz, Germany): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.writer.util;
-
-import java.util.function.Supplier;
-
-import org.knime.core.node.CanceledExecutionException;
-import org.knime.core.node.ExecutionContext;
-import org.knime.core.node.NodeProgressMonitor;
-import org.knime.ext.poi3.node.io.filehandling.excel.writer.table.ExcelTableWriter;
+package org.knime.ext.poi3;
 
 /**
- * It allows {@link ExcelTableWriter}s to conveniently update the overall progress.
- *
- * @author Mark Ortmann, KNIME GmbH, Berlin, Germany
+ * @author Manuel Hotz, KNIME GmbH, Konstanz, Germany
  */
-public final class ExcelProgressMonitor {
+public final class Fixtures {
 
-    private final ExecutionContext m_exec;
+    /** Test password. */
+    public static final String TEST_PW = "knime";
 
-    private final long m_rowCount;
-
-    private double m_curIdx;
-
-    /**
-     * Constructor.
-     *
-     * @param exec the execution context
-     */
-    public ExcelProgressMonitor(final ExecutionContext exec) {
-        this(exec, -1);
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param exec the execution context
-     * @param rowCount the row count
-     */
-    public ExcelProgressMonitor(final ExecutionContext exec, final long rowCount) {
-        m_exec = exec;
-        m_rowCount = rowCount;
-        m_curIdx = 0;
-    }
-
-    /**
-     * Throws an exception in case the users canceled the execution.
-     *
-     * @see NodeProgressMonitor#checkCanceled()
-     * @throws CanceledExecutionException which indicated the execution will be canceled by this call.
-     */
-    public void checkCanceled() throws CanceledExecutionException {
-        m_exec.checkCanceled();
-    }
-
-    /**
-     * Updates the progress.
-     *
-     * @param sheetName the name of the sheet currently written to
-     * @param rowIdx the index of the row currently written
-     */
-    public void updateProgress(final String sheetName, final long rowIdx) {
-        final Supplier<String> messageSupplier = () -> String.format("Writing sheet '%s' row %d", sheetName, rowIdx);
-        if (m_rowCount > 0) {
-            ++m_curIdx;
-            m_exec.setProgress(m_curIdx / m_rowCount, messageSupplier);
-        } else {
-            m_exec.setMessage(messageSupplier);
-        }
-    }
-
+    private static final String ROOT = "/files/";
+    /** Encrypted XLSX file. */
+    public static final String XLSX_ENC = ROOT + "encrypted.xlsx";
+    /** Encrypted XLSX file using default Excel password. */
+    public static final String XLSX_ENC_DEF = ROOT + "encrypted-default.xlsx";
+    /** Unencrypted XLSX file. */
+    public static final String XLSX = ROOT + "unencrypted.xlsx";
+    /** Encrypted XLS file. */
+    public static final String XLS_ENC = ROOT + "encrypted.xls";
+    /** Unencrypted XLS file. */
+    public static final String XLS = ROOT + "unencrypted.xls";
 }
