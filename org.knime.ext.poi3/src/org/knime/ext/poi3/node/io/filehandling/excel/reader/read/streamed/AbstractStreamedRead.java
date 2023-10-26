@@ -51,7 +51,9 @@ package org.knime.ext.poi3.node.io.filehandling.excel.reader.read.streamed;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.security.GeneralSecurityException;
 import java.util.Map;
 import java.util.OptionalLong;
@@ -68,6 +70,7 @@ import org.apache.poi.poifs.crypt.EncryptionInfo;
 import org.apache.poi.poifs.filesystem.FileMagic;
 import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.apache.poi.xssf.eventusermodel.XSSFReader.SheetIterator;
+import org.knime.core.util.FileUtil;
 import org.knime.ext.poi3.node.io.filehandling.excel.CryptUtil;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelParserRunnable;
@@ -143,7 +146,18 @@ public abstract class AbstractStreamedRead extends ExcelRead {
                 throw createPasswordIncorrectException(null);
             }
             try (final var decryptedStream = d.getDataStream(fs)) {
-                return createStreamedParser(OPCPackage.open(decryptedStream));
+                // We cache the contents to a temporary file, since otherwise encrypted Excel files would be buffered in
+                // memory fully, since we'd have to use OPCPackage.open(InputStream).
+                // Using `AesZipFileZipEntrySource.createZipEntrySource(decryptedStream)` to buffer the file on disk
+                // encrypted fails with "Truncated ZIP file"
+                final var tempFile = FileUtil.createTempFile("tempXlsx", ".xlsx", FileUtil.getWorkflowTempDir(), true);
+                try {
+                    Files.copy(decryptedStream, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    return createStreamedParser(OPCPackage.open(tempFile, PackageAccess.READ));
+                } catch (final IOException | InvalidFormatException e) {
+                    Files.deleteIfExists(tempFile.toPath());
+                    throw e;
+                }
             }
         }
     }
