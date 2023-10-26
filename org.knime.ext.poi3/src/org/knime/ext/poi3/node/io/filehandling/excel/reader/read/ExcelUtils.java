@@ -63,7 +63,6 @@ import org.apache.poi.openxml4j.exceptions.OpenXML4JException;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.poifs.filesystem.FileMagic;
 import org.apache.poi.poifs.filesystem.POIFSFileSystem;
-import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Row.MissingCellPolicy;
@@ -115,13 +114,12 @@ public final class ExcelUtils {
         if (sheetNames.isEmpty()) {
             return ""; // should never happen; still, handle gracefully to prevent UI crashes
         }
-        final String firstSheet = sheetNames.keySet().iterator().next();
         for (final Entry<String, Boolean> sheetNameEntry : sheetNames.entrySet()) {
             if (sheetNameEntry.getValue().booleanValue()) {
                 return sheetNameEntry.getKey();
             }
         }
-        return firstSheet;
+        return sheetNames.keySet().iterator().next();
     }
 
     /**
@@ -133,7 +131,7 @@ public final class ExcelUtils {
      */
     public static Map<String, Boolean> getSheetNames(final Workbook workbook) {
         final Map<String, Boolean> sheetNames = new LinkedHashMap<>(); // LinkedHashMap to retain order
-        boolean nonEmptySheetFound = false;
+        var nonEmptySheetFound = false;
         for (final Sheet sheet : workbook) {
             if (nonEmptySheetFound) {
                 sheetNames.put(sheet.getSheetName(), false);
@@ -171,7 +169,7 @@ public final class ExcelUtils {
     public static Map<String, Boolean> getSheetNames(final XMLReader xmlReader, final XSSFReader reader,
         final SharedStrings sharedStrings) throws InvalidFormatException, IOException, SAXException {
         final Map<String, Boolean> sheetNames = new LinkedHashMap<>(); // LinkedHashMap to retain order
-        boolean nonEmptySheetFound = false;
+        var nonEmptySheetFound = false;
         xmlReader.setContentHandler(
             new XSSFSheetXMLHandler(reader.getStylesTable(), sharedStrings, new IsEmpty(), new DataFormatter(), false));
         final SheetIterator sheetsData = (SheetIterator)reader.getSheetsData();
@@ -221,11 +219,11 @@ public final class ExcelUtils {
     public static Map<String, Boolean> getSheetNames(final XSSFBReader reader, final SharedStrings sharedStrings)
         throws InvalidFormatException, IOException {
         final Map<String, Boolean> sheetNames = new LinkedHashMap<>(); // LinkedHashMap to retain order
-        boolean nonEmptySheetFound = false;
+        var nonEmptySheetFound = false;
         final SheetIterator sheetsData = (SheetIterator)reader.getSheetsData();
         while (sheetsData.hasNext()) {
-            try (final InputStream inputStream = sheetsData.next()) {
-                final XSSFBSheetHandler xssfbSheetHandler = new XSSFBSheetHandler(inputStream,
+            try (final var inputStream = sheetsData.next()) {
+                final var xssfbSheetHandler = new XSSFBSheetHandler(inputStream,
                     reader.getXSSFBStylesTable(), ((XSSFBReader.SheetIterator)sheetsData).getXSSFBSheetComments(),
                     sharedStrings, new IsEmpty(), new DataFormatter(), false);
                 if (nonEmptySheetFound) {
@@ -319,8 +317,8 @@ public final class ExcelUtils {
         CheckUtils.checkArgument(EXCEL_COLUMN_NAME_REGEX.matcher(columnLabel).matches(), "Invalid column '%s'.",
             columnLabel);
 
-        int result = 0;
-        for (int d = 0; d < columnLabel.length(); d++) {
+        var result = 0;
+        for (var d = 0; d < columnLabel.length(); d++) {
             final int dig = toNumber(columnLabel.charAt(columnLabel.length() - d - 1));
             result += dig * (int)Math.round(Math.pow(26, d));
         }
@@ -381,7 +379,7 @@ public final class ExcelUtils {
     }
 
     private static int numberToIdx(final String numberString, final int defaultValue) {
-        final String trimmedNumb = numberString.trim();
+        final var trimmedNumb = numberString.trim();
         int idx = defaultValue;
         if (!trimmedNumb.isEmpty()) {
             try {
@@ -519,8 +517,8 @@ public final class ExcelUtils {
      * {@link Sheet#getLastRowNum()} would not return 0 and a row would not be {@code null}.
      */
     private static boolean isEmpty(final Sheet sheet) {
-        for (int i = 0; i <= sheet.getLastRowNum(); i++) {
-            final Row row = sheet.getRow(i);
+        for (var i = 0; i <= sheet.getLastRowNum(); i++) {
+            final var row = sheet.getRow(i);
             if (row != null && !isRowEmpty(row)) {
                 return false;
             }
@@ -529,8 +527,8 @@ public final class ExcelUtils {
     }
 
     private static boolean isRowEmpty(final Row row) {
-        for (int j = 0; j < row.getLastCellNum(); j++) {
-            final Cell cell = row.getCell(j, MissingCellPolicy.RETURN_BLANK_AS_NULL);
+        for (var j = 0; j < row.getLastCellNum(); j++) {
+            final var cell = row.getCell(j, MissingCellPolicy.RETURN_BLANK_AS_NULL);
             if (cell != null) {
                 return false;
             }

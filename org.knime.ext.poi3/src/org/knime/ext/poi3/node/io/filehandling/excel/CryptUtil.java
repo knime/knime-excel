@@ -276,5 +276,4 @@ public final class CryptUtil {
             // avoids null pointer exception when getting password without credentials provider
             || (authType == AuthenticationType.CREDENTIALS && cp == null) ? null : authModel.getPassword(cp);
     }
-
 }

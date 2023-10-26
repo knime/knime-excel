@@ -52,7 +52,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -76,9 +75,8 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.knime.core.node.defaultnodesettings.SettingsModelAuthentication;
-import org.knime.core.node.defaultnodesettings.SettingsModelAuthentication.AuthenticationType;
 import org.knime.core.node.util.CheckUtils;
+import org.knime.ext.poi3.node.io.filehandling.excel.CryptUtil;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
@@ -99,9 +97,7 @@ public final class XLSRead extends ExcelRead {
 
     private long m_numMaxRows;
 
-    private int m_rowsRead = 0;
-
-    private Workbook m_workbook;
+    private int m_rowsRead;
 
     private Map<String, Boolean> m_sheetNames;
 
@@ -119,17 +115,18 @@ public final class XLSRead extends ExcelRead {
         // don't do any initializations here, super constructor will call #createParser(InputStream)
     }
 
+    @SuppressWarnings("resource") // workbook ownership handed to parser
     @Override
     public ExcelParserRunnable createParser(final File file) throws IOException {
         try {
-            m_workbook = checkFileFormatAndCreateWorkbook(file);
-            m_sheetNames = ExcelUtils.getSheetNames(m_workbook);
-            final Sheet sheet = m_workbook.getSheet(getSelectedSheet());
+            final var workbook = checkFileFormatAndCreateWorkbook(file);
+            m_sheetNames = ExcelUtils.getSheetNames(workbook);
+            final var sheet = workbook.getSheet(getSelectedSheet());
             m_numMaxRows = sheet.getLastRowNum() + 1L;
             final FormulaEvaluator formulaEvaluator = m_config.getReaderSpecificConfig().isReevaluateFormulas()
-                ? m_workbook.getCreationHelper().createFormulaEvaluator() : null;
-
-            return new XLSParserRunnable(this, m_config, sheet, use1904Windowing(m_workbook), formulaEvaluator);
+                ? workbook.getCreationHelper().createFormulaEvaluator() : null;
+            // ownership of workbook handed to parser
+            return new XLSParserRunnable(this, m_config, workbook, sheet, use1904Windowing(workbook), formulaEvaluator);
         } catch (InvalidOperationException e) {
             throw new IllegalStateException(e.getMessage(), e);
         }
@@ -140,11 +137,9 @@ public final class XLSRead extends ExcelRead {
      */
     private static boolean use1904Windowing(final Workbook workbook) {
         boolean date1904;
-        if (workbook instanceof XSSFWorkbook) {
-            final XSSFWorkbook xssfWorkbook = (XSSFWorkbook)workbook;
+        if (workbook instanceof XSSFWorkbook xssfWorkbook) {
             date1904 = xssfWorkbook.isDate1904();
-        } else if (workbook instanceof HSSFWorkbook) {
-            final HSSFWorkbook hssfWorkbook = (HSSFWorkbook)workbook;
+        } else if (workbook instanceof HSSFWorkbook hssfWorkbook) {
             date1904 = hssfWorkbook.getInternalWorkbook().isUsing1904DateWindowing();
         } else {
             // Probably unsupported
@@ -164,30 +159,21 @@ public final class XLSRead extends ExcelRead {
      * error message.
      */
     private Workbook checkFileFormatAndCreateWorkbook(final File file) throws IOException {
-        switch (FileMagic.valueOf(file)) {
-            case OLE2:
-            case OOXML:
-                break;
-            default:
-                // will be caught and output with a user-friendly error message
-                throw new NotOfficeXmlFileException("");
+        final var type = FileMagic.valueOf(file);
+        if (type != FileMagic.OLE2 && type != FileMagic.OOXML) {
+            // will be caught and output with a user-friendly error message
+            throw new NotOfficeXmlFileException("");
         }
-        final SettingsModelAuthentication authenticationSettingsModel =
-            m_config.getReaderSpecificConfig().getAuthenticationSettingsModel();
-        if (authenticationSettingsModel.getAuthenticationType() == AuthenticationType.NONE) {
-            try {
-                return WorkbookFactory.create(file, null, true);
-            } catch (EncryptedDocumentException e) {
+        final var authModel = m_config.getReaderSpecificConfig().getAuthenticationSettingsModel();
+        final var password =
+            CryptUtil.getPassword(authModel, m_config.getReaderSpecificConfig().getCredentialsProvider());
+        try {
+            return WorkbookFactory.create(file, password, true);
+        } catch (final EncryptedDocumentException e) {
+            if (password == null) {
                 throw createPasswordProtectedFileException(e);
             }
-        } else {
-            try {
-                final String password = authenticationSettingsModel
-                    .getPassword(m_config.getReaderSpecificConfig().getCredentialsProvider());
-                return WorkbookFactory.create(file, password, true);
-            } catch (EncryptedDocumentException e) {
-                throw createPasswordIncorrectException(e);
-            }
+            throw createPasswordIncorrectException(e);
         }
     }
 
@@ -206,16 +192,11 @@ public final class XLSRead extends ExcelRead {
         return m_hiddenColumns;
     }
 
-    @Override
-    public void closeResources() throws IOException {
-        if (m_workbook != null) {
-            m_workbook.close();
-        }
-    }
-
     private class XLSParserRunnable extends ExcelParserRunnable {
 
-        private Sheet m_sheet;
+        private final Workbook m_workbook;
+
+        private final Sheet m_sheet;
 
         private final boolean m_use1904Windowing;
 
@@ -223,9 +204,11 @@ public final class XLSRead extends ExcelRead {
 
         private ExcelCell m_rowId;
 
-        XLSParserRunnable(final ExcelRead read, final TableReadConfig<ExcelTableReaderConfig> config, final Sheet sheet,
+        XLSParserRunnable(final ExcelRead read, final TableReadConfig<ExcelTableReaderConfig> config,
+            final Workbook workbook, final Sheet sheet,
             final boolean use1904Windowing, final FormulaEvaluator formulaEvaluator) {
             super(read, config);
+            m_workbook = workbook;
             m_sheet = sheet;
             m_use1904Windowing = use1904Windowing;
             m_formulaEvaluator = formulaEvaluator;
@@ -235,10 +218,9 @@ public final class XLSRead extends ExcelRead {
         @Override
         protected void parse() throws Exception {
             int lastNonEmptyRowIdx = -1;
-            for (int i = 0; i <= m_sheet.getLastRowNum(); i++) {
+            for (var i = 0; i <= m_sheet.getLastRowNum(); i++) {
                 m_rowId = null;
-                final Row row = m_sheet.getRow(i);
-
+                final var row = m_sheet.getRow(i);
                 if (row != null) {
                     final boolean isHiddenRow = m_skipHiddenRows && row.getZeroHeight();
                     // parse the row
@@ -302,36 +284,23 @@ public final class XLSRead extends ExcelRead {
         }
 
         private ExcelCell parseCell(final Cell cell, final CellType cellType) {
-            final ExcelCell excelCell;
-            switch (cellType) {
-                case NUMERIC:
-                    excelCell = parseNumericOrDateCell(cell);
-                    break;
-                case BOOLEAN:
-                    excelCell = new ExcelCell(KNIMECellType.BOOLEAN, cell.getBooleanCellValue());
-                    break;
-                case STRING:
-                    excelCell = replaceStringWithMissing(cell.getStringCellValue()) ? null
+            return switch (cellType) {
+                case NUMERIC -> parseNumericOrDateCell(cell);
+                case BOOLEAN -> new ExcelCell(KNIMECellType.BOOLEAN, cell.getBooleanCellValue());
+                case STRING -> replaceStringWithMissing(cell.getStringCellValue()) ? null
                         : new ExcelCell(KNIMECellType.STRING, cell.getStringCellValue());
-                    break;
-                case FORMULA:
-                    excelCell = parseFormulaCell(cell);
-                    break;
-                case ERROR:
-                    excelCell = ExcelCellUtils.createErrorCell(m_config);
-                    break;
-                case BLANK:
-                    // as we use MissingCellPolicy.RETURN_BLANK_AS_NULL, we should never get a BLANK
-                default:
+                case FORMULA -> parseFormulaCell(cell);
+                case ERROR -> ExcelCellUtils.createErrorCell(m_config);
+                // as we use MissingCellPolicy.RETURN_BLANK_AS_NULL, we should never get a BLANK
+                default ->
                     throw new IllegalStateException("Unexpected cell type: " + cellType.toString());
-            }
-            return excelCell;
+            };
         }
 
         private ExcelCell parseNumericOrDateCell(final Cell cell) {
             final ExcelCell excelCell;
             if (DateUtil.isCellDateFormatted(cell)) {
-                final LocalDateTime localDateTimeCellValue = cell.getLocalDateTimeCellValue();
+                final var localDateTimeCellValue = cell.getLocalDateTimeCellValue();
                 return ExcelCellUtils.createDateTimeExcelCell(localDateTimeCellValue, m_use1904Windowing);
             } else {
                 final ExcelCell numericExcelCell = m_use15DigitsPrecision
@@ -353,7 +322,7 @@ public final class XLSRead extends ExcelRead {
         private ExcelCell parseEvaluatedNumericOrDateCellValue(final Cell cell, final CellValue cellValue) {
             final ExcelCell excelCell;
             if (DateUtil.isCellDateFormatted(cell)) {
-                final LocalDateTime localDateTimeCellValue = DateUtil.getLocalDateTime(cellValue.getNumberValue());
+                final var localDateTimeCellValue = DateUtil.getLocalDateTime(cellValue.getNumberValue());
                 return ExcelCellUtils.createDateTimeExcelCell(localDateTimeCellValue, m_use1904Windowing);
             } else {
                 excelCell = m_use15DigitsPrecision
@@ -369,7 +338,7 @@ public final class XLSRead extends ExcelRead {
                 excelCell = reevaluateAndParseFormulaCell(cell);
             } else {
                 // get the type of the cached result and do a recursive call
-                final CellType formulaResultCellType = cell.getCachedFormulaResultType();
+                final var formulaResultCellType = cell.getCachedFormulaResultType();
                 CheckUtils.checkState(formulaResultCellType != CellType.FORMULA,
                     "A formula cannot create another formula.");
                 excelCell = parseCell(cell, formulaResultCellType);
@@ -378,7 +347,6 @@ public final class XLSRead extends ExcelRead {
         }
 
         private ExcelCell reevaluateAndParseFormulaCell(final Cell cell) {
-            final ExcelCell excelCell;
             final CellValue cellValue;
             try {
                 cellValue = m_formulaEvaluator.evaluate(cell);
@@ -392,28 +360,22 @@ public final class XLSRead extends ExcelRead {
                 }
                 return ExcelCellUtils.createErrorCell(m_config);
             }
-
-            final CellType cellType = cellValue.getCellType();
-            switch (cellType) {
-                case NUMERIC:
-                    excelCell = parseEvaluatedNumericOrDateCellValue(cell, cellValue);
-                    break;
-                case BOOLEAN:
-                    excelCell = new ExcelCell(KNIMECellType.BOOLEAN, cellValue.getBooleanValue());
-                    break;
-                case STRING:
-                    excelCell = replaceStringWithMissing(cellValue.getStringValue()) ? null
+            final var cellType = cellValue.getCellType();
+            return switch (cellType) {
+                case NUMERIC -> parseEvaluatedNumericOrDateCellValue(cell, cellValue);
+                case BOOLEAN -> new ExcelCell(KNIMECellType.BOOLEAN, cellValue.getBooleanValue());
+                case STRING -> replaceStringWithMissing(cellValue.getStringValue()) ? null
                         : new ExcelCell(KNIMECellType.STRING, cellValue.getStringValue());
-                    break;
-                case ERROR:
-                    excelCell = ExcelCellUtils.createErrorCell(m_config);
-                    break;
-                case BLANK:
-                    // as we use MissingCellPolicy.RETURN_BLANK_AS_NULL, we should never get a BLANK
-                default:
+                case ERROR -> ExcelCellUtils.createErrorCell(m_config);
+                // as we use MissingCellPolicy.RETURN_BLANK_AS_NULL, we should never get a BLANK
+                default ->
                     throw new IllegalStateException("Unexpected cell type: " + cellType.toString());
-            }
-            return excelCell;
+            };
+        }
+
+        @Override
+        protected void closeResources() throws IOException {
+            m_workbook.close();
         }
 
     }

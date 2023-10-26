@@ -100,7 +100,7 @@ public abstract class ExcelParserRunnable implements Runnable {
 
     private final boolean m_rawSettings;
 
-    private int m_rowCount = 0;
+    private int m_rowCount;
 
     /**
      * Constructor.
@@ -108,7 +108,7 @@ public abstract class ExcelParserRunnable implements Runnable {
      * @param read the {@link ExcelRead}
      * @param config the config
      */
-    public ExcelParserRunnable(final ExcelRead read, final TableReadConfig<ExcelTableReaderConfig> config) {
+    protected ExcelParserRunnable(final ExcelRead read, final TableReadConfig<ExcelTableReaderConfig> config) {
         m_read = read;
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
         m_use15DigitsPrecision = excelConfig.isUse15DigitsPrecision();
@@ -127,35 +127,42 @@ public abstract class ExcelParserRunnable implements Runnable {
 
     @Override
     public void run() {
-        LOGGER.debug("Thread parsing an Excel sheet started.");
+        LOGGER.debug("Excel sheet parsing started");
+        Throwable t = null;
         try {
             parse();
             m_read.addToQueue(ExcelRead.POISON_PILL);
-            LOGGER.debug("Thread parsing an Excel sheet finished successfully.");
+            LOGGER.debug("Excel sheet parsing finished successfully");
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            LOGGER.debug("Parsing stopped by interrupt", e);
-            closeAndSwallowExceptions(null);
+            LOGGER.debug("Excel sheet parsing stopped by interrupt", e);
         } catch (ParsingInterruptedException e) { // NOSONAR ignore ParsingInterruptedException, they are thrown by us
-            LOGGER.debug("Parsing interrupted by us", e);
-            closeAndSwallowExceptions(null);
+            LOGGER.debug("Excel sheet parsing interrupted", e);
         } catch (Throwable e) { // NOSONAR we want to catch any Throwable
-            m_read.setThrowable(e);
-            // cannot do anything with the IO exceptions besides logging
-            closeAndSwallowExceptions(e);
+            t = e;
+            LOGGER.debug("Excel sheet parsing problem", e);
+        } finally {
+            if (t != null) {
+                m_read.setThrowable(t);
+            }
+            try {
+                LOGGER.debug("Closing Excel sheet parser resources");
+                closeResources();
+            } catch (IOException e) {
+                if (t != null) {
+                    t.addSuppressed(e);
+                } else {
+                    m_read.setThrowable(e);
+                }
+            }
         }
     }
 
-    private void closeAndSwallowExceptions(final Throwable e) {
-        if (e != null) {
-            LOGGER.debug("Problem while parsing Excel sheet, closing read...", e);
-        }
-        try {
-            m_read.close();
-        } catch (IOException ioe) {
-            LOGGER.debug(ioe);
-        }
-    }
+    /**
+     * Close resources held after parsing finished.
+     * @throws IOException
+     */
+    protected abstract void closeResources() throws IOException;
 
     /**
      * Start parsing.
@@ -180,7 +187,7 @@ public abstract class ExcelParserRunnable implements Runnable {
                 RandomAccessibleUtils.createFromArrayUnsafe(cells.toArray(new ExcelCell[0])), isRowHidden));
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            LOGGER.debug("Thread parsing an Excel spreadsheet interrupted.");
+            LOGGER.debug("Excel parser interrupted while filling queue");
             // throw a runtime exception as the interrupting the thread does not stop it
             throw new ParsingInterruptedException();
         }
@@ -192,7 +199,7 @@ public abstract class ExcelParserRunnable implements Runnable {
      * @param numMissingsRows the number of missing rows to add
      */
     protected void outputEmptyRows(final int numMissingsRows) {
-        for (int i = 0; i < numMissingsRows; i++) {
+        for (var i = 0; i < numMissingsRows; i++) {
             final List<ExcelCell> cells = new ArrayList<>();
             if (m_rowIdIdx >= 0 && !m_rawSettings) {
                 // make sure the empty row ID is added

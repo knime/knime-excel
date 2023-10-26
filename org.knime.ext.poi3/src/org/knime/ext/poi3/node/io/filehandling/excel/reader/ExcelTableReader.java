@@ -51,6 +51,7 @@ package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Locale;
 import java.util.Map;
 
 import javax.swing.event.ChangeEvent;
@@ -113,7 +114,7 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
     public TypedReaderTableSpec<KNIMECellType> readSpec(final FSPath path,
         final TableReadConfig<ExcelTableReaderConfig> config, final ExecutionMonitor exec) throws IOException {
         final TableSpecGuesser<FSPath, KNIMECellType, ExcelCell> guesser = createGuesser();
-        try (ExcelRead read = getExcelRead(path, config)) {
+        try (var read = getExcelRead(path, config)) {
             // sheet names are already retrieved, notify a potential listener from the dialog
             m_sheetNames = read.getSheetNames();
             notifyChangeListener();
@@ -146,7 +147,7 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
         throws IOException {
         final boolean reevaluateFormulas = config.getReaderSpecificConfig().isReevaluateFormulas();
         try {
-            final String pathLowerCase = path.toString().toLowerCase();
+            final String pathLowerCase = path.toString().toLowerCase(Locale.US);
             if (pathLowerCase.endsWith(".xlsb")) {
                 return createXLSBRead(path, config);
             }
@@ -161,7 +162,7 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
         } catch (XLSBUnsupportedException e) { // NOSONAR
             // we handle this exception by creating the proper Read.
             // user must have specified a file not ending with ".xlsb" but being an xlsb file
-            final XLSBRead xlsbRead = new XLSBRead(path, config);
+            final var xlsbRead = new XLSBRead(path, config);
             if (reevaluateFormulas) {
                 // we just put a debug message as it is also written when creating the preview and we don't want to
                 // spam the console (of regular users)
@@ -184,14 +185,14 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
 
     private static ExcelRead createXLSBRead(final FSPath path, final TableReadConfig<ExcelTableReaderConfig> config)
             throws IOException {
-            try {
-                return new XLSBRead(path, config);
-            } catch (OLE2NotOfficeXmlFileException e) { // NOSONAR
-                // Happens if an xls file has been specified that ends with xlsb.
-                // We do not fail but simply use the XLSParser instead.
-                return new XLSRead(path, config);
-            }
+        try {
+            return new XLSBRead(path, config);
+        } catch (OLE2NotOfficeXmlFileException e) { // NOSONAR
+            // Happens if an xls file has been specified that ends with xlsb.
+            // We do not fail but simply use the XLSParser instead.
+            return new XLSRead(path, config);
         }
+    }
 
     private static ExcelRead createXLSXRead(final FSPath path, final TableReadConfig<ExcelTableReaderConfig> config)
         throws IOException {

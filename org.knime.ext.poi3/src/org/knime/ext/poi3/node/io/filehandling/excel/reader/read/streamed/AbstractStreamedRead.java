@@ -60,6 +60,7 @@ import java.util.Set;
 import org.apache.commons.io.input.CountingInputStream;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.openxml4j.exceptions.NotOfficeXmlFileException;
+import org.apache.poi.openxml4j.exceptions.OLE2NotOfficeXmlFileException;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.openxml4j.opc.PackageAccess;
 import org.apache.poi.poifs.crypt.Decryptor;
@@ -67,8 +68,7 @@ import org.apache.poi.poifs.crypt.EncryptionInfo;
 import org.apache.poi.poifs.filesystem.FileMagic;
 import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.apache.poi.xssf.eventusermodel.XSSFReader.SheetIterator;
-import org.knime.core.node.defaultnodesettings.SettingsModelAuthentication;
-import org.knime.core.node.defaultnodesettings.SettingsModelAuthentication.AuthenticationType;
+import org.knime.ext.poi3.node.io.filehandling.excel.CryptUtil;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelParserRunnable;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelRead;
@@ -95,12 +95,6 @@ public abstract class AbstractStreamedRead extends ExcelRead {
         // don't do any initializations here, super constructor will call #createParser(InputStream)
     }
 
-    /** The sheet stream. */
-    protected CountingInputStream m_sheetStream;
-
-    /** The package where the sheet stream originates from. */
-    private OPCPackage m_opc;
-
     /** The size of the sheet to read. */
     protected long m_sheetSize;
 
@@ -116,10 +110,8 @@ public abstract class AbstractStreamedRead extends ExcelRead {
             m_streamedParser = switch (FileMagic.valueOf(file)) {
                 case OLE2 ->  createParserFromOLE2(file); // NOSONAR indentation is OK
                 case OOXML ->  {// NOSONAR indentation is OK
-                    // this case means we actually have an unencrypted file, so just open the package without decryption
-                    // OPCPackage will be closed by parser
-                    m_opc = OPCPackage.open(file, PackageAccess.READ); // NOSONAR indentation is OK
-                    yield createStreamedParser(m_opc);
+                    final var pkg = OPCPackage.open(file, PackageAccess.READ);
+                    yield createStreamedParser(pkg);
                 }
                 // will be caught and output with a user-friendly error message
                 default -> throw new NotOfficeXmlFileException(""); // NOSONAR indentation is OK
@@ -130,31 +122,28 @@ public abstract class AbstractStreamedRead extends ExcelRead {
         return m_streamedParser;
     }
 
+    @SuppressWarnings("resource") // pkg ownership handed to parser
     private AbstractStreamedParserRunnable createParserFromOLE2(final File file)
             throws IOException, GeneralSecurityException, InvalidFormatException {
         // encrypted OOXML files are stored as encrypted OLE2 files that contain the xml content
-        // xls files are also OLE files
-        final SettingsModelAuthentication authenticationSettingsModel =
-                m_config.getReaderSpecificConfig().getAuthenticationSettingsModel();
-        final var authenticationType = authenticationSettingsModel.getAuthenticationType();
-        if (authenticationType == AuthenticationType.NONE) {
-            m_opc = OPCPackage.open(file, PackageAccess.READ);
-            return createStreamedParser(m_opc);
-        }
-        try (final var poiFS = new POIFSFileSystem(file, true)) {
-            final var encryptionInfo = new EncryptionInfo(poiFS);
-            final var decryptor = Decryptor.getInstance(encryptionInfo);
-            final String password =
-                authenticationSettingsModel.getPassword(m_config.getReaderSpecificConfig().getCredentialsProvider());
-            if (!decryptor.verifyPassword(password)) {
+        // so reaching this point, this XLSX file is encrypted (or it is not a valid XLSX file in the first place)
+        final var authModel = m_config.getReaderSpecificConfig().getAuthenticationSettingsModel();
+        try (final var fs = new POIFSFileSystem(file)) {
+            if (!CryptUtil.isEncryptedOOXML(fs.getRoot())) {
+                throw new OLE2NotOfficeXmlFileException("The given file is not an encrypted XLSX file.");
+            }
+            final var password =
+                    CryptUtil.getPassword(authModel, m_config.getReaderSpecificConfig().getCredentialsProvider());
+            if (password == null) {
+                throw createPasswordProtectedFileException(null);
+            }
+            final var info = new EncryptionInfo(fs);
+            final var d = Decryptor.getInstance(info);
+            if (!d.verifyPassword(password)) {
                 throw createPasswordIncorrectException(null);
             }
-            try (final var decryptedStream = decryptor.getDataStream(poiFS)) {
-                // encrypted files will be buffered in memory fully, since we have to use OPCPackage.open(InputStream)
-                // Using `AesZipFileZipEntrySource.createZipEntrySource(decryptedStream)` to buffer the file on disk
-                // fails with "Truncated ZIP file"
-                m_opc = OPCPackage.open(decryptedStream);
-                return createStreamedParser(m_opc);
+            try (final var decryptedStream = d.getDataStream(fs)) {
+                return createStreamedParser(OPCPackage.open(decryptedStream));
             }
         }
     }
@@ -162,11 +151,11 @@ public abstract class AbstractStreamedRead extends ExcelRead {
     /**
      * Creates and returns a {@link AbstractStreamedParserRunnable}.
      *
-     * @param opc the {@link OPCPackage} representing the Excel file being read
+     * @param pkg package representing the Excel 2007+ file to parse
      * @return the created {@link AbstractStreamedParserRunnable}
      * @throws IOException if an I/O error occurs
      */
-    protected abstract AbstractStreamedParserRunnable createStreamedParser(final OPCPackage opc) throws IOException;
+    protected abstract AbstractStreamedParserRunnable createStreamedParser(final OPCPackage pkg) throws IOException;
 
     /**
      * @param sheetsData the sheet iterator
@@ -205,30 +194,13 @@ public abstract class AbstractStreamedRead extends ExcelRead {
     }
 
     @Override
-    public void closeResources() throws IOException {
-        if (m_sheetStream != null) {
-            m_sheetStream.close();
-        }
-        if (m_opc != null) {
-            // read-only OPCPackages should be reverted, not closed, but in case it was opened from an InputStream
-            // it is in READ-WRITE mode... (see OPCPackage.open(InputStream))
-            // OPCPackage.close checks for that but issues a warning if we're closing a READ-only package
-            if (m_opc.getPackageAccess() == PackageAccess.READ) {
-                m_opc.revert();
-            } else {
-                m_opc.close();
-            }
-        }
-    }
-
-    @Override
     public OptionalLong getMaxProgress() {
         return m_sheetSize < 0 ? OptionalLong.empty() : OptionalLong.of(m_sheetSize);
     }
 
     @Override
     public long getProgress() {
-        return m_sheetStream.getByteCount();
+        return m_streamedParser.getProgress();
     }
 
 }

@@ -269,13 +269,6 @@ public abstract class ExcelRead implements Read<ExcelCell> {
      */
     protected abstract ExcelParserRunnable createParser(final File localFile) throws IOException;
 
-    /**
-     * Closes resources after parser thread is gone (either normally or abnormally).
-     *
-     * @throws IOException if an I/O exception occurs
-     */
-    protected abstract void closeResources() throws IOException;
-
     @Override
     public final RandomAccessible<ExcelCell> next() throws IOException {
         // check and return next element
@@ -347,22 +340,8 @@ public abstract class ExcelRead implements Read<ExcelCell> {
                 // ignore since we wanted to cancel it
             }
         }
-        // free the queue so that any put call by the canceled thread is not blocking the cancellation
-        m_queueRandomAccessibles.clear();
-        // as we just cleared the queue, we can use #add to insert the poison pill
-        m_queueRandomAccessibles.add(POISON_PILL);
 
         final var throwable = m_throwableDuringParsing.get();
-        // at this point we are sure the parser thread is gone (either normally or abnormally)
-        try {
-            closeResources();
-        } catch (IOException e) {
-            // an exception during parsing has priority
-            if (throwable == null) {
-                throw e;
-            }
-        }
-
         // if an exception occurred during parsing, throw it
         if (throwable != null) {
             if (throwable instanceof RuntimeException rex) {
@@ -402,15 +381,15 @@ public abstract class ExcelRead implements Read<ExcelCell> {
 
         private final LinkedList<RandomAccessible<ExcelCell>> m_randomAccessibles = new LinkedList<>();
 
-        private boolean m_encounteredPoisonPill = false;
+        private boolean m_encounteredPoisonPill;
 
         @Override
         public boolean hasNext() {
             if (m_encounteredPoisonPill || m_throwableDuringParsing.get() != null) {
                 return false;
             }
-            // TODO in my experiments, the size of the queue was never bigger than 1 -> wouldn't a simple #take be faster?
-            // -> check that once we have more features implemented with different xlsx files
+            // TODO in my experiments, the size of the queue was never bigger than 1 -> wouldn't a simple #take be
+            // faster? -> check that once we have more features implemented with different xlsx files
             if (m_randomAccessibles.isEmpty()) {
                 try {
                     m_randomAccessibles.add(m_queueRandomAccessibles.take());
@@ -421,6 +400,7 @@ public abstract class ExcelRead implements Read<ExcelCell> {
                 // add all elements of the queue into the iterator's list
                 m_queueRandomAccessibles.drainTo(m_randomAccessibles);
             }
+            // poison pill indicates normal end of parsing
             m_encounteredPoisonPill = m_randomAccessibles.peek() == POISON_PILL;
             return !m_encounteredPoisonPill;
         }

@@ -48,16 +48,13 @@
  */
 package org.knime.ext.poi3.node.io.filehandling.excel.reader.read.streamed.xlsx;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOError;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.apache.commons.io.input.CountingInputStream;
 import org.apache.poi.ooxml.util.SAXHelper;
 import org.apache.poi.openxml4j.exceptions.OpenXML4JException;
 import org.apache.poi.openxml4j.opc.OPCPackage;
@@ -98,27 +95,27 @@ public final class XLSXRead extends AbstractStreamedRead {
         // don't do any initializations here, super constructor will call #createParser(InputStream)
     }
 
+    @SuppressWarnings("resource") // parser will handle closing sheetStream and pkg
     @Override
-    public AbstractStreamedParserRunnable createStreamedParser(final OPCPackage opc) throws IOException {
+    public AbstractStreamedParserRunnable createStreamedParser(final OPCPackage pkg) throws IOException {
         try {
-            final var xssfReader = new XSSFReader(opc);
+            final var xssfReader = new XSSFReader(pkg);
             final var xmlReader = SAXHelper.newXMLReader();
             // disable DTD to prevent almost all XXE attacks, XMLHelper.newXMLReader() did set further security features
             xmlReader.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-            final var sharedStringsTable = new ReadOnlySharedStringsTable(opc, false);
+            final var sharedStringsTable = new ReadOnlySharedStringsTable(pkg, false);
 
             m_sheetNames = ExcelUtils.getSheetNames(xmlReader, xssfReader, sharedStringsTable);
             final SheetIterator sheetsData = (SheetIterator)xssfReader.getSheetsData();
-            m_sheetStream = getSheetStreamWithSheetName(sheetsData, getSelectedSheet());
+            final var sheetStream = getSheetStreamWithSheetName(sheetsData, getSelectedSheet());
             // The underlying compressed (zip) input stream (InflaterInputStream) always reports "available" as 1
             // until fully consumed, in which case it returns 0
             // Hence, we get the size from the part (zip entry) itself and use the bytes passed through the counting
             // sheet stream to estimate the progress.
             m_sheetSize = sheetsData.getSheetPart().getSize();
 
-            // create the parser
-            return new XLSXParserRunnable(this, m_config, xmlReader, xssfReader, sharedStringsTable,
-                use1904Windowing(xssfReader));
+            return new XLSXParserRunnable(this, m_config, pkg, sheetStream, xmlReader, xssfReader,
+                sharedStringsTable, use1904Windowing(xssfReader));
         } catch (SAXException | OpenXML4JException | ParserConfigurationException e) {
             throw new IllegalStateException(e.getMessage(), e);
         }
@@ -136,7 +133,7 @@ public final class XLSXRead extends AbstractStreamedRead {
         }
     }
 
-    private class XLSXParserRunnable extends AbstractStreamedParserRunnable {
+    private static class XLSXParserRunnable extends AbstractStreamedParserRunnable {
 
         private final XSSFReader m_xssfReader;
 
@@ -146,18 +143,11 @@ public final class XLSXRead extends AbstractStreamedRead {
 
         private final XMLReader m_xmlReader;
 
-        private final String m_stackTraceAtConstructor;
-
-        XLSXParserRunnable(final ExcelRead read, final TableReadConfig<ExcelTableReaderConfig> config,
-            final XMLReader xmlReader, final XSSFReader xssfReader,
-            final ReadOnlySharedStringsTable sharedStringsTable, final boolean use1904Windowing) {
-            super(read, config);
-            try (final var bos = new ByteArrayOutputStream(); final var ps = new PrintStream(bos, true, "UTF-8")) {
-                new Throwable().printStackTrace(ps);
-                m_stackTraceAtConstructor = new String(bos.toByteArray(), StandardCharsets.UTF_8);
-            } catch (IOException e) {
-                throw new IOError(e);
-            }
+        XLSXParserRunnable(final ExcelRead read, final TableReadConfig<ExcelTableReaderConfig> config,  // NOSONAR
+                final OPCPackage pkg, final CountingInputStream sheetStream,
+                final XMLReader xmlReader, final XSSFReader xssfReader,
+                final ReadOnlySharedStringsTable sharedStringsTable, final boolean use1904Windowing) {
+            super(read, config, pkg, sheetStream);
             m_xmlReader = xmlReader;
             m_xssfReader = xssfReader;
             m_sharedStringsTable = sharedStringsTable;

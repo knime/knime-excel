@@ -48,12 +48,16 @@
  */
 package org.knime.ext.poi3.node.io.filehandling.excel.reader.read.streamed;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import org.apache.commons.io.input.CountingInputStream;
+import org.apache.poi.openxml4j.opc.OPCPackage;
+import org.apache.poi.openxml4j.opc.PackageAccess;
 import org.apache.poi.ss.util.CellAddress;
 import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler.SheetContentsHandler;
@@ -75,18 +79,43 @@ public abstract class AbstractStreamedParserRunnable extends ExcelParserRunnable
 
     private final TableReadConfig<ExcelTableReaderConfig> m_config;
 
+    private final OPCPackage m_pkg;
+
+    /**
+     * The stream of sheet data.
+     */
+    protected final CountingInputStream m_sheetStream;
+
     private Set<Integer> m_hiddenColumns = new HashSet<>();
+
 
     /**
      * Constructor.
      *
      * @param read the excel read
      * @param config the config
+     * @param pkg
+     * @param sheetStream
      */
-    protected AbstractStreamedParserRunnable(final ExcelRead read,
-        final TableReadConfig<ExcelTableReaderConfig> config) {
+    protected AbstractStreamedParserRunnable(final ExcelRead read, final TableReadConfig<ExcelTableReaderConfig> config,
+        final OPCPackage pkg, final CountingInputStream sheetStream) {
         super(read, config);
         m_config = config;
+        m_pkg = pkg;
+        m_sheetStream = sheetStream;
+    }
+
+    @Override
+    protected void closeResources() throws IOException {
+        m_sheetStream.close();
+        // read-only OPCPackages should be reverted, not closed, but in case it was opened from an InputStream
+        // it is in READ-WRITE mode... (see OPCPackage.open(InputStream))
+        // OPCPackage.close checks for that but issues a warning if we're closing a READ-only package
+        if (m_pkg.getPackageAccess() == PackageAccess.READ) {
+            m_pkg.revert();
+        } else {
+            m_pkg.close();
+        }
     }
 
     /**
@@ -191,36 +220,24 @@ public abstract class AbstractStreamedParserRunnable extends ExcelParserRunnable
         }
 
         private ExcelCell createExcelCellFromStringValue(final String formattedValue) {
-            final ExcelCell excelCell;
             final KNIMEXSSFDataType cellType = getCellType();
             if (cellType == null) {
                 throw new IllegalStateException("Coding error: encountered unexpected cell type.");
             }
-            switch (cellType) {
-                case BOOLEAN:
-                    excelCell = new ExcelCell(KNIMECellType.BOOLEAN, formattedValue.equals("TRUE"));
-                    break;
-                case ERROR:
-                    excelCell = ExcelCellUtils.createErrorCell(m_config);
-                    break;
-                case FORMULA:
-                    excelCell = replaceStringWithMissing(formattedValue) ? null
+            return switch (cellType) {
+                case BOOLEAN ->  new ExcelCell(KNIMECellType.BOOLEAN, formattedValue.equals("TRUE"));
+                case ERROR -> ExcelCellUtils.createErrorCell(m_config);
+                case FORMULA -> replaceStringWithMissing(formattedValue) ? null
                         : new ExcelCell(KNIMECellType.STRING, formattedValue);
-                    break;
-                case STRING:
-                    excelCell = replaceStringWithMissing(formattedValue) ? null
+                case STRING -> replaceStringWithMissing(formattedValue) ? null
                         : new ExcelCell(KNIMECellType.STRING, formattedValue);
-                    break;
-                case NUMBER_OR_DATE:
+                case NUMBER_OR_DATE -> null;
                     // special case, see AP-16880; required for cells that are processed by
                     // org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler line 372
                     // (cells with data type NUMBER but empty string as value)
-                    excelCell = null;
-                    break;
-                default:
+                default ->
                     throw new IllegalStateException("Unexpected data type: " + cellType);
-            }
-            return excelCell;
+            };
         }
 
         @Override
@@ -252,5 +269,13 @@ public abstract class AbstractStreamedParserRunnable extends ExcelParserRunnable
         private boolean isColHiddenAndSkipped(final int col, final Set<Integer> hiddenCols) {
             return m_skipHiddenCols && hiddenCols.contains(col);
         }
+    }
+
+    /**
+     * Get parsing progress in #bytes read.
+     * @return currently read bytes
+     */
+    public long getProgress() {
+        return m_sheetStream.getByteCount();
     }
 }

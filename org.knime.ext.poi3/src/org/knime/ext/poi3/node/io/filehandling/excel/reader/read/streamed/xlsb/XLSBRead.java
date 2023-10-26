@@ -51,6 +51,7 @@ package org.knime.ext.poi3.node.io.filehandling.excel.reader.read.streamed.xlsb;
 import java.io.IOException;
 import java.nio.file.Path;
 
+import org.apache.commons.io.input.CountingInputStream;
 import org.apache.poi.openxml4j.exceptions.OpenXML4JException;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.xssf.binary.XSSFBSharedStringsTable;
@@ -86,28 +87,29 @@ public final class XLSBRead extends AbstractStreamedRead {
         // don't do any initializations here, super constructor will call #createParser(InputStream)
     }
 
+    @SuppressWarnings("resource") // parser will handle closing sheetStream and pkg
     @Override
-    public AbstractStreamedParserRunnable createStreamedParser(final OPCPackage opc) throws IOException {
+    public AbstractStreamedParserRunnable createStreamedParser(final OPCPackage pkg) throws IOException {
         try {
-            final var xssfbReader = new XSSFBReader(opc);
-            final var sst = new XSSFBSharedStringsTable(opc);
+            final var xssfbReader = new XSSFBReader(pkg);
+            final var sst = new XSSFBSharedStringsTable(pkg);
 
             m_sheetNames = ExcelUtils.getSheetNames(xssfbReader, sst);
             final SheetIterator sheetsData = (SheetIterator)xssfbReader.getSheetsData();
-            m_sheetStream = getSheetStreamWithSheetName(sheetsData, getSelectedSheet());
+            final var sheetStream = getSheetStreamWithSheetName(sheetsData, getSelectedSheet());
             // The underlying compressed (zip) input stream always reports "available" as 1 until fully consumed
             // Hence, we get the size from the part (zip entry) itself and use the bytes passed through the counting
             // sheet stream to estimate the progress.
             m_sheetSize = sheetsData.getSheetPart().getSize();
 
             // create the parser
-            return new XLSBParserRunnable(this, m_config, xssfbReader, sst);
+            return new XLSBParserRunnable(this, m_config, pkg, sheetStream, xssfbReader, sst);
         } catch (SAXException | OpenXML4JException e) {
             throw new IllegalStateException(e.getMessage(), e);
         }
     }
 
-    private class XLSBParserRunnable extends AbstractStreamedParserRunnable {
+    private static class XLSBParserRunnable extends AbstractStreamedParserRunnable {
 
         private final XSSFBReader m_xssfReader;
 
@@ -116,8 +118,9 @@ public final class XLSBRead extends AbstractStreamedRead {
         private final KNIMEDataFormatter m_dataFormatter;
 
         XLSBParserRunnable(final ExcelRead read, final TableReadConfig<ExcelTableReaderConfig> config,
-            final XSSFBReader xssfReader, final SharedStrings sharedStringsTable) {
-            super(read, config);
+                final OPCPackage pkg, final CountingInputStream sheetStream, final XSSFBReader xssfReader,
+                final SharedStrings sharedStringsTable) {
+            super(read, config, pkg, sheetStream);
             m_xssfReader = xssfReader;
             m_sharedStringsTable = sharedStringsTable;
             // Note: Apache POI does not yet support reading out the information whether 1904 windowing us used or not
