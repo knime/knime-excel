@@ -111,13 +111,10 @@ public abstract class AbstractStreamedRead extends ExcelRead {
     protected ExcelParserRunnable createParser(final File file) throws IOException {
         try {
             m_streamedParser = switch (FileMagic.valueOf(file)) {
-                case OLE2 ->  createParserFromOLE2(file); // NOSONAR indentation is OK
-                case OOXML ->  {// NOSONAR indentation is OK
-                    final var pkg = OPCPackage.open(file, PackageAccess.READ);
-                    yield createStreamedParser(pkg);
-                }
+                case OLE2 -> createParserFromOLE2(file);
+                case OOXML -> createParserFromOOXML(file);
                 // will be caught and output with a user-friendly error message
-                default -> throw new NotOfficeXmlFileException(""); // NOSONAR indentation is OK
+                default -> throw new NotOfficeXmlFileException("");
             };
         } catch (GeneralSecurityException | InvalidFormatException e) {
             throw new IOException(e.getMessage(), e);
@@ -126,6 +123,19 @@ public abstract class AbstractStreamedRead extends ExcelRead {
     }
 
     @SuppressWarnings("resource") // pkg ownership handed to parser
+    private AbstractStreamedParserRunnable createParserFromOOXML(final File file)
+            throws InvalidFormatException, IOException {
+        final var pkg = OPCPackage.open(file, PackageAccess.READ);
+        try {
+            // ownership of pkg handed to parser
+            return createStreamedParser(pkg);
+        } catch (final IOException e) {
+            // if there is a problem creating the parser, we need to close the package
+            pkg.revert();
+            throw e;
+        }
+    }
+
     private AbstractStreamedParserRunnable createParserFromOLE2(final File file)
             throws IOException, GeneralSecurityException, InvalidFormatException {
         // encrypted OOXML files are stored as encrypted OLE2 files that contain the xml content
@@ -153,7 +163,7 @@ public abstract class AbstractStreamedRead extends ExcelRead {
                 final var tempFile = FileUtil.createTempFile("tempXlsx", ".xlsx", FileUtil.getWorkflowTempDir(), true);
                 try {
                     Files.copy(decryptedStream, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                    return createStreamedParser(OPCPackage.open(tempFile, PackageAccess.READ));
+                    return createParserFromOOXML(tempFile);
                 } catch (final IOException | InvalidFormatException e) {
                     Files.deleteIfExists(tempFile.toPath());
                     throw e;

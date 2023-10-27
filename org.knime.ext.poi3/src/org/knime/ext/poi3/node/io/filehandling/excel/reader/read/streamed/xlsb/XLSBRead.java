@@ -105,7 +105,7 @@ public final class XLSBRead extends AbstractStreamedRead {
             // create the parser
             return new XLSBParserRunnable(this, m_config, pkg, sheetStream, xssfbReader, sst);
         } catch (SAXException | OpenXML4JException e) {
-            throw new IllegalStateException(e.getMessage(), e);
+            throw new IOException(e.getMessage(), e);
         }
     }
 

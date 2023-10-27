@@ -61,7 +61,6 @@ import java.util.Set;
 
 import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.openxml4j.exceptions.InvalidOperationException;
 import org.apache.poi.openxml4j.exceptions.NotOfficeXmlFileException;
 import org.apache.poi.poifs.filesystem.FileMagic;
 import org.apache.poi.ss.usermodel.Cell;
@@ -118,8 +117,8 @@ public final class XLSRead extends ExcelRead {
     @SuppressWarnings("resource") // workbook ownership handed to parser
     @Override
     public ExcelParserRunnable createParser(final File file) throws IOException {
+        final var workbook = checkFileFormatAndCreateWorkbook(file);
         try {
-            final var workbook = checkFileFormatAndCreateWorkbook(file);
             m_sheetNames = ExcelUtils.getSheetNames(workbook);
             final var sheet = workbook.getSheet(getSelectedSheet());
             m_numMaxRows = sheet.getLastRowNum() + 1L;
@@ -127,8 +126,10 @@ public final class XLSRead extends ExcelRead {
                 ? workbook.getCreationHelper().createFormulaEvaluator() : null;
             // ownership of workbook handed to parser
             return new XLSParserRunnable(this, m_config, workbook, sheet, use1904Windowing(workbook), formulaEvaluator);
-        } catch (InvalidOperationException e) {
-            throw new IllegalStateException(e.getMessage(), e);
+        } catch (IOException e) {
+            // if there was a problem prior to creating the parser, we have to close the workbook ourselves
+            workbook.close();
+            throw e;
         }
     }
 
