@@ -10,9 +10,9 @@ Require-Bundle: org.apache.xmlbeans;bundle-version="[3.1.0,4.0.0)",
  org.apache.poi.ooxml;bundle-version="[4.1.1,5.0.0)",
  org.apache.poi.scratchpad;bundle-version="[4.1.1,5.0.0)",
  org.apache.poi.ooxml.schemas;bundle-version="[4.1.1,5.0.0)",
- org.knime.filehandling.core;bundle-version="[5.0.0,6.0.0)",
- org.knime.base;bundle-version="[5.0.0,6.0.0)",
- org.knime.time;bundle-version="[5.0.0,6.0.0)",
+ org.knime.filehandling.core;bundle-version="[5.2.0,6.0.0)",
+ org.knime.base;bundle-version="[5.2.0,6.0.0)",
+ org.knime.time;bundle-version="[5.2.0,6.0.0)",
  com.google.guava;bundle-version="[19.0.0,20.0.0)",
  org.apache.commons.lang3;bundle-version="[3.9.0,4.0.0)"
 Bundle-RequiredExecutionEnvironment: JavaSE-17
