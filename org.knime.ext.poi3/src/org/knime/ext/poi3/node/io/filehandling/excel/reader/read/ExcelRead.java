@@ -72,6 +72,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.poi.EncryptedDocumentException;
@@ -136,14 +137,18 @@ public abstract class ExcelRead implements Read<ExcelCell> {
     // it is a future so the download task can be canceled with the same mechanism as the parser
     private Future<File> m_localFile;
 
+    protected final Consumer<Map<String, Boolean>> m_sheetNamesConsumer;
+
     /**
      * Constructor
      *
      * @param path the path of the file to read
      * @param config the Excel table read config
+     * @param sheetNamesConsumer
      * @throws IOException if a stream can not be created from the provided file.
      */
-    protected ExcelRead(final Path path, final TableReadConfig<ExcelTableReaderConfig> config) throws IOException {
+    protected ExcelRead(final Path path, final TableReadConfig<ExcelTableReaderConfig> config,
+        final Consumer<Map<String, Boolean>> sheetNamesConsumer) throws IOException {
         m_path = path;
         m_config = config;
 
@@ -154,6 +159,7 @@ public abstract class ExcelRead implements Read<ExcelCell> {
             // in the rare case that we get a non-FSPath, we just assume that the file is already local
             m_localFile = CompletableFuture.completedFuture(path.toFile());
         }
+        m_sheetNamesConsumer = sheetNamesConsumer;
 
         startParserThread();
     }
@@ -416,20 +422,12 @@ public abstract class ExcelRead implements Read<ExcelCell> {
     }
 
     /**
-     * Returns a map that contains the names of the sheets as keys and whether it is the first non-empty sheet as value.
-     *
-     * @return the map of sheet names with names as keys being in the same order as in the workbook
-     */
-    public abstract Map<String, Boolean> getSheetNames();
-
-    /**
      * Returns the name of the selected sheet based on the configuration.
      *
      * @return the name of the selected sheet
      * @throws IOException if the configured sheet is not available
      */
-    protected String getSelectedSheet() throws IOException {
-        final Map<String, Boolean> sheetNames = getSheetNames();
+    protected String getSelectedSheet(final Map<String, Boolean> sheetNames) throws IOException {
         final ExcelTableReaderConfig excelConfig = m_config.getReaderSpecificConfig();
         return excelConfig.getSheetSelection().getSelectedSheet(sheetNames, excelConfig, m_path);
     }

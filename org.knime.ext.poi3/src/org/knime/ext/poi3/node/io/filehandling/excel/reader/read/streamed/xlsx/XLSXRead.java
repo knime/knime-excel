@@ -51,6 +51,8 @@ package org.knime.ext.poi3.node.io.filehandling.excel.reader.read.streamed.xlsx;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.util.Map;
+import java.util.function.Consumer;
 
 import javax.xml.parsers.ParserConfigurationException;
 
@@ -88,10 +90,12 @@ public final class XLSXRead extends AbstractStreamedRead {
      *
      * @param path the path of the file to read
      * @param config the Excel table read config
+     * @param sheetNamesConsumer
      * @throws IOException if an I/O exception occurs
      */
-    public XLSXRead(final Path path, final TableReadConfig<ExcelTableReaderConfig> config) throws IOException {
-        super(path, config);
+    public XLSXRead(final Path path, final TableReadConfig<ExcelTableReaderConfig> config,
+        final Consumer<Map<String, Boolean>> sheetNamesConsumer) throws IOException {
+        super(path, config, sheetNamesConsumer);
         // don't do any initializations here, super constructor will call #createParser(InputStream)
     }
 
@@ -105,9 +109,13 @@ public final class XLSXRead extends AbstractStreamedRead {
             xmlReader.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
             final var sharedStringsTable = new ReadOnlySharedStringsTable(pkg, false);
 
-            m_sheetNames = ExcelUtils.getSheetNames(xmlReader, xssfReader, sharedStringsTable);
+            final var sheetNames = ExcelUtils.getSheetNames(xmlReader, xssfReader, sharedStringsTable);
+            if (m_sheetNamesConsumer != null) {
+                m_sheetNamesConsumer.accept(sheetNames);
+            }
+
             final SheetIterator sheetsData = (SheetIterator)xssfReader.getSheetsData();
-            final var sheetStream = getSheetStreamWithSheetName(sheetsData, getSelectedSheet());
+            final var sheetStream = getSheetStreamWithSheetName(sheetsData, getSelectedSheet(sheetNames));
             // The underlying compressed (zip) input stream (InflaterInputStream) always reports "available" as 1
             // until fully consumed, in which case it returns 0
             // Hence, we get the size from the part (zip entry) itself and use the bytes passed through the counting

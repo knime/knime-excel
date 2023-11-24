@@ -58,6 +58,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -98,8 +99,6 @@ public final class XLSRead extends ExcelRead {
 
     private int m_rowsRead;
 
-    private Map<String, Boolean> m_sheetNames;
-
     private Set<Integer> m_hiddenColumns;
 
     /**
@@ -109,8 +108,9 @@ public final class XLSRead extends ExcelRead {
      * @param config the Excel table read config
      * @throws IOException if an I/O exception occurs
      */
-    public XLSRead(final Path path, final TableReadConfig<ExcelTableReaderConfig> config) throws IOException {
-        super(path, config);
+    public XLSRead(final Path path, final TableReadConfig<ExcelTableReaderConfig> config,
+        final Consumer<Map<String, Boolean>> sheetNamesConsumer) throws IOException {
+        super(path, config, sheetNamesConsumer);
         // don't do any initializations here, super constructor will call #createParser(InputStream)
     }
 
@@ -119,8 +119,12 @@ public final class XLSRead extends ExcelRead {
     public ExcelParserRunnable createParser(final File file) throws IOException {
         final var workbook = checkFileFormatAndCreateWorkbook(file);
         try {
-            m_sheetNames = ExcelUtils.getSheetNames(workbook);
-            final var sheet = workbook.getSheet(getSelectedSheet());
+            final var sheetNames = ExcelUtils.getSheetNames(workbook);
+            if (m_sheetNamesConsumer != null) {
+                m_sheetNamesConsumer.accept(sheetNames);
+            }
+
+            final var sheet = workbook.getSheet(getSelectedSheet(sheetNames));
             m_numMaxRows = sheet.getLastRowNum() + 1L;
             final FormulaEvaluator formulaEvaluator = m_config.getReaderSpecificConfig().isReevaluateFormulas()
                 ? workbook.getCreationHelper().createFormulaEvaluator() : null;
@@ -147,11 +151,6 @@ public final class XLSRead extends ExcelRead {
             date1904 = false;
         }
         return date1904;
-    }
-
-    @Override
-    public Map<String, Boolean> getSheetNames() {
-        return m_sheetNames;
     }
 
     /**

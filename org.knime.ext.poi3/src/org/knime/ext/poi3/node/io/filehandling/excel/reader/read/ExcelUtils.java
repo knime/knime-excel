@@ -55,6 +55,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
@@ -110,16 +111,16 @@ public final class ExcelUtils {
      *
      * @return the name of the first sheet with data or first sheet if all empty
      */
-    public static String getFirstSheetWithDataOrFirstIfAllEmpty(final Map<String, Boolean> sheetNames) {
+    public static Optional<String> getFirstSheetWithDataOrFirstIfAllEmpty(final Map<String, Boolean> sheetNames) {
         if (sheetNames.isEmpty()) {
-            return ""; // should never happen; still, handle gracefully to prevent UI crashes
+            return Optional.empty();
         }
         for (final Entry<String, Boolean> sheetNameEntry : sheetNames.entrySet()) {
             if (sheetNameEntry.getValue().booleanValue()) {
-                return sheetNameEntry.getKey();
+                return Optional.of(sheetNameEntry.getKey());
             }
         }
-        return sheetNames.keySet().iterator().next();
+        return Optional.of(sheetNames.keySet().iterator().next());
     }
 
     /**

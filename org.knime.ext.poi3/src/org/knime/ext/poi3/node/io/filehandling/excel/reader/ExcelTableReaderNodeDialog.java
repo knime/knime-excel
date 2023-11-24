@@ -77,7 +77,6 @@ import javax.swing.event.ChangeListener;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
-import org.knime.core.node.FlowVariableModel;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
@@ -118,127 +117,140 @@ import org.knime.filehandling.core.util.SettingsUtils;
 final class ExcelTableReaderNodeDialog
     extends AbstractPathTableReaderNodeDialog<ExcelTableReaderConfig, KNIMECellType> {
 
-    private static final String TRANSFORMATION_TAB = "Transformation";
+    /*
+     * The listener hierarchy goes something like this:
+     *
+     * ┌────────────────┐
+     * │ Input Location │
+     * │ (File Chooser) │◀────────────────┐
+     * └────────────────┘                 │               ┌─────────────────────────┐
+     *          ▲                         └───────────────┼─Reevaluate Formulas     │
+     *          │                                       ╱ │ Data Area               │
+     * ┌────────────────┐           ┌────────────────┐ ╱  │ Column Names from row#  │
+     * │Sheet Selection │           │     Flags      │╱   │ Skip...                 │
+     * └────────────────┘           │   (Advanced,   │    │ Encryption              │
+     *          ▲                   │Checkboxes, ...)│╲   │ Analysis limit          │
+     *          │                   └────────────────┘ ╲  │ Values                  │
+     * ┌────────────────┐                    ▲          ╲ │ ...                     │
+     * │ Preview Panel  │────────────────────┘           ╲│                         │
+     * └────────────────┘                                 └─────────────────────────┘
+     *
+     */
 
     private final ExcelMultiTableReadConfig m_fileContentPreviewConfig = createFileContentPreviewSettings();
-
     private final ExcelMultiTableReadConfig m_config;
-
     private final ExcelTableReader m_tableReader;
 
+    /*
+     * Tab: File and Sheet
+     */
     private final DialogComponentReaderFileChooser m_filePanel;
-
     private final SettingsModelReaderFileChooser m_settingsModelFilePanel;
 
-    private final JCheckBox m_use15DigitsPrecision = new JCheckBox("Use Excel 15 digits precision");
+    private final SheetSelectionComponent m_sheetSelection;
 
-    private final SheetSelectionGroup m_sheetSelection;
+    /*
+     * Tab: Data Area
+     */
+    // Read Area
+    private final JRadioButton m_radioButtonReadEntireSheet =
+            new JRadioButton(AreaOfSheetToRead.ENTIRE.getText(), true);
 
-    private JCheckBox m_failOnDifferingSpecs = new JCheckBox("Fail if schemas differ");
+    private final JRadioButton m_radioButtonReadPartOfSheet = new JRadioButton(AreaOfSheetToRead.PARTIAL.getText());
+    private final ButtonGroup m_buttonGroupSheetArea = new ButtonGroup();
+    private final JLabel m_fromColLabel = new JLabel("Column");
+    private final JLabel m_toColLabel = new JLabel("to");
+    private final JLabel m_fromRowLabel = new JLabel("and row");
+    private final JLabel m_toRowLabel = new JLabel("to");
+    private final JLabel m_dotLabel = new JLabel(".");
+    // text has trailing space to not be cut on Windows because of italic font
+    private final JLabel m_readAreaNoteLabel = new JLabel("(See \"File Content\" tab to identify columns and rows.) ");
+    private final JTextField m_fromCol = new JTextField("A");
+    private final JTextField m_toCol = new JTextField();
+    private final JTextField m_fromRow = new JTextField("1");
+    private final JTextField m_toRow = new JTextField();
 
-    private final SourceIdentifierColumnPanel m_pathColumnPanel = new SourceIdentifierColumnPanel("file path");
-
+    // Column Names
     private final JCheckBox m_columnHeaderCheckBox = new JCheckBox("Use values in row", true);
-
     private final JSpinner m_columnHeaderSpinner = new JSpinner(
         new SpinnerNumberModel(Long.valueOf(1), Long.valueOf(1), Long.valueOf(Long.MAX_VALUE), Long.valueOf(1)));
 
-    private final JLabel m_emptyColHeaderLabel = new JLabel("Empty column name prefix:");
-
-    private final JTextField m_emptyColHeaderPrefix = new JTextField("empty_");
-
-    private final JRadioButton m_emptyColHeaderIndex = new JRadioButton(ColumnNameMode.COL_INDEX.getText());
-
-    private final JRadioButton m_emptyColHeaderExcelColName = new JRadioButton(ColumnNameMode.EXCEL_COL_NAME.getText(), true);
-
-    private final ButtonGroup m_emptyColHeaderBtnGrp = new ButtonGroup();
-
+    // Skip
     private final JCheckBox m_skipHiddenCols = new JCheckBox("Hidden columns", true);
-
     private final JCheckBox m_skipHiddenRows = new JCheckBox("Hidden rows", true);
-
     private final JCheckBox m_skipEmptyRows = new JCheckBox("Empty rows", true);
-
     private final JCheckBox m_skipEmptyCols = new JCheckBox("Empty columns", false);
 
-    private final JCheckBox m_replaceEmptyStringsWithMissings =
-        new JCheckBox("Replace empty strings with missing values", true);
+    /*
+     * Tab: Advanced
+     */
 
-    private boolean m_updatingSheetSelection = false;
-
-    private final JCheckBox m_reevaluateFormulas =
-        new JCheckBox("Reevaluate formulas in all sheets.   On error insert:");
-
-    private final JRadioButton m_radioButtonInsertErrorPattern =
-        new JRadioButton(FormulaErrorHandling.PATTERN.getText(), true);
-
-    private final JRadioButton m_radioButtonInsertMissingCell =
-        new JRadioButton(FormulaErrorHandling.MISSING.getText());
-
-    private final ButtonGroup m_buttonGroupFormulaError = new ButtonGroup();
-
-    private final JTextField m_formulaErrorPattern = new JTextField();
-
-    private final JRadioButton m_radioButtonReadEntireSheet =
-        new JRadioButton(AreaOfSheetToRead.ENTIRE.getText(), true);
-
-    private final JRadioButton m_radioButtonReadPartOfSheet = new JRadioButton(AreaOfSheetToRead.PARTIAL.getText());
-
-    private final ButtonGroup m_buttonGroupSheetArea = new ButtonGroup();
-
-    private final JLabel m_fromColLabel = new JLabel("Column");
-
-    private final JLabel m_toColLabel = new JLabel("to");
-
-    private final JLabel m_fromRowLabel = new JLabel("and row");
-
-    private final JLabel m_toRowLabel = new JLabel("to");
-
-    private final JLabel m_dotLabel = new JLabel(".");
-
-    // text has trailing space to not be cut on Windows because of italic font
-    private final JLabel m_readAreaNoteLabel = new JLabel("(See \"File Content\" tab to identify columns and rows.) ");
-
-    private final JTextField m_fromCol = new JTextField("A");
-
-    private final JTextField m_toCol = new JTextField();
-
-    private final JTextField m_fromRow = new JTextField("1");
-
-    private final JTextField m_toRow = new JTextField();
-
-    private final JRadioButton m_radioButtonGenerateRowIDs = new JRadioButton(RowIDGeneration.GENERATE.getText(), true);
-
-    private final JRadioButton m_radioButtonReadRowIDsFromCol = new JRadioButton(RowIDGeneration.COLUMN.getText());
-
-    private final ButtonGroup m_buttonGrouprowIDGeneration = new ButtonGroup();
-
-    private final JTextField m_rowIDColumn = new JTextField("A");
+    /*
+     * Panel: File and Sheet
+     */
+    private final DialogComponentAuthentication m_passwordComponent;
+    private final SettingsModelAuthentication m_authenticationSettingsModel;
 
     private final JCheckBox m_limitAnalysisChecker = new JCheckBox("Limit scanned rows", true);
-
     private final JSpinner m_limitAnalysisSpinner = new JSpinner(
         new SpinnerNumberModel(Long.valueOf(50), Long.valueOf(1), Long.valueOf(Long.MAX_VALUE), Long.valueOf(50)));
-
     private final JCheckBox m_supportChangingFileSchemas = new JCheckBox("Support changing schemas");
+    private JCheckBox m_failOnDifferingSpecs = new JCheckBox("Fail if schemas differ");
 
-    private final DialogComponentAuthentication m_passwordComponent;
+    // Checkbox "Append file path column"
+    private final SourceIdentifierColumnPanel m_pathColumnPanel = new SourceIdentifierColumnPanel("file path");
 
+    /*
+     * Panel: Data Area
+     */
+
+    // RowID generation
+    private final JRadioButton m_radioButtonGenerateRowIDs = new JRadioButton(RowIDGeneration.GENERATE.getText(), true);
+    private final JRadioButton m_radioButtonReadRowIDsFromCol = new JRadioButton(RowIDGeneration.COLUMN.getText());
+    private final ButtonGroup m_buttonGrouprowIDGeneration = new ButtonGroup();
+    private final JTextField m_rowIDColumn = new JTextField("A");
+
+    // Column name generation (if not provided by row values)
+    private final JRadioButton m_emptyColHeaderIndex = new JRadioButton(ColumnNameMode.COL_INDEX.getText());
+    private final JRadioButton m_emptyColHeaderExcelColName =
+        new JRadioButton(ColumnNameMode.EXCEL_COL_NAME.getText(), true);
+    private final ButtonGroup m_emptyColHeaderBtnGrp = new ButtonGroup();
+
+    private final JLabel m_emptyColHeaderLabel = new JLabel("Empty column name prefix:");
+    private final JTextField m_emptyColHeaderPrefix = new JTextField("empty_");
+
+    /*
+     * Panel: Values
+     */
+    private final JCheckBox m_reevaluateFormulas =
+            new JCheckBox("Reevaluate formulas in all sheets.   On error insert:");
+    private final JRadioButton m_radioButtonInsertErrorPattern =
+            new JRadioButton(FormulaErrorHandling.PATTERN.getText(), true);
+    private final JTextField m_formulaErrorPattern = new JTextField();
+    private final JRadioButton m_radioButtonInsertMissingCell =
+        new JRadioButton(FormulaErrorHandling.MISSING.getText());
+    private final ButtonGroup m_buttonGroupFormulaError = new ButtonGroup();
+
+    private final JCheckBox m_replaceEmptyStringsWithMissings =
+            new JCheckBox("Replace empty strings with missing values", true);
+    private final JCheckBox m_use15DigitsPrecision = new JCheckBox("Use Excel 15 digits precision");
+
+    /*
+     * Misc
+     */
+
+    // Preview and File Content
     private List<JTabbedPane> m_tabbedPreviewPaneList = new ArrayList<>();
-
     private final FileContentPreviewController<ExcelTableReaderConfig, KNIMECellType> m_fileContentPreviewController;
-
     private final List<TableReaderPreviewView> m_fileContentPreviews = new ArrayList<>();
-
     private final TableReaderPreviewModel m_previewModel;
 
+    private boolean m_updatingSheetSelection;
     private boolean m_fileContentConfigChanged = true;
+    private boolean m_previewConfigChanged;
+    private boolean m_switchTabInTabbedPanes;
 
-    private boolean m_previewConfigChanged = false;
-
-    private boolean m_switchTabInTabbedPanes = false;
-
-    private final SettingsModelAuthentication m_authenticationSettingsModel;
+    private static final String TRANSFORMATION_TAB = "Transformation";
 
     ExcelTableReaderNodeDialog(final SettingsModelReaderFileChooser settingsModelReaderFileChooser,
         final ExcelMultiTableReadConfig //
@@ -246,56 +258,27 @@ final class ExcelTableReaderNodeDialog
         final MultiTableReadFactory<FSPath, ExcelTableReaderConfig, KNIMECellType> readFactory,
         final ProductionPathProvider<KNIMECellType> defaultProductionPathProvider) {
         super(readFactory, defaultProductionPathProvider, true);
+
         m_settingsModelFilePanel = settingsModelReaderFileChooser;
+        m_settingsModelFilePanel.addChangeListener(
+            e -> setReadingMultipleFiles(m_settingsModelFilePanel.getFilterMode() != FilterMode.FILE));
+        m_settingsModelFilePanel.addChangeListener(
+            e -> m_reevaluateFormulas.setEnabled(!m_settingsModelFilePanel.getPath().endsWith(".xlsb")));
+
         m_config = config;
         m_tableReader = tableReader;
+
         final String[] keyChain =
             Stream.concat(Stream.of("settings"), Arrays.stream(m_settingsModelFilePanel.getKeysForFSLocation()))
                 .toArray(String[]::new);
-        final FlowVariableModel readFvm = createFlowVariableModel(keyChain, FSLocationVariableType.INSTANCE);
+        final var readFvm = createFlowVariableModel(keyChain, FSLocationVariableType.INSTANCE);
         m_filePanel = new DialogComponentReaderFileChooser(m_settingsModelFilePanel, "excel_reader_writer", readFvm);
+        m_filePanel.getSettingsModel().getFilterModeModel().addChangeListener(
+            l -> m_failOnDifferingSpecs.setEnabled(m_filePanel.getSettingsModel().getFilterMode() != FilterMode.FILE));
 
-        m_authenticationSettingsModel = m_config.getReaderSpecificConfig().getAuthenticationSettingsModel();
-        m_passwordComponent = new DialogComponentAuthentication(m_authenticationSettingsModel, null,
-            Arrays.asList(AuthenticationType.PWD, AuthenticationType.CREDENTIALS, AuthenticationType.NONE),
-            Map.of(), true);
-        m_passwordComponent.setPasswordOnlyLabel("");
+        m_sheetSelection = new SheetSelectionComponent(m_settingsModelFilePanel::getFilterMode);
+        m_settingsModelFilePanel.addChangeListener(m_sheetSelection);
 
-        m_sheetSelection = new SheetSelectionGroup(m_settingsModelFilePanel::getFilterMode);
-
-        DialogUtil.italicizeText(m_readAreaNoteLabel);
-        m_buttonGroupFormulaError.add(m_radioButtonInsertErrorPattern);
-        m_buttonGroupFormulaError.add(m_radioButtonInsertMissingCell);
-        m_buttonGroupSheetArea.add(m_radioButtonReadEntireSheet);
-        m_buttonGroupSheetArea.add(m_radioButtonReadPartOfSheet);
-        m_buttonGrouprowIDGeneration.add(m_radioButtonGenerateRowIDs);
-        m_buttonGrouprowIDGeneration.add(m_radioButtonReadRowIDsFromCol);
-        m_emptyColHeaderBtnGrp.add(m_emptyColHeaderIndex);
-        m_emptyColHeaderBtnGrp.add(m_emptyColHeaderExcelColName);
-
-        final AnalysisComponentModel analysisComponentModel = new AnalysisComponentModel();
-        m_previewModel = new TableReaderPreviewModel(analysisComponentModel);
-        m_fileContentPreviewController = new FileContentPreviewController<>(readFactory, analysisComponentModel,
-            m_previewModel, this::createItemAccessor);
-
-        addTab("File and Sheet", createFileAndSheetSettingsTab());
-        addTab("Data Area", createDataAreaSettingsTab());
-        addTab("Advanced", createAdvancedSettingsTab());
-        addTab(TRANSFORMATION_TAB, createTransformationTab());
-        registerDialogChangeListeners();
-        registerPreviewChangeListeners();
-        registerTabbedPaneChangeListeners();
-    }
-
-    private void registerDialogChangeListeners() {
-        m_settingsModelFilePanel.addChangeListener(e -> {
-            setReadingMultipleFiles(m_settingsModelFilePanel.getFilterMode() != FilterMode.FILE);
-            m_reevaluateFormulas.setEnabled(!m_settingsModelFilePanel.getPath().endsWith(".xlsb"));
-        });
-
-        m_sheetSelection.registerDialogChangeListeners();
-
-        m_filePanel.getSettingsModel().getFilterModeModel().addChangeListener(l -> toggleFailOnDifferingCheckBox());
 
         m_columnHeaderCheckBox.addChangeListener(l -> {
             final boolean isSelected = m_columnHeaderCheckBox.isSelected();
@@ -303,6 +286,18 @@ final class ExcelTableReaderNodeDialog
             m_emptyColHeaderPrefix.setEnabled(isSelected);
             m_emptyColHeaderLabel.setEnabled(isSelected);
         });
+
+        m_authenticationSettingsModel = m_config.getReaderSpecificConfig().getAuthenticationSettingsModel();
+        m_passwordComponent = new DialogComponentAuthentication(m_authenticationSettingsModel, null,
+            Arrays.asList(AuthenticationType.PWD, AuthenticationType.CREDENTIALS, AuthenticationType.NONE), Map.of(),
+            true);
+        m_passwordComponent.setPasswordOnlyLabel("");
+
+        m_limitAnalysisChecker
+            .addActionListener(e -> m_limitAnalysisSpinner.setEnabled(m_limitAnalysisChecker.isSelected()));
+        m_supportChangingFileSchemas.addActionListener(e -> updateTransformationTabEnabledStatus());
+
+        DialogUtil.italicizeText(m_readAreaNoteLabel);
 
         m_radioButtonInsertErrorPattern
             .addChangeListener(l -> m_formulaErrorPattern.setEnabled(m_radioButtonInsertErrorPattern.isSelected()));
@@ -312,11 +307,31 @@ final class ExcelTableReaderNodeDialog
         m_radioButtonReadRowIDsFromCol
             .addChangeListener(l -> m_rowIDColumn.setEnabled(m_radioButtonReadRowIDsFromCol.isSelected()));
 
-        m_limitAnalysisChecker
-            .addActionListener(e -> m_limitAnalysisSpinner.setEnabled(m_limitAnalysisChecker.isSelected()));
+        m_buttonGroupFormulaError.add(m_radioButtonInsertErrorPattern);
+        m_buttonGroupFormulaError.add(m_radioButtonInsertMissingCell);
+        m_buttonGroupSheetArea.add(m_radioButtonReadEntireSheet);
+        m_buttonGroupSheetArea.add(m_radioButtonReadPartOfSheet);
+        m_buttonGrouprowIDGeneration.add(m_radioButtonGenerateRowIDs);
+        m_buttonGrouprowIDGeneration.add(m_radioButtonReadRowIDsFromCol);
+        m_emptyColHeaderBtnGrp.add(m_emptyColHeaderIndex);
+        m_emptyColHeaderBtnGrp.add(m_emptyColHeaderExcelColName);
 
-        m_supportChangingFileSchemas.addActionListener(e -> updateTransformationTabEnabledStatus());
+
+        final var analysisComponentModel = new AnalysisComponentModel();
+        m_previewModel = new TableReaderPreviewModel(analysisComponentModel);
+        m_fileContentPreviewController = new FileContentPreviewController<>(readFactory, analysisComponentModel,
+            m_previewModel, this::createItemAccessor);
+
+        addTab("File and Sheet", createFileAndSheetSettingsTab());
+        addTab("Data Area", createDataAreaSettingsTab());
+        addTab("Advanced", createAdvancedSettingsTab());
+        addTab(TRANSFORMATION_TAB, createTransformationTab());
+
+        registerPreviewChangeListeners();
+        registerTabbedPaneChangeListeners();
     }
+
+
 
     private void setEnablednessReadPartOfSheetFields() {
         final boolean selected = m_radioButtonReadPartOfSheet.isSelected();
@@ -342,10 +357,14 @@ final class ExcelTableReaderNodeDialog
             m_updatingSheetSelection = true;
             m_tableReader.setChangeListener(l -> {
                 m_tableReader.setChangeListener(null);
-                ViewUtils.invokeLaterInEDT(this::setSheetNameList);
+                ViewUtils.invokeLaterInEDT(() -> {
+                    updateSheetNameSelectionComponent();
+                    // update preview again after reconciling actual sheet names/indices
+                    updatePreviewOrFileContentView(isTablePreviewInForeground);
+                });
             });
-            // TODO reconcile later
-            m_sheetSelection.resetSelection();
+            m_sheetSelection.prepareUpdateSheetSelection();
+            // update preview immediately to avoid displaying stale data
             updatePreviewOrFileContentView(isTablePreviewInForeground);
         } else {
             if (!m_updatingSheetSelection) {
@@ -370,16 +389,15 @@ final class ExcelTableReaderNodeDialog
         }
     }
 
-    private void setSheetNameList() {
+    private void updateSheetNameSelectionComponent() {
         final Map<String, Boolean> sheetNames = m_tableReader.getSheetNames();
-
-        m_sheetSelection.setSheetNameList(sheetNames);
+        m_sheetSelection.updateSheetSelection(sheetNames);
         m_updatingSheetSelection = false;
     }
 
     private JPanel createColumnHeaderEmptyPrefixPanel() {
-        final JPanel panel = new JPanel(new GridBagLayout());
-        final GBCBuilder gbcBuilder = new GBCBuilder().resetPos().anchorFirstLineStart();
+        final var panel = new JPanel(new GridBagLayout());
+        final var gbcBuilder = new GBCBuilder().resetPos().anchorFirstLineStart();
 
         setHeightToComponentHeight(m_emptyColHeaderLabel, m_emptyColHeaderPrefix);
         setWidthTo(m_emptyColHeaderPrefix, 75);
@@ -409,7 +427,7 @@ final class ExcelTableReaderNodeDialog
     }
 
     private JPanel createFileAndSheetInputLocationPanel() {
-        final JPanel filePanel = new JPanel();
+        final var filePanel = new JPanel();
         filePanel.setLayout(new BoxLayout(filePanel, BoxLayout.X_AXIS));
         filePanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Input Location"));
         filePanel.setMaximumSize(
@@ -420,8 +438,8 @@ final class ExcelTableReaderNodeDialog
     }
 
     private JPanel createDataAreaSettingsTab() {
-        final JPanel panel = new JPanel(new GridBagLayout());
-        final GBCBuilder gbcBuilder = new GBCBuilder().resetPos().anchorFirstLineStart().setWeightX(1).fillHorizontal();
+        final var panel = new JPanel(new GridBagLayout());
+        final var gbcBuilder = new GBCBuilder().resetPos().anchorFirstLineStart().setWeightX(1).fillHorizontal();
         panel.add(createDataAreaReadAreaPanel(), gbcBuilder.build());
         panel.add(createDataAreaColumnNamesPanel(), gbcBuilder.incY().build());
         panel.add(createDataAreaSkipPanel(), gbcBuilder.incY().build());
@@ -430,10 +448,10 @@ final class ExcelTableReaderNodeDialog
     }
 
     private JPanel createDataAreaReadAreaPanel() {
-        final JPanel panel = new JPanel(new GridBagLayout());
+        final var panel = new JPanel(new GridBagLayout());
         panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Read Area"));
-        final Insets insets = new Insets(0, 5, 0, 0);
-        final GBCBuilder gbcBuilder = new GBCBuilder(insets).resetPos().anchorFirstLineStart();
+        final var insets = new Insets(0, 5, 0, 0);
+        final var gbcBuilder = new GBCBuilder(insets).resetPos().anchorFirstLineStart();
 
         panel.add(m_radioButtonReadEntireSheet, gbcBuilder.build());
         panel.add(m_radioButtonReadPartOfSheet, gbcBuilder.incY().build());
@@ -443,7 +461,7 @@ final class ExcelTableReaderNodeDialog
         setWidthTo(m_fromRow, 50);
         setWidthTo(m_toRow, 50);
 
-        final Insets lableInsets = new Insets(5, 5, 0, 0);
+        final var lableInsets = new Insets(5, 5, 0, 0);
         panel.add(m_fromColLabel, gbcBuilder.setInsets(lableInsets).incX().build());
         panel.add(m_fromCol, gbcBuilder.setInsets(insets).incX().build());
         panel.add(m_toColLabel, gbcBuilder.setInsets(lableInsets).incX().build());
@@ -457,17 +475,17 @@ final class ExcelTableReaderNodeDialog
     }
 
     private JPanel createDataAreaColumnNamesPanel() {
-        final JPanel panel = new JPanel(new GridBagLayout());
+        final var panel = new JPanel(new GridBagLayout());
         panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Column Names"));
-        final Insets insets = new Insets(5, 5, 0, 0);
-        final GBCBuilder gbcBuilder = new GBCBuilder(insets).resetPos().setWeightX(1).anchorFirstLineStart();
-        panel.add(createColumnHeaderRowPanel(),  gbcBuilder.build());
+        final var insets = new Insets(5, 5, 0, 0);
+        final var gbcBuilder = new GBCBuilder(insets).resetPos().setWeightX(1).anchorFirstLineStart();
+        panel.add(createColumnHeaderRowPanel(), gbcBuilder.build());
         return panel;
     }
 
     private JPanel createColumnHeaderRowPanel() {
-        final JPanel panel = new JPanel(new GridBagLayout());
-        final GBCBuilder gbcBuilder = new GBCBuilder().resetPos().anchorFirstLineStart();
+        final var panel = new JPanel(new GridBagLayout());
+        final var gbcBuilder = new GBCBuilder().resetPos().anchorFirstLineStart();
 
         /*
          * This sets the text field of the spinner to a fixed column based size
@@ -483,10 +501,9 @@ final class ExcelTableReaderNodeDialog
     }
 
     private JPanel createDataAreaSkipPanel() {
-        final JPanel panel = new JPanel(new GridBagLayout());
+        final var panel = new JPanel(new GridBagLayout());
         panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Skip"));
-        final GBCBuilder gbcBuilder =
-            new GBCBuilder(new Insets(5, 5, 0, 5)).resetPos().anchorFirstLineStart();
+        final var gbcBuilder = new GBCBuilder(new Insets(5, 5, 0, 5)).resetPos().anchorFirstLineStart();
         panel.add(m_skipEmptyRows, gbcBuilder.build());
         panel.add(m_skipEmptyCols, gbcBuilder.incX().build());
         panel.add(m_skipHiddenRows, gbcBuilder.incX().build());
@@ -495,21 +512,22 @@ final class ExcelTableReaderNodeDialog
     }
 
     private JPanel createAdvancedSettingsTab() {
-            final JPanel panel = new JPanel(new GridBagLayout());
-            final GBCBuilder gbcBuilder = new GBCBuilder().resetPos().anchorFirstLineStart().setWeightX(1).fillHorizontal();
-            panel.add(createAdvancedFileAndSheetPanel(), gbcBuilder.build());
-            panel.add(createAdvancedDataArePanel(), gbcBuilder.incY().build());
-            panel.add(createAdvancedValuesPanel(), gbcBuilder.incY().build());
-            panel.add(createPreviewComponent(), gbcBuilder.incY().fillBoth().setWeightY(1).build());
-            return panel;
-        }
+        final var panel = new JPanel(new GridBagLayout());
+        final var gbcBuilder = new GBCBuilder().resetPos().anchorFirstLineStart().setWeightX(1).fillHorizontal();
+        panel.add(createAdvancedFileAndSheetPanel(), gbcBuilder.build());
+        panel.add(createAdvancedDataArePanel(), gbcBuilder.incY().build());
+        panel.add(createAdvancedValuesPanel(), gbcBuilder.incY().build());
+        panel.add(createPreviewComponent(), gbcBuilder.incY().fillBoth().setWeightY(1).build());
+        return panel;
+    }
 
     private JPanel createAdvancedFileAndSheetPanel() {
-        final JPanel panel = new JPanel(new GridBagLayout());
+        final var panel = new JPanel(new GridBagLayout());
         panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "File and Sheet"));
-        final GBCBuilder gbcBuilder = new GBCBuilder(new Insets(5, 5, 0, 5)).resetPos().anchorFirstLineStart();
+        final var gbcBuilder = new GBCBuilder(new Insets(5, 5, 0, 5)).resetPos().anchorFirstLineStart();
         panel.add(new JLabel("File encryption"), gbcBuilder.build());
-        panel.add(m_passwordComponent.getComponentPanel(), gbcBuilder.setWidth(4).incY().insetLeft(20).insetTop(0).build());
+        panel.add(m_passwordComponent.getComponentPanel(),
+            gbcBuilder.setWidth(4).incY().insetLeft(20).insetTop(0).build());
         panel.add(new JLabel("Detect columns and data types"), gbcBuilder.setWidth(4).insetLeft(5).incY().build());
         panel.add(m_limitAnalysisChecker, gbcBuilder.incY().setWidth(1).insetLeft(20).build());
         setWidthTo(m_limitAnalysisSpinner, 100);
@@ -523,12 +541,12 @@ final class ExcelTableReaderNodeDialog
     }
 
     private JPanel createAdvancedDataArePanel() {
-        final JPanel panel = new JPanel(new GridBagLayout());
+        final var panel = new JPanel(new GridBagLayout());
         panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Data Area"));
-        final Insets lableInsets = new Insets(5, 5, 0, 0);
-        final GBCBuilder gbcBuilder = new GBCBuilder(lableInsets).resetPos().anchorFirstLineStart();
+        final var lableInsets = new Insets(5, 5, 0, 0);
+        final var gbcBuilder = new GBCBuilder(lableInsets).resetPos().anchorFirstLineStart();
         panel.add(new JLabel("RowID"), gbcBuilder.build());
-        final Insets buttonInsets = new Insets(0, 5, 0, 0);
+        final var buttonInsets = new Insets(0, 5, 0, 0);
         panel.add(m_radioButtonGenerateRowIDs, gbcBuilder.setInsets(buttonInsets).incX().build());
         panel.add(createRowIDFromColPanel(), gbcBuilder.incX().build());
 
@@ -540,10 +558,9 @@ final class ExcelTableReaderNodeDialog
         return panel;
     }
 
-
     private JPanel createRowIDFromColPanel() {
-        final GBCBuilder gbcBuilder = new GBCBuilder().resetPos().anchorFirstLineStart();
-        final JPanel rowIdFromCol = new JPanel(new GridBagLayout());
+        final var gbcBuilder = new GBCBuilder().resetPos().anchorFirstLineStart();
+        final var rowIdFromCol = new JPanel(new GridBagLayout());
         rowIdFromCol.add(m_radioButtonReadRowIDsFromCol, gbcBuilder.build());
         setWidthTo(m_rowIDColumn, 50);
         rowIdFromCol.add(m_rowIDColumn, gbcBuilder.incX().build());
@@ -551,9 +568,9 @@ final class ExcelTableReaderNodeDialog
     }
 
     private JPanel createAdvancedValuesPanel() {
-        final JPanel panel = new JPanel(new GridBagLayout());
+        final var panel = new JPanel(new GridBagLayout());
         panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Values"));
-        final GBCBuilder gbcBuilder = new GBCBuilder(new Insets(5, 5, 0, 0)).resetPos().anchorFirstLineStart();
+        final var gbcBuilder = new GBCBuilder(new Insets(5, 5, 0, 0)).resetPos().anchorFirstLineStart();
         panel.add(m_reevaluateFormulas, gbcBuilder.build());
         panel.add(m_radioButtonInsertErrorPattern, gbcBuilder.incX().setInsets(new Insets(5, 0, 0, 5)).build());
         setWidthTo(m_formulaErrorPattern, 150);
@@ -567,7 +584,7 @@ final class ExcelTableReaderNodeDialog
 
     @Override
     protected JComponent createPreviewComponent() {
-        final JTabbedPane tabbedPane = new JTabbedPane();
+        final var tabbedPane = new JTabbedPane();
         final TableReaderPreviewView preview = createPreview();
         preview.setBorder(
             BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Preview with current settings"));
@@ -575,11 +592,6 @@ final class ExcelTableReaderNodeDialog
         tabbedPane.add("File Content", createFileContentPreview());
         m_tabbedPreviewPaneList.add(tabbedPane);
         return tabbedPane;
-    }
-
-    private void toggleFailOnDifferingCheckBox() {
-        final boolean enable = m_filePanel.getSettingsModel().getFilterMode() != FilterMode.FILE;
-        m_failOnDifferingSpecs.setEnabled(enable);
     }
 
     private void registerPreviewChangeListeners() {
@@ -689,7 +701,7 @@ final class ExcelTableReaderNodeDialog
     }
 
     private TableReaderPreviewView createFileContentPreview() {
-        final TableReaderPreviewView preview = new TableReaderPreviewView(m_previewModel);
+        final var preview = new TableReaderPreviewView(m_previewModel);
         preview.getTableView().getHeaderTable().setColumnName("Row No.");
         preview.setBorder(
             BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Content of the selected file(s)"));
@@ -723,20 +735,20 @@ final class ExcelTableReaderNodeDialog
     @Override
     protected ExcelMultiTableReadConfig loadSettings(final NodeSettingsRO settings, final PortObjectSpec[] specs)
         throws NotConfigurableException {
-        // FIXME: loading should be handled by the config (AP-14460 & AP-14462)
-        m_filePanel.loadSettingsFrom(SettingsUtils.getOrEmpty(settings, SettingsUtils.CFG_SETTINGS_TAB), specs);
         m_config.loadInDialog(settings, specs);
-        loadTableReadSettings();
-        loadExcelSettings();
+        loadTableReadSettings(m_config);
+        loadExcelSettings(m_config);
         m_passwordComponent.loadSettingsFrom(
             ExcelMultiTableReadConfigSerializer.getOrDefaultEncryptionSettingsTab(settings), specs,
             getCredentialsProvider());
+        // load file after all other settings have loaded to trigger listeners
+        // FIXME: loading should be handled by the config (AP-14460 & AP-14462)
+        m_filePanel.loadSettingsFrom(SettingsUtils.getOrEmpty(settings, SettingsUtils.CFG_SETTINGS_TAB), specs);
         m_fileContentConfigChanged = true;
         ignoreEvents(false);
         updatePreviewOrFileContentView(isTablePreviewInForeground());
         return m_config;
     }
-
 
     @Override
     public void refreshPreview(final boolean refreshPreview) {
@@ -817,7 +829,7 @@ final class ExcelTableReaderNodeDialog
         excelConfig.setAuthenticationSettingsModel(m_authenticationSettingsModel);
 
         excelConfig.setEmptyColHeaderPrefix(m_emptyColHeaderPrefix.getText());
-        if(m_emptyColHeaderIndex.isSelected()) {
+        if (m_emptyColHeaderIndex.isSelected()) {
             excelConfig.setColumnNameMode(ColumnNameMode.COL_INDEX);
         } else {
             excelConfig.setColumnNameMode(ColumnNameMode.EXCEL_COL_NAME);
@@ -831,13 +843,13 @@ final class ExcelTableReaderNodeDialog
         tableReadConfig.setLimitRowsForSpec(m_limitAnalysisChecker.isSelected());
         tableReadConfig.setMaxRowsForSpec((long)m_limitAnalysisSpinner.getValue());
         final ExcelTableReaderConfig excelConfig = tableReadConfig.getReaderSpecificConfig();
-        m_sheetSelection.updateFileContentPreviewSettings(excelConfig);
+        m_sheetSelection.saveToExcelConfig(excelConfig);
         excelConfig.setCredentialsProvider(getCredentialsProvider());
         excelConfig.setAuthenticationSettingsModel(m_authenticationSettingsModel);
     }
 
     private static ExcelMultiTableReadConfig createFileContentPreviewSettings() {
-        final ExcelMultiTableReadConfig multiTableReadConfig = new ExcelMultiTableReadConfig();
+        final var multiTableReadConfig = new ExcelMultiTableReadConfig();
         final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig =
             multiTableReadConfig.getTableReadConfig();
         tableReadConfig.setDecorateRead(false);
@@ -862,12 +874,12 @@ final class ExcelTableReaderNodeDialog
     /**
      * Fill in dialog components with {@link TableReadConfig} values.
      */
-    private void loadTableReadSettings() {
-        m_failOnDifferingSpecs.setSelected(m_config.failOnDifferingSpecs());
-        m_pathColumnPanel.load(m_config.appendItemIdentifierColumn(), m_config.getItemIdentifierColumnName());
-        final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = m_config.getTableReadConfig();
+    private void loadTableReadSettings(final ExcelMultiTableReadConfig config) {
+        m_failOnDifferingSpecs.setSelected(config.failOnDifferingSpecs());
+        m_pathColumnPanel.load(config.appendItemIdentifierColumn(), config.getItemIdentifierColumnName());
+        final DefaultTableReadConfig<ExcelTableReaderConfig> tableReadConfig = config.getTableReadConfig();
         m_skipEmptyRows.setSelected(tableReadConfig.skipEmptyRows());
-        m_skipEmptyCols.setSelected(m_config.skipEmptyColumns());
+        m_skipEmptyCols.setSelected(config.skipEmptyColumns());
         m_columnHeaderCheckBox.setSelected(tableReadConfig.useColumnHeaderIdx());
 
         m_columnHeaderSpinner.setValue(tableReadConfig.getColumnHeaderIdx() + 1);
@@ -876,15 +888,16 @@ final class ExcelTableReaderNodeDialog
         m_limitAnalysisSpinner.setValue(tableReadConfig.getMaxRowsForSpec());
         //enable disable spinner
         m_limitAnalysisSpinner.setEnabled(m_limitAnalysisChecker.isSelected());
-        m_supportChangingFileSchemas.setSelected(!m_config.saveTableSpecConfig());
+        m_supportChangingFileSchemas.setSelected(!config.saveTableSpecConfig());
         updateTransformationTabEnabledStatus();
     }
 
     /**
      * Fill in dialog components with {@link ExcelTableReaderConfig} values.
+     * @param config excel read config
      */
-    private void loadExcelSettings() {
-        final ExcelTableReaderConfig excelConfig = m_config.getReaderSpecificConfig();
+    private void loadExcelSettings(final ExcelMultiTableReadConfig config) {
+        final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
         m_use15DigitsPrecision.setSelected(excelConfig.isUse15DigitsPrecision());
         m_sheetSelection.loadExcelSettings(excelConfig);
         m_skipHiddenCols.setSelected(excelConfig.isSkipHiddenCols());
