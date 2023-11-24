@@ -50,6 +50,8 @@ package org.knime.ext.poi3.node.io.filehandling.excel.reader.read.streamed.xlsb;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Map;
+import java.util.function.Consumer;
 
 import org.apache.commons.io.input.CountingInputStream;
 import org.apache.poi.openxml4j.exceptions.OpenXML4JException;
@@ -82,8 +84,9 @@ public final class XLSBRead extends AbstractStreamedRead {
      * @param config the Excel table read config
      * @throws IOException if an I/O exception occurs
      */
-    public XLSBRead(final Path path, final TableReadConfig<ExcelTableReaderConfig> config) throws IOException {
-        super(path, config);
+    public XLSBRead(final Path path, final TableReadConfig<ExcelTableReaderConfig> config,
+        final Consumer<Map<String, Boolean>> sheetNamesConsumer) throws IOException {
+        super(path, config, sheetNamesConsumer);
         // don't do any initializations here, super constructor will call #createParser(InputStream)
     }
 
@@ -94,9 +97,12 @@ public final class XLSBRead extends AbstractStreamedRead {
             final var xssfbReader = new XSSFBReader(pkg);
             final var sst = new XSSFBSharedStringsTable(pkg);
 
-            m_sheetNames = ExcelUtils.getSheetNames(xssfbReader, sst);
+            final var sheetNames = ExcelUtils.getSheetNames(xssfbReader, sst);
+            if (m_sheetNamesConsumer != null) {
+                m_sheetNamesConsumer.accept(sheetNames);
+            }
             final SheetIterator sheetsData = (SheetIterator)xssfbReader.getSheetsData();
-            final var sheetStream = getSheetStreamWithSheetName(sheetsData, getSelectedSheet());
+            final var sheetStream = getSheetStreamWithSheetName(sheetsData, getSelectedSheet(sheetNames));
             // The underlying compressed (zip) input stream always reports "available" as 1 until fully consumed
             // Hence, we get the size from the part (zip entry) itself and use the bytes passed through the counting
             // sheet stream to estimate the progress.

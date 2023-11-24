@@ -148,7 +148,8 @@ public enum SheetSelection implements ButtonGroupEnumInterface {
         if (sheetNames.isEmpty()) {
             throw new IOException("The file '" + path + "' does not contain any sheet.");
         }
-        return ExcelUtils.getFirstSheetWithDataOrFirstIfAllEmpty(sheetNames);
+        // empty should never happen; still, handle gracefully to prevent UI crashes
+        return ExcelUtils.getFirstSheetWithDataOrFirstIfAllEmpty(sheetNames).orElse("");
     }
 
     @FunctionalInterface

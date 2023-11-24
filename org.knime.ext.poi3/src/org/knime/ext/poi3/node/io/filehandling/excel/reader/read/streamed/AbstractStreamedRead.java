@@ -58,6 +58,7 @@ import java.security.GeneralSecurityException;
 import java.util.Map;
 import java.util.OptionalLong;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.apache.commons.io.input.CountingInputStream;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
@@ -90,19 +91,18 @@ public abstract class AbstractStreamedRead extends ExcelRead {
      *
      * @param path the path of the file to read
      * @param config the Excel table read config
+     * @param sheetNamesConsumer
      * @throws IOException if an I/O exception occurs
      */
-    protected AbstractStreamedRead(final Path path, final TableReadConfig<ExcelTableReaderConfig> config)
+    protected AbstractStreamedRead(final Path path, final TableReadConfig<ExcelTableReaderConfig> config,
+            final Consumer<Map<String, Boolean>> sheetNamesConsumer)
         throws IOException {
-        super(path, config);
+        super(path, config, sheetNamesConsumer);
         // don't do any initializations here, super constructor will call #createParser(InputStream)
     }
 
     /** The size of the sheet to read. */
     protected long m_sheetSize;
-
-    /** The map of sheet names with names as keys being in the same order as in the workbook. */
-    protected Map<String, Boolean> m_sheetNames;
 
     private AbstractStreamedParserRunnable m_streamedParser;
 
@@ -205,11 +205,6 @@ public abstract class AbstractStreamedRead extends ExcelRead {
         }
         // should never happen as we checked for it already
         throw new IllegalStateException("No sheet with name '" + selectedSheet + "' found.");
-    }
-
-    @Override
-    public Map<String, Boolean> getSheetNames() {
-        return m_sheetNames;
     }
 
     @Override

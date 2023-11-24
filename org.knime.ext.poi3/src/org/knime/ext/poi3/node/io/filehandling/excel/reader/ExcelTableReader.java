@@ -53,6 +53,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -106,7 +107,7 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
     @Override
     public Read<ExcelCell> read(final FSPath path, final TableReadConfig<ExcelTableReaderConfig> config)
         throws IOException {
-        return decorateRead(getExcelRead(path, config), config);
+        return decorateRead(getExcelRead(path, config, null), config);
     }
 
     @SuppressWarnings("resource") // decorated read will be closed in AbstractReadDecorator#close
@@ -114,13 +115,15 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
     public TypedReaderTableSpec<KNIMECellType> readSpec(final FSPath path,
         final TableReadConfig<ExcelTableReaderConfig> config, final ExecutionMonitor exec) throws IOException {
         final TableSpecGuesser<FSPath, KNIMECellType, ExcelCell> guesser = createGuesser();
-        try (var read = getExcelRead(path, config)) {
+        final Consumer<Map<String, Boolean>> sheetNamesConsumer = sheetNames -> m_sheetNames = sheetNames;
+
+        try (var read = getExcelRead(path, config, sheetNamesConsumer)) {
             // sheet names are already retrieved, notify a potential listener from the dialog
-            m_sheetNames = read.getSheetNames();
-            notifyChangeListener();
             return ExcelColNameUtils.assignNamesIfMissing(
                 guesser.guessSpec(decorateReadForSpecGuessing(read, config), config, exec, path), config,
                 read.getHiddenColumns());
+        } finally {
+            notifyChangeListener();
         }
     }
 
@@ -143,18 +146,18 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
         return new WrapperExtractColumnHeaderRead(read, extractColHeaderRead::getColumnHeaders);
     }
 
-    private static ExcelRead getExcelRead(final FSPath path, final TableReadConfig<ExcelTableReaderConfig> config)
-        throws IOException {
+    private static ExcelRead getExcelRead(final FSPath path, final TableReadConfig<ExcelTableReaderConfig> config,
+        final Consumer<Map<String, Boolean>> sheetNamesConsumer) throws IOException {
         final boolean reevaluateFormulas = config.getReaderSpecificConfig().isReevaluateFormulas();
         try {
             final String pathLowerCase = path.toString().toLowerCase(Locale.US);
             if (pathLowerCase.endsWith(".xlsb")) {
-                return createXLSBRead(path, config);
+                return createXLSBRead(path, config, sheetNamesConsumer);
             }
             if (!reevaluateFormulas && (pathLowerCase.endsWith(".xlsx") || pathLowerCase.endsWith(".xlsm"))) {
-                return createXLSXRead(path, config);
+                return createXLSXRead(path, config, sheetNamesConsumer);
             }
-            return new XLSRead(path, config);
+            return new XLSRead(path, config, sheetNamesConsumer);
         } catch (ODFNotOfficeXmlFileException e) {
             // ODF (open office) files are xml files and, hence, not detected as invalid file format by the above check
             // however, ODF files are not supported
@@ -162,7 +165,7 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
         } catch (XLSBUnsupportedException e) { // NOSONAR
             // we handle this exception by creating the proper Read.
             // user must have specified a file not ending with ".xlsb" but being an xlsb file
-            final var xlsbRead = new XLSBRead(path, config);
+            final var xlsbRead = new XLSBRead(path, config, sheetNamesConsumer);
             if (reevaluateFormulas) {
                 // we just put a debug message as it is also written when creating the preview and we don't want to
                 // spam the console (of regular users)
@@ -183,25 +186,25 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
         }
     }
 
-    private static ExcelRead createXLSBRead(final FSPath path, final TableReadConfig<ExcelTableReaderConfig> config)
-            throws IOException {
+    private static ExcelRead createXLSBRead(final FSPath path, final TableReadConfig<ExcelTableReaderConfig> config,
+        final Consumer<Map<String, Boolean>> sheetNamesConsumer) throws IOException {
         try {
-            return new XLSBRead(path, config);
+            return new XLSBRead(path, config, sheetNamesConsumer);
         } catch (OLE2NotOfficeXmlFileException e) { // NOSONAR
             // Happens if an xls file has been specified that ends with xlsb.
             // We do not fail but simply use the XLSParser instead.
-            return new XLSRead(path, config);
+            return new XLSRead(path, config, sheetNamesConsumer);
         }
     }
 
-    private static ExcelRead createXLSXRead(final FSPath path, final TableReadConfig<ExcelTableReaderConfig> config)
-        throws IOException {
+    private static ExcelRead createXLSXRead(final FSPath path, final TableReadConfig<ExcelTableReaderConfig> config,
+        final Consumer<Map<String, Boolean>> sheetNamesConsumer) throws IOException {
         try {
-            return new XLSXRead(path, config);
+            return new XLSXRead(path, config, sheetNamesConsumer);
         } catch (OLE2NotOfficeXmlFileException e) { // NOSONAR
             // Happens if an xls file has been specified that ends with xlsx or xlsm.
             // We do not fail but simply use the XLSParser instead.
-            return new XLSRead(path, config);
+            return new XLSRead(path, config, sheetNamesConsumer);
         }
     }
 
