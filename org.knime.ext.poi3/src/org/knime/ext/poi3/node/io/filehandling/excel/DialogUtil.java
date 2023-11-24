@@ -48,6 +48,8 @@
  */
 package org.knime.ext.poi3.node.io.filehandling.excel;
 
+import java.awt.Component;
+import java.awt.Font;
 import java.nio.file.Path;
 
 import org.apache.poi.EncryptedDocumentException;
@@ -76,6 +78,16 @@ public final class DialogUtil {
         return DefaultStatusMessage.mkError("Unable to open password protected file \"%s\": %s. "
             + "Supply a valid password via the \"Encryption\" settings.",
             path.toString(), ex.getMessage() != null ? ex.getMessage() : "Reason unknown.");
+    }
+
+    /**
+     * Italicizes the component's text by changing its font to the {@link Font#ITALIC} style.
+     *
+     * @param component the component of which its text should be italic
+     */
+    public static void italicizeText(final Component component) {
+        final var font = component.getFont();
+        component.setFont(new Font(font.getName(), Font.ITALIC, font.getSize()));
     }
 
 }

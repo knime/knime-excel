@@ -49,7 +49,6 @@
 package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 
 import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionListener;
@@ -63,9 +62,7 @@ import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
-import javax.swing.DefaultComboBoxModel;
 import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
@@ -90,6 +87,7 @@ import org.knime.core.node.defaultnodesettings.SettingsModelAuthentication;
 import org.knime.core.node.defaultnodesettings.SettingsModelAuthentication.AuthenticationType;
 import org.knime.core.node.port.PortObjectSpec;
 import org.knime.core.node.util.ViewUtils;
+import org.knime.ext.poi3.node.io.filehandling.excel.DialogUtil;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelUtils;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.columnnames.ColumnNameMode;
@@ -134,22 +132,7 @@ final class ExcelTableReaderNodeDialog
 
     private final JCheckBox m_use15DigitsPrecision = new JCheckBox("Use Excel 15 digits precision");
 
-    private final JRadioButton m_radioButtonFirstSheetWithData = new JRadioButton(SheetSelection.FIRST.getText(), true);
-
-    private final JRadioButton m_radioButtonSheetByName = new JRadioButton(SheetSelection.NAME.getText());
-
-    private final JRadioButton m_radioButtonSheetByIndex = new JRadioButton(SheetSelection.INDEX.getText());
-
-    private final ButtonGroup m_sheetSelectionButtonGroup = new ButtonGroup();
-
-    private final JLabel m_firstSheetWithDataLabel = new JLabel();
-
-    private JComboBox<String> m_sheetNameSelection = new JComboBox<>();
-
-    private JSpinner m_sheetIndexSelection = new JSpinner(new SpinnerNumberModel(0, 0, Integer.MAX_VALUE, 1));
-
-    // text has trailing space to not be cut on Windows because of italic font
-    private final JLabel m_sheetIdxNoteLabel = new JLabel("(Position start with 0.) ");
+    private final SheetSelectionGroup m_sheetSelection;
 
     private JCheckBox m_failOnDifferingSpecs = new JCheckBox("Fail if schemas differ");
 
@@ -278,14 +261,9 @@ final class ExcelTableReaderNodeDialog
             Map.of(), true);
         m_passwordComponent.setPasswordOnlyLabel("");
 
-        final Font italicFont = new Font(m_firstSheetWithDataLabel.getFont().getName(), Font.ITALIC,
-            m_firstSheetWithDataLabel.getFont().getSize());
-        m_firstSheetWithDataLabel.setFont(italicFont);
-        m_sheetIdxNoteLabel.setFont(italicFont);
-        m_readAreaNoteLabel.setFont(italicFont);
-        m_sheetSelectionButtonGroup.add(m_radioButtonFirstSheetWithData);
-        m_sheetSelectionButtonGroup.add(m_radioButtonSheetByName);
-        m_sheetSelectionButtonGroup.add(m_radioButtonSheetByIndex);
+        m_sheetSelection = new SheetSelectionGroup(m_settingsModelFilePanel::getFilterMode);
+
+        DialogUtil.italicizeText(m_readAreaNoteLabel);
         m_buttonGroupFormulaError.add(m_radioButtonInsertErrorPattern);
         m_buttonGroupFormulaError.add(m_radioButtonInsertMissingCell);
         m_buttonGroupSheetArea.add(m_radioButtonReadEntireSheet);
@@ -315,10 +293,7 @@ final class ExcelTableReaderNodeDialog
             m_reevaluateFormulas.setEnabled(!m_settingsModelFilePanel.getPath().endsWith(".xlsb"));
         });
 
-        m_radioButtonSheetByName.addChangeListener(l -> m_sheetNameSelection
-            .setEnabled(m_radioButtonSheetByName.isEnabled() && m_radioButtonSheetByName.isSelected()));
-        m_radioButtonSheetByIndex.addChangeListener(l -> m_sheetIndexSelection
-            .setEnabled(m_radioButtonSheetByIndex.isEnabled() && m_radioButtonSheetByIndex.isSelected()));
+        m_sheetSelection.registerDialogChangeListeners();
 
         m_filePanel.getSettingsModel().getFilterModeModel().addChangeListener(l -> toggleFailOnDifferingCheckBox());
 
@@ -369,10 +344,8 @@ final class ExcelTableReaderNodeDialog
                 m_tableReader.setChangeListener(null);
                 ViewUtils.invokeLaterInEDT(this::setSheetNameList);
             });
-            m_radioButtonFirstSheetWithData.setSelected(true);
-            m_radioButtonSheetByName.setEnabled(false);
-            m_radioButtonSheetByIndex.setEnabled(false);
-            m_firstSheetWithDataLabel.setText(null);
+            // TODO reconcile later
+            m_sheetSelection.resetSelection();
             updatePreviewOrFileContentView(isTablePreviewInForeground);
         } else {
             if (!m_updatingSheetSelection) {
@@ -399,34 +372,8 @@ final class ExcelTableReaderNodeDialog
 
     private void setSheetNameList() {
         final Map<String, Boolean> sheetNames = m_tableReader.getSheetNames();
-        final String selectedSheet = (String)m_sheetNameSelection.getSelectedItem();
-        m_sheetNameSelection.setModel(new DefaultComboBoxModel<>(sheetNames.keySet().toArray(new String[0])));
-        if (!sheetNames.isEmpty()) {
-            if (selectedSheet != null) {
-                m_sheetNameSelection.setSelectedItem(selectedSheet);
-            } else {
-                m_sheetNameSelection.setSelectedIndex(0);
-            }
-        } else {
-            m_sheetNameSelection.setSelectedIndex(-1);
-        }
-        final String text;
-        if (m_settingsModelFilePanel.getFilterMode() == FilterMode.FILE) {
-            // text has trailing space to not be cut on Windows because of italic font
-            text = String.format("(%s) ", ExcelUtils.getFirstSheetWithDataOrFirstIfAllEmpty(sheetNames));
-        } else {
-            text = "";
-        }
-        m_firstSheetWithDataLabel.setText(text);
-        // set the preferred height to be correctly aligned with the radio button
-        m_firstSheetWithDataLabel.setPreferredSize(new Dimension((int)new JLabel(text).getPreferredSize().getWidth(),
-            (int)m_radioButtonFirstSheetWithData.getPreferredSize().getHeight()));
-        final int selectedIndex = (int)m_sheetIndexSelection.getValue();
-        m_sheetIndexSelection.setModel(new SpinnerNumberModel(
-            selectedIndex > (sheetNames.size() - 1) ? 0 : selectedIndex, 0, sheetNames.size() - 1, 1));
 
-        m_radioButtonSheetByIndex.setEnabled(true);
-        m_radioButtonSheetByName.setEnabled(true);
+        m_sheetSelection.setSheetNameList(sheetNames);
         m_updatingSheetSelection = false;
     }
 
@@ -452,11 +399,11 @@ final class ExcelTableReaderNodeDialog
         comp.setPreferredSize(new Dimension(width, (int)comp.getPreferredSize().getHeight()));
     }
 
-    private final JPanel createFileAndSheetSettingsTab() {
-        final JPanel panel = new JPanel(new GridBagLayout());
-        final GBCBuilder gbcBuilder = new GBCBuilder().resetPos().anchorFirstLineStart().setWeightX(1).fillHorizontal();
+    private JPanel createFileAndSheetSettingsTab() {
+        final var panel = new JPanel(new GridBagLayout());
+        final var gbcBuilder = new GBCBuilder().resetPos().anchorFirstLineStart().setWeightX(1).fillHorizontal();
         panel.add(createFileAndSheetInputLocationPanel(), gbcBuilder.build());
-        panel.add(createFileAndSheetSelectSheetPanel(), gbcBuilder.incY().build());
+        panel.add(m_sheetSelection.createFileAndSheetSelectSheetPanel("Select Sheet"), gbcBuilder.incY().build());
         panel.add(createPreviewComponent(), gbcBuilder.incY().fillBoth().setWeightY(1).build());
         return panel;
     }
@@ -470,25 +417,6 @@ final class ExcelTableReaderNodeDialog
         filePanel.add(m_filePanel.getComponentPanel());
         filePanel.add(Box.createHorizontalGlue());
         return filePanel;
-    }
-
-    private JPanel createFileAndSheetSelectSheetPanel() {
-        final JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "Select Sheet"));
-        final Insets insets = new Insets(5, 5, 0, 0);
-        final GBCBuilder gbcBuilder = new GBCBuilder(insets).resetPos().anchorFirstLineStart();
-
-        panel.add(m_radioButtonFirstSheetWithData, gbcBuilder.build());
-        panel.add(m_firstSheetWithDataLabel, gbcBuilder.incX().build());
-        panel.add(m_radioButtonSheetByName, gbcBuilder.resetX().incY().setWeightX(0).build());
-        panel.add(m_sheetNameSelection, gbcBuilder.incX().build());
-        panel.add(m_radioButtonSheetByIndex, gbcBuilder.incY().resetX().build());
-        final double smallDouble = 1E-10; // spinner should only fill up space of the combo box, rest is for label
-        panel.add(m_sheetIndexSelection, gbcBuilder.incX().setWeightX(smallDouble).fillHorizontal().build());
-        m_sheetIdxNoteLabel.setPreferredSize(new Dimension((int)m_sheetIdxNoteLabel.getPreferredSize().getWidth(),
-            (int)m_sheetIndexSelection.getPreferredSize().getHeight()));
-        panel.add(m_sheetIdxNoteLabel, gbcBuilder.incX().setWeightX(1 - smallDouble).build());
-        return panel;
     }
 
     private JPanel createDataAreaSettingsTab() {
@@ -682,14 +610,12 @@ final class ExcelTableReaderNodeDialog
         m_columnHeaderSpinner.addChangeListener(changeListener);
         m_pathColumnPanel.addChangeListener(changeListener);
 
-
         final ChangeListener changeListenerFileContent = l -> configRelevantForFileContentChanged(false);
         final ActionListener actionListenerFileContent = l -> configRelevantForFileContentChanged(false);
-        m_sheetIndexSelection.addChangeListener(changeListenerFileContent);
-        m_radioButtonFirstSheetWithData.addActionListener(actionListenerFileContent);
-        m_radioButtonSheetByName.addActionListener(actionListenerFileContent);
-        m_radioButtonSheetByIndex.addActionListener(actionListenerFileContent);
-        m_sheetNameSelection.addActionListener(actionListenerFileContent);
+
+        m_sheetSelection
+            .registerConfigRelevantForFileContentChangedListener(l -> configRelevantForFileContentChanged(false));
+
         m_limitAnalysisChecker.addActionListener(actionListenerFileContent);
         m_limitAnalysisSpinner.addChangeListener(changeListenerFileContent);
 
@@ -848,15 +774,9 @@ final class ExcelTableReaderNodeDialog
     private void saveExcelReadSettings() throws InvalidSettingsException {
         final ExcelTableReaderConfig excelConfig = m_config.getReaderSpecificConfig();
         excelConfig.setUse15DigitsPrecision(m_use15DigitsPrecision.isSelected());
-        if (m_radioButtonSheetByName.isSelected()) {
-            excelConfig.setSheetSelection(SheetSelection.NAME);
-        } else if (m_radioButtonSheetByIndex.isSelected()) {
-            excelConfig.setSheetSelection(SheetSelection.INDEX);
-        } else {
-            excelConfig.setSheetSelection(SheetSelection.FIRST);
-        }
-        excelConfig.setSheetName((String)m_sheetNameSelection.getSelectedItem());
-        excelConfig.setSheetIdx((int)m_sheetIndexSelection.getValue());
+
+        m_sheetSelection.saveToExcelConfig(excelConfig);
+
         excelConfig.setSkipHiddenCols(m_skipHiddenCols.isSelected());
         excelConfig.setSkipHiddenRows(m_skipHiddenRows.isSelected());
         m_config.setSkipEmptyColumns(m_skipEmptyCols.isSelected());
@@ -911,15 +831,7 @@ final class ExcelTableReaderNodeDialog
         tableReadConfig.setLimitRowsForSpec(m_limitAnalysisChecker.isSelected());
         tableReadConfig.setMaxRowsForSpec((long)m_limitAnalysisSpinner.getValue());
         final ExcelTableReaderConfig excelConfig = tableReadConfig.getReaderSpecificConfig();
-        if (m_radioButtonSheetByName.isSelected()) {
-            excelConfig.setSheetSelection(SheetSelection.NAME);
-        } else if (m_radioButtonSheetByIndex.isSelected()) {
-            excelConfig.setSheetSelection(SheetSelection.INDEX);
-        } else {
-            excelConfig.setSheetSelection(SheetSelection.FIRST);
-        }
-        excelConfig.setSheetName((String)m_sheetNameSelection.getSelectedItem());
-        excelConfig.setSheetIdx((int)m_sheetIndexSelection.getValue());
+        m_sheetSelection.updateFileContentPreviewSettings(excelConfig);
         excelConfig.setCredentialsProvider(getCredentialsProvider());
         excelConfig.setAuthenticationSettingsModel(m_authenticationSettingsModel);
     }
@@ -974,10 +886,7 @@ final class ExcelTableReaderNodeDialog
     private void loadExcelSettings() {
         final ExcelTableReaderConfig excelConfig = m_config.getReaderSpecificConfig();
         m_use15DigitsPrecision.setSelected(excelConfig.isUse15DigitsPrecision());
-        loadExcelSettingsSheetSelection(excelConfig);
-        m_sheetNameSelection.addItem(excelConfig.getSheetName());
-        m_sheetNameSelection.setSelectedItem(excelConfig.getSheetName());
-        m_sheetIndexSelection.setValue(excelConfig.getSheetIdx());
+        m_sheetSelection.loadExcelSettings(excelConfig);
         m_skipHiddenCols.setSelected(excelConfig.isSkipHiddenCols());
         m_skipHiddenRows.setSelected(excelConfig.isSkipHiddenRows());
         m_replaceEmptyStringsWithMissings.setSelected(excelConfig.isReplaceEmptyStringsWithMissings());
@@ -1059,26 +968,6 @@ final class ExcelTableReaderNodeDialog
             case PATTERN:
             default:
                 m_radioButtonInsertErrorPattern.setSelected(true);
-                break;
-        }
-    }
-
-    /**
-     * Loads the sheet selection settings.
-     *
-     * @param excelConfig the {@link ExcelTableReaderConfig}
-     */
-    private void loadExcelSettingsSheetSelection(final ExcelTableReaderConfig excelConfig) {
-        switch (excelConfig.getSheetSelection()) {
-            case NAME:
-                m_radioButtonSheetByName.setSelected(true);
-                break;
-            case INDEX:
-                m_radioButtonSheetByIndex.setSelected(true);
-                break;
-            case FIRST:
-            default:
-                m_radioButtonFirstSheetWithData.setSelected(true);
                 break;
         }
     }
