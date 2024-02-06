@@ -58,6 +58,7 @@ import org.apache.poi.ss.util.CellAddress;
 import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler.SheetContentsHandler;
 import org.apache.poi.xssf.usermodel.XSSFComment;
+import org.knime.core.node.NodeLogger;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
@@ -72,6 +73,8 @@ import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
  */
 public abstract class AbstractStreamedParserRunnable extends ExcelParserRunnable {
+
+    private static final NodeLogger LOGGER = NodeLogger.getLogger(AbstractStreamedParserRunnable.class);
 
     private final TableReadConfig<ExcelTableReaderConfig> m_config;
 
@@ -111,6 +114,8 @@ public abstract class AbstractStreamedParserRunnable extends ExcelParserRunnable
 
         private int m_currentCol = -1;
 
+        private int m_lastNonEmptyCol = -1;
+
         private boolean m_currentRowIsHiddenAndSkipped;
 
         private final List<ExcelCell> m_row = new ArrayList<>();
@@ -133,6 +138,9 @@ public abstract class AbstractStreamedParserRunnable extends ExcelParserRunnable
             m_currentRowIsHiddenAndSkipped = m_skipHiddenRows && isHiddenRow();
             m_currentRowIdx = rowIdx;
             m_currentCol = -1;
+            m_lastNonEmptyCol = -1;
+            // Important: anything that depends on the row being non-empty (i.e. containing non-empty cells) needs to be
+            // deferred until we actually find the first non-empty cell
         }
 
         @Override
@@ -143,7 +151,9 @@ public abstract class AbstractStreamedParserRunnable extends ExcelParserRunnable
                 outputEmptyRows(m_currentRowIdx - m_lastNonEmptyRowIdx - 1);
                 m_lastNonEmptyRowIdx = m_currentRowIdx;
                 m_hiddenColumns = getHiddenCols();
-                appendMissingCells();
+
+                // Note: underful rows must be filled at the output, where we know the spec
+
                 // insert the row id at the beginning
                 insertRowIDAtBeginning(m_row, m_rowId);
                 // add the non-empty row the the queue
@@ -154,21 +164,47 @@ public abstract class AbstractStreamedParserRunnable extends ExcelParserRunnable
         }
 
         @Override
-        public void cell(String cellReference, final String formattedValue, final XSSFComment comment) {
-            m_currentCol++;
-            if (cellReference == null) {
-                // gracefully handle missing CellRef here in a similar way as XSSFCell does.
-                // according to the API description the cellReference argument shouldn't be null,
-                // though it can be for files created by third party software (see e.g. AP-9380)
-                cellReference = new CellAddress(m_currentRowIdx, m_currentCol).formatAsString();
+        public void cell(final String inputCellReference, final String formattedValue, final XSSFComment comment) {
+            super.cell(inputCellReference, formattedValue, comment);
+
+            String cellReference = inputCellReference;
+            if (cellReference != null) {
+                // we prefer the value from the input (to correctly insert missing cells), but validate it and fall
+                // back to our counter in case any inconsistency is observed
+                final var ref = new CellReference(cellReference);
+                final var addr = new CellAddress(ref);
+                final var colIdx = addr.getColumn();
+                if (colIdx <= m_currentCol) {
+                    LOGGER.warnWithFormat(
+                        "Unexpected cell reference \"%s\": references already processed column index \"%d\". "
+                        + "Ignoring cell reference...",
+                        cellReference, colIdx);
+                    cellReference = null;
+                } else {
+                    m_currentCol = colIdx;
+                }
             }
 
-            final int currentColCount = m_currentCol;
-            m_currentCol = new CellReference(cellReference).getCol();
+
+            // covers the case that we originally did not get a cell reference and that the given one was inconsistent
+            // with the number of cells in the current row we had already seen
+            if (cellReference == null) {
+                // if we don't have and explicit cell reference, we have to assume we are in the next column
+                m_currentCol++;
+                // we don't have missing cells in this case
+            }
+
+            final var firstEmptyCol = m_lastNonEmptyCol + 1;
+            final var missing = m_currentCol - firstEmptyCol;
+            if (missing > 0) {
+                // only handle missing on which non-missing cells definitely follow
+                appendMissingCells(firstEmptyCol, missing);
+            }
+
+            m_lastNonEmptyCol = m_currentCol;
 
             final Optional<ExcelCell> numericCell = m_dataFormatter.getAndResetExcelCell();
             final var excelCell = numericCell.orElseGet(() -> createExcelCellFromStringValue(formattedValue));
-            handleMissingCells(cellReference, currentColCount);
             if (!isColHiddenAndSkipped(m_currentCol, getHiddenCols())) {
                 if (isColRowID(m_currentCol)) {
                     // check if cells were missing and insert nulls if so
@@ -183,6 +219,37 @@ public abstract class AbstractStreamedParserRunnable extends ExcelParserRunnable
         }
 
         @Override
+        public void handleEmptyCell() {
+            // this does not output any missing cells, it just correctly increments the current column counter
+            // by 1 or whatever the difference to the current cell reference is
+
+            if (!expectsCellContent()) {
+                return;
+            }
+            // get any existing cell reference from the <c> element
+            var cellRef = getExpectedCellReference();
+
+            if (cellRef != null) {
+                final var ref = new CellReference(cellRef);
+                final var addr = new CellAddress(ref);
+                final var colIdx = addr.getColumn();
+                if (colIdx <= m_currentCol) {
+                    // inconsistent
+                    LOGGER.warnWithFormat(
+                        "Unexpected cell reference \"%s\": references already processed column index \"%d\". "
+                        + "Ignoring cell reference...",
+                        cellRef, colIdx);
+                    m_currentCol++;
+                } else {
+                    m_currentCol = colIdx;
+                }
+            } else {
+                // assume we are just the neighbor cell
+                m_currentCol++;
+            }
+        }
+
+        @Override
         public void endSheet() {
             if (!m_endSheetCalled) {
                 outputEmptyRows(m_lastRowIdx - m_lastNonEmptyRowIdx);
@@ -191,6 +258,10 @@ public abstract class AbstractStreamedParserRunnable extends ExcelParserRunnable
         }
 
         private ExcelCell createExcelCellFromStringValue(final String formattedValue) {
+            // must support null values (see Javadoc of `#cell`)
+            if (formattedValue == null) {
+                return null;
+            }
             final ExcelCell excelCell;
             final KNIMEXSSFDataType cellType = getCellType();
             if (cellType == null) {
@@ -228,20 +299,8 @@ public abstract class AbstractStreamedParserRunnable extends ExcelParserRunnable
             // do nothing, we do not treat header and footer
         }
 
-        private void handleMissingCells(final String cellReference, final int currentColCount) {
-            final int thisCol = new CellReference(cellReference).getCol();
-            final int missedCols = thisCol - currentColCount;
-            for (int currentCol = currentColCount; currentCol < currentColCount + missedCols; currentCol++) {
-                if (isColIncluded(currentCol) && !isColHiddenAndSkipped(currentCol, getHiddenCols())
-                    && !isColRowID(currentCol)) {
-                    m_row.add(null);
-                }
-            }
-        }
-
-        private void appendMissingCells() {
-            m_currentCol++;
-            for (int currentCol = m_currentCol; currentCol <= m_lastCol; currentCol++) {
+        private void appendMissingCells(final int firstEmptyColumn, final int numMissing) {
+            for (int currentCol = firstEmptyColumn; currentCol < (firstEmptyColumn + numMissing); currentCol++) {
                 if (isColIncluded(currentCol) && !isColHiddenAndSkipped(currentCol, getHiddenCols())
                     && !isColRowID(currentCol)) {
                     m_row.add(null);
