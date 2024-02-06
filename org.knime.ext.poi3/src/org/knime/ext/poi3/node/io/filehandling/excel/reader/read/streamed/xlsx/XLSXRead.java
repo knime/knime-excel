@@ -121,7 +121,6 @@ public final class XLSXRead extends AbstractStreamedRead {
             // Hence, we get the size from the part (zip entry) itself and use the bytes passed through the counting
             // sheet stream to estimate the progress.
             m_sheetSize = sheetsData.getSheetPart().getSize();
-
             return new XLSXParserRunnable(this, m_config, pkg, sheetStream, xmlReader, xssfReader,
                 sharedStringsTable, use1904Windowing(xssfReader));
         } catch (SAXException | OpenXML4JException | ParserConfigurationException e) {
