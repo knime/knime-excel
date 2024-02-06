@@ -52,6 +52,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler.SheetContentsHandler;
+import org.apache.poi.xssf.usermodel.XSSFComment;
 
 /**
  * Abstract class implementing {@link SheetContentsHandler} that stores information extracted by sheet handlers during
@@ -66,6 +67,15 @@ public abstract class AbstractKNIMESheetContentsHandler implements SheetContents
     private Set<Integer> m_hiddenCols = new HashSet<>();
 
     private boolean m_isHiddenRow;
+
+    /**
+     * Used for recognizing empty <c> elements, for which
+     * {@link SheetContentsHandler#cell(String, String, org.apache.poi.xssf.usermodel.XSSFComment)} is never called.
+     * In case it is called, the current implementation will reset the flag.
+     */
+    private boolean m_expectCellContent;
+
+    private String m_expectCellReference;
 
     /**
      * @param type the {@link KNIMEXSSFDataType} of the cell
@@ -113,5 +123,26 @@ public abstract class AbstractKNIMESheetContentsHandler implements SheetContents
             /** A formula */
             FORMULA;
     }
+
+    public void setExpectsCellContent(final String cellReference) {
+        m_expectCellContent = true;
+        m_expectCellReference = cellReference;
+    }
+
+    public boolean expectsCellContent() {
+        return m_expectCellContent;
+    }
+
+    public String getExpectedCellReference() {
+        return m_expectCellReference;
+    }
+
+    @Override
+    public void cell(final String cellReference, final String formattedValue, final XSSFComment comment) {
+        m_expectCellContent = false;
+        m_expectCellReference = null;
+    }
+
+    public abstract void handleEmptyCell();
 
 }

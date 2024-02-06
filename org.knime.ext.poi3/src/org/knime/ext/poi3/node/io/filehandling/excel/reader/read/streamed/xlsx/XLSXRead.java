@@ -108,7 +108,6 @@ public final class XLSXRead extends AbstractStreamedRead {
             final SheetIterator sheetsData = (SheetIterator)xssfReader.getSheetsData();
             m_countingSheetStream = getSheetStreamWithSheetName(sheetsData, getSelectedSheet());
             m_sheetSize = m_countingSheetStream.available();
-
             // create the parser
             return new XLSXParserRunnable(this, m_config, xmlReader, xssfReader, sharedStringsTable,
                 use1904Windowing(xssfReader));
