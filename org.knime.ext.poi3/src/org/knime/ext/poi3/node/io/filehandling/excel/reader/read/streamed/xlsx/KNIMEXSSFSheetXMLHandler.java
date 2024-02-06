@@ -110,6 +110,10 @@ final class KNIMEXSSFSheetXMLHandler extends XSSFSheetXMLHandler {
             } else if ("str".equals(cellType)) {
                 m_nextDataType = KNIMEXSSFDataType.FORMULA;
             }
+
+            // this flag is used to detect empty <c> elements, for which the `SheetContentsHandler#cell` method is
+            // never invoked (thus, missing the cell's presence)
+            m_output.setExpectsCellContent(attributes.getValue("r"));
         }
         if ("row".equals(localName)) {
             m_output.hiddenRow(isHidden(attributes.getValue("hidden")));
@@ -130,6 +134,13 @@ final class KNIMEXSSFSheetXMLHandler extends XSSFSheetXMLHandler {
     public void endElement(final String uri, final String localName, final String qName) throws SAXException {
         m_output.nextCellType(m_nextDataType);
         m_hiddenCols.stream().forEach(m_output::addHiddenCol);
+
+        // end of a "physical" cell (a cell which has a corresponding <c> element)
+        // ... and <c> element was empty (`#cell` was never called)
+        if ("c".equals(localName) && m_output.expectsCellContent()) {
+            m_output.handleEmptyCell();
+        }
+
         super.endElement(uri, localName, qName);
     }
 
