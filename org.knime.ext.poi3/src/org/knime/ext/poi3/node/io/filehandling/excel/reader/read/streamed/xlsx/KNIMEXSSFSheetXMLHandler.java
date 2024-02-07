@@ -112,7 +112,7 @@ final class KNIMEXSSFSheetXMLHandler extends XSSFSheetXMLHandler {
             }
 
             // this flag is used to detect empty <c> elements, for which the `SheetContentsHandler#cell` method is
-            // never invoked (thus, missing the cell's presence)
+            // never invoked (thus, missing the cell's presence) - AP-21960
             m_output.setExpectsCellContent(attributes.getValue("r"));
         }
         if ("row".equals(localName)) {
@@ -136,7 +136,7 @@ final class KNIMEXSSFSheetXMLHandler extends XSSFSheetXMLHandler {
         m_output.setHiddenCols(m_hiddenCols);
 
         // end of a "physical" cell (a cell which has a corresponding <c> element)
-        // ... and <c> element was empty (`#cell` was never called)
+        // ... and <c> element was empty (`#cell` was never called) - AP-21960
         if ("c".equals(localName) && m_output.expectsCellContent()) {
             m_output.handleEmptyCell();
         }
