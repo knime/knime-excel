@@ -131,7 +131,6 @@ public abstract class ExcelParserRunnable implements Runnable {
         Throwable t = null;
         try {
             parse();
-            m_read.addToQueue(ExcelRead.POISON_PILL);
             LOGGER.debug("Excel sheet parsing finished successfully");
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -154,6 +153,13 @@ public abstract class ExcelParserRunnable implements Runnable {
                 } else {
                     m_read.setThrowable(e);
                 }
+            }
+            try {
+                // we add the poison pill in any case in oder to unblock the Read waiting for queue contents
+                m_read.addToQueue(ExcelRead.POISON_PILL);
+            } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+                LOGGER.debug("Excel sheet parser got interrupted while trying to indicate that parsing stopped", e);
             }
         }
     }

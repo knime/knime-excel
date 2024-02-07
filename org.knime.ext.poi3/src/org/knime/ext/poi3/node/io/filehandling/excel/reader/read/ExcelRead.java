@@ -79,6 +79,7 @@ import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.openxml4j.exceptions.InvalidOperationException;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.knime.core.node.NodeLogger;
+import org.knime.core.node.message.Message;
 import org.knime.core.util.FileUtil;
 import org.knime.core.util.ThreadUtils;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
@@ -350,7 +351,12 @@ public abstract class ExcelRead implements Read<ExcelCell> {
         final var throwable = m_throwableDuringParsing.get();
         // if an exception occurred during parsing, throw it
         if (throwable != null) {
-            if (throwable instanceof RuntimeException rex) {
+            if (throwable instanceof CorruptExcelFileException cex) {
+                final var msg = Message.fromSummaryWithResolution(
+                    "The Excel file being read is corrupt and cannot be read: " + cex.getMessage(),
+                    "Try to repair the file using Excel");
+                throw msg.toKNIMEException(cex).toUnchecked();
+            } else if (throwable instanceof RuntimeException rex) {
                 throw rex;
             } else if (throwable instanceof Error err) {
                 throw err;
@@ -406,7 +412,7 @@ public abstract class ExcelRead implements Read<ExcelCell> {
                 // add all elements of the queue into the iterator's list
                 m_queueRandomAccessibles.drainTo(m_randomAccessibles);
             }
-            // poison pill indicates normal end of parsing
+            // poison pill indicates end of parsing (normall or otherwise)
             m_encounteredPoisonPill = m_randomAccessibles.peek() == POISON_PILL;
             return !m_encounteredPoisonPill;
         }
