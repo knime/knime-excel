@@ -58,8 +58,8 @@ import org.apache.poi.ss.util.CellAddress;
 import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler.SheetContentsHandler;
 import org.apache.poi.xssf.usermodel.XSSFComment;
-import org.knime.core.node.NodeLogger;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.CorruptExcelFileException;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCellUtils;
@@ -73,8 +73,6 @@ import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
  */
 public abstract class AbstractStreamedParserRunnable extends ExcelParserRunnable {
-
-    private static final NodeLogger LOGGER = NodeLogger.getLogger(AbstractStreamedParserRunnable.class);
 
     private final TableReadConfig<ExcelTableReaderConfig> m_config;
 
@@ -169,29 +167,19 @@ public abstract class AbstractStreamedParserRunnable extends ExcelParserRunnable
 
             String cellReference = inputCellReference;
             if (cellReference != null) {
-                // we prefer the value from the input (to correctly insert missing cells), but validate it and fall
-                // back to our counter in case any inconsistency is observed
+                // we prefer the value from the input (to correctly insert missing cells), but validate it (and fail)
                 final var ref = new CellReference(cellReference);
                 final var addr = new CellAddress(ref);
                 final var colIdx = addr.getColumn();
                 if (colIdx <= m_currentCol) {
-                    LOGGER.warnWithFormat(
-                        "Unexpected cell reference \"%s\": references already processed column index \"%d\". "
-                        + "Ignoring cell reference...",
-                        cellReference, colIdx);
-                    cellReference = null;
-                } else {
-                    m_currentCol = colIdx;
+                    throw new CorruptExcelFileException(String.format(
+                        "Unexpected cell reference \"%s\" which references already processed column index \"%d\".",
+                        cellReference, colIdx));
                 }
-            }
-
-
-            // covers the case that we originally did not get a cell reference and that the given one was inconsistent
-            // with the number of cells in the current row we had already seen
-            if (cellReference == null) {
-                // if we don't have and explicit cell reference, we have to assume we are in the next column
+                m_currentCol = colIdx;
+            } else {
+                // if we don't have an explicit cell reference, we are in the next column (AP-21960)
                 m_currentCol++;
-                // we don't have missing cells in this case
             }
 
             final var firstEmptyCol = m_lastNonEmptyCol + 1;
@@ -234,12 +222,9 @@ public abstract class AbstractStreamedParserRunnable extends ExcelParserRunnable
                 final var addr = new CellAddress(ref);
                 final var colIdx = addr.getColumn();
                 if (colIdx <= m_currentCol) {
-                    // inconsistent
-                    LOGGER.warnWithFormat(
-                        "Unexpected cell reference \"%s\": references already processed column index \"%d\". "
-                        + "Ignoring cell reference...",
-                        cellRef, colIdx);
-                    m_currentCol++;
+                    throw new CorruptExcelFileException(String.format(
+                        "Unexpected cell reference \"%s\" which references already processed column index \"%d\".",
+                        cellRef, colIdx));
                 } else {
                     m_currentCol = colIdx;
                 }

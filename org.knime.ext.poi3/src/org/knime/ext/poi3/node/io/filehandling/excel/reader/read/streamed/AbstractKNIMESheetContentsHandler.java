@@ -71,7 +71,7 @@ public abstract class AbstractKNIMESheetContentsHandler implements SheetContents
     /**
      * Used for recognizing empty <c> elements, for which
      * {@link SheetContentsHandler#cell(String, String, org.apache.poi.xssf.usermodel.XSSFComment)} is never called.
-     * In case it is called, the current implementation will reset the flag.
+     * In case it is called, the current implementation will reset the flag. (AP-21960)
      */
     private boolean m_expectCellContent;
 
@@ -124,15 +124,25 @@ public abstract class AbstractKNIMESheetContentsHandler implements SheetContents
             FORMULA;
     }
 
+    /**
+     * Sets the property that a cell element ('c' tag) is to be expected, required to handle sparse rows, see AP-21960.
+     * @param cellReference The cell reference = 'r' attribute, e.g. "A6", can be null (order defines reference).
+     */
     public void setExpectsCellContent(final String cellReference) {
         m_expectCellContent = true;
         m_expectCellReference = cellReference;
     }
 
+    /**
+     * @return true if in a 'c' tag, and haven't seen content, see {@link #setExpectsCellContent(String)}
+     */
     public boolean expectsCellContent() {
         return m_expectCellContent;
     }
 
+    /**
+     * @return Get value set in {@link #setExpectsCellContent(String)}
+     */
     public String getExpectedCellReference() {
         return m_expectCellReference;
     }
@@ -143,6 +153,9 @@ public abstract class AbstractKNIMESheetContentsHandler implements SheetContents
         m_expectCellReference = null;
     }
 
+    /**
+     * Called by the parser in case an empty cell was visited, addresses AP-21960.
+     */
     public abstract void handleEmptyCell();
 
 }
