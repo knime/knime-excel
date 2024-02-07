@@ -221,7 +221,10 @@ public abstract class ExcelRead implements Read<ExcelCell> {
 
         // if an exception occurred during parsing, throw it
         if (throwable != null) {
-            if (throwable instanceof RuntimeException) {
+            if (throwable instanceof CorruptExcelFileException) {
+                throw new RuntimeException(
+                    "The Excel file being read is corrupt: " + throwable.getMessage(), throwable);
+            } else if (throwable instanceof RuntimeException) {
                 throw (RuntimeException)throwable;
             } else if (throwable instanceof Error) {
                 throw (Error)throwable;
@@ -277,6 +280,7 @@ public abstract class ExcelRead implements Read<ExcelCell> {
                 // add all elements of the queue into the iterator's list
                 m_queueRandomAccessibles.drainTo(m_randomAccessibles);
             }
+            // poison pill indicates end of parsing (normal or otherwise)
             m_encounteredPoisonPill = m_randomAccessibles.peek() == POISON_PILL;
             return !m_encounteredPoisonPill;
         }
