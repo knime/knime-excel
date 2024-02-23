@@ -85,6 +85,7 @@ import org.knime.filehandling.core.node.table.reader.spec.TableSpecGuesser;
 import org.knime.filehandling.core.node.table.reader.spec.TypedReaderTableSpec;
 import org.knime.filehandling.core.node.table.reader.type.hierarchy.TreeTypeHierarchy;
 import org.knime.filehandling.core.node.table.reader.type.hierarchy.TypeTester;
+import org.knime.filehandling.core.node.table.reader.util.MultiTableUtils;
 
 /**
  * Reader for Excel files.
@@ -96,6 +97,9 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
     private static final NodeLogger LOGGER = NodeLogger.getLogger(ExcelTableReader.class);
 
     static final TreeTypeHierarchy<KNIMECellType, ExcelCell> TYPE_HIERARCHY = createHierarchy();
+
+    static final TreeTypeHierarchy<KNIMECellType, ExcelCell> STRING_ONLY_HIERARCHY =
+        TreeTypeHierarchy.builder(createTypeTester(KNIMECellType.STRING, KNIMECellType.values())).build();
 
     /** The change listener that is set by the dialog to get notified once sheet names are retrieved. */
     private ChangeListener m_listener;
@@ -110,20 +114,40 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
         return decorateRead(getExcelRead(path, config, null), config);
     }
 
+    private void setSheeNames(final Map<String, Boolean> sheetNames) {
+        m_sheetNames = sheetNames;
+    }
+
     @SuppressWarnings("resource") // decorated read will be closed in AbstractReadDecorator#close
     @Override
     public TypedReaderTableSpec<KNIMECellType> readSpec(final FSPath path,
         final TableReadConfig<ExcelTableReaderConfig> config, final ExecutionMonitor exec) throws IOException {
-        final TableSpecGuesser<FSPath, KNIMECellType, ExcelCell> guesser = createGuesser();
-        final Consumer<Map<String, Boolean>> sheetNamesConsumer = sheetNames -> m_sheetNames = sheetNames;
 
-        try (var read = getExcelRead(path, config, sheetNamesConsumer)) {
+        final TableSpecGuesser<FSPath, KNIMECellType, ExcelCell> guesser = createGuesser();
+
+        try (var read = getExcelRead(path, config, this::setSheeNames)) {
             // sheet names are already retrieved, notify a potential listener from the dialog
             return ExcelColNameUtils.assignNamesIfMissing(
                 guesser.guessSpec(decorateReadForSpecGuessing(read, config), config, exec, path), config,
                 read.getHiddenColumns());
         } finally {
             notifyChangeListener();
+        }
+    }
+
+    @SuppressWarnings("resource") // decorated read will be closed in AbstractReadDecorator#close
+    @Override
+    public void checkSpecs(final TypedReaderTableSpec<KNIMECellType> spec, final FSPath path,
+        final TableReadConfig<ExcelTableReaderConfig> config, final ExecutionMonitor exec) throws IOException {
+
+        final TableSpecGuesser<FSPath, KNIMECellType, ExcelCell> guesser =
+            new TableSpecGuesser<>(STRING_ONLY_HIERARCHY, ExcelCell::getStringValue);
+
+        try (var read = getExcelRead(path, config, this::setSheeNames)) {
+            var columnNamesSpec = ExcelColNameUtils.assignNamesIfMissing(
+                guesser.guessSpec(decorateReadForSpecGuessing(read, config), config, exec, path), config,
+                read.getHiddenColumns());
+            MultiTableUtils.checkEquals(spec, columnNamesSpec, true);
         }
     }
 

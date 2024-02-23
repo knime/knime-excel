@@ -146,6 +146,8 @@ enum ExcelMultiTableReadConfigSerializer
 
     private static final String CFG_SAVE_TABLE_SPEC_CONFIG = "save_table_spec_config" + SettingsModel.CFGKEY_INTERNAL;
 
+    private static final String CFG_CHECK_TABLE_SPEC = "check_table_spec";
+
     private static final String CFG_ENCRYPTION_SETTINGS_TAB = "encryption";
 
     private final TableSpecConfigSerializer<KNIMECellType> m_tableSpecConfigSerializer;
@@ -343,6 +345,10 @@ enum ExcelMultiTableReadConfigSerializer
         tableReadConfig.setMaxRowsForSpec(
             settings.getLong(CFG_MAX_DATA_ROWS_SCANNED, AbstractTableReadConfig.DEFAULT_ROWS_FOR_SPEC_GUESSING));
         config.setSaveTableSpecConfig(settings.getBoolean(CFG_SAVE_TABLE_SPEC_CONFIG, true));
+
+        // added in 5.2.2 (AP-19239); we don't want older workflows to make the check automatically
+        config.setCheckSavedTableSpec(settings.getBoolean(CFG_CHECK_TABLE_SPEC, false));
+
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
         excelConfig.setUse15DigitsPrecision(settings.getBoolean(CFG_USE_15_DIGITS_PRECISION, true));
         excelConfig.setSkipHiddenCols(settings.getBoolean(CFG_SKIP_HIDDEN_COLS, true));
@@ -377,6 +383,9 @@ enum ExcelMultiTableReadConfigSerializer
             config.setSaveTableSpecConfig(settings.getBoolean(CFG_SAVE_TABLE_SPEC_CONFIG));
         }
 
+        // added in 5.2.2 (AP-19239); we don't want existing workflows to make the check
+        config.setCheckSavedTableSpec(settings.getBoolean(CFG_CHECK_TABLE_SPEC, false));
+
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
         excelConfig.setUse15DigitsPrecision(settings.getBoolean(CFG_USE_15_DIGITS_PRECISION));
         excelConfig.setSkipHiddenCols(settings.getBoolean(CFG_SKIP_HIDDEN_COLS));
@@ -398,6 +407,7 @@ enum ExcelMultiTableReadConfigSerializer
         settings.addBoolean(CFG_LIMIT_DATA_ROWS_SCANNED, tableReadConfig.limitRowsForSpec());
         settings.addLong(CFG_MAX_DATA_ROWS_SCANNED, tableReadConfig.getMaxRowsForSpec());
         settings.addBoolean(CFG_SAVE_TABLE_SPEC_CONFIG, config.saveTableSpecConfig());
+        settings.addBoolean(CFG_CHECK_TABLE_SPEC, config.checkSavedTableSpec());
         final ExcelTableReaderConfig excelConfig = config.getReaderSpecificConfig();
         settings.addBoolean(CFG_USE_15_DIGITS_PRECISION, excelConfig.isUse15DigitsPrecision());
         settings.addBoolean(CFG_SKIP_HIDDEN_COLS, excelConfig.isSkipHiddenCols());
@@ -424,6 +434,12 @@ enum ExcelMultiTableReadConfigSerializer
         if (settings.containsKey(CFG_SAVE_TABLE_SPEC_CONFIG)) {
             settings.getBoolean(CFG_SAVE_TABLE_SPEC_CONFIG);
         }
+
+        // added in 5.2.2
+        if (settings.containsKey(CFG_CHECK_TABLE_SPEC)) {
+            settings.getBoolean(CFG_CHECK_TABLE_SPEC);
+        }
+
         // added in 4.4.0
         if (settings.containsKey(CFG_APPEND_PATH_COLUMN)) {
             settings.getBoolean(CFG_APPEND_PATH_COLUMN);

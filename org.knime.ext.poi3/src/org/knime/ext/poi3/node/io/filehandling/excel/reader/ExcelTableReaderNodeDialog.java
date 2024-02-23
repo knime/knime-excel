@@ -49,6 +49,7 @@
 package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionListener;
@@ -194,8 +195,12 @@ final class ExcelTableReaderNodeDialog
     private final JCheckBox m_limitAnalysisChecker = new JCheckBox("Limit scanned rows", true);
     private final JSpinner m_limitAnalysisSpinner = new JSpinner(
         new SpinnerNumberModel(Long.valueOf(50), Long.valueOf(1), Long.valueOf(Long.MAX_VALUE), Long.valueOf(50)));
-    private final JCheckBox m_supportChangingFileSchemas = new JCheckBox("Support changing schemas");
-    private JCheckBox m_failOnDifferingSpecs = new JCheckBox("Fail if schemas differ");
+
+    private final JRadioButton m_ignoreChangedSchema = new JRadioButton("Ignore");
+    private final JRadioButton m_failOnChangedSchema = new JRadioButton("Fail");
+    private final JRadioButton m_useNewSchema = new JRadioButton("Use new schema");
+
+    private JCheckBox m_failOnDifferingSpecs = new JCheckBox("Fail if schemas differ between multiple files");
 
     // Checkbox "Append file path column"
     private final SourceIdentifierColumnPanel m_pathColumnPanel = new SourceIdentifierColumnPanel("file path");
@@ -295,7 +300,15 @@ final class ExcelTableReaderNodeDialog
 
         m_limitAnalysisChecker
             .addActionListener(e -> m_limitAnalysisSpinner.setEnabled(m_limitAnalysisChecker.isSelected()));
-        m_supportChangingFileSchemas.addActionListener(e -> updateTransformationTabEnabledStatus());
+
+        final var schemaChangeButtonGroup = new ButtonGroup();
+        schemaChangeButtonGroup.add(m_ignoreChangedSchema);
+        schemaChangeButtonGroup.add(m_failOnChangedSchema);
+        schemaChangeButtonGroup.add(m_useNewSchema);
+
+        m_ignoreChangedSchema.addActionListener(e -> updateTransformationTabEnabledStatus());
+        m_failOnChangedSchema.addActionListener(e -> updateTransformationTabEnabledStatus());
+        m_useNewSchema.addActionListener(e -> updateTransformationTabEnabledStatus());
 
         DialogUtil.italicizeText(m_readAreaNoteLabel);
 
@@ -348,7 +361,7 @@ final class ExcelTableReaderNodeDialog
     }
 
     private void updateTransformationTabEnabledStatus() {
-        setEnabled(!m_supportChangingFileSchemas.isSelected(), TRANSFORMATION_TAB);
+        setEnabled(!m_useNewSchema.isSelected(), TRANSFORMATION_TAB);
     }
 
     private void configChanged(final boolean updateSheets) {
@@ -524,20 +537,63 @@ final class ExcelTableReaderNodeDialog
     private JPanel createAdvancedFileAndSheetPanel() {
         final var panel = new JPanel(new GridBagLayout());
         panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), "File and Sheet"));
-        final var gbcBuilder = new GBCBuilder(new Insets(5, 5, 0, 5)).resetPos().anchorFirstLineStart();
+
+        final var gbcBuilder = new GBCBuilder(new Insets(5, 5, 0, 5))//
+                .resetPos()//
+                .anchorFirstLineStart()//
+                .fillHorizontal()
+                .setWeightX(1);
+
         panel.add(new JLabel("File encryption"), gbcBuilder.build());
-        panel.add(m_passwordComponent.getComponentPanel(),
-            gbcBuilder.setWidth(4).incY().insetLeft(20).insetTop(0).build());
-        panel.add(new JLabel("Detect columns and data types"), gbcBuilder.setWidth(4).insetLeft(5).incY().build());
-        panel.add(m_limitAnalysisChecker, gbcBuilder.incY().setWidth(1).insetLeft(20).build());
-        setWidthTo(m_limitAnalysisSpinner, 100);
-        panel.add(m_limitAnalysisSpinner, gbcBuilder.incX().insetLeft(5).fillNone().build());
-        panel.add(m_supportChangingFileSchemas, gbcBuilder.incX().build());
-        panel.add(m_failOnDifferingSpecs, gbcBuilder.incX().setWeightX(1).fillHorizontal().build());
+        panel.add(createFileEncryptionPanel(),
+            gbcBuilder.incY().insetLeft(20).insetTop(0).build());
+
+        panel.add(new JLabel("Detect columns and data types"),
+            gbcBuilder.incY().insetLeft(5).build());
+        panel.add(createAdvancedFileSpecPanel(), gbcBuilder.incY().insetLeft(20).insetTop(0).build());
+
+        panel.add(new JLabel("When schema in file has changed"),
+            gbcBuilder.incY().insetLeft(5).insetTop(5).build());
+        panel.add(createAdvancedSchemaChangedPanel(), gbcBuilder.incY().insetLeft(20).insetTop(0).build());
+
         //remove the border
         m_pathColumnPanel.setBorder(null);
-        panel.add(m_pathColumnPanel, gbcBuilder.resetX().insetLeft(5).insetTop(5).incY().setWidth(4).build());
+        panel.add(m_pathColumnPanel, gbcBuilder.incY().insetLeft(5).insetTop(5).build());
+
         return panel;
+    }
+
+    private JPanel createFileEncryptionPanel() {
+        final var encryptionPanel = new JPanel(new GridBagLayout());
+        final var gbc = new GBCBuilder(new Insets(0, 0, 0, 0)).resetPos().anchorFirstLineStart();
+
+        encryptionPanel.add(m_passwordComponent.getComponentPanel(), gbc.build());
+        encryptionPanel.add(Box.createHorizontalGlue(), gbc.incX().setWeightX(1).fillHorizontal().build());
+
+        return encryptionPanel;
+    }
+
+    private JPanel createAdvancedFileSpecPanel() {
+        final var specPanel = new JPanel(new GridBagLayout());
+        final var gbc = new GBCBuilder(new Insets(0, 0, 0, 0)).resetPos().anchorFirstLineStart();
+
+        specPanel.add(m_limitAnalysisChecker, gbc.build());
+        setWidthTo(m_limitAnalysisSpinner, 100);
+        specPanel.add(m_limitAnalysisSpinner, gbc.incX().build());
+        specPanel.add(Box.createHorizontalGlue(), gbc.incX().setWeightX(1).fillHorizontal().build());
+        specPanel.add(m_failOnDifferingSpecs, gbc.resetX().incY().insetLeft(0).setWeightX(0).fillNone().build());
+
+        return specPanel;
+    }
+
+    private JPanel createAdvancedSchemaChangedPanel() {
+        final var specChangedPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+
+        specChangedPanel.add(m_failOnChangedSchema);
+        specChangedPanel.add(m_ignoreChangedSchema);
+        specChangedPanel.add(m_useNewSchema);
+
+        return specChangedPanel;
     }
 
     private JPanel createAdvancedDataArePanel() {
@@ -614,7 +670,9 @@ final class ExcelTableReaderNodeDialog
         m_radioButtonReadPartOfSheet.addActionListener(actionListener);
         m_radioButtonGenerateRowIDs.addActionListener(actionListener);
         m_radioButtonReadRowIDsFromCol.addActionListener(actionListener);
-        m_supportChangingFileSchemas.addActionListener(actionListener);
+        m_ignoreChangedSchema.addActionListener(actionListener);
+        m_failOnChangedSchema.addActionListener(actionListener);
+        m_useNewSchema.addActionListener(actionListener);
         m_emptyColHeaderIndex.addActionListener(actionListener);
         m_emptyColHeaderExcelColName.addActionListener(actionListener);
 
@@ -775,9 +833,13 @@ final class ExcelTableReaderNodeDialog
         m_config.setFailOnDifferingSpecs(m_failOnDifferingSpecs.isSelected());
         m_config.setAppendItemIdentifierColumn(m_pathColumnPanel.isAppendSourceIdentifierColumn());
         m_config.setItemIdentifierColumnName(m_pathColumnPanel.getSourceIdentifierColumnName());
-        boolean saveSpec = !m_supportChangingFileSchemas.isSelected();
+
+        // prior to 5.2.2 we had a checkbox "support changing file schemas", which was replaced by a radio button
+        // group as part of AP-19239
+        boolean saveSpec = !m_useNewSchema.isSelected();
         m_config.setSaveTableSpecConfig(saveSpec);
         m_config.setTableSpecConfig(saveSpec ? getTableSpecConfig() : null);
+        m_config.setCheckSavedTableSpec(m_failOnChangedSchema.isSelected());
     }
 
     /**
@@ -888,7 +950,16 @@ final class ExcelTableReaderNodeDialog
         m_limitAnalysisSpinner.setValue(tableReadConfig.getMaxRowsForSpec());
         //enable disable spinner
         m_limitAnalysisSpinner.setEnabled(m_limitAnalysisChecker.isSelected());
-        m_supportChangingFileSchemas.setSelected(!config.saveTableSpecConfig());
+
+        // prior to 5.2.2 we had a single checkbox "support changing file schemas", which was replaced
+        // by a radio button group as part of AP-19239
+        if (config.saveTableSpecConfig() && config.checkSavedTableSpec()) {
+            m_failOnChangedSchema.setSelected(true);
+        } else if (config.saveTableSpecConfig()) {
+            m_ignoreChangedSchema.setSelected(true);
+        } else {
+            m_useNewSchema.setSelected(true);
+        }
         updateTransformationTabEnabledStatus();
     }
 

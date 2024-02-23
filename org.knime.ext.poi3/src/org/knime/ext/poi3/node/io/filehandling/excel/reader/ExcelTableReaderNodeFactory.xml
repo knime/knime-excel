@@ -159,32 +159,43 @@
             </option>
 		</tab>
 		<tab name="Advanced">
-		    <option name="File and Sheet">
-		        <ul>
-                    <li>File encryption: Allows you to specify a password to decrypt files that have been protected 
-                    with a password via Excel. None: only files without password protection can be read.
+			<option name="File encryption">
+					Allows you to specify a password to decrypt files that have been protected 
+                    with a password via Excel. Note: only files without password protection can be read.
                     Credentials: use a password set via workflow credentials. Password: specify a password. 
-                    Files without password protection can also be read if you set a password.</li>
-                    <li>Detect columns and data types: If you limit the number of scanned rows, only the specified 
+                    Files without password protection can also be read if you set a password.
+            </option>
+            <option name="Limit scanned rows">
+					If you limit the number of scanned rows, only the specified 
                     number of input <i>rows</i> are used to analyze the file (i.e to determine
                     the column types). This option is recommended for long files where the first <i>n</i> rows are 
                     representative for the whole file.
-                    <br />
-                    If "Support changing schemas" is checked, the reader will compute the table specification on 
-                    execution. This behavior is required if the content of the configured file/folder changes between 
-                    executions, i.e., columns are added/removed to/from file(s) or their types change.
-                    NOTE: When checked, the node will not output a table specification during configure and won't 
-                    apply transformations (therefore the transformation tab is disabled).
-                    <br />
-                    If "Fail if schemas differ" is checked, the node will fail if multiple files are read via the "Files 
+            </option>
+            <option name="Fail if schemas differ between multiple files">
+					If checked, the node will fail if multiple files are read via the "Files 
                     in folder" option and not all files have the same table structure, i.e. the same columns.
-                    </li>
-                    <li> If the "Append file path column" is checked, the node will append a path column with the 
-                    provided name to the output table. This column contains for each row which file it was read from.
-                    The node will fail if adding the column with the provided name causes a name collision with any of 
-                    the columns in the read table.
-                    </li>
-                </ul>
+            </option>
+        	<option name="When schema in file has changed">
+				Specifies the node behavior if the content of the configured file/folder
+				changes between executions, i.e., columns are added/removed to/from the file(s)
+				or their types change. The following options are available:
+				<ul>
+				<li>Fail: If set, the node fails if the data schema in the file has changed.</li>
+				<li>Ignore: If set, the node tries to ignore the changes and outputs a table with the old table specification.
+				This is not recommended, as it may lead to invalid data in the resulting table. The "Use new schema" option should be used
+				instead.
+				</li>
+				<li>Use new schema: If set, the node will compute a new table specification for the current
+				schema of the file at the time when the node is executed. Note that the node will not output a table specification
+				before execution and that it will not apply transformations, therefore the transformation tab is disabled.
+				</li>
+				</ul>
+			</option>
+            <option name="Append file path colum">
+		           	If checked, the node will append a path column with the 
+		            provided name to the output table. This column contains for each row which file it was read from.
+		            The node will fail if adding the column with the provided name causes a name collision with any of 
+		            the columns in the read table.
             </option>
             <option name="Data Area">
                 <ul>
