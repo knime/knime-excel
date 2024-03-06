@@ -196,9 +196,9 @@ final class ExcelTableReaderNodeDialog
     private final JSpinner m_limitAnalysisSpinner = new JSpinner(
         new SpinnerNumberModel(Long.valueOf(50), Long.valueOf(1), Long.valueOf(Long.MAX_VALUE), Long.valueOf(50)));
 
-    private final JRadioButton m_ignoreChangedSchema = new JRadioButton("Ignore");
     private final JRadioButton m_failOnChangedSchema = new JRadioButton("Fail");
     private final JRadioButton m_useNewSchema = new JRadioButton("Use new schema");
+    private final JRadioButton m_ignoreChangedSchema = new JRadioButton("Ignore (deprecated)");
 
     private JCheckBox m_failOnDifferingSpecs = new JCheckBox("Fail if schemas differ between multiple files");
 
@@ -306,6 +306,7 @@ final class ExcelTableReaderNodeDialog
         schemaChangeButtonGroup.add(m_failOnChangedSchema);
         schemaChangeButtonGroup.add(m_useNewSchema);
 
+        m_ignoreChangedSchema.setEnabled(false);
         m_ignoreChangedSchema.addActionListener(e -> updateTransformationTabEnabledStatus());
         m_failOnChangedSchema.addActionListener(e -> updateTransformationTabEnabledStatus());
         m_useNewSchema.addActionListener(e -> updateTransformationTabEnabledStatus());
@@ -590,8 +591,8 @@ final class ExcelTableReaderNodeDialog
         final var specChangedPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 
         specChangedPanel.add(m_failOnChangedSchema);
-        specChangedPanel.add(m_ignoreChangedSchema);
         specChangedPanel.add(m_useNewSchema);
+        specChangedPanel.add(m_ignoreChangedSchema);
 
         return specChangedPanel;
     }
