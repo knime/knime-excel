@@ -13,7 +13,7 @@ Require-Bundle: org.apache.xmlbeans;bundle-version="[3.1.0,4.0.0)",
  org.knime.filehandling.core;bundle-version="[5.3.0,6.0.0)",
  org.knime.base;bundle-version="[5.3.0,6.0.0)",
  org.knime.time;bundle-version="[5.3.0,6.0.0)",
- com.google.guava;bundle-version="[19.0.0,20.0.0)",
+ com.google.guava;bundle-version="[31.0.1,33.0.0)",
  org.apache.commons.lang3;bundle-version="[3.9.0,4.0.0)"
 Bundle-RequiredExecutionEnvironment: JavaSE-17
 Bundle-ActivationPolicy: lazy
