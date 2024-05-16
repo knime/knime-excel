@@ -54,7 +54,7 @@ import java.util.Set;
 
 import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
 import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler;
-import org.apache.poi.xssf.model.CommentsTable;
+import org.apache.poi.xssf.model.Comments;
 import org.apache.poi.xssf.model.StylesTable;
 import org.apache.poi.xssf.usermodel.XSSFComment;
 import org.xml.sax.Attributes;
@@ -173,7 +173,7 @@ final class KNIMEXSSFSheetXMLHandler extends XSSFSheetXMLHandler {
      * @see XSSFSheetXMLHandler#XSSFSheetXMLHandler(StylesTable, ReadOnlySharedStringsTable, SheetContentsHandler,
      *      org.apache.poi.ss.usermodel.DataFormatter, boolean)
      */
-    KNIMEXSSFSheetXMLHandler(final StylesTable styles, final CommentsTable comments,
+    KNIMEXSSFSheetXMLHandler(final StylesTable styles, final Comments comments,
         final ReadOnlySharedStringsTable strings, final SheetContentsHandler sheetContentsHandler,
         final KNIMEDataFormatter dataFormatter, final boolean formulasNotResults) {
         super(styles, comments, strings, sheetContentsHandler, dataFormatter, formulasNotResults);

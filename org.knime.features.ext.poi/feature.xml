@@ -762,12 +762,4 @@ propagated with or for interoperation with KNIME.
          version="0.0.0"
          unpack="false"/>
 
-   <plugin
-         id="org.apache.poi.clfix"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         fragment="true"
-         unpack="false"/>
-
 </feature>

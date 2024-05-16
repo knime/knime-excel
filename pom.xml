@@ -26,7 +26,6 @@
         <module>org.knime.ext.poi2</module>
         <module>org.knime.ext.poi2.tests</module>
         <module>org.knime.ext.poi3</module>
-        <module>org.apache.poi.clfix</module>
         <module>org.knime.ext.poi3.tests</module>
         <module>org.knime.features.ext.poi</module>
         <module>org.knime.update.ext.poi</module>
