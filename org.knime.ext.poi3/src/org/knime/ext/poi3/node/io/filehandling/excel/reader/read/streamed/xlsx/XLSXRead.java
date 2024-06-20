@@ -49,7 +49,6 @@
 package org.knime.ext.poi3.node.io.filehandling.excel.reader.read.streamed.xlsx;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -57,13 +56,15 @@ import java.util.function.Consumer;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.commons.io.input.CountingInputStream;
-import org.apache.poi.ooxml.util.SAXHelper;
+import org.apache.poi.ooxml.POIXMLTypeLoader;
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.openxml4j.exceptions.OpenXML4JException;
 import org.apache.poi.openxml4j.opc.OPCPackage;
+import org.apache.poi.util.XMLHelper;
 import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
 import org.apache.poi.xssf.eventusermodel.XSSFReader;
 import org.apache.poi.xssf.eventusermodel.XSSFReader.SheetIterator;
-import org.apache.xmlbeans.XmlObject;
+import org.apache.xmlbeans.XmlException;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelRead;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelUtils;
@@ -71,8 +72,6 @@ import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.streamed.Abstra
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.streamed.AbstractStreamedRead;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.streamed.KNIMEDataFormatter;
 import org.knime.filehandling.core.node.table.reader.config.TableReadConfig;
-import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTWorkbook;
-import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTWorkbookPr;
 import org.openxmlformats.schemas.spreadsheetml.x2006.main.WorkbookDocument;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -105,7 +104,7 @@ public final class XLSXRead extends AbstractStreamedRead {
     public AbstractStreamedParserRunnable createStreamedParser(final OPCPackage pkg) throws IOException {
         try {
             final var xssfReader = new XSSFReader(pkg);
-            final var xmlReader = SAXHelper.newXMLReader();
+            final var xmlReader = XMLHelper.newXMLReader();
             // disable DTD to prevent almost all XXE attacks, XMLHelper.newXMLReader() did set further security features
             xmlReader.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
             final var sharedStringsTable = new ReadOnlySharedStringsTable(pkg, false);
@@ -125,20 +124,20 @@ public final class XLSXRead extends AbstractStreamedRead {
 
             return new XLSXParserRunnable(this, m_config, pkg, sheetStream, xmlReader, xssfReader,
                 sharedStringsTable, use1904Windowing(xssfReader));
-        } catch (SAXException | OpenXML4JException | ParserConfigurationException e) {
+        } catch (SAXException | XmlException | OpenXML4JException | ParserConfigurationException e) {
             throw new IllegalStateException(e.getMessage(), e);
         }
     }
 
-    private static boolean use1904Windowing(final XSSFReader xssfReader) {
-        try (final InputStream workbookXml = xssfReader.getWorkbookData()) {
-            final WorkbookDocument doc = (WorkbookDocument)XmlObject.Factory.parse(workbookXml);
-            final CTWorkbook wb = doc.getWorkbook();
-            final CTWorkbookPr prefix = wb.getWorkbookPr();
-            return prefix.getDate1904();
-        } catch (Exception e) { // NOSONAR
-            // if anything goes wrong, we just assume false
-            return false;
+    private static boolean use1904Windowing(final XSSFReader xssfReader)
+            throws XmlException, IOException, InvalidFormatException {
+        try (final var workbookXml = xssfReader.getWorkbookData()) {
+            // this does not parse actual sheet data, just the workbook information
+            final var doc = WorkbookDocument.Factory.parse(workbookXml, POIXMLTypeLoader.DEFAULT_XML_OPTIONS);
+            final var wb = doc.getWorkbook();
+            final var prefix = wb.getWorkbookPr();
+            // same as in POI's `XSSFWorkbook#isDate1904()`
+            return prefix != null && prefix.getDate1904();
         }
     }
 
