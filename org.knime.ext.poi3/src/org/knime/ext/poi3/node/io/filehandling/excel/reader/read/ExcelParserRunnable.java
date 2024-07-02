@@ -49,6 +49,7 @@
 package org.knime.ext.poi3.node.io.filehandling.excel.reader.read;
 
 import java.io.IOException;
+import java.nio.channels.ClosedByInterruptException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -135,6 +136,11 @@ public abstract class ExcelParserRunnable implements Runnable {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             LOGGER.debug("Excel sheet parsing stopped by interrupt", e);
+        } catch (ClosedByInterruptException e) {
+            // AP-22737: since we read sheet contents from a File now instead of from an InputStream (see AP-20714),
+            // and the file is backed by a FileChannel, we can receive those, too.
+            // Receiving one of those means that the parser currently waited for IO on the channel and was interrupted.
+            LOGGER.debug("Excel sheet parsing stopped by interrupt (while waiting for channel IO)", e);
         } catch (ParsingInterruptedException e) { // NOSONAR ignore ParsingInterruptedException, they are thrown by us
             LOGGER.debug("Excel sheet parsing interrupted", e);
         } catch (Throwable e) { // NOSONAR we want to catch any Throwable
