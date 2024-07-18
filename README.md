@@ -1,4 +1,10 @@
-# ![Image](https://www.knime.com/files/knime_logo_github_40x40_4layers.png) KNIMEÂ® Excel Support
+# KNIME® Excel Support
+
+[![Jenkins](https://jenkins.knime.com/buildStatus/icon?job=knime-excel%2Fmaster)](https://jenkins.knime.com/job/knime-excel/job/master/)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=KNIME_knime-excel&metric=alert_status&token=55129ac721eacd76417f57921368ed587ad8339d)](https://sonarcloud.io/summary/new_code?id=KNIME_knime-excel)
+This repository is maintained by the [KNIME Core Development Team](mailto:ap-core@knime.com).
+
+
 
 This repository contains the plugins for the KNIME Excel Support.
 The extension allows you to read spread sheets and sheet names from excel files (xls/xlsx),
