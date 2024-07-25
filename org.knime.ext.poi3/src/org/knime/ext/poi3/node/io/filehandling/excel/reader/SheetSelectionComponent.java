@@ -398,7 +398,7 @@ public final class SheetSelectionComponent implements ChangeListener {
             case FIRST -> m_radioButtonFirstSheetWithData.setSelected(true);
         }
         final var sheetName = excelConfig.getSheetName();
-        if (!sheetName.isEmpty()) {
+        if (sheetName != null && !sheetName.isEmpty()) {
             final var item = m_sheetNameSelectionModel.getOrAddSheetName(sheetName);
             m_sheetNameSelection.setSelectedItem(item);
         }
