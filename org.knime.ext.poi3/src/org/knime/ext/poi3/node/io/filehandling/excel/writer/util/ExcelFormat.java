@@ -50,6 +50,7 @@ package org.knime.ext.poi3.node.io.filehandling.excel.writer.util;
 
 import java.util.function.Supplier;
 
+import org.apache.commons.compress.archivers.zip.Zip64Mode;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
@@ -71,8 +72,13 @@ public enum ExcelFormat {
             ExcelConstants.XLS_MAX_NUM_OF_COLS),
 
         /** Type referring to a xlsx/xlsm excel file. */
-        XLSX(SXSSFWorkbook::new, XlsxTableWriter::new, ".xlsx", ExcelConstants.XLSX_MAX_NUM_OF_ROWS,
-            ExcelConstants.XLSX_MAX_NUM_OF_COLS);
+        XLSX(() -> {
+            final var wb = new SXSSFWorkbook();
+            // AP-23021: Zip64Mode must not be Always (POI default since POI 5.x),
+            // since Power BI does not support ZIP64 format. Restore POI 4.x default.
+            wb.setZip64Mode(Zip64Mode.AsNeeded);
+            return wb;
+        }, XlsxTableWriter::new, ".xlsx", ExcelConstants.XLSX_MAX_NUM_OF_ROWS, ExcelConstants.XLSX_MAX_NUM_OF_COLS);
 
     private final Supplier<Workbook> m_workbookSupplier;
 

@@ -60,6 +60,7 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Optional;
 
+import org.apache.commons.compress.archivers.zip.Zip64Mode;
 import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -408,7 +409,11 @@ final class ExcelTableWriterNodeModel extends NodeModel {
                     // if we need to evaluate formulas we cannot use the faster streaming model (SXSSF), but have to use
                     // the XSSF model, which keeps everything in memory
                     if (!m_evaluateFormulas) {
-                        return new SXSSFWorkbook(xssfWorkbook);
+                        final var streamingWorkbook = new SXSSFWorkbook(xssfWorkbook);
+                        // AP-23021: Zip64Mode must not be Always (POI default since POI 5.x),
+                        // since Power BI does not support ZIP64 format. Restore POI 4.x default.
+                        streamingWorkbook.setZip64Mode(Zip64Mode.AsNeeded);
+                        return streamingWorkbook;
                     }
                 } else {
                     wb.close();
