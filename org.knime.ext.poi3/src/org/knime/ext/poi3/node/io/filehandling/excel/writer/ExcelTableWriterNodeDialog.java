@@ -52,14 +52,11 @@ import java.awt.Component;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.nio.file.Files;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
@@ -69,7 +66,6 @@ import java.util.stream.Stream;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
-import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -111,7 +107,6 @@ import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.Defaul
 import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.DialogComponentWriterFileChooser;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.FileOverwritePolicy;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.writer.SettingsModelWriterFileChooser;
-import org.knime.filehandling.core.defaultnodesettings.status.DefaultStatusMessage;
 import org.knime.filehandling.core.defaultnodesettings.status.StatusMessage;
 import org.knime.filehandling.core.util.GBCBuilder;
 
@@ -123,10 +118,6 @@ import org.knime.filehandling.core.util.GBCBuilder;
 final class ExcelTableWriterNodeDialog extends NodeDialogPane {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(ExcelTableWriterNodeDialog.class);
-
-    private static final String SCANNING = "/* scanning... */";
-
-    private final AtomicLong m_updateSheetListId = new AtomicLong(0);
 
     private SheetUpdater m_updateSheet;
 
@@ -175,11 +166,6 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
     private final SettingsModelAuthentication m_authenticationSettingsModel;
 
     static final String CFG_PASSWORD = "password";
-
-
-    private final BiFunction<ExcelFormat, ExcelFormat, StatusMessage> m_formatErrorHandler =
-            (expected, actual) -> DefaultStatusMessage.mkError("Unable to append to existing file: "
-                + "you have selected \"%s\" but the existing file is actually of type \"%s\"", expected, actual);
 
     /**
      * Constructor.
@@ -484,11 +470,13 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
     protected void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
         m_excelType.saveSettingsTo(settings);
         m_fileChooser.saveSettingsTo(settings);
-        ExcelTableWriterConfig.saveSheetNames(settings, Arrays.stream(m_sheetNames)//
-            .map(JComboBox::getSelectedItem)//
-            .map(String.class::cast)//
-            .map(String::trim)//
-            .toArray(String[]::new));
+        synchronized (m_sheetNames) {
+            ExcelTableWriterConfig.saveSheetNames(settings, Arrays.stream(m_sheetNames)//
+                .map(JComboBox::getSelectedItem)//
+                .map(String.class::cast)//
+                .map(String::trim)//
+                .toArray(String[]::new));
+        }
         m_sheetNameCollisionHandling.saveSettingsTo(settings);
         m_writeRowKey.saveSettingsTo(settings);
         m_writeColHeader.saveSettingsTo(settings);
@@ -512,12 +500,14 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
         m_excelType.loadSettingsFrom(settings, specs);
         m_fileChooser.loadSettingsFrom(settings, specs);
         m_cfg.loadSheetsInDialog(settings);
-        IntStream.range(0, m_sheetNames.length)//
-            .forEach(i -> {
-                final var sheetNames = m_cfg.getSheetNames();
-                final var name = sheetNames[i];
-                m_sheetNames[i].setSelectedItem(name);
-            });
+        synchronized (m_sheetNames) {
+            final var sheetNames = m_cfg.getSheetNames();
+            IntStream.range(0, m_sheetNames.length)//
+                .forEach(i -> {
+                    final var name = sheetNames[i];
+                    m_sheetNames[i].setSelectedItem(name);
+                });
+        }
         m_sheetNameCollisionHandling.loadSettingsFrom(settings, specs);
         m_writeRowKey.loadSettingsFrom(settings, specs);
         m_writeColHeader.loadSettingsFrom(settings, specs);
@@ -556,55 +546,19 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
 
     /**
      * Reads from the currently selected file the list of worksheets (in a background thread) and selects the provided
-     * sheet (if not null - otherwise selects the first name). Calls {@link #sheetNameChanged()} after the update.
+     * sheet (if not null - otherwise selects the first name).
      */
     private void updateSheetListAndSelect() {
-        final var sheetNames = m_cfg.getSheetNames();
-        for (var i = 0; i < m_sheetNames.length; i++) {
-            final var item = (String)m_sheetNames[i].getSelectedItem();
-            if (!SCANNING.equals(item)) {
-                sheetNames[i] = (String)m_sheetNames[i].getSelectedItem();
-            }
-            m_sheetNames[i].setModel(new DefaultComboBoxModel<>(new String[]{SCANNING})); // NOSONAR
-        }
-
-        // The id of the current update
-        // Note that this code and the doneWithContext is always executed by the same thread
-        // Therefore we only have to make sure that the doneWithContext belongs to the most current update
-        final long currentId = m_updateSheetListId.incrementAndGet();
-        if (m_updateSheet != null && !m_updateSheet.isDone()) {
-            m_updateSheet.cancel(true);
-        }
-        m_updateSheet = new SheetUpdater(currentId);
-        m_sheetNamesUpdateErr.setVisible(true);
-        m_sheetNamesUpdateErr.setIcon(SharedIcons.INFO_BALLOON.get());
-        m_sheetNamesUpdateErr.setText("Scanning...");
+        cancelSheetUpdaterIfRunning();
+        m_updateSheet = new SheetUpdater();
         m_updateSheet.execute();
     }
 
-    private class SheetUpdater extends SwingWorkerWithContext<List<String>, Object> {
-
-        final long m_ownId;
-
-        /**
-         * @param id the id of the updater which is used to decide whether to use the result.
-         */
-        SheetUpdater(final long id) {
-            m_ownId = id;
-        }
-
-        private void logStatusMessage(final StatusMessage msg) {
-            final var m = msg.getMessage();
-            switch (msg.getType()) {
-                case ERROR -> LOGGER.error(m);
-                case INFO -> LOGGER.info(m);
-                case WARNING -> LOGGER.warn(m);
-            }
-        }
-
+    private class SheetUpdater extends SwingWorkerWithContext<List<String>, Void> {
         @Override
         protected List<String> doInBackgroundWithContext() throws Exception {
             LOGGER.debug("Refreshing sheet names...");
+            setSheetUpdateScanning();
             try (final var accessor = m_fileChooser.getSettingsModel().createWritePathAccessor()) {
                 final var path = accessor.getOutputPath(this::logStatusMessage);
                 if (!Files.exists(path)) {
@@ -625,33 +579,30 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
 
         @Override
         protected void doneWithContext() {
-            if (m_ownId != m_updateSheetListId.get()) {
-                // Another update of the sheet list has started
-                // Do not update the sheet list
+            if (isCancelled()) {
                 return;
             }
-            List<String> sheetNames = new ArrayList<>();
-            final var showDecryptionError =
-                m_fileChooser.getSettingsModel().getFileOverwritePolicy() == FileOverwritePolicy.APPEND;
-            try {
-                sheetNames = get();
-                clearSheetUpdateError();
-            } catch (InterruptedException e) {
-                fixInterrupt();
-                // ignore
-            } catch (CancellationException e) { // NOSONAR: only indicates closing the dialog/newer updater
-                // ignore
-            } catch (ExecutionException e) { // NOSONAR we are only interested in the cause
-                setSheetUpdateError(showDecryptionError, e);
-            }
 
-            for (var i = 0; i < m_sheetNames.length; i++) {
-                m_sheetNames[i].setModel(new DefaultComboBoxModel<>(sheetNames.toArray(String[]::new)));
-                final var selectedSheet = m_cfg.getSheetNames()[i];
-                if (selectedSheet != null) {
-                    m_sheetNames[i].setSelectedItem(selectedSheet);
-                } else {
-                    m_sheetNames[i].setSelectedIndex(!sheetNames.isEmpty() ? 0 : -1);
+            synchronized (m_sheetNames) {
+                try {
+                    final var sheetNames = get();
+                    Arrays.stream(m_sheetNames).forEach(b -> {
+                        final var selected = b.getSelectedItem();
+                        b.removeAllItems();
+                        sheetNames.forEach(b::addItem);
+                        b.setSelectedItem(selected);
+                    });
+                    clearSheetUpdateError();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    clearSheetUpdateError();
+                } catch (ExecutionException e) {
+                    final var showDecryptionError =
+                        m_fileChooser.getSettingsModel().getFileOverwritePolicy() == FileOverwritePolicy.APPEND;
+                    setSheetUpdateError(showDecryptionError, e);
+                } catch (CancellationException e) {
+                    LOGGER.debug("Sheet update was cancelled", e);
+                    clearSheetUpdateError();
                 }
             }
         }
@@ -668,25 +619,38 @@ final class ExcelTableWriterNodeDialog extends NodeDialogPane {
             m_sheetNamesUpdateErr.setVisible(showDecryptionError);
         }
 
+        private void setSheetUpdateScanning() {
+            m_sheetNamesUpdateErr.setVisible(true);
+            m_sheetNamesUpdateErr.setIcon(SharedIcons.INFO_BALLOON.get());
+            m_sheetNamesUpdateErr.setText("Scanning...");
+        }
+
         private void clearSheetUpdateError() {
             m_sheetNamesUpdateErr.setIcon(null);
             m_sheetNamesUpdateErr.setText(null);
             m_sheetNamesUpdateErr.setVisible(false);
+        }
+
+        private void logStatusMessage(final StatusMessage msg) {
+            final var m = msg.getMessage();
+            switch (msg.getType()) {
+                case ERROR -> LOGGER.error(m);
+                case INFO -> LOGGER.info(m);
+                case WARNING -> LOGGER.warn(m);
+            }
         }
     }
 
     @Override
     public void onClose() {
         m_fileChooser.onClose();
-        if (m_updateSheet != null && !m_updateSheet.isDone()) {
-            m_updateSheet.cancel(true);
-        }
+        cancelSheetUpdaterIfRunning();
     }
 
-    private static void fixInterrupt() {
-        final var currentThread = Thread.currentThread();
-        if (currentThread.isInterrupted()) {
-            currentThread.interrupt();
+    private void cancelSheetUpdaterIfRunning() {
+        if (m_updateSheet != null && !m_updateSheet.isDone()) {
+            m_updateSheet.cancel(true);
+            m_updateSheet = null;
         }
     }
 }
