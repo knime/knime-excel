@@ -75,6 +75,9 @@ public class POIActivator extends Plugin {
         // AP-15963: lower the ratio (defaults to 0.01) as some users had issues with it
         ZipSecureFile.setMinInflateRatio(0.001d);
 
+        // AP-23371: deactivate check for too many embedded files (like in POI <5.2.4), since users had issues with it
+        ZipSecureFile.setMaxFileCount(Long.MAX_VALUE);
+
         // AP-22911: allow large ZIP entries like in POI 4.1.2 (see POI bug-65639)
         IOUtils.setByteArrayMaxOverride(Integer.MAX_VALUE);
 
