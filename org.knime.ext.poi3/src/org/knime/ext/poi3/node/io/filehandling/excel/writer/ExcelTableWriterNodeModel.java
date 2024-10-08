@@ -352,7 +352,8 @@ final class ExcelTableWriterNodeModel extends NodeModel {
      *
      * @author Mark Ortmann, KNIME GmbH, Berlin, Germany
      */
-    private static class WriteWorkbookHandler extends WorkbookHandler {
+    // visible for testing
+    static class WriteWorkbookHandler extends WorkbookHandler {
 
         private final boolean m_evaluateFormulas;
 
