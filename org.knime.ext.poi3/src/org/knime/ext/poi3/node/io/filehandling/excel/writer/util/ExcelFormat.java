@@ -77,6 +77,16 @@ public enum ExcelFormat {
             // AP-23021: Zip64Mode must not be Always (POI default since POI 5.x),
             // since Power BI does not support ZIP64 format. Restore POI 4.x default.
             wb.setZip64Mode(Zip64Mode.AsNeeded);
+
+            /* By default, POI sets the "dc:creator" property to "Apache POI", but that trips off Power BI's
+             * PII detection... since we don't use the property really, we just remove it here when creating new
+             * documents. This will not remove it for appended/modified documents that already exist.
+             */
+            @SuppressWarnings("resource") // resource owned by SXSSFWorkbook instance
+            final var props = wb.getXSSFWorkbook().getProperties();
+            final var coreProps = props.getCoreProperties();
+            coreProps.setCreator(null);
+            coreProps.setLastModifiedByUser(null);
             return wb;
         }, XlsxTableWriter::new, ".xlsx", ExcelConstants.XLSX_MAX_NUM_OF_ROWS, ExcelConstants.XLSX_MAX_NUM_OF_COLS);
 
@@ -90,7 +100,7 @@ public enum ExcelFormat {
 
     private final int m_maxColsPerSheet;
 
-    private ExcelFormat(final Supplier<Workbook> workbookSupplier, final TableWriterFunction createWriter,
+    ExcelFormat(final Supplier<Workbook> workbookSupplier, final TableWriterFunction createWriter,
         final String fileExtension, final int maxRowsPerSheet, final int maxColsPerSheet) {
         m_workbookSupplier = workbookSupplier;
         m_createWriter = createWriter;
