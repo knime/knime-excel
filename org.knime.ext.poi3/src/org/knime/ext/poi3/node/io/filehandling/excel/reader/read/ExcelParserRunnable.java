@@ -54,6 +54,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.knime.core.node.NodeLogger;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.AreaOfSheetToRead;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
@@ -136,16 +137,23 @@ public abstract class ExcelParserRunnable implements Runnable {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             LOGGER.debug("Excel sheet parsing stopped by interrupt", e);
-        } catch (ClosedByInterruptException e) {
-            // AP-22737: since we read sheet contents from a File now instead of from an InputStream (see AP-20714),
-            // and the file is backed by a FileChannel, we can receive those, too.
-            // Receiving one of those means that the parser currently waited for IO on the channel and was interrupted.
-            LOGGER.debug("Excel sheet parsing stopped by interrupt (while waiting for channel IO)", e);
         } catch (ParsingInterruptedException e) { // NOSONAR ignore ParsingInterruptedException, they are thrown by us
             LOGGER.debug("Excel sheet parsing interrupted", e);
-        } catch (Throwable e) { // NOSONAR we want to catch any Throwable
-            t = e;
-            LOGGER.debug("Excel sheet parsing problem", e);
+        } catch (final Throwable e) { // NOSONAR we want to catch any Throwable
+            // AP-22737: since we read sheet contents from a File now instead of from an InputStream (see AP-20714),
+            // and the file is backed by a FileChannel, we can receive ClosedByInterruptedExceptions, too.
+            // Receiving one of those means that the parser currently waited for IO on the channel and was interrupted.
+            // Since AP-24316: we need to scan the causes, too, because who knows how often it is wrapped
+            // (wrapped for XLSB via LittleEndianInputStream (via XSSFBParser), not wrapped for XLSX)
+            // Handle XLSX with instanceof check, XLSB via causes
+            if (ExceptionUtils.getThrowableList(e).stream() //
+                    .anyMatch(ClosedByInterruptException.class::isInstance)) {
+                // CBIE mentions that the thread's interrupt flag is already set when we see it (in contrast to IE)
+                LOGGER.debug("Excel sheet parsing stopped by interrupt (while waiting for channel IO)", e);
+            } else {
+                t = e;
+                LOGGER.debug("Excel sheet parsing problem", e);
+            }
         } finally {
             if (t != null) {
                 m_read.setThrowable(t);
