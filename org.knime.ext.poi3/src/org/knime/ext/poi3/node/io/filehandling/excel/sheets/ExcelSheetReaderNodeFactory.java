@@ -48,38 +48,37 @@
  */
 package org.knime.ext.poi3.node.io.filehandling.excel.sheets;
 
+import java.io.IOException;
 import java.util.Optional;
 
+import org.apache.xmlbeans.XmlException;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ConfigurableNodeFactory;
-import org.knime.core.node.NodeDialog;
-import org.knime.core.node.NodeDialogFactory;
+import org.knime.core.node.NodeDescription;
 import org.knime.core.node.NodeDialogPane;
 import org.knime.core.node.NodeFactory;
 import org.knime.core.node.NodeView;
 import org.knime.core.node.context.NodeCreationConfiguration;
 import org.knime.core.node.context.ports.PortsConfiguration;
-import org.knime.filehandling.core.defaultnodesettings.EnumConfig;
-import org.knime.filehandling.core.defaultnodesettings.filechooser.reader.SettingsModelReaderFileChooser;
-import org.knime.filehandling.core.defaultnodesettings.filtermode.SettingsModelFilterMode.FilterMode;
-import org.knime.filehandling.core.port.FileSystemPortObject;
+import org.knime.core.webui.node.dialog.NodeDialog;
+import org.knime.core.webui.node.dialog.NodeDialogFactory;
 import org.knime.core.webui.node.dialog.NodeDialogManager;
 import org.knime.core.webui.node.dialog.SettingsType;
 import org.knime.core.webui.node.dialog.defaultdialog.DefaultNodeDialog;
 import org.knime.core.webui.node.impl.WebUINodeConfiguration;
 import org.knime.core.webui.node.impl.WebUINodeFactory;
-import org.knime.core.webui.node.impl.WebUINodeFactory.NodeType;
-import org.knime.core.node.NodeDescription;
-import org.apache.xmlbeans.XmlException;
+import org.knime.filehandling.core.defaultnodesettings.EnumConfig;
+import org.knime.filehandling.core.defaultnodesettings.filechooser.reader.SettingsModelReaderFileChooser;
+import org.knime.filehandling.core.defaultnodesettings.filtermode.SettingsModelFilterMode.FilterMode;
+import org.knime.filehandling.core.port.FileSystemPortObject;
 import org.xml.sax.SAXException;
-import java.io.IOException;
 
 /**
  * The {@link NodeFactory} of the 'Read Excel Sheet Names' node.
  *
  * @author Mark Ortmann, KNIME GmbH, Berlin, Germany
  */
-@SuppressWarnings("restriction")
+@SuppressWarnings({"restriction", "deprecation"})
 public final class ExcelSheetReaderNodeFactory extends ConfigurableNodeFactory<ExcelSheetReaderNodeModel>
     implements NodeDialogFactory {
 
@@ -109,17 +108,26 @@ public final class ExcelSheetReaderNodeFactory extends ConfigurableNodeFactory<E
         .shortDescription("Reads the sheet names contained in an Excel file.")//
         .fullDescription(
             """
-            <p>This node reads an Excel file and provides the contained sheet names at its output port.</p>
-            <p>The performance of the reader node is limited (due to the underlying Apache POI library). Reading large files can take a long time.</p>
-            <p>This node can access a variety of different file systems. To read from additional file systems connect a suitable file system connector node to the optional input port.</p>
-            """)//
-        .modelSettingsClass(ExcelSheetReaderNodeSettings.class)//
+                    <p>
+                    This node reads an Excel file and provides the contained sheet names at its output port.<br />
+                    The performance of the reader node is limited (due to the underlying library
+                    of the Apache POI project). Reading large files can take a long time.
+                    </p>
+
+                    <p>
+                    <i>This node can access a variety of different</i>
+                    <a href="https://docs.knime.com/2021-06/analytics_platform_file_handling_guide/index.html#analytics-platform-file-systems"><i>file systems.</i></a>
+                    <i>More information about file handling in KNIME can be found in the official</i>
+                    <a href="https://docs.knime.com/latest/analytics_platform_file_handling_guide/index.html"><i>File Handling Guide.</i></a>
+                    </p>
+                    """)//
+        .modelSettingsClass(ExcelSheetReaderNodeParameters.class)//
         .addInputPort(FS_CONNECT_GRP_ID, FileSystemPortObject.TYPE,
             "The file system connection providing access to the selected file(s).", true)//
         .addOutputPort("Output table", BufferedDataTable.TYPE,
             "The sheet names contained in the workbook and the path to the workbook.")//
         .nodeType(NodeType.Source)//
-        .keywords(new String[] {"excel", "sheet", "read"})//
+        .keywords(new String[]{"excel", "sheet", "read"})//
         .sinceVersion(4, 5, 0)// best-effort (node originally introduced earlier)
         .build();
 
@@ -154,7 +162,7 @@ public final class ExcelSheetReaderNodeFactory extends ConfigurableNodeFactory<E
 
     @Override
     public NodeDialog createNodeDialog() {
-        return new DefaultNodeDialog(SettingsType.MODEL, ExcelSheetReaderNodeSettings.class);
+        return new DefaultNodeDialog(SettingsType.MODEL, ExcelSheetReaderNodeParameters.class);
     }
 
     private static SettingsModelReaderFileChooser createFileChooser(final PortsConfiguration portsConfig) {

@@ -44,72 +44,29 @@
  * ---------------------------------------------------------------------
  *
  * History
- *   Nov 16, 2020 (Mark Ortmann, KNIME GmbH, Berlin, Germany): created
+ *   Sep 22, 2025 (AI Migration): created
  */
 package org.knime.ext.poi3.node.io.filehandling.excel.sheets;
 
-import java.awt.Component;
-import java.awt.GridBagLayout;
-
-import javax.swing.JPanel;
-
-import org.knime.core.node.FlowVariableModel;
-import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.NodeDialog;
-import org.knime.core.node.NodeDialogPane;
-import org.knime.core.node.NodeSettingsRO;
-import org.knime.core.node.NodeSettingsWO;
-import org.knime.core.node.NotConfigurableException;
-import org.knime.core.node.port.PortObjectSpec;
-import org.knime.filehandling.core.data.location.variable.FSLocationVariableType;
-import org.knime.filehandling.core.defaultnodesettings.filechooser.reader.DialogComponentReaderFileChooser;
-import org.knime.filehandling.core.defaultnodesettings.filechooser.reader.SettingsModelReaderFileChooser;
-import org.knime.filehandling.core.util.GBCBuilder;
+import org.knime.core.webui.node.dialog.defaultdialog.internal.file.MultiFileSelection;
+import org.knime.node.parameters.NodeParameters;
+import org.knime.node.parameters.Widget;
+import org.knime.node.parameters.persistence.Persist;
+import org.knime.node.parameters.persistence.legacy.LegacyMultiFileSelection;
 
 /**
- * The {@link NodeDialog} of the 'Read Excel Sheet Names' node.
- *
- * @author Mark Ortmann, KNIME GmbH, Berlin, Germany
+ * Modern UI settings for the Excel Sheet Reader node. Provides a {@link MultiFileSelection} so the user can either
+ * select a single Excel workbook or all Excel workbooks contained in a folder (optionally including subfolders).
+ * @since 5.9
+ * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
-final class ExcelSheetReaderNodeDialog extends NodeDialogPane {
+@SuppressWarnings("restriction")
+final class ExcelSheetReaderNodeParameters implements NodeParameters {
 
-    private final DialogComponentReaderFileChooser m_fileChooser;
-
-    ExcelSheetReaderNodeDialog(final SettingsModelReaderFileChooser readerModel) {
-        final FlowVariableModel writeFvm =
-            createFlowVariableModel(readerModel.getKeysForFSLocation(), FSLocationVariableType.INSTANCE);
-        m_fileChooser = new DialogComponentReaderFileChooser(readerModel, "excel_reader_writer", writeFvm);
-
-        addTab("Settings", createPanel());
-    }
-
-    private Component createPanel() {
-        final JPanel p = new JPanel(new GridBagLayout());
-
-        final GBCBuilder gbc = new GBCBuilder().setWeightX(1).resetX().resetY().anchorLineStart().fillHorizontal()
-            .insetLeft(7).insetRight(10);
-        p.add(m_fileChooser.getComponentPanel(), gbc.build());
-
-        gbc.incY().setWeightY(1).fillBoth();
-        p.add(new JPanel(), gbc.build());
-
-        return p;
-    }
-
-    @Override
-    protected void saveSettingsTo(final NodeSettingsWO settings) throws InvalidSettingsException {
-        m_fileChooser.saveSettingsTo(settings);
-    }
-
-    @Override
-    protected void loadSettingsFrom(final NodeSettingsRO settings, final PortObjectSpec[] specs)
-        throws NotConfigurableException {
-        m_fileChooser.loadSettingsFrom(settings, specs);
-    }
-
-    @Override
-    public void onClose() {
-        m_fileChooser.onClose();
-    }
-
+    @Widget(title = "Excel file selection", description = """
+            Select a single Excel workbook or all Excel workbooks in a folder. Choose 'Type' = File for
+            one file or 'Type' = Folder to include all matching Excel files (optionally from subfolders).
+            """)
+    @Persist(configKey = "file_selection")
+    LegacyMultiFileSelection m_fileSelection = new LegacyMultiFileSelection();
 }
