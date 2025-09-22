@@ -52,6 +52,8 @@ import java.util.Optional;
 
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.ConfigurableNodeFactory;
+import org.knime.core.node.NodeDialog;
+import org.knime.core.node.NodeDialogFactory;
 import org.knime.core.node.NodeDialogPane;
 import org.knime.core.node.NodeFactory;
 import org.knime.core.node.NodeView;
@@ -61,13 +63,25 @@ import org.knime.filehandling.core.defaultnodesettings.EnumConfig;
 import org.knime.filehandling.core.defaultnodesettings.filechooser.reader.SettingsModelReaderFileChooser;
 import org.knime.filehandling.core.defaultnodesettings.filtermode.SettingsModelFilterMode.FilterMode;
 import org.knime.filehandling.core.port.FileSystemPortObject;
+import org.knime.core.webui.node.dialog.NodeDialogManager;
+import org.knime.core.webui.node.dialog.SettingsType;
+import org.knime.core.webui.node.dialog.defaultdialog.DefaultNodeDialog;
+import org.knime.core.webui.node.impl.WebUINodeConfiguration;
+import org.knime.core.webui.node.impl.WebUINodeFactory;
+import org.knime.core.webui.node.impl.WebUINodeFactory.NodeType;
+import org.knime.core.node.NodeDescription;
+import org.apache.xmlbeans.XmlException;
+import org.xml.sax.SAXException;
+import java.io.IOException;
 
 /**
  * The {@link NodeFactory} of the 'Read Excel Sheet Names' node.
  *
  * @author Mark Ortmann, KNIME GmbH, Berlin, Germany
  */
-public final class ExcelSheetReaderNodeFactory extends ConfigurableNodeFactory<ExcelSheetReaderNodeModel> {
+@SuppressWarnings("restriction")
+public final class ExcelSheetReaderNodeFactory extends ConfigurableNodeFactory<ExcelSheetReaderNodeModel>
+    implements NodeDialogFactory {
 
     /** The file system ports group id. */
     static final String FS_CONNECT_GRP_ID = "File System Connection";
@@ -89,10 +103,35 @@ public final class ExcelSheetReaderNodeFactory extends ConfigurableNodeFactory<E
         return new ExcelSheetReaderNodeModel(portsConfig, createFileChooser(portsConfig));
     }
 
+    private static final WebUINodeConfiguration CONFIG = WebUINodeConfiguration.builder()//
+        .name("Read Excel Sheet Names")//
+        .icon("excel_sheet_reader.png")//
+        .shortDescription("Reads the sheet names contained in an Excel file.")//
+        .fullDescription(
+            """
+            <p>This node reads an Excel file and provides the contained sheet names at its output port.</p>
+            <p>The performance of the reader node is limited (due to the underlying Apache POI library). Reading large files can take a long time.</p>
+            <p>This node can access a variety of different file systems. To read from additional file systems connect a suitable file system connector node to the optional input port.</p>
+            """)//
+        .modelSettingsClass(ExcelSheetReaderNodeSettings.class)//
+        .addInputPort(FS_CONNECT_GRP_ID, FileSystemPortObject.TYPE,
+            "The file system connection providing access to the selected file(s).", true)//
+        .addOutputPort("Output table", BufferedDataTable.TYPE,
+            "The sheet names contained in the workbook and the path to the workbook.")//
+        .nodeType(NodeType.Source)//
+        .keywords(new String[] {"excel", "sheet", "read"})//
+        .sinceVersion(4, 5, 0)// best-effort (node originally introduced earlier)
+        .build();
+
+    @Override
+    protected NodeDescription createNodeDescription() throws SAXException, IOException, XmlException {
+        return WebUINodeFactory.createNodeDescription(CONFIG);
+    }
+
     @Override
     protected NodeDialogPane createNodeDialogPane(final NodeCreationConfiguration creationConfig) {
-        return new ExcelSheetReaderNodeDialog(
-            createFileChooser(creationConfig.getPortConfig().orElseThrow(IllegalStateException::new)));
+        // keep legacy flow variable support wrapper
+        return NodeDialogManager.createLegacyFlowVariableNodeDialog(createNodeDialog());
     }
 
     @Override
@@ -109,6 +148,13 @@ public final class ExcelSheetReaderNodeFactory extends ConfigurableNodeFactory<E
     @Override
     protected boolean hasDialog() {
         return true;
+    }
+
+    // --- Modern UI additions -------------------------------------------------
+
+    @Override
+    public NodeDialog createNodeDialog() {
+        return new DefaultNodeDialog(SettingsType.MODEL, ExcelSheetReaderNodeSettings.class);
     }
 
     private static SettingsModelReaderFileChooser createFileChooser(final PortsConfiguration portsConfig) {
