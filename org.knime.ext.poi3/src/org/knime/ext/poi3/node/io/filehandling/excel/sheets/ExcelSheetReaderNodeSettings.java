@@ -118,7 +118,7 @@ final class ExcelSheetReaderNodeSettings implements NodeParameters {
         @Widget(title = "Include hidden files", description = "Include hidden files in the selection.")
         boolean m_includeHiddenFiles = true; // legacy: include_hidden_files (we used true previously for convenience)
 
-        @Widget(title = "Include special files", description = "Include special file types (system or device files if applicable).")
+        @Widget(title = "Include special files", description = "Include special file types (workflows etc).")
         boolean m_includeSpecialFiles = true; // legacy: include_special_files
 
         // ---- Folder filters -----------------------------------------------
@@ -252,6 +252,38 @@ final class ExcelSheetReaderNodeSettings implements NodeParameters {
             } else {
                 selection.m_fileOrFolder = MultiFileSelection.FileOrFolder.FILE; // NOSONAR
                 selection.m_includeSubfolders = false; // NOSONAR
+            }
+
+            // Attempt to load filter options; if absent (older workflows) keep defaults
+            if (filterModeCfg.containsKey("filter_options")) {
+                final var filterOptions = filterModeCfg.getNodeSettings("filter_options");
+                final var filters = selection.m_filters;
+                filters.m_filterFilesExtension = filterOptions.getBoolean("filter_files_extension", false);
+                filters.m_filesExtensionExpression = filterOptions.getString("files_extension_expression", "");
+                filters.m_filesExtensionCaseSensitive = filterOptions.getBoolean("files_extension_case_sensitive", false);
+                filters.m_filterFilesName = filterOptions.getBoolean("filter_files_name", false);
+                filters.m_filesNameExpression = filterOptions.getString("files_name_expression", "*");
+                filters.m_filesNameCaseSensitive = filterOptions.getBoolean("files_name_case_sensitive", false);
+                // file name filter type
+                try {
+                    filters.m_filesNameFilterType = ExcelFileChooserFilters.FileNameFilterType
+                        .valueOf(filterOptions.getString("files_name_filter_type", "WILDCARD"));
+                } catch (IllegalArgumentException ex) { // fallback
+                    filters.m_filesNameFilterType = ExcelFileChooserFilters.FileNameFilterType.WILDCARD;
+                }
+                filters.m_includeHiddenFiles = filterOptions.getBoolean("include_hidden_files", true);
+                filters.m_includeSpecialFiles = filterOptions.getBoolean("include_special_files", true);
+                filters.m_filterFoldersName = filterOptions.getBoolean("filter_folders_name", false);
+                filters.m_foldersNameExpression = filterOptions.getString("folders_name_expression", "*");
+                filters.m_foldersNameCaseSensitive = filterOptions.getBoolean("folders_name_case_sensitive", false);
+                try {
+                    filters.m_foldersNameFilterType = ExcelFileChooserFilters.FolderNameFilterType
+                        .valueOf(filterOptions.getString("folders_name_filter_type", "WILDCARD"));
+                } catch (IllegalArgumentException ex) {
+                    filters.m_foldersNameFilterType = ExcelFileChooserFilters.FolderNameFilterType.WILDCARD;
+                }
+                filters.m_includeHiddenFolders = filterOptions.getBoolean("include_hidden_folders", true);
+                filters.m_followSymlinks = filterOptions.getBoolean("follow_links", filters.m_followSymlinks);
             }
             return selection;
         }
