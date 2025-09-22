@@ -84,7 +84,7 @@ final class ExcelSheetReaderNodeSettings implements NodeParameters {
      */
     static final class ExcelFileChooserFilters implements FileChooserFilters {
 
-        @Widget(title = "Follow Symlinks", description = "Follow symbolic links when traversing folders.")
+        @Widget(title = "Follow symlinks", description = "Follow symbolic links while traversing folders (only relevant when selecting a folder).")
         boolean m_followSymlinks = true;
 
         @Override
@@ -111,6 +111,7 @@ final class ExcelSheetReaderNodeSettings implements NodeParameters {
      * Multi file selection used in the dialog. It is persisted using {@link FileSelectionPersistor} to be compatible
      * with the legacy settings model key "file_selection".
      */
+    @Widget(title = "Excel file selection", description = "Select a single Excel workbook or all Excel workbooks in a folder. Choose 'Type' = File for one file or 'Type' = Folder to include all matching Excel files (optionally from subfolders).")
     @Persistor(FileSelectionPersistor.class)
     MultiFileSelection<ExcelFileChooserFilters> m_fileSelection =
         new MultiFileSelection<>(new ExcelFileChooserFilters());
