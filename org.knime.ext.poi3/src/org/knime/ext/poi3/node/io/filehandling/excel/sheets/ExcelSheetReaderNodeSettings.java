@@ -50,7 +50,7 @@ package org.knime.ext.poi3.node.io.filehandling.excel.sheets;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Locale;
+import java.nio.file.attribute.BasicFileAttributes;
 
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
@@ -59,6 +59,8 @@ import org.knime.core.webui.node.dialog.defaultdialog.internal.file.FileChooserF
 import org.knime.core.webui.node.dialog.defaultdialog.internal.file.MultiFileSelection;
 import org.knime.filehandling.core.connections.FSLocation;
 import org.knime.filehandling.core.data.location.FSLocationSerializationUtils;
+import org.knime.filehandling.core.defaultnodesettings.filtermode.FileAndFolderFilter;
+import org.knime.filehandling.core.defaultnodesettings.filtermode.FilterOptionsSettings;
 import org.knime.node.parameters.NodeParameters;
 import org.knime.node.parameters.Widget;
 import org.knime.node.parameters.layout.Layout;
@@ -115,7 +117,7 @@ final class ExcelSheetReaderNodeSettings implements NodeParameters {
         interface FolderNameFilterRef extends ParameterReference<Boolean> {
         }
 
-        // Effect predicate providers (no generics in EffectPredicate API)
+        // Effect predicate providers
         static final class FileExtensionFilterEnabled implements EffectPredicateProvider {
             @Override
             public EffectPredicate init(final PredicateInitializer i) {
@@ -169,91 +171,52 @@ final class ExcelSheetReaderNodeSettings implements NodeParameters {
         @Effect(predicate = FileNameFilterEnabled.class, type = EffectType.SHOW)
         String m_filesNameExpression = "*"; // legacy: files_name_expression
 
-        enum FileNameFilterType {
+        enum NameFilterType {
                 WILDCARD, REGEX;
         }
 
         @Widget(title = "File name filter type",
             description = "Choose how to interpret the file name pattern: wildcard or regular expression.")
-        @Override
-        public boolean passesFilter(final Path root, final Path path) {
-            final boolean isDirectory = Files.isDirectory(path);
-            final String name = path.getFileName().toString();
+        @ValueSwitchWidget
+        @Layout(FileFilterSection.class)
+        @Effect(predicate = FileNameFilterEnabled.class, type = EffectType.SHOW)
+        NameFilterType m_filesNameFilterType = NameFilterType.WILDCARD; // legacy: files_name_filter_type
 
-            // Hidden handling (folder or file) – treat IO errors as "not hidden" to avoid excluding unexpectedly
-            boolean hidden = false;
-            try {
-                hidden = Files.isHidden(path) || name.startsWith("."); // fallback to dot-prefix
-            } catch (Exception ex) { // NOSONAR - ignore
-                hidden = name.startsWith(".");
-            }
+        @Widget(title = "Case sensitive (names)", description = "Make file name filtering case sensitive.")
+        @Layout(FileFilterSection.class)
+        @Effect(predicate = FileNameFilterEnabled.class, type = EffectType.SHOW)
+        boolean m_filesNameCaseSensitive; // legacy: files_name_case_sensitive
 
-            if (isDirectory) {
-                // Hidden folder filter
-                if (hidden && !m_includeHiddenFolders) {
-                    return false;
-                }
-                // Folder name pattern filter
-                if (m_filterFoldersName) {
-                    if (!matchesName(name, m_foldersNameExpression,
-                            m_foldersNameFilterType == FolderNameFilterType.REGEX, m_foldersNameCaseSensitive)) {
-                        return false; // do not traverse or show
-                    }
-                }
-                // If it passes folder checks we allow traversal/display
-                return true;
-            }
+        @Widget(title = "Include hidden files", description = "Include hidden files in the selection.")
+        @Layout(FileFilterSection.class)
+        boolean m_includeHiddenFiles = true; // legacy: include_hidden_files
 
-            // File specific filters -------------------------------------------------
-            if (hidden && !m_includeHiddenFiles) {
-                return false;
-            }
+        @Widget(title = "Include special files", description = "Include special file types (workflows etc).")
+        @Layout(FileFilterSection.class)
+        boolean m_includeSpecialFiles = true; // legacy: include_special_files
 
-            // "Special" files: if disabled and the path is not a regular file, skip
-            if (!m_includeSpecialFiles) {
-                try {
-                    if (!Files.isRegularFile(path)) { // covers symbolic links to dirs etc.
-                        return false;
-                    }
-                } catch (Exception ex) { // conservative: keep file if attribute access fails
-                    // ignore
-                }
-            }
+        // ---- Folder filters -----------------------------------------------
 
-            final String lowerName = name.toLowerCase(Locale.ROOT);
-            boolean isExcel = false;
-            for (var ext : EXCEL_EXTENSIONS) {
-                if (lowerName.endsWith(ext)) { isExcel = true; break; }
-            }
-            if (!isExcel) { // always restrict to Excel files
-                return false;
-            }
+        @Widget(title = "Filter by folder name",
+            description = "Enable filtering of folders by name pattern before descending into them.")
+        @ValueReference(FolderNameFilterRef.class)
+        @Layout(FolderFilterSection.class)
+        boolean m_filterFoldersName; // legacy: filter_folders_name
 
-            // Extension whitelist (user defined)
-            if (m_filterFilesExtension && !m_filesExtensionExpression.isBlank()) {
-                final String fileExt = name.contains(".") ? name.substring(name.lastIndexOf('.') + 1) : "";
-                boolean match = false;
-                for (var token : m_filesExtensionExpression.split(";+")) {
-                    token = token.trim();
-                    if (token.isEmpty()) { continue; }
-                    if (m_filesExtensionCaseSensitive) {
-                        if (fileExt.equals(token)) { match = true; break; }
-                    } else if (fileExt.equalsIgnoreCase(token)) { match = true; break; }
-                }
-                if (!match) { return false; }
-            }
-
-            // File name pattern
-            if (m_filterFilesName) {
-                if (!matchesName(name, m_filesNameExpression,
-                        m_filesNameFilterType == FileNameFilterType.REGEX, m_filesNameCaseSensitive)) {
-                    return false;
-                }
-            }
-            return true;
-        }
+        @Widget(title = "Folder name pattern", description = """
+                Pattern for folder name filtering (same syntax and filter type options as file name
+                pattern). Ignored if 'Filter by folder name' is disabled.
+                """)
+        @Layout(FolderFilterSection.class)
         @Effect(predicate = FolderNameFilterEnabled.class, type = EffectType.ENABLE)
-        FolderNameFilterType m_foldersNameFilterType = FolderNameFilterType.WILDCARD; // legacy: folders_name_filter_type
+        String m_foldersNameExpression = "*"; // legacy: folders_name_expression
+
+        @Widget(title = "Folder name filter type",
+            description = "Choose how to interpret the folder name pattern: wildcard or regular expression.")
+        @ValueSwitchWidget
+        @Layout(FolderFilterSection.class)
+        @Effect(predicate = FolderNameFilterEnabled.class, type = EffectType.ENABLE)
+        NameFilterType m_foldersNameFilterType = NameFilterType.WILDCARD; // legacy: folders_name_filter_type
 
         @Widget(title = "Case sensitive (folders)", description = "Make folder name filtering case sensitive.")
         @Layout(FolderFilterSection.class)
@@ -265,8 +228,6 @@ final class ExcelSheetReaderNodeSettings implements NodeParameters {
         @Layout(FolderFilterSection.class)
         boolean m_includeHiddenFolders = true; // legacy: include_hidden_folders
 
-        // ---- Traversal / symlinks ----------------------------------------
-
         @Widget(title = "Follow symlinks",
             description = "Follow symbolic links while traversing folders (only relevant when selecting a folder).")
         @Layout(LinkOptionsSection.class)
@@ -274,42 +235,39 @@ final class ExcelSheetReaderNodeSettings implements NodeParameters {
 
         @Override
         public boolean passesFilter(final Path root, final Path path) {
-            if (Files.isDirectory(path)) { // always traverse into directories
-                return true;
-            }
-            final var name = path.getFileName().toString().toLowerCase();
+            // We're constructing a FileAndFolderFilter here, as that is what is also used
+            // in the model and was used in the old dialog. This way we ensure the same
+            // filtering behavior in the dialog preview as in the model.
+            FilterOptionsSettings filterOptions = new FilterOptionsSettings();
 
-            // extension based filtering:
-            if (m_filterFilesExtension && !m_filesExtensionExpression.isBlank()) {
-                var allowed = m_filesExtensionExpression.split(";+");
-                var fileExt = name.contains(".") ? name.substring(name.lastIndexOf('.') + 1) : "";
-                var match = false;
-                for (var a : allowed) {
-                    var token = a.trim();
-                    if (token.isEmpty()) {
-                        continue;
-                    }
-                    if (m_filesExtensionCaseSensitive) {
-                        match = fileExt.equals(token);
-                    } else {
-                        match = fileExt.equalsIgnoreCase(token);
-                    }
-                    if (match) {
-                        break;
-                    }
-                }
-                if (!match) {
-                    return false;
-                }
-            }
+            filterOptions.setFilterFilesByName(m_filterFilesName);
+            filterOptions.setFilesNameCaseSensitive(m_filesNameCaseSensitive);
+            filterOptions.setFilesNameExpression(m_filesNameExpression);
+            filterOptions.setFilesNameFilterType(m_filesNameFilterType.equals(NameFilterType.WILDCARD)
+                ? FileAndFolderFilter.FilterType.WILDCARD : FileAndFolderFilter.FilterType.REGEX);
 
-            if (m_filterFilesName) {
-                if (!matchesName(name, m_filesNameExpression, m_filesNameFilterType == FileNameFilterType.REGEX,
-                    m_filesNameCaseSensitive)) {
-                    return false;
-                }
+            filterOptions.setFilterFilesByExtension(m_filterFilesExtension);
+            filterOptions.setFilesExtensionCaseSensitive(m_filesExtensionCaseSensitive);
+            filterOptions.setFilesExtensionExpression(m_filesExtensionExpression);
+
+            filterOptions.setFilterFoldersByName(m_filterFoldersName);
+            filterOptions.setFoldersNameCaseSensitive(m_foldersNameCaseSensitive);
+            filterOptions.setFoldersNameExpression(m_foldersNameExpression);
+            filterOptions.setFoldersNameFilterMode(m_foldersNameFilterType.equals(NameFilterType.WILDCARD)
+                ? FileAndFolderFilter.FilterType.WILDCARD : FileAndFolderFilter.FilterType.REGEX);
+
+            filterOptions.setIncludeSpecialFiles(m_includeSpecialFiles);
+            filterOptions.setFollowLinks(m_followSymlinks);
+            filterOptions.setIncludeHiddenFolders(m_includeHiddenFolders);
+
+            FileAndFolderFilter filter = new FileAndFolderFilter(root, filterOptions);
+            try {
+                BasicFileAttributes attrs = Files.readAttributes(path, BasicFileAttributes.class);
+                return filter.test(path, attrs);
+            } catch (Exception e) {
+                // If we can't read attributes, fallback to legacy logic: skip file
+                return false;
             }
-            return true;
         }
 
         @Override
@@ -317,54 +275,12 @@ final class ExcelSheetReaderNodeSettings implements NodeParameters {
             return m_followSymlinks;
         }
 
-        private static boolean matchesName(final String filename, final String pattern, final boolean regex,
-            final boolean caseSensitive) {
-            if (pattern == null || pattern.isEmpty()) {
-                return true;
-            }
-            String target = caseSensitive ? filename : filename.toLowerCase(Locale.ROOT);
-            String expr = caseSensitive ? pattern : pattern.toLowerCase(Locale.ROOT);
-            if (regex) {
-                return target.matches(expr);
-            }
-            // wildcard: convert * -> .* and ? -> . and escape regex specials first
-            StringBuilder sb = new StringBuilder();
-            for (char c : expr.toCharArray()) {
-                switch (c) {
-                    case '*':
-                        sb.append(".*");
-                        break;
-                    case '?':
-                        sb.append('.');
-                        break;
-                    case '.':
-                    case '(':
-                    case ')':
-                    case '[':
-                    case ']':
-                    case '{':
-                    case '}':
-                    case '^':
-                    case '$':
-                    case '|':
-                    case '+':
-                    case '\\':
-                        sb.append('\\').append(c);
-                        break;
-                    default:
-                        sb.append(c);
-                }
-            }
-            return target.matches(sb.toString());
-        }
     }
 
-    /**
-     * Multi file selection used in the dialog. It is persisted using {@link LegacyMultiFileReaderPersistor} to be compatible
-     * with the legacy settings model key "file_selection".
-     */
-    @Widget(title = "Excel file selection",
-        description = "Select a single Excel workbook or all Excel workbooks in a folder. Choose 'Type' = File for one file or 'Type' = Folder to include all matching Excel files (optionally from subfolders).")
+    @Widget(title = "Excel file selection", description = """
+            Select a single Excel workbook or all Excel workbooks in a folder. Choose 'Type' = File for
+            one file or 'Type' = Folder to include all matching Excel files (optionally from subfolders).
+            """)
     @Persistor(LegacyMultiFileReaderPersistor.class)
     MultiFileSelection<DefaultMultiFileFilterParameters> m_fileSelection =
         new MultiFileSelection<>(new DefaultMultiFileFilterParameters());
@@ -412,10 +328,10 @@ final class ExcelSheetReaderNodeSettings implements NodeParameters {
                 filters.m_filesNameCaseSensitive = filterOptions.getBoolean("files_name_case_sensitive", false);
                 // file name filter type
                 try {
-                    filters.m_filesNameFilterType = DefaultMultiFileFilterParameters.FileNameFilterType
+                    filters.m_filesNameFilterType = DefaultMultiFileFilterParameters.NameFilterType
                         .valueOf(filterOptions.getString("files_name_filter_type", "WILDCARD"));
                 } catch (IllegalArgumentException ex) { // fallback
-                    filters.m_filesNameFilterType = DefaultMultiFileFilterParameters.FileNameFilterType.WILDCARD;
+                    filters.m_filesNameFilterType = DefaultMultiFileFilterParameters.NameFilterType.WILDCARD;
                 }
                 filters.m_includeHiddenFiles = filterOptions.getBoolean("include_hidden_files", true);
                 filters.m_includeSpecialFiles = filterOptions.getBoolean("include_special_files", true);
@@ -423,10 +339,10 @@ final class ExcelSheetReaderNodeSettings implements NodeParameters {
                 filters.m_foldersNameExpression = filterOptions.getString("folders_name_expression", "*");
                 filters.m_foldersNameCaseSensitive = filterOptions.getBoolean("folders_name_case_sensitive", false);
                 try {
-                    filters.m_foldersNameFilterType = DefaultMultiFileFilterParameters.FolderNameFilterType
+                    filters.m_foldersNameFilterType = DefaultMultiFileFilterParameters.NameFilterType
                         .valueOf(filterOptions.getString("folders_name_filter_type", "WILDCARD"));
                 } catch (IllegalArgumentException ex) {
-                    filters.m_foldersNameFilterType = DefaultMultiFileFilterParameters.FolderNameFilterType.WILDCARD;
+                    filters.m_foldersNameFilterType = DefaultMultiFileFilterParameters.NameFilterType.WILDCARD;
                 }
                 filters.m_includeHiddenFolders = filterOptions.getBoolean("include_hidden_folders", true);
                 filters.m_followSymlinks = filterOptions.getBoolean("follow_links", filters.m_followSymlinks);
@@ -435,7 +351,8 @@ final class ExcelSheetReaderNodeSettings implements NodeParameters {
         }
 
         @Override
-        public void save(final MultiFileSelection<DefaultMultiFileFilterParameters> obj, final NodeSettingsWO settings) {
+        public void save(final MultiFileSelection<DefaultMultiFileFilterParameters> obj,
+            final NodeSettingsWO settings) {
             // Defensive: null object should not happen, but if it does we create an empty selection
             final var selection = obj == null ? new MultiFileSelection<>(new DefaultMultiFileFilterParameters()) : obj;
 
@@ -449,7 +366,6 @@ final class ExcelSheetReaderNodeSettings implements NodeParameters {
             filterModeCfg.addString("filter_mode", isFolder ? "FILES_IN_FOLDERS" : "FILE");
             filterModeCfg.addBoolean("include_subfolders", isFolder && selection.m_includeSubfolders);
 
-            // filter options (kept minimal – legacy dialog had many options, we default to 'no extra filtering')
             final var filterOptions = filterModeCfg.addNodeSettings("filter_options");
             final var filters = selection.m_filters;
             filterOptions.addBoolean("filter_files_extension", filters.m_filterFilesExtension);
@@ -468,7 +384,7 @@ final class ExcelSheetReaderNodeSettings implements NodeParameters {
             filterOptions.addBoolean("include_hidden_folders", filters.m_includeHiddenFolders);
             filterOptions.addBoolean("follow_links", filters.m_followSymlinks);
 
-            // internal settings (minimal subset sufficient for the SettingsModelReaderFileChooser)
+            // internal settings
             final var internals = chooserCfg.addNodeSettings("file_system_chooser__Internals");
             internals.addBoolean("has_fs_port", false); // updated automatically at runtime when ports present
             internals.addBoolean("overwritten_by_variable", false);
@@ -483,7 +399,35 @@ final class ExcelSheetReaderNodeSettings implements NodeParameters {
 
         @Override
         public String[][] getConfigPaths() {
-            return new String[][]{{CFG_KEY, "path"}};
+            return new String[][]{//
+                {CFG_KEY, "path"}, //
+                {CFG_KEY, "filter_mode", "filter_mode"}, //
+                {CFG_KEY, "filter_mode", "include_subfolders"}, //
+                {CFG_KEY, "filter_options", "filter_files_extension"}, //
+                {CFG_KEY, "filter_options", "files_extension_expression"}, //
+                {CFG_KEY, "filter_options", "files_extension_case_sensitive"}, //
+                {CFG_KEY, "filter_options", "filter_files_name"}, //
+                {CFG_KEY, "filter_options", "files_name_expression"}, //
+                {CFG_KEY, "filter_options", "files_name_case_sensitive"}, //
+                {CFG_KEY, "filter_options", "files_name_filter_type"}, //
+                {CFG_KEY, "filter_options", "include_hidden_files"}, //
+                {CFG_KEY, "filter_options", "include_special_files"}, //
+                {CFG_KEY, "filter_options", "filter_folders_name"}, //
+                {CFG_KEY, "filter_options", "folders_name_expression"}, //
+                {CFG_KEY, "filter_options", "folders_name_case_sensitive"}, //
+                {CFG_KEY, "filter_options", "folders_name_filter_type"}, //
+                {CFG_KEY, "filter_options", "include_hidden_folders"}, //
+                {CFG_KEY, "filter_options", "follow_links"}, //
+                {CFG_KEY, "file_system_chooser__Internals", "has_fs_port"}, //
+                {CFG_KEY, "file_system_chooser__Internals", "overwritten_by_variable"}, //
+                {CFG_KEY, "file_system_chooser__Internals", "convenience_fs_category"}, //
+                {CFG_KEY, "file_system_chooser__Internals", "relative_to"}, //
+                {CFG_KEY, "file_system_chooser__Internals", "mountpoint"}, //
+                {CFG_KEY, "file_system_chooser__Internals", "spaceId"}, //
+                {CFG_KEY, "file_system_chooser__Internals", "spaceName"}, //
+                {CFG_KEY, "file_system_chooser__Internals", "custom_url_timeout"}, //
+                {CFG_KEY, "file_system_chooser__Internals", "connected_fs"},//
+            };
         }
     }
 }
