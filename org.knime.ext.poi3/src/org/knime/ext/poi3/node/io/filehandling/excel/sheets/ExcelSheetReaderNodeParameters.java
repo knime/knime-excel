@@ -80,8 +80,8 @@ import org.knime.node.parameters.widget.choices.ValueSwitchWidget;
  * select a single Excel workbook or all Excel workbooks contained in a folder (optionally including subfolders).
  * <p>
  * Backwards compatibility: The persisted settings reproduce the legacy {@code SettingsModelReaderFileChooser} structure
- * under the config key {@code file_selection}, so that the unchanged ExcelSheetReaderNodeModel continues to
- * work without any modification.
+ * under the config key {@code file_selection}, so that the unchanged ExcelSheetReaderNodeModel continues to work
+ * without any modification.
  */
 @SuppressWarnings("restriction")
 final class ExcelSheetReaderNodeParameters implements NodeParameters {
@@ -142,13 +142,13 @@ final class ExcelSheetReaderNodeParameters implements NodeParameters {
         // ---- File filters -------------------------------------------------
 
         @Widget(title = "Filter by file extension",
-            description = "Enable filtering files by their extension (e.g. 'xlsx;xlsm'). Use a semicolon-separated list without dots. Case-insensitive unless 'Case sensitive (extensions)' is enabled.")
+            description = "Enable filtering files by their extension (e.g. 'xlsx;xlsm').")
         @ValueReference(FileExtensionFilterRef.class)
         @Layout(FileFilterSection.class)
         boolean m_filterFilesExtension; // legacy: filter_files_extension
 
-        @Widget(title = "Extensions list",
-            description = "Semicolon-separated list of file extensions to include (e.g. 'xlsx;xlsm;xls'). Ignored if 'Filter by file extension' is disabled.")
+        @Widget(title = "File extensions",
+            description = "Semicolon-separated list of file extensions to include (e.g. 'xlsx;xlsm;xls'). Case-insensitive unless 'Case sensitive (extensions)' is enabled.")
         @Layout(FileFilterSection.class)
         @Effect(predicate = FileExtensionFilterEnabled.class, type = EffectType.SHOW)
         String m_filesExtensionExpression = ""; // legacy: files_extension_expression
@@ -160,12 +160,12 @@ final class ExcelSheetReaderNodeParameters implements NodeParameters {
         boolean m_filesExtensionCaseSensitive; // legacy: files_extension_case_sensitive
 
         @Widget(title = "Filter by file name",
-            description = "Enable filtering by file name pattern (wildcards '*' and '?' supported) or regular expression depending on filter type.")
+            description = "Enable filtering by file name pattern with wildcards or regular expression.")
         @ValueReference(FileNameFilterRef.class)
         @Layout(FileFilterSection.class)
         boolean m_filterFilesName; // legacy: filter_files_name
 
-        @Widget(title = "File name pattern",
+        @Widget(title = "File name filter pattern",
             description = "Pattern for file name filtering. With type 'Wildcard', use '*' and '?'. With type 'Regex', enter a Java regular expression.")
         @Layout(FileFilterSection.class)
         @Effect(predicate = FileNameFilterEnabled.class, type = EffectType.SHOW)
@@ -204,8 +204,8 @@ final class ExcelSheetReaderNodeParameters implements NodeParameters {
         boolean m_filterFoldersName; // legacy: filter_folders_name
 
         @Widget(title = "Folder name pattern", description = """
-                Pattern for folder name filtering (same syntax and filter type options as file name
-                pattern). Ignored if 'Filter by folder name' is disabled.
+                Pattern for folder name filtering. Use '*' and '?' with filter type 'Wildcard'.
+                With type 'Regex', enter a Java regular expression.
                 """)
         @Layout(FolderFilterSection.class)
         @Effect(predicate = FolderNameFilterEnabled.class, type = EffectType.ENABLE)
@@ -275,32 +275,32 @@ final class ExcelSheetReaderNodeParameters implements NodeParameters {
         }
 
         public void setFromFilterOptionsSettings(final FilterOptionsSettings filterOptions) {
-              m_filterFilesExtension = filterOptions.isFilterFilesByExtension();
-              m_filesExtensionExpression = filterOptions.getFilesExtensionExpression();
-              m_filesExtensionCaseSensitive = filterOptions.isFilesExtensionCaseSensitive();
-              m_filterFilesName = filterOptions.isFilterFilesByName();
-              m_filesNameExpression = filterOptions.getFilesNameExpression();
-              m_filesNameCaseSensitive = filterOptions.isFilesNameCaseSensitive();
-              // file name filter type
-              try {
-                  m_filesNameFilterType = DefaultMultiFileChooserFilters.NameFilterType
-                      .valueOf(filterOptions.getFilesNameFilterType().name());
-              } catch (IllegalArgumentException ex) { // fallback
-                  m_filesNameFilterType = DefaultMultiFileChooserFilters.NameFilterType.WILDCARD;
-              }
-              m_includeHiddenFiles = filterOptions.isIncludeHiddenFiles();
-              m_includeSpecialFiles = filterOptions.isIncludeSpecialFiles();
-              m_filterFoldersName = filterOptions.isFilterFoldersByName();
-              m_foldersNameExpression = filterOptions.getFoldersNameExpression();
-              m_foldersNameCaseSensitive = filterOptions.isFoldersNameCaseSensitive();
-              try {
-                  m_foldersNameFilterType = DefaultMultiFileChooserFilters.NameFilterType
-                      .valueOf(filterOptions.getFoldersNameFilterType().name());
-              } catch (IllegalArgumentException ex) {
-                  m_foldersNameFilterType = DefaultMultiFileChooserFilters.NameFilterType.WILDCARD;
-              }
-              m_includeHiddenFolders = filterOptions.isIncludeHiddenFolders();
-              m_followSymlinks = filterOptions.isFollowLinks();
+            m_filterFilesExtension = filterOptions.isFilterFilesByExtension();
+            m_filesExtensionExpression = filterOptions.getFilesExtensionExpression();
+            m_filesExtensionCaseSensitive = filterOptions.isFilesExtensionCaseSensitive();
+            m_filterFilesName = filterOptions.isFilterFilesByName();
+            m_filesNameExpression = filterOptions.getFilesNameExpression();
+            m_filesNameCaseSensitive = filterOptions.isFilesNameCaseSensitive();
+            // file name filter type
+            try {
+                m_filesNameFilterType = DefaultMultiFileChooserFilters.NameFilterType
+                    .valueOf(filterOptions.getFilesNameFilterType().name());
+            } catch (IllegalArgumentException ex) { // fallback
+                m_filesNameFilterType = DefaultMultiFileChooserFilters.NameFilterType.WILDCARD;
+            }
+            m_includeHiddenFiles = filterOptions.isIncludeHiddenFiles();
+            m_includeSpecialFiles = filterOptions.isIncludeSpecialFiles();
+            m_filterFoldersName = filterOptions.isFilterFoldersByName();
+            m_foldersNameExpression = filterOptions.getFoldersNameExpression();
+            m_foldersNameCaseSensitive = filterOptions.isFoldersNameCaseSensitive();
+            try {
+                m_foldersNameFilterType = DefaultMultiFileChooserFilters.NameFilterType
+                    .valueOf(filterOptions.getFoldersNameFilterType().name());
+            } catch (IllegalArgumentException ex) {
+                m_foldersNameFilterType = DefaultMultiFileChooserFilters.NameFilterType.WILDCARD;
+            }
+            m_includeHiddenFolders = filterOptions.isIncludeHiddenFolders();
+            m_followSymlinks = filterOptions.isFollowLinks();
         }
 
         @Override
@@ -314,7 +314,7 @@ final class ExcelSheetReaderNodeParameters implements NodeParameters {
             Select a single Excel workbook or all Excel workbooks in a folder. Choose 'Type' = File for
             one file or 'Type' = Folder to include all matching Excel files (optionally from subfolders).
             """)
-    @Persistor(LegacyMultiFileReaderPersistor.class)
+    @Persistor(ExcelFileSelectionPersistor.class)
     MultiFileSelection<DefaultMultiFileChooserFilters> m_fileSelection =
         new MultiFileSelection<>(new DefaultMultiFileChooserFilters());
 
@@ -322,15 +322,19 @@ final class ExcelSheetReaderNodeParameters implements NodeParameters {
      * Persistor that translates the {@link MultiFileSelection} into the legacy settings structure expected by
      * {@code SettingsModelReaderFileChooser} (root key: file_selection).
      */
-    public static final class LegacyMultiFileReaderPersistor
+    static abstract class LegacyMultiFileReaderPersistor
         implements NodeParametersPersistor<MultiFileSelection<DefaultMultiFileChooserFilters>> {
 
-        private static final String CFG_KEY = "file_selection";
+        private final String m_configKey;
+
+        LegacyMultiFileReaderPersistor(final String configKey) {
+            m_configKey = configKey;
+        }
 
         @Override
         public MultiFileSelection<DefaultMultiFileChooserFilters> load(final NodeSettingsRO settings)
             throws InvalidSettingsException {
-            final var chooserCfg = settings.getNodeSettings(CFG_KEY);
+            final var chooserCfg = settings.getNodeSettings(m_configKey);
 
             final var pathCfg = chooserCfg.getNodeSettings("path");
             final FSLocation loc = FSLocationSerializationUtils.loadFSLocation(pathCfg);
@@ -339,13 +343,13 @@ final class ExcelSheetReaderNodeParameters implements NodeParameters {
             final String mode = filterModeCfg.getString("filter_mode", "FILE");
             final boolean includeSubfolders = filterModeCfg.getBoolean("include_subfolders", false);
 
-            final var selection = new MultiFileSelection<>(new DefaultMultiFileChooserFilters(), loc);
+            final var fileSelection = new MultiFileSelection<>(new DefaultMultiFileChooserFilters(), loc);
             if ("FILES_IN_FOLDERS".equals(mode)) {
-                selection.m_fileOrFolder = MultiFileSelection.FileOrFolder.FOLDER; // NOSONAR
-                selection.m_includeSubfolders = includeSubfolders; // NOSONAR
+                fileSelection.m_fileOrFolder = MultiFileSelection.FileOrFolder.FOLDER; // NOSONAR
+                fileSelection.m_includeSubfolders = includeSubfolders; // NOSONAR
             } else {
-                selection.m_fileOrFolder = MultiFileSelection.FileOrFolder.FILE; // NOSONAR
-                selection.m_includeSubfolders = false; // NOSONAR
+                fileSelection.m_fileOrFolder = MultiFileSelection.FileOrFolder.FILE; // NOSONAR
+                fileSelection.m_includeSubfolders = false; // NOSONAR
             }
 
             // Attempt to load filter options; if absent (older workflows) keep defaults
@@ -353,30 +357,31 @@ final class ExcelSheetReaderNodeParameters implements NodeParameters {
                 final var filterOptions = filterModeCfg.getNodeSettings("filter_options");
                 final var filterOptionsSettings = new FilterOptionsSettings();
                 filterOptionsSettings.loadFromConfigForDialog(filterOptions);
-                selection.m_filters.setFromFilterOptionsSettings(filterOptionsSettings);
+                fileSelection.m_filters.setFromFilterOptionsSettings(filterOptionsSettings);
             }
-            return selection;
+            return fileSelection;
         }
 
         @Override
-        public void save(final MultiFileSelection<DefaultMultiFileChooserFilters> obj,
-            final NodeSettingsWO settings) {
+        public void save(final MultiFileSelection<DefaultMultiFileChooserFilters> obj, final NodeSettingsWO settings) {
             // Defensive: null object should not happen, but if it does we create an empty selection
-            final var selection = obj == null ? new MultiFileSelection<>(new DefaultMultiFileChooserFilters()) : obj;
+            final var fileSelection =
+                obj == null ? new MultiFileSelection<>(new DefaultMultiFileChooserFilters()) : obj;
 
-            final var chooserCfg = settings.addNodeSettings(CFG_KEY);
+            final var chooserCfg = settings.addNodeSettings(m_configKey);
+
             // path
-            FSLocationSerializationUtils.saveFSLocation(selection.m_path, chooserCfg.addNodeSettings("path"));
+            FSLocationSerializationUtils.saveFSLocation(fileSelection.m_path, chooserCfg.addNodeSettings("path"));
 
             // filter mode & inclusion of subfolders
             final var filterModeCfg = chooserCfg.addNodeSettings("filter_mode");
-            final boolean isFolder = selection.m_fileOrFolder == MultiFileSelection.FileOrFolder.FOLDER;
+            final boolean isFolder = fileSelection.m_fileOrFolder == MultiFileSelection.FileOrFolder.FOLDER;
             filterModeCfg.addString("filter_mode", isFolder ? "FILES_IN_FOLDERS" : "FILE");
-            filterModeCfg.addBoolean("include_subfolders", isFolder && selection.m_includeSubfolders);
+            filterModeCfg.addBoolean("include_subfolders", isFolder && fileSelection.m_includeSubfolders);
 
             final var filterOptions = filterModeCfg.addNodeSettings("filter_options");
 
-            final var filterOptionsSettings = selection.m_filters.toFilterOptionsSettings();
+            final var filterOptionsSettings = fileSelection.m_filters.toFilterOptionsSettings();
             filterOptionsSettings.saveToConfig(filterOptions);
 
             // internal settings
@@ -395,34 +400,40 @@ final class ExcelSheetReaderNodeParameters implements NodeParameters {
         @Override
         public String[][] getConfigPaths() {
             return new String[][]{//
-                {CFG_KEY, "path"}, //
-                {CFG_KEY, "filter_mode", "filter_mode"}, //
-                {CFG_KEY, "filter_mode", "include_subfolders"}, //
-                {CFG_KEY, "filter_options", FilterOptionsSettings.CFG_FILES_FILTER_BY_EXTENSION}, //
-                {CFG_KEY, "filter_options", FilterOptionsSettings.CFG_FILES_EXTENSION_EXPRESSION}, //
-                {CFG_KEY, "filter_options", FilterOptionsSettings.CFG_FILES_EXTENSION_CASE_SENSITIVE}, //
-                {CFG_KEY, "filter_options", FilterOptionsSettings.CFG_FILES_FILTER_BY_NAME}, //
-                {CFG_KEY, "filter_options", FilterOptionsSettings.CFG_FILES_NAME_EXPRESSION}, //
-                {CFG_KEY, "filter_options", FilterOptionsSettings.CFG_FILES_NAME_CASE_SENSITIVE}, //
-                {CFG_KEY, "filter_options", FilterOptionsSettings.CFG_FILES_NAME_FILTER_TYPE}, //
-                {CFG_KEY, "filter_options", FilterOptionsSettings.CFG_INCLUDE_HIDDEN_FILES}, //
-                {CFG_KEY, "filter_options", FilterOptionsSettings.CFG_INCLUDE_SPECIAL_FILES}, //
-                {CFG_KEY, "filter_options", FilterOptionsSettings.CFG_FOLDERS_FILTER_BY_NAME}, //
-                {CFG_KEY, "filter_options", FilterOptionsSettings.CFG_FOLDERS_NAME_EXPRESSION}, //
-                {CFG_KEY, "filter_options", FilterOptionsSettings.CFG_FOLDERS_NAME_CASE_SENSITIVE}, //
-                {CFG_KEY, "filter_options", FilterOptionsSettings.CFG_FOLDERS_NAME_FILTER_TYPE}, //
-                {CFG_KEY, "filter_options", FilterOptionsSettings.CFG_INCLUDE_HIDDEN_FOLDERS}, //
-                {CFG_KEY, "filter_options", FilterOptionsSettings.CFG_FOLLOW_LINKS}, //
-                {CFG_KEY, "file_system_chooser__Internals", "has_fs_port"}, //
-                {CFG_KEY, "file_system_chooser__Internals", "overwritten_by_variable"}, //
-                {CFG_KEY, "file_system_chooser__Internals", "convenience_fs_category"}, //
-                {CFG_KEY, "file_system_chooser__Internals", "relative_to"}, //
-                {CFG_KEY, "file_system_chooser__Internals", "mountpoint"}, //
-                {CFG_KEY, "file_system_chooser__Internals", "spaceId"}, //
-                {CFG_KEY, "file_system_chooser__Internals", "spaceName"}, //
-                {CFG_KEY, "file_system_chooser__Internals", "custom_url_timeout"}, //
-                {CFG_KEY, "file_system_chooser__Internals", "connected_fs"},//
+                {m_configKey, "path"}, //
+                {m_configKey, "filter_mode", "filter_mode"}, //
+                {m_configKey, "filter_mode", "include_subfolders"}, //
+                {m_configKey, "filter_options", FilterOptionsSettings.CFG_FILES_FILTER_BY_EXTENSION}, //
+                {m_configKey, "filter_options", FilterOptionsSettings.CFG_FILES_EXTENSION_EXPRESSION}, //
+                {m_configKey, "filter_options", FilterOptionsSettings.CFG_FILES_EXTENSION_CASE_SENSITIVE}, //
+                {m_configKey, "filter_options", FilterOptionsSettings.CFG_FILES_FILTER_BY_NAME}, //
+                {m_configKey, "filter_options", FilterOptionsSettings.CFG_FILES_NAME_EXPRESSION}, //
+                {m_configKey, "filter_options", FilterOptionsSettings.CFG_FILES_NAME_CASE_SENSITIVE}, //
+                {m_configKey, "filter_options", FilterOptionsSettings.CFG_FILES_NAME_FILTER_TYPE}, //
+                {m_configKey, "filter_options", FilterOptionsSettings.CFG_INCLUDE_HIDDEN_FILES}, //
+                {m_configKey, "filter_options", FilterOptionsSettings.CFG_INCLUDE_SPECIAL_FILES}, //
+                {m_configKey, "filter_options", FilterOptionsSettings.CFG_FOLDERS_FILTER_BY_NAME}, //
+                {m_configKey, "filter_options", FilterOptionsSettings.CFG_FOLDERS_NAME_EXPRESSION}, //
+                {m_configKey, "filter_options", FilterOptionsSettings.CFG_FOLDERS_NAME_CASE_SENSITIVE}, //
+                {m_configKey, "filter_options", FilterOptionsSettings.CFG_FOLDERS_NAME_FILTER_TYPE}, //
+                {m_configKey, "filter_options", FilterOptionsSettings.CFG_INCLUDE_HIDDEN_FOLDERS}, //
+                {m_configKey, "filter_options", FilterOptionsSettings.CFG_FOLLOW_LINKS}, //
+                {m_configKey, "file_system_chooser__Internals", "has_fs_port"}, //
+                {m_configKey, "file_system_chooser__Internals", "overwritten_by_variable"}, //
+                {m_configKey, "file_system_chooser__Internals", "convenience_fs_category"}, //
+                {m_configKey, "file_system_chooser__Internals", "relative_to"}, //
+                {m_configKey, "file_system_chooser__Internals", "mountpoint"}, //
+                {m_configKey, "file_system_chooser__Internals", "spaceId"}, //
+                {m_configKey, "file_system_chooser__Internals", "spaceName"}, //
+                {m_configKey, "file_system_chooser__Internals", "custom_url_timeout"}, //
+                {m_configKey, "file_system_chooser__Internals", "connected_fs"},//
             };
+        }
+    }
+
+    static final class ExcelFileSelectionPersistor extends LegacyMultiFileReaderPersistor {
+        ExcelFileSelectionPersistor() {
+            super("file_selection");
         }
     }
 }

@@ -78,7 +78,7 @@ import org.xml.sax.SAXException;
  *
  * @author Mark Ortmann, KNIME GmbH, Berlin, Germany
  */
-@SuppressWarnings("restriction")
+@SuppressWarnings({"restriction", "deprecation"})
 public final class ExcelSheetReaderNodeFactory extends ConfigurableNodeFactory<ExcelSheetReaderNodeModel>
     implements NodeDialogFactory {
 
@@ -108,17 +108,26 @@ public final class ExcelSheetReaderNodeFactory extends ConfigurableNodeFactory<E
         .shortDescription("Reads the sheet names contained in an Excel file.")//
         .fullDescription(
             """
-            <p>This node reads an Excel file and provides the contained sheet names at its output port.</p>
-            <p>The performance of the reader node is limited (due to the underlying Apache POI library). Reading large files can take a long time.</p>
-            <p>This node can access a variety of different file systems. To read from additional file systems connect a suitable file system connector node to the optional input port.</p>
-            """)//
+                    <p>
+                    This node reads an Excel file and provides the contained sheet names at its output port.<br />
+                    The performance of the reader node is limited (due to the underlying library
+                    of the Apache POI project). Reading large files can take a long time.
+                    </p>
+
+                    <p>
+                    <i>This node can access a variety of different</i>
+                    <a href="https://docs.knime.com/2021-06/analytics_platform_file_handling_guide/index.html#analytics-platform-file-systems"><i>file systems.</i></a>
+                    <i>More information about file handling in KNIME can be found in the official</i>
+                    <a href="https://docs.knime.com/latest/analytics_platform_file_handling_guide/index.html"><i>File Handling Guide.</i></a>
+                    </p>
+                    """)//
         .modelSettingsClass(ExcelSheetReaderNodeParameters.class)//
         .addInputPort(FS_CONNECT_GRP_ID, FileSystemPortObject.TYPE,
             "The file system connection providing access to the selected file(s).", true)//
         .addOutputPort("Output table", BufferedDataTable.TYPE,
             "The sheet names contained in the workbook and the path to the workbook.")//
         .nodeType(NodeType.Source)//
-        .keywords(new String[] {"excel", "sheet", "read"})//
+        .keywords(new String[]{"excel", "sheet", "read"})//
         .sinceVersion(4, 5, 0)// best-effort (node originally introduced earlier)
         .build();
 
