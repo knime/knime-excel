@@ -49,6 +49,7 @@
 package org.knime.ext.poi3.node.io.filehandling.excel.sheets;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.Optional;
 
 import org.apache.xmlbeans.XmlException;
@@ -64,7 +65,10 @@ import org.knime.core.webui.node.dialog.NodeDialog;
 import org.knime.core.webui.node.dialog.NodeDialogFactory;
 import org.knime.core.webui.node.dialog.NodeDialogManager;
 import org.knime.core.webui.node.dialog.SettingsType;
+import org.knime.core.webui.node.dialog.defaultdialog.DefaultKaiNodeInterface;
 import org.knime.core.webui.node.dialog.defaultdialog.DefaultNodeDialog;
+import org.knime.core.webui.node.dialog.kai.KaiNodeInterface;
+import org.knime.core.webui.node.dialog.kai.KaiNodeInterfaceFactory;
 import org.knime.core.webui.node.impl.WebUINodeConfiguration;
 import org.knime.core.webui.node.impl.WebUINodeFactory;
 import org.knime.filehandling.core.defaultnodesettings.EnumConfig;
@@ -80,7 +84,7 @@ import org.xml.sax.SAXException;
  */
 @SuppressWarnings({"restriction", "deprecation"})
 public final class ExcelSheetReaderNodeFactory extends ConfigurableNodeFactory<ExcelSheetReaderNodeModel>
-    implements NodeDialogFactory {
+    implements NodeDialogFactory, KaiNodeInterfaceFactory {
 
     /** The file system ports group id. */
     static final String FS_CONNECT_GRP_ID = "File System Connection";
@@ -168,6 +172,11 @@ public final class ExcelSheetReaderNodeFactory extends ConfigurableNodeFactory<E
     private static SettingsModelReaderFileChooser createFileChooser(final PortsConfiguration portsConfig) {
         return new SettingsModelReaderFileChooser("file_selection", portsConfig, FS_CONNECT_GRP_ID,
             EnumConfig.create(FilterMode.FILE, FilterMode.FILES_IN_FOLDERS), FILE_EXTENSIONS);
+    }
+
+    @Override
+    public KaiNodeInterface createKaiNodeInterface() {
+        return new DefaultKaiNodeInterface(Map.of(SettingsType.MODEL, ExcelSheetReaderNodeParameters.class));
     }
 
 }
