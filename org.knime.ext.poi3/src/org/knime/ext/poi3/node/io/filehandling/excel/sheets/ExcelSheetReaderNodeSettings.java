@@ -80,7 +80,7 @@ import org.knime.node.parameters.widget.choices.ValueSwitchWidget;
  * select a single Excel workbook or all Excel workbooks contained in a folder (optionally including subfolders).
  * <p>
  * Backwards compatibility: The persisted settings reproduce the legacy {@code SettingsModelReaderFileChooser} structure
- * under the config key {@code file_selection}, so that the unchanged {@link ExcelSheetReaderNodeModel} continues to
+ * under the config key {@code file_selection}, so that the unchanged ExcelSheetReaderNodeModel continues to
  * work without any modification.
  */
 @SuppressWarnings("restriction")
@@ -238,6 +238,17 @@ final class ExcelSheetReaderNodeSettings implements NodeParameters {
             // We're constructing a FileAndFolderFilter here, as that is what is also used
             // in the model and was used in the old dialog. This way we ensure the same
             // filtering behavior in the dialog preview as in the model.
+            FileAndFolderFilter filter = new FileAndFolderFilter(root, toFilterOptionsSettings());
+            try {
+                BasicFileAttributes attrs = Files.readAttributes(path, BasicFileAttributes.class);
+                return filter.test(path, attrs);
+            } catch (Exception e) {
+                // If we can't read attributes, fallback to legacy logic: skip file
+                return false;
+            }
+        }
+
+        public FilterOptionsSettings toFilterOptionsSettings() {
             FilterOptionsSettings filterOptions = new FilterOptionsSettings();
 
             filterOptions.setFilterFilesByName(m_filterFilesName);
@@ -259,15 +270,37 @@ final class ExcelSheetReaderNodeSettings implements NodeParameters {
             filterOptions.setIncludeSpecialFiles(m_includeSpecialFiles);
             filterOptions.setFollowLinks(m_followSymlinks);
             filterOptions.setIncludeHiddenFolders(m_includeHiddenFolders);
+            filterOptions.setIncludeHiddenFiles(m_includeHiddenFiles);
+            return filterOptions;
+        }
 
-            FileAndFolderFilter filter = new FileAndFolderFilter(root, filterOptions);
-            try {
-                BasicFileAttributes attrs = Files.readAttributes(path, BasicFileAttributes.class);
-                return filter.test(path, attrs);
-            } catch (Exception e) {
-                // If we can't read attributes, fallback to legacy logic: skip file
-                return false;
-            }
+        public void setFromFilterOptionsSettings(final FilterOptionsSettings filterOptions) {
+              m_filterFilesExtension = filterOptions.isFilterFilesByExtension();
+              m_filesExtensionExpression = filterOptions.getFilesExtensionExpression();
+              m_filesExtensionCaseSensitive = filterOptions.isFilesExtensionCaseSensitive();
+              m_filterFilesName = filterOptions.isFilterFilesByName();
+              m_filesNameExpression = filterOptions.getFilesNameExpression();
+              m_filesNameCaseSensitive = filterOptions.isFilesNameCaseSensitive();
+              // file name filter type
+              try {
+                  m_filesNameFilterType = DefaultMultiFileFilterParameters.NameFilterType
+                      .valueOf(filterOptions.getFilesNameFilterType().name());
+              } catch (IllegalArgumentException ex) { // fallback
+                  m_filesNameFilterType = DefaultMultiFileFilterParameters.NameFilterType.WILDCARD;
+              }
+              m_includeHiddenFiles = filterOptions.isIncludeHiddenFiles();
+              m_includeSpecialFiles = filterOptions.isIncludeSpecialFiles();
+              m_filterFoldersName = filterOptions.isFilterFoldersByName();
+              m_foldersNameExpression = filterOptions.getFoldersNameExpression();
+              m_foldersNameCaseSensitive = filterOptions.isFoldersNameCaseSensitive();
+              try {
+                  m_foldersNameFilterType = DefaultMultiFileFilterParameters.NameFilterType
+                      .valueOf(filterOptions.getFoldersNameFilterType().name());
+              } catch (IllegalArgumentException ex) {
+                  m_foldersNameFilterType = DefaultMultiFileFilterParameters.NameFilterType.WILDCARD;
+              }
+              m_includeHiddenFolders = filterOptions.isIncludeHiddenFolders();
+              m_followSymlinks = filterOptions.isFollowLinks();
         }
 
         @Override
@@ -318,34 +351,9 @@ final class ExcelSheetReaderNodeSettings implements NodeParameters {
             // Attempt to load filter options; if absent (older workflows) keep defaults
             if (filterModeCfg.containsKey("filter_options")) {
                 final var filterOptions = filterModeCfg.getNodeSettings("filter_options");
-                final var filters = selection.m_filters;
-                filters.m_filterFilesExtension = filterOptions.getBoolean("filter_files_extension", false);
-                filters.m_filesExtensionExpression = filterOptions.getString("files_extension_expression", "");
-                filters.m_filesExtensionCaseSensitive =
-                    filterOptions.getBoolean("files_extension_case_sensitive", false);
-                filters.m_filterFilesName = filterOptions.getBoolean("filter_files_name", false);
-                filters.m_filesNameExpression = filterOptions.getString("files_name_expression", "*");
-                filters.m_filesNameCaseSensitive = filterOptions.getBoolean("files_name_case_sensitive", false);
-                // file name filter type
-                try {
-                    filters.m_filesNameFilterType = DefaultMultiFileFilterParameters.NameFilterType
-                        .valueOf(filterOptions.getString("files_name_filter_type", "WILDCARD"));
-                } catch (IllegalArgumentException ex) { // fallback
-                    filters.m_filesNameFilterType = DefaultMultiFileFilterParameters.NameFilterType.WILDCARD;
-                }
-                filters.m_includeHiddenFiles = filterOptions.getBoolean("include_hidden_files", true);
-                filters.m_includeSpecialFiles = filterOptions.getBoolean("include_special_files", true);
-                filters.m_filterFoldersName = filterOptions.getBoolean("filter_folders_name", false);
-                filters.m_foldersNameExpression = filterOptions.getString("folders_name_expression", "*");
-                filters.m_foldersNameCaseSensitive = filterOptions.getBoolean("folders_name_case_sensitive", false);
-                try {
-                    filters.m_foldersNameFilterType = DefaultMultiFileFilterParameters.NameFilterType
-                        .valueOf(filterOptions.getString("folders_name_filter_type", "WILDCARD"));
-                } catch (IllegalArgumentException ex) {
-                    filters.m_foldersNameFilterType = DefaultMultiFileFilterParameters.NameFilterType.WILDCARD;
-                }
-                filters.m_includeHiddenFolders = filterOptions.getBoolean("include_hidden_folders", true);
-                filters.m_followSymlinks = filterOptions.getBoolean("follow_links", filters.m_followSymlinks);
+                final var filterOptionsSettings = new FilterOptionsSettings();
+                filterOptionsSettings.loadFromConfigForDialog(filterOptions);
+                selection.m_filters.setFromFilterOptionsSettings(filterOptionsSettings);
             }
             return selection;
         }
@@ -367,22 +375,9 @@ final class ExcelSheetReaderNodeSettings implements NodeParameters {
             filterModeCfg.addBoolean("include_subfolders", isFolder && selection.m_includeSubfolders);
 
             final var filterOptions = filterModeCfg.addNodeSettings("filter_options");
-            final var filters = selection.m_filters;
-            filterOptions.addBoolean("filter_files_extension", filters.m_filterFilesExtension);
-            filterOptions.addString("files_extension_expression", filters.m_filesExtensionExpression);
-            filterOptions.addBoolean("files_extension_case_sensitive", filters.m_filesExtensionCaseSensitive);
-            filterOptions.addBoolean("filter_files_name", filters.m_filterFilesName);
-            filterOptions.addString("files_name_expression", filters.m_filesNameExpression);
-            filterOptions.addBoolean("files_name_case_sensitive", filters.m_filesNameCaseSensitive);
-            filterOptions.addString("files_name_filter_type", filters.m_filesNameFilterType.name());
-            filterOptions.addBoolean("include_hidden_files", filters.m_includeHiddenFiles);
-            filterOptions.addBoolean("include_special_files", filters.m_includeSpecialFiles);
-            filterOptions.addBoolean("filter_folders_name", filters.m_filterFoldersName);
-            filterOptions.addString("folders_name_expression", filters.m_foldersNameExpression);
-            filterOptions.addBoolean("folders_name_case_sensitive", filters.m_foldersNameCaseSensitive);
-            filterOptions.addString("folders_name_filter_type", filters.m_foldersNameFilterType.name());
-            filterOptions.addBoolean("include_hidden_folders", filters.m_includeHiddenFolders);
-            filterOptions.addBoolean("follow_links", filters.m_followSymlinks);
+
+            final var filterOptionsSettings = selection.m_filters.toFilterOptionsSettings();
+            filterOptionsSettings.saveToConfig(filterOptions);
 
             // internal settings
             final var internals = chooserCfg.addNodeSettings("file_system_chooser__Internals");
@@ -403,21 +398,21 @@ final class ExcelSheetReaderNodeSettings implements NodeParameters {
                 {CFG_KEY, "path"}, //
                 {CFG_KEY, "filter_mode", "filter_mode"}, //
                 {CFG_KEY, "filter_mode", "include_subfolders"}, //
-                {CFG_KEY, "filter_options", "filter_files_extension"}, //
-                {CFG_KEY, "filter_options", "files_extension_expression"}, //
-                {CFG_KEY, "filter_options", "files_extension_case_sensitive"}, //
-                {CFG_KEY, "filter_options", "filter_files_name"}, //
-                {CFG_KEY, "filter_options", "files_name_expression"}, //
-                {CFG_KEY, "filter_options", "files_name_case_sensitive"}, //
-                {CFG_KEY, "filter_options", "files_name_filter_type"}, //
-                {CFG_KEY, "filter_options", "include_hidden_files"}, //
-                {CFG_KEY, "filter_options", "include_special_files"}, //
-                {CFG_KEY, "filter_options", "filter_folders_name"}, //
-                {CFG_KEY, "filter_options", "folders_name_expression"}, //
-                {CFG_KEY, "filter_options", "folders_name_case_sensitive"}, //
-                {CFG_KEY, "filter_options", "folders_name_filter_type"}, //
-                {CFG_KEY, "filter_options", "include_hidden_folders"}, //
-                {CFG_KEY, "filter_options", "follow_links"}, //
+                {CFG_KEY, "filter_options", FilterOptionsSettings.CFG_FILES_FILTER_BY_EXTENSION}, //
+                {CFG_KEY, "filter_options", FilterOptionsSettings.CFG_FILES_EXTENSION_EXPRESSION}, //
+                {CFG_KEY, "filter_options", FilterOptionsSettings.CFG_FILES_EXTENSION_CASE_SENSITIVE}, //
+                {CFG_KEY, "filter_options", FilterOptionsSettings.CFG_FILES_FILTER_BY_NAME}, //
+                {CFG_KEY, "filter_options", FilterOptionsSettings.CFG_FILES_NAME_EXPRESSION}, //
+                {CFG_KEY, "filter_options", FilterOptionsSettings.CFG_FILES_NAME_CASE_SENSITIVE}, //
+                {CFG_KEY, "filter_options", FilterOptionsSettings.CFG_FILES_NAME_FILTER_TYPE}, //
+                {CFG_KEY, "filter_options", FilterOptionsSettings.CFG_INCLUDE_HIDDEN_FILES}, //
+                {CFG_KEY, "filter_options", FilterOptionsSettings.CFG_INCLUDE_SPECIAL_FILES}, //
+                {CFG_KEY, "filter_options", FilterOptionsSettings.CFG_FOLDERS_FILTER_BY_NAME}, //
+                {CFG_KEY, "filter_options", FilterOptionsSettings.CFG_FOLDERS_NAME_EXPRESSION}, //
+                {CFG_KEY, "filter_options", FilterOptionsSettings.CFG_FOLDERS_NAME_CASE_SENSITIVE}, //
+                {CFG_KEY, "filter_options", FilterOptionsSettings.CFG_FOLDERS_NAME_FILTER_TYPE}, //
+                {CFG_KEY, "filter_options", FilterOptionsSettings.CFG_INCLUDE_HIDDEN_FOLDERS}, //
+                {CFG_KEY, "filter_options", FilterOptionsSettings.CFG_FOLLOW_LINKS}, //
                 {CFG_KEY, "file_system_chooser__Internals", "has_fs_port"}, //
                 {CFG_KEY, "file_system_chooser__Internals", "overwritten_by_variable"}, //
                 {CFG_KEY, "file_system_chooser__Internals", "convenience_fs_category"}, //
