@@ -48,15 +48,15 @@
  */
 package org.knime.ext.poi3.node.io.filehandling.excel.sheets;
 
-import org.knime.core.webui.node.dialog.defaultdialog.internal.file.MultiFileSelection;
 import org.knime.node.parameters.NodeParameters;
 import org.knime.node.parameters.Widget;
 import org.knime.node.parameters.persistence.Persist;
 import org.knime.node.parameters.persistence.legacy.LegacyMultiFileSelection;
 
 /**
- * Modern UI settings for the Excel Sheet Reader node. Provides a {@link MultiFileSelection} so the user can either
- * select a single Excel workbook or all Excel workbooks contained in a folder (optionally including subfolders).
+ * Modern UI settings for the Excel Sheet Reader node. Provides a {@link LegacyMultiFileSelection} so the user can
+ * either select a single Excel workbook or all Excel workbooks contained in a folder (optionally including subfolders).
+ *
  * @since 5.9
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  */
