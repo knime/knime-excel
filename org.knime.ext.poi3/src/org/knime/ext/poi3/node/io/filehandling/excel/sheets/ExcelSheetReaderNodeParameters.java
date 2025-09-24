@@ -84,14 +84,14 @@ import org.knime.node.parameters.widget.choices.ValueSwitchWidget;
  * work without any modification.
  */
 @SuppressWarnings("restriction")
-final class ExcelSheetReaderNodeSettings implements NodeParameters {
+final class ExcelSheetReaderNodeParameters implements NodeParameters {
 
     /**
      * Filters for selecting only Excel files when the selection mode is FOLDER. For simplicity we only allow filtering
      * by extension (hidden files are accepted as in the legacy default). Further filter options can be added later
      * without breaking compatibility.
      */
-    static final class DefaultMultiFileFilterParameters implements FileChooserFilters {
+    static final class DefaultMultiFileChooserFilters implements FileChooserFilters {
 
         // ---- Sections ----------------------------------------------------
         @Section(title = "File filter options")
@@ -283,10 +283,10 @@ final class ExcelSheetReaderNodeSettings implements NodeParameters {
               m_filesNameCaseSensitive = filterOptions.isFilesNameCaseSensitive();
               // file name filter type
               try {
-                  m_filesNameFilterType = DefaultMultiFileFilterParameters.NameFilterType
+                  m_filesNameFilterType = DefaultMultiFileChooserFilters.NameFilterType
                       .valueOf(filterOptions.getFilesNameFilterType().name());
               } catch (IllegalArgumentException ex) { // fallback
-                  m_filesNameFilterType = DefaultMultiFileFilterParameters.NameFilterType.WILDCARD;
+                  m_filesNameFilterType = DefaultMultiFileChooserFilters.NameFilterType.WILDCARD;
               }
               m_includeHiddenFiles = filterOptions.isIncludeHiddenFiles();
               m_includeSpecialFiles = filterOptions.isIncludeSpecialFiles();
@@ -294,10 +294,10 @@ final class ExcelSheetReaderNodeSettings implements NodeParameters {
               m_foldersNameExpression = filterOptions.getFoldersNameExpression();
               m_foldersNameCaseSensitive = filterOptions.isFoldersNameCaseSensitive();
               try {
-                  m_foldersNameFilterType = DefaultMultiFileFilterParameters.NameFilterType
+                  m_foldersNameFilterType = DefaultMultiFileChooserFilters.NameFilterType
                       .valueOf(filterOptions.getFoldersNameFilterType().name());
               } catch (IllegalArgumentException ex) {
-                  m_foldersNameFilterType = DefaultMultiFileFilterParameters.NameFilterType.WILDCARD;
+                  m_foldersNameFilterType = DefaultMultiFileChooserFilters.NameFilterType.WILDCARD;
               }
               m_includeHiddenFolders = filterOptions.isIncludeHiddenFolders();
               m_followSymlinks = filterOptions.isFollowLinks();
@@ -315,20 +315,20 @@ final class ExcelSheetReaderNodeSettings implements NodeParameters {
             one file or 'Type' = Folder to include all matching Excel files (optionally from subfolders).
             """)
     @Persistor(LegacyMultiFileReaderPersistor.class)
-    MultiFileSelection<DefaultMultiFileFilterParameters> m_fileSelection =
-        new MultiFileSelection<>(new DefaultMultiFileFilterParameters());
+    MultiFileSelection<DefaultMultiFileChooserFilters> m_fileSelection =
+        new MultiFileSelection<>(new DefaultMultiFileChooserFilters());
 
     /**
      * Persistor that translates the {@link MultiFileSelection} into the legacy settings structure expected by
      * {@code SettingsModelReaderFileChooser} (root key: file_selection).
      */
     public static final class LegacyMultiFileReaderPersistor
-        implements NodeParametersPersistor<MultiFileSelection<DefaultMultiFileFilterParameters>> {
+        implements NodeParametersPersistor<MultiFileSelection<DefaultMultiFileChooserFilters>> {
 
         private static final String CFG_KEY = "file_selection";
 
         @Override
-        public MultiFileSelection<DefaultMultiFileFilterParameters> load(final NodeSettingsRO settings)
+        public MultiFileSelection<DefaultMultiFileChooserFilters> load(final NodeSettingsRO settings)
             throws InvalidSettingsException {
             final var chooserCfg = settings.getNodeSettings(CFG_KEY);
 
@@ -339,7 +339,7 @@ final class ExcelSheetReaderNodeSettings implements NodeParameters {
             final String mode = filterModeCfg.getString("filter_mode", "FILE");
             final boolean includeSubfolders = filterModeCfg.getBoolean("include_subfolders", false);
 
-            final var selection = new MultiFileSelection<>(new DefaultMultiFileFilterParameters(), loc);
+            final var selection = new MultiFileSelection<>(new DefaultMultiFileChooserFilters(), loc);
             if ("FILES_IN_FOLDERS".equals(mode)) {
                 selection.m_fileOrFolder = MultiFileSelection.FileOrFolder.FOLDER; // NOSONAR
                 selection.m_includeSubfolders = includeSubfolders; // NOSONAR
@@ -359,10 +359,10 @@ final class ExcelSheetReaderNodeSettings implements NodeParameters {
         }
 
         @Override
-        public void save(final MultiFileSelection<DefaultMultiFileFilterParameters> obj,
+        public void save(final MultiFileSelection<DefaultMultiFileChooserFilters> obj,
             final NodeSettingsWO settings) {
             // Defensive: null object should not happen, but if it does we create an empty selection
-            final var selection = obj == null ? new MultiFileSelection<>(new DefaultMultiFileFilterParameters()) : obj;
+            final var selection = obj == null ? new MultiFileSelection<>(new DefaultMultiFileChooserFilters()) : obj;
 
             final var chooserCfg = settings.addNodeSettings(CFG_KEY);
             // path

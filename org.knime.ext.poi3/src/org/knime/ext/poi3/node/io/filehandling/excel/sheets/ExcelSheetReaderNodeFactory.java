@@ -112,7 +112,7 @@ public final class ExcelSheetReaderNodeFactory extends ConfigurableNodeFactory<E
             <p>The performance of the reader node is limited (due to the underlying Apache POI library). Reading large files can take a long time.</p>
             <p>This node can access a variety of different file systems. To read from additional file systems connect a suitable file system connector node to the optional input port.</p>
             """)//
-        .modelSettingsClass(ExcelSheetReaderNodeSettings.class)//
+        .modelSettingsClass(ExcelSheetReaderNodeParameters.class)//
         .addInputPort(FS_CONNECT_GRP_ID, FileSystemPortObject.TYPE,
             "The file system connection providing access to the selected file(s).", true)//
         .addOutputPort("Output table", BufferedDataTable.TYPE,
@@ -153,7 +153,7 @@ public final class ExcelSheetReaderNodeFactory extends ConfigurableNodeFactory<E
 
     @Override
     public NodeDialog createNodeDialog() {
-        return new DefaultNodeDialog(SettingsType.MODEL, ExcelSheetReaderNodeSettings.class);
+        return new DefaultNodeDialog(SettingsType.MODEL, ExcelSheetReaderNodeParameters.class);
     }
 
     private static SettingsModelReaderFileChooser createFileChooser(final PortsConfiguration portsConfig) {
