@@ -40,7 +40,8 @@ try {
                         "knime-database",
                         "knime-kerberos",
                         "knime-streaming",
-                        "knime-xml"
+                        "knime-xml",
+                        "knime-core-ui"
                         ]
                 ],
                 sidecarContainers: [
