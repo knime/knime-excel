@@ -48,6 +48,8 @@
  */
 package org.knime.ext.poi3.node.io.filehandling.excel.sheets;
 
+import org.knime.core.webui.node.dialog.defaultdialog.internal.file.MultiFileSelectionMode;
+import org.knime.core.webui.node.dialog.defaultdialog.internal.file.MultiFileSelectionWidget;
 import org.knime.node.parameters.NodeParameters;
 import org.knime.node.parameters.Widget;
 import org.knime.node.parameters.persistence.Persist;
@@ -68,5 +70,6 @@ final class ExcelSheetReaderNodeParameters implements NodeParameters {
             one file or 'Type' = Folder to include all matching Excel files (optionally from subfolders).
             """)
     @Persist(configKey = "file_selection")
-    LegacyMultiFileSelection m_fileSelection = new LegacyMultiFileSelection();
+    @MultiFileSelectionWidget({MultiFileSelectionMode.FILE, MultiFileSelectionMode.FILES_IN_FOLDERS})
+    LegacyMultiFileSelection m_fileSelection = new LegacyMultiFileSelection(MultiFileSelectionMode.FILE);
 }
