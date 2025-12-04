@@ -86,37 +86,37 @@ final class ExcelTableWriterConfig implements ExcelTableConfig {
 
     private static final SheetNameExistsHandling DEFAULT_SHEET_EXISTS_HANDLING = SheetNameExistsHandling.FAIL;
 
-    private static final String CFG_EXCEL_FORMAT = "excel_format";
+    static final String CFG_EXCEL_FORMAT = "excel_format";
 
-    private static final String CFG_FILE_CHOOSER = "file_selection";
+    static final String CFG_FILE_CHOOSER = "file_selection";
 
     private static final String DEFAULT_SHEET_NAME_PREFIX = "default_";
 
-    private static final String CFG_SHEET_NAMES = "sheet_names";
+    static final String CFG_SHEET_NAMES = "sheet_names";
 
-    private static final String CFG_SHEET_EXISTS = "if_sheet_exists";
+    static final String CFG_SHEET_EXISTS = "if_sheet_exists";
 
-    private static final String CFG_WRITE_ROW_KEY = "write_row_key";
+    static final String CFG_WRITE_ROW_KEY = "write_row_key";
 
-    private static final String CFG_WRITE_COLUMN_HEADER = "write_column_header";
+    static final String CFG_WRITE_COLUMN_HEADER = "write_column_header";
 
-    private static final String CFG_SKIP_COLUMN_HEADER_ON_APPEND = "skip_column_header_on_append";
+    static final String CFG_SKIP_COLUMN_HEADER_ON_APPEND = "skip_column_header_on_append";
 
-    private static final String CFG_MISSING_VALUE_PATTERN = "missing_value_pattern";
+    static final String CFG_MISSING_VALUE_PATTERN = "missing_value_pattern";
 
-    private static final String CFG_REPLACE_MISSINGS = "replace_missings";
+    static final String CFG_REPLACE_MISSINGS = "replace_missings";
 
-    private static final String CFG_LANDSCAPE = "layout";
+    static final String CFG_LANDSCAPE = "layout";
 
-    private static final String CFG_AUTOSIZE = "autosize_columns";
+    static final String CFG_AUTOSIZE = "autosize_columns";
 
-    private static final String CFG_PAPER_SIZE = "paper_size";
+    static final String CFG_PAPER_SIZE = "paper_size";
 
-    private static final String CFG_EVALUATE_FORMULAS = "evaluate_formulas";
+    static final String CFG_EVALUATE_FORMULAS = "evaluate_formulas";
 
-    private static final String CFG_OPEN_FILE_AFTER_EXEC = "open_file_after_exec" + SettingsModel.CFGKEY_INTERNAL;
+    static final String CFG_OPEN_FILE_AFTER_EXEC = "open_file_after_exec" + SettingsModel.CFGKEY_INTERNAL;
 
-    private static final String CFG_AUTHENTICATION_METHOD = "authentication_method";
+    static final String CFG_AUTHENTICATION_METHOD = "authentication_method";
 
 
     private final SettingsModelString m_excelFormat;
@@ -226,7 +226,7 @@ final class ExcelTableWriterConfig implements ExcelTableConfig {
         return m_authenticationSettingsModel;
     }
 
-    private static String createDefaultSheetName(final int idx) {
+    static String createDefaultSheetName(final int idx) {
         return DEFAULT_SHEET_NAME_PREFIX + (idx + 1);
     }
 

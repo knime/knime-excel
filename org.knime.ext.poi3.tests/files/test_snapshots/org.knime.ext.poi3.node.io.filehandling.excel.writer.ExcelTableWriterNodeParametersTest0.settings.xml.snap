@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config xmlns="http://www.knime.org/2008/09/XMLConfig" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.knime.org/2008/09/XMLConfig http://www.knime.org/XMLConfig_2008_09.xsd" key="test">
+    <entry key="excel_format" type="xstring" value="XLS"/>
+    <config key="file_selection">
+        <config key="path">
+            <entry key="location_present" type="xboolean" value="true"/>
+            <entry key="file_system_type" type="xstring" value="LOCAL"/>
+            <entry key="path" type="xstring" value="/tmp/foo/test_encrypted.xls"/>
+        </config>
+        <config key="file_system_chooser__Internals">
+            <entry key="has_fs_port" type="xboolean" value="false"/>
+            <entry key="overwritten_by_variable" type="xboolean" value="false"/>
+            <entry key="convenience_fs_category" type="xstring" value="LOCAL"/>
+            <entry key="relative_to" type="xstring" value="knime.workflow"/>
+            <entry key="mountpoint" type="xstring" value="LOCAL"/>
+            <entry key="spaceId" type="xstring" value=""/>
+            <entry key="spaceName" type="xstring" value=""/>
+            <entry key="custom_url_timeout" type="xint" value="1000"/>
+            <entry key="connected_fs" type="xboolean" value="true"/>
+        </config>
+        <entry key="create_missing_folders" type="xboolean" value="false"/>
+        <entry key="if_path_exists" type="xstring" value="append"/>
+    </config>
+    <config key="authentication_method">
+        <entry key="selectedType" type="xstring" value="PWD"/>
+        <entry key="credentials" type="xstring" value="credentials"/>
+        <entry key="username" type="xstring" isnull="true" value=""/>
+        <entry key="password" type="xpassword" value="02BwAAAGMq_QxveL1vZ0EBjxNAxmiQQUdMPIL1"/>
+    </config>
+    <config key="sheet_names">
+        <entry key="array-size" type="xint" value="3"/>
+        <entry key="0" type="xstring" value="blabla"/>
+        <entry key="1" type="xstring" value="Sheet1"/>
+        <entry key="2" type="xstring" value="Sheet1"/>
+    </config>
+    <entry key="if_sheet_exists" type="xstring" value="APPEND"/>
+    <entry key="write_row_key" type="xboolean" value="false"/>
+    <entry key="write_column_header" type="xboolean" value="true"/>
+    <entry key="skip_column_header_on_append" type="xboolean" value="true"/>
+    <entry key="replace_missings" type="xboolean" value="false"/>
+    <entry key="missing_value_pattern" type="xstring" value=""/>
+    <entry key="evaluate_formulas" type="xboolean" value="false"/>
+    <entry key="autosize_columns" type="xboolean" value="false"/>
+    <entry key="layout" type="xstring" value="PORTRAIT"/>
+    <entry key="paper_size" type="xstring" value="ENVELOPE_MONARCH_PAPERSIZE"/>
+    <entry key="open_file_after_exec_Internals" type="xboolean" value="false"/>
+</config>
