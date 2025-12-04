@@ -1,0 +1,766 @@
+{
+  "data" : {
+    "model" : {
+      "excelFormat" : "XLSX",
+      "outputFile" : {
+        "file" : {
+          "path" : {
+            "fsCategory" : "LOCAL",
+            "path" : "",
+            "timeout" : 10000,
+            "context" : {
+              "fsToString" : "(LOCAL, )"
+            }
+          }
+        },
+        "createMissingFolders" : false,
+        "overwritePolicy" : "overwrite"
+      },
+      "encryption" : {
+        "type" : "NONE",
+        "credentials" : "",
+        "password" : {
+          "isHiddenPassword" : false,
+          "isHiddenSecondFactor" : false,
+          "username" : ""
+        }
+      },
+      "sheetNames" : [ ],
+      "ifSheetExists" : "FAIL",
+      "concatenateSheetsWithSameName" : false,
+      "writeRowKey" : false,
+      "writeColumnHeaders" : true,
+      "skipColumnHeaderOnAppend" : true,
+      "missingValuePattern" : null,
+      "evaluateFormulas" : false,
+      "autosizeColumns" : false,
+      "orientation" : "PORTRAIT",
+      "paperSize" : "A4_PAPERSIZE",
+      "openOutputFileAfterExecution" : false
+    }
+  },
+  "schema" : {
+    "type" : "object",
+    "properties" : {
+      "model" : {
+        "type" : "object",
+        "properties" : {
+          "autosizeColumns" : {
+            "type" : "boolean",
+            "title" : "Autosize columns",
+            "description" : "Fits each column's width to its content.",
+            "default" : false
+          },
+          "concatenateSheetsWithSameName" : {
+            "type" : "boolean",
+            "title" : "Merge data with identical sheet names into one sheet",
+            "description" : "If checked, it is possible to provide the same sheet name for multiple input tables. Data from those tables will be concatenated into the same sheet in the order the tables are connected.",
+            "default" : false
+          },
+          "encryption" : {
+            "type" : "object",
+            "properties" : {
+              "credentials" : {
+                "type" : "string",
+                "title" : "Workflow credentials",
+                "description" : "Select the workflow credentials to use.",
+                "default" : ""
+              },
+              "password" : {
+                "type" : "object",
+                "properties" : {
+                  "password" : {
+                    "type" : "string",
+                    "default" : ""
+                  },
+                  "secondFactor" : {
+                    "type" : "string",
+                    "default" : ""
+                  },
+                  "username" : {
+                    "type" : "string",
+                    "default" : ""
+                  }
+                },
+                "title" : "Password",
+                "description" : "Enter the password to protect the file.",
+                "default" : {
+                  "isHiddenPassword" : false,
+                  "isHiddenSecondFactor" : false,
+                  "username" : ""
+                }
+              },
+              "type" : {
+                "oneOf" : [ {
+                  "const" : "NONE",
+                  "title" : "None"
+                }, {
+                  "const" : "CREDENTIALS",
+                  "title" : "Credentials"
+                }, {
+                  "const" : "PWD",
+                  "title" : "Password"
+                } ],
+                "title" : "Password to protect files",
+                "description" : "Allows you to specify a password to protect the output file with. In case the \"append\" option is selected and the file already exists, the password must be valid for the existing file.\n<ul>\n<li><b>None</b>: Only files without password protection can be updated.</li>\n<li><b>Credentials</b>: Use a password set via workflow credentials.</li>\n<li><b>Password</b>: Specify a password.</li>\n</ul>",
+                "default" : "NONE"
+              }
+            },
+            "default" : {
+              "type" : "NONE",
+              "credentials" : "",
+              "password" : {
+                "isHiddenPassword" : false,
+                "isHiddenSecondFactor" : false,
+                "username" : ""
+              }
+            }
+          },
+          "encryptionValidationMessage" : {
+            "type" : "object"
+          },
+          "evaluateFormulas" : {
+            "type" : "boolean",
+            "title" : "Evaluate formulas (leave unchecked if uncertain, see help for details)",
+            "description" : "If checked, all formulas in the file will be evaluated after the sheet has been written. This is useful if other sheets in the file refer to the data just written and their content needs updating. This option is only relevant if the append option is selected. This can cause errors when there are functions that are not implemented by the underlying Apache POI library. Note: For xlsx files, evaluation requires significantly more memory as the whole file needs to be kept in memory (xls files are anyway loaded completely into memory).",
+            "default" : false
+          },
+          "excelFormat" : {
+            "oneOf" : [ {
+              "const" : "XLSX",
+              "title" : "XLSX"
+            }, {
+              "const" : "XLS",
+              "title" : "XLS"
+            } ],
+            "title" : "Excel format",
+            "description" : "Select the Excel file format to write.\n<ul>\n<li><b>XLSX</b>: The Office Open XML format is the file format used by default from Excel 2007 onwards. The maximum number of columns and rows held by a spreadsheet of this format is 16384 and 1048576 respectively.</li>\n<li><b>XLS</b>: This is the file format which was used by default up until Excel 2003. The maximum number of columns and rows held by a spreadsheet of this format is 256 and 65536 respectively.</li>\n</ul>",
+            "default" : "XLSX"
+          },
+          "ifSheetExists" : {
+            "oneOf" : [ {
+              "const" : "FAIL",
+              "title" : "Fail"
+            }, {
+              "const" : "OVERWRITE",
+              "title" : "Overwrite"
+            }, {
+              "const" : "APPEND",
+              "title" : "Append"
+            } ],
+            "title" : "If sheet exists",
+            "description" : "Specify the behavior of the node in case a sheet with the entered name already exists. (This option is only relevant if the file append option is selected.)\n<ul>\n<li><b>Fail</b>: Will issue an error during the node's execution (to prevent unintentional overwrite).</li>\n<li><b>Overwrite</b>: Will replace any existing sheet.</li>\n<li><b>Append</b>: Will append the input tables after the last row of the sheets. <b>Note:</b> the last row is chosen according to the rows which already exist in the sheet. A row may appear empty but still exist because it or one of its cells contains styling information or was not removed by Excel after the user cleared it.</li>\n</ul>",
+            "default" : "FAIL"
+          },
+          "missingValuePattern" : {
+            "type" : [ "string", "null" ],
+            "title" : "Replace missing values",
+            "description" : "If selected, missing values will be replaced by the specified value, otherwise a blank cell is being created.",
+            "default" : null
+          },
+          "openOutputFileAfterExecution" : {
+            "type" : "boolean",
+            "title" : "Open file after execution",
+            "description" : "If enabled, the output file will be opened in the associated application after the node has successfully executed.",
+            "default" : false
+          },
+          "orientation" : {
+            "oneOf" : [ {
+              "const" : "PORTRAIT",
+              "title" : "Portrait"
+            }, {
+              "const" : "LANDSCAPE",
+              "title" : "Landscape"
+            } ],
+            "title" : "Page orientation",
+            "description" : "Sets the print format to portrait or landscape.",
+            "default" : "PORTRAIT"
+          },
+          "outputFile" : {
+            "type" : "object",
+            "properties" : {
+              "createMissingFolders" : {
+                "type" : "boolean",
+                "title" : "Create missing folders",
+                "description" : "If enabled, missing folders in the specified path will be created automatically.",
+                "default" : false
+              },
+              "file" : {
+                "type" : "object",
+                "properties" : {
+                  "path" : {
+                    "type" : "object",
+                    "default" : {
+                      "fsCategory" : "LOCAL",
+                      "path" : "",
+                      "timeout" : 10000,
+                      "context" : {
+                        "fsToString" : "(LOCAL, )"
+                      }
+                    }
+                  }
+                },
+                "title" : "File Selection",
+                "description" : "The file selection.",
+                "default" : {
+                  "path" : {
+                    "fsCategory" : "LOCAL",
+                    "path" : "",
+                    "timeout" : 10000,
+                    "context" : {
+                      "fsToString" : "(LOCAL, )"
+                    }
+                  }
+                }
+              },
+              "overwritePolicy" : {
+                "oneOf" : [ {
+                  "const" : "fail",
+                  "title" : "Fail"
+                }, {
+                  "const" : "overwrite",
+                  "title" : "Overwrite"
+                }, {
+                  "const" : "ignore",
+                  "title" : "Ignore"
+                }, {
+                  "const" : "append",
+                  "title" : "Append"
+                } ],
+                "title" : "If exists",
+                "description" : "Specify the behavior of the node in case the output file already exists.<ul><li><b>Fail</b>: Will issue an error during the node's execution (to prevent unintentional overwrite).</li><li><b>Overwrite</b>: Will replace any existing file.</li><li><b>Append</b>: Will append the input data to an existing file.</li></ul>",
+                "default" : "overwrite"
+              }
+            },
+            "default" : {
+              "file" : {
+                "path" : {
+                  "fsCategory" : "LOCAL",
+                  "path" : "",
+                  "timeout" : 10000,
+                  "context" : {
+                    "fsToString" : "(LOCAL, )"
+                  }
+                }
+              },
+              "createMissingFolders" : false,
+              "overwritePolicy" : "overwrite"
+            }
+          },
+          "paperSize" : {
+            "oneOf" : [ {
+              "const" : "A4_PAPERSIZE",
+              "title" : "A4 - 210x297 mm"
+            }, {
+              "const" : "A5_PAPERSIZE",
+              "title" : "A5 - 148x210 mm"
+            }, {
+              "const" : "ENVELOPE_10_PAPERSIZE",
+              "title" : "US Envelope #10 4 1/8 x 9 1/2"
+            }, {
+              "const" : "ENVELOPE_CS_PAPERSIZE",
+              "title" : "Envelope C5 162x229 mm"
+            }, {
+              "const" : "ENVELOPE_DL_PAPERSIZE",
+              "title" : "Envelope DL 110x220 mm"
+            }, {
+              "const" : "ENVELOPE_MONARCH_PAPERSIZE",
+              "title" : "Envelope Monarch 98.4×190.5 mm"
+            }, {
+              "const" : "EXECUTIVE_PAPERSIZE",
+              "title" : "US Executive 7 1/4 x 10 1/2 in"
+            }, {
+              "const" : "LEGAL_PAPERSIZE",
+              "title" : "US Legal 8 1/2 x 14 in"
+            }, {
+              "const" : "LETTER_PAPERSIZE",
+              "title" : "US Letter 8 1/2 x 11 in"
+            } ],
+            "title" : "Paper size",
+            "description" : "Sets the paper size in the print setup.",
+            "default" : "A4_PAPERSIZE"
+          },
+          "sheetNameValidationMessage" : {
+            "type" : "object"
+          },
+          "sheetNames" : {
+            "type" : "array",
+            "items" : {
+              "type" : "object",
+              "properties" : {
+                "sheetName" : {
+                  "type" : "string",
+                  "title" : "Sheet name",
+                  "description" : "Name of the spreadsheets that will be created. The dropdown can be used to select a sheet name which already exists in the Excel file or a custom name can be entered. If \"If sheet exists\" isn't set to append, each sheet name must be unique. The node appends the tables in the order they are connected.",
+                  "default" : "Sheet1"
+                }
+              }
+            },
+            "title" : "Sheets",
+            "default" : [ ]
+          },
+          "skipColumnHeaderOnAppend" : {
+            "type" : "boolean",
+            "title" : "Don't write column headers if sheet exists",
+            "description" : "Only write the column headers if a sheet is newly created or replaced. This option is convenient if you have written data with the same specification to an existing sheet before and want to append new rows to it.",
+            "default" : true
+          },
+          "writeColumnHeaders" : {
+            "type" : "boolean",
+            "title" : "Write column headers",
+            "description" : "If checked, the column names are written out in the first row of the spreadsheet.",
+            "default" : true
+          },
+          "writeRowKey" : {
+            "type" : "boolean",
+            "title" : "Write row key",
+            "description" : "If checked, the row IDs are added to the output, in the first column of the spreadsheet.",
+            "default" : false
+          }
+        }
+      }
+    }
+  },
+  "ui_schema" : {
+    "elements" : [ {
+      "label" : "Output",
+      "type" : "Section",
+      "elements" : [ {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/excelFormat",
+        "options" : {
+          "format" : "valueSwitch"
+        }
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/outputFile/properties/file",
+        "options" : {
+          "isLocal" : true,
+          "isWriter" : true,
+          "spaceFSOptions" : {
+            "mountId" : "Local space"
+          },
+          "format" : "fileChooser"
+        },
+        "providedOptions" : [ "fileExtension" ]
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/outputFile/properties/createMissingFolders",
+        "options" : {
+          "format" : "checkbox"
+        }
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/outputFile/properties/overwritePolicy",
+        "options" : {
+          "format" : "valueSwitch"
+        },
+        "providedOptions" : [ "possibleValues" ]
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/encryption/properties/type",
+        "options" : {
+          "format" : "valueSwitch"
+        }
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/encryption/properties/credentials",
+        "options" : {
+          "format" : "dropDown"
+        },
+        "providedOptions" : [ "possibleValues" ],
+        "rule" : {
+          "effect" : "SHOW",
+          "condition" : {
+            "scope" : "#/properties/model/properties/encryption/properties/type",
+            "schema" : {
+              "oneOf" : [ {
+                "const" : "CREDENTIALS"
+              } ]
+            }
+          }
+        }
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/encryption/properties/password",
+        "options" : {
+          "hasUsername" : false,
+          "passwordLabel" : "Password",
+          "format" : "credentials"
+        },
+        "rule" : {
+          "effect" : "SHOW",
+          "condition" : {
+            "scope" : "#/properties/model/properties/encryption/properties/type",
+            "schema" : {
+              "oneOf" : [ {
+                "const" : "PWD"
+              } ]
+            }
+          }
+        }
+      }, {
+        "type" : "Control",
+        "id" : "#/properties/model/properties/encryptionValidationMessage",
+        "options" : {
+          "format" : "textMessage"
+        },
+        "providedOptions" : [ "message" ],
+        "rule" : {
+          "effect" : "SHOW",
+          "condition" : {
+            "scope" : "#/properties/model/properties/outputFile",
+            "schema" : {
+              "properties" : {
+                "overwritePolicy" : {
+                  "oneOf" : [ {
+                    "const" : "append"
+                  } ]
+                }
+              },
+              "required" : [ "overwritePolicy" ]
+            }
+          }
+        }
+      } ]
+    }, {
+      "label" : "Sheets",
+      "type" : "Section",
+      "elements" : [ {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/sheetNames",
+        "options" : {
+          "detail" : [ {
+            "type" : "Control",
+            "scope" : "#/properties/sheetName",
+            "options" : {
+              "format" : "dropDown",
+              "allowNewValue" : true
+            },
+            "providedOptions" : [ "possibleValues" ]
+          } ],
+          "elementLayout" : "HORIZONTAL_SINGLE_LINE",
+          "hasFixedSize" : true
+        },
+        "providedOptions" : [ "elementDefaultValue" ]
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/ifSheetExists",
+        "options" : {
+          "format" : "valueSwitch"
+        },
+        "rule" : {
+          "effect" : "SHOW",
+          "condition" : {
+            "scope" : "#/properties/model/properties/outputFile",
+            "schema" : {
+              "properties" : {
+                "overwritePolicy" : {
+                  "oneOf" : [ {
+                    "const" : "append"
+                  } ]
+                }
+              },
+              "required" : [ "overwritePolicy" ]
+            }
+          }
+        }
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/concatenateSheetsWithSameName",
+        "options" : {
+          "format" : "checkbox"
+        },
+        "rule" : {
+          "effect" : "HIDE",
+          "condition" : {
+            "scope" : "#/properties/model/properties/outputFile",
+            "schema" : {
+              "properties" : {
+                "overwritePolicy" : {
+                  "oneOf" : [ {
+                    "const" : "append"
+                  } ]
+                }
+              },
+              "required" : [ "overwritePolicy" ]
+            }
+          }
+        }
+      }, {
+        "type" : "Control",
+        "id" : "#/properties/model/properties/sheetNameValidationMessage",
+        "options" : {
+          "format" : "textMessage"
+        },
+        "providedOptions" : [ "message" ]
+      } ]
+    }, {
+      "label" : "Headers / Keys",
+      "type" : "Section",
+      "options" : {
+        "isAdvanced" : true
+      },
+      "elements" : [ {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/writeRowKey",
+        "options" : {
+          "format" : "checkbox"
+        }
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/writeColumnHeaders",
+        "options" : {
+          "format" : "checkbox"
+        }
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/skipColumnHeaderOnAppend",
+        "options" : {
+          "format" : "checkbox"
+        }
+      } ]
+    }, {
+      "label" : "Values",
+      "type" : "Section",
+      "options" : {
+        "isAdvanced" : true
+      },
+      "elements" : [ {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/missingValuePattern",
+        "options" : {
+          "placeholder" : "Replacement value",
+          "hideOnNull" : true,
+          "default" : ""
+        }
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/evaluateFormulas",
+        "options" : {
+          "format" : "checkbox"
+        }
+      } ]
+    }, {
+      "label" : "Layout",
+      "type" : "Section",
+      "options" : {
+        "isAdvanced" : true
+      },
+      "elements" : [ {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/autosizeColumns",
+        "options" : {
+          "format" : "checkbox"
+        }
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/orientation",
+        "options" : {
+          "format" : "valueSwitch"
+        }
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/paperSize"
+      } ]
+    }, {
+      "label" : "Interaction",
+      "type" : "Section",
+      "options" : {
+        "isAdvanced" : true
+      },
+      "elements" : [ {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/openOutputFileAfterExecution",
+        "options" : {
+          "format" : "checkbox"
+        }
+      } ]
+    } ]
+  },
+  "persist" : {
+    "type" : "object",
+    "properties" : {
+      "model" : {
+        "type" : "object",
+        "properties" : {
+          "excelFormat" : {
+            "configKey" : "excel_format"
+          },
+          "outputFile" : {
+            "type" : "object",
+            "properties" : {
+              "file" : {
+                "configPaths" : [ [ "path" ] ]
+              },
+              "createMissingFolders" : {
+                "configKey" : "create_missing_folders"
+              },
+              "overwritePolicy" : {
+                "configKey" : "if_path_exists"
+              }
+            },
+            "configKey" : "file_selection"
+          },
+          "encryption" : {
+            "type" : "object",
+            "properties" : {
+              "type" : {
+                "configKey" : "selectedType"
+              },
+              "credentials" : {
+                "configKey" : "credentials"
+              },
+              "password" : {
+                "configPaths" : [ ]
+              }
+            },
+            "configKey" : "authentication_method"
+          },
+          "encryptionValidationMessage" : { },
+          "sheetNames" : {
+            "configPaths" : [ [ "sheet_names" ] ]
+          },
+          "ifSheetExists" : {
+            "configKey" : "if_sheet_exists"
+          },
+          "concatenateSheetsWithSameName" : {
+            "configPaths" : [ ]
+          },
+          "sheetNameValidationMessage" : { },
+          "writeRowKey" : {
+            "configKey" : "write_row_key"
+          },
+          "writeColumnHeaders" : {
+            "configKey" : "write_column_header"
+          },
+          "skipColumnHeaderOnAppend" : {
+            "configKey" : "skip_column_header_on_append"
+          },
+          "missingValuePattern" : {
+            "configPaths" : [ [ "replace_missings" ], [ "missing_value_pattern" ] ]
+          },
+          "evaluateFormulas" : {
+            "configKey" : "evaluate_formulas"
+          },
+          "autosizeColumns" : {
+            "configKey" : "autosize_columns"
+          },
+          "orientation" : {
+            "configKey" : "layout"
+          },
+          "paperSize" : {
+            "configKey" : "paper_size"
+          },
+          "openOutputFileAfterExecution" : {
+            "configKey" : "open_file_after_exec_Internals"
+          }
+        }
+      }
+    }
+  },
+  "initialUpdates" : [ {
+    "scope" : "#/properties/model/properties/concatenateSheetsWithSameName",
+    "values" : [ {
+      "indices" : [ ],
+      "value" : false
+    } ]
+  }, {
+    "scope" : "#/properties/model/properties/encryption/properties/credentials",
+    "providedOptionName" : "possibleValues",
+    "values" : [ {
+      "indices" : [ ],
+      "value" : [ ]
+    } ]
+  }, {
+    "scope" : "#/properties/model/properties/outputFile/properties/file",
+    "providedOptionName" : "fileExtension",
+    "values" : [ {
+      "indices" : [ ],
+      "value" : "xlsx"
+    } ]
+  }, {
+    "scope" : "#/properties/model/properties/outputFile/properties/overwritePolicy",
+    "providedOptionName" : "possibleValues",
+    "values" : [ {
+      "indices" : [ ],
+      "value" : [ {
+        "id" : "fail",
+        "text" : "Fail"
+      }, {
+        "id" : "overwrite",
+        "text" : "Overwrite"
+      }, {
+        "id" : "append",
+        "text" : "Append"
+      } ]
+    } ]
+  }, {
+    "scope" : "#/properties/model/properties/sheetNames",
+    "values" : [ {
+      "indices" : [ ],
+      "value" : [ ]
+    } ]
+  }, {
+    "id" : "#/properties/model/properties/encryptionValidationMessage",
+    "providedOptionName" : "message",
+    "values" : [ {
+      "indices" : [ ],
+      "value" : null
+    } ]
+  }, {
+    "id" : "#/properties/model/properties/sheetNameValidationMessage",
+    "providedOptionName" : "message",
+    "values" : [ {
+      "indices" : [ ],
+      "value" : null
+    } ]
+  } ],
+  "globalUpdates" : [ {
+    "trigger" : {
+      "id" : "after-open-dialog"
+    },
+    "triggerInitially" : true,
+    "dependencies" : [ "#/properties/model/properties/encryption", "#/properties/model/properties/outputFile/properties/file" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/concatenateSheetsWithSameName"
+    },
+    "dependencies" : [ "#/properties/model/properties/concatenateSheetsWithSameName", "#/properties/model/properties/ifSheetExists" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/encryption"
+    },
+    "dependencies" : [ "#/properties/model/properties/encryption", "#/properties/model/properties/outputFile/properties/file" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/excelFormat"
+    },
+    "dependencies" : [ "#/properties/model/properties/excelFormat", "#/properties/model/properties/outputFile/properties/file" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/ifSheetExists"
+    },
+    "dependencies" : [ "#/properties/model/properties/ifSheetExists", "#/properties/model/properties/outputFile/properties/overwritePolicy", "#/properties/model/properties/sheetNames" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/outputFile"
+    },
+    "dependencies" : [ "#/properties/model/properties/ifSheetExists" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/outputFile/properties/file"
+    },
+    "dependencies" : [ "#/properties/model/properties/encryption", "#/properties/model/properties/outputFile/properties/file" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/outputFile/properties/overwritePolicy"
+    },
+    "dependencies" : [ "#/properties/model/properties/ifSheetExists", "#/properties/model/properties/outputFile/properties/overwritePolicy", "#/properties/model/properties/sheetNames" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/sheetNames"
+    },
+    "dependencies" : [ "#/properties/model/properties/ifSheetExists", "#/properties/model/properties/outputFile/properties/overwritePolicy", "#/properties/model/properties/sheetNames" ]
+  } ]
+}
