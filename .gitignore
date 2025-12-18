@@ -6,3 +6,5 @@
 
 **/.polyglot.META-INF
 **/.polyglot.feature.xml
+
+**/*.snap.debug
