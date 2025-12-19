@@ -1,0 +1,2176 @@
+{
+  "data" : {
+    "model" : {
+      "excelTableReaderParameters" : {
+        "multiFileSelectionParams" : {
+          "source" : {
+            "filterMode" : "FILE",
+            "path" : {
+              "fsCategory" : "LOCAL",
+              "path" : "",
+              "timeout" : 10000,
+              "context" : {
+                "fsToString" : "(LOCAL, )"
+              }
+            },
+            "includeSubfolders" : false,
+            "filters" : {
+              "filterMode" : "FILE",
+              "filterFilesExtension" : false,
+              "filesExtensionExpression" : "",
+              "filesExtensionCaseSensitive" : false,
+              "filterFilesName" : false,
+              "filesNameExpression" : "*",
+              "filesNameFilterType" : "WILDCARD",
+              "filesNameCaseSensitive" : false,
+              "includeHiddenFiles" : true,
+              "includeSpecialFiles" : true,
+              "filterFoldersName" : false,
+              "foldersNameExpression" : "*",
+              "foldersNameFilterType" : "WILDCARD",
+              "foldersNameCaseSensitive" : false,
+              "includeHiddenFolders" : true,
+              "followSymlinks" : false
+            }
+          }
+        },
+        "ifSchemaChangesParams" : {
+          "ignoreSchemaChange" : false,
+          "ifSchemaChangesOption" : "FAIL",
+          "ignoreSchemaChangeWasSetInitially" : false
+        },
+        "multiFileReaderParams" : {
+          "appendPathColumn" : null,
+          "howToCombineColumns" : "FAIL"
+        },
+        "excelFileInfoMessageParams" : { },
+        "selectSheetParams" : {
+          "sheetSelection" : "FIRST",
+          "sheetName" : "",
+          "sheetIndex" : 0
+        },
+        "readAreaParams" : {
+          "sheetArea" : "ENTIRE",
+          "readFromColumn" : "A",
+          "readToColumn" : "",
+          "readFromRow" : "1",
+          "readToRow" : ""
+        },
+        "columnNameParams" : {
+          "columnNameMode" : "CUSTOM_ROW",
+          "columnNamesRowNumber" : 1,
+          "emptyColHeaderPrefix" : "empty_",
+          "emptyColHeaderSuffix" : "EXCEL_HEADERS"
+        },
+        "rowIdParams" : {
+          "rowIdMode" : "ENUMERATE",
+          "rowIdColumn" : "A"
+        },
+        "skipParams" : {
+          "skipEmptyColumns" : false,
+          "skipHiddenColumns" : true,
+          "skipEmptyRows" : true,
+          "skipHiddenRows" : true
+        },
+        "schemaDetectionParams" : {
+          "limitDataRowsScanned" : true,
+          "maxDataRowsScanned" : 10000,
+          "failOnDifferingSpecs" : true
+        },
+        "valuesParams" : {
+          "use15DigitsPrecision" : true,
+          "replaceEmptyStringsWithMissingValues" : true,
+          "reevaluateFormulas" : false,
+          "formulaErrorHandling" : "PATTERN",
+          "formulaErrorPattern" : "#XL_EVAL_ERROR#"
+        },
+        "encryptionParams" : {
+          "encryptionMode" : "NO_ENCRYPTION",
+          "credentials" : {
+            "credentials" : {
+              "isHiddenPassword" : false,
+              "isHiddenSecondFactor" : false,
+              "username" : ""
+            }
+          }
+        }
+      },
+      "transformationParameters" : {
+        "enforceTypes" : true,
+        "columnTransformation" : [ {
+          "columnName" : null,
+          "originalProductionPath" : "<default-columntype>",
+          "originalTypeLabel" : "Default columntype",
+          "includeInOutput" : true,
+          "columnRename" : null,
+          "productionPath" : "<default-columntype>"
+        } ]
+      }
+    }
+  },
+  "schema" : {
+    "type" : "object",
+    "properties" : {
+      "model" : {
+        "type" : "object",
+        "properties" : {
+          "excelTableReaderParameters" : {
+            "type" : "object",
+            "properties" : {
+              "columnNameParams" : {
+                "type" : "object",
+                "properties" : {
+                  "columnNameMode" : {
+                    "oneOf" : [ {
+                      "const" : "CUSTOM_ROW",
+                      "title" : "Use custom row"
+                    }, {
+                      "const" : "EXCEL_HEADERS",
+                      "title" : "Excel headers (A, B, C)"
+                    }, {
+                      "const" : "ENUMERATE_COLUMNS",
+                      "title" : "Enumerate columns (Col1, Col2...)"
+                    } ],
+                    "title" : "Define Column Names",
+                    "description" : "Choose how to define column names for the table.\n<ul>\n<li><b>Use custom row</b>: Use a specific row as column names.</li>\n<li><b>Excel headers (A, B, C)</b>: Use Excel column headers (A, B, C, ...) as column names.</li>\n<li><b>Enumerate columns (Col1, Col2...)</b>: Use enumerated column names (Col1, Col2, ...) as column names.</li>\n</ul>",
+                    "default" : "CUSTOM_ROW"
+                  },
+                  "columnNamesRowNumber" : {
+                    "type" : "integer",
+                    "format" : "int64",
+                    "title" : "Header as in row",
+                    "description" : "The row number (1-based) containing column names.",
+                    "default" : 1
+                  },
+                  "emptyColHeaderPrefix" : {
+                    "type" : "string",
+                    "title" : "Prefix for empty headers",
+                    "description" : "Prefix to use for empty column headers.",
+                    "default" : "empty_"
+                  },
+                  "emptyColHeaderSuffix" : {
+                    "oneOf" : [ {
+                      "const" : "EXCEL_HEADERS",
+                      "title" : "A, B, ..."
+                    }, {
+                      "const" : "ENUMERATE_COLUMNS",
+                      "title" : "1, 2, ..."
+                    } ],
+                    "title" : "Suffix for empty headers",
+                    "description" : "Choose the suffix format for empty column headers.\n<ul>\n<li><b>A, B, ...</b>: Use Excel column headers (A, B, C, ...) as column name suffix for empty columns.</li>\n<li><b>1, 2, ...</b>: Use enumerated indices (1, 2, ...) as column name suffix for empty columns.</li>\n</ul>",
+                    "default" : "EXCEL_HEADERS"
+                  }
+                },
+                "default" : {
+                  "columnNameMode" : "CUSTOM_ROW",
+                  "columnNamesRowNumber" : 1,
+                  "emptyColHeaderPrefix" : "empty_",
+                  "emptyColHeaderSuffix" : "EXCEL_HEADERS"
+                }
+              },
+              "encryptionParams" : {
+                "type" : "object",
+                "properties" : {
+                  "credentials" : {
+                    "type" : "object",
+                    "properties" : {
+                      "credentials" : {
+                        "type" : "object",
+                        "properties" : {
+                          "password" : {
+                            "type" : "string",
+                            "default" : ""
+                          },
+                          "secondFactor" : {
+                            "type" : "string",
+                            "default" : ""
+                          },
+                          "username" : {
+                            "type" : "string",
+                            "default" : ""
+                          }
+                        },
+                        "default" : {
+                          "isHiddenPassword" : false,
+                          "isHiddenSecondFactor" : false,
+                          "username" : ""
+                        }
+                      },
+                      "flowVarName" : {
+                        "type" : "string"
+                      }
+                    },
+                    "title" : "Password",
+                    "description" : "The password to decrypt the Excel file.",
+                    "default" : {
+                      "credentials" : {
+                        "isHiddenPassword" : false,
+                        "isHiddenSecondFactor" : false,
+                        "username" : ""
+                      }
+                    }
+                  },
+                  "encryptionMode" : {
+                    "oneOf" : [ {
+                      "const" : "NO_ENCRYPTION",
+                      "title" : "No encryption"
+                    }, {
+                      "const" : "PASSWORD",
+                      "title" : "Password"
+                    } ],
+                    "title" : "File encryption",
+                    "description" : "Allows you to specify a password to decrypt files that have been protected with a password via Excel. Files without password protection can also be read if you set a password.\n<ul>\n<li><b>No encryption</b>: Files are not password protected.</li>\n<li><b>Password</b>: Files are protected with a password.</li>\n</ul>",
+                    "default" : "NO_ENCRYPTION"
+                  }
+                },
+                "default" : {
+                  "encryptionMode" : "NO_ENCRYPTION",
+                  "credentials" : {
+                    "credentials" : {
+                      "isHiddenPassword" : false,
+                      "isHiddenSecondFactor" : false,
+                      "username" : ""
+                    }
+                  }
+                }
+              },
+              "excelFileInfoMessageParams" : {
+                "type" : "object",
+                "properties" : {
+                  "fileInfoMessage" : {
+                    "type" : "object"
+                  }
+                },
+                "default" : { }
+              },
+              "ifSchemaChangesParams" : {
+                "type" : "object",
+                "properties" : {
+                  "ifSchemaChangesOption" : {
+                    "oneOf" : [ {
+                      "const" : "FAIL",
+                      "title" : "Fail"
+                    }, {
+                      "const" : "USE_NEW_SCHEMA",
+                      "title" : "Use new schema"
+                    } ],
+                    "title" : "If schema changes",
+                    "description" : "Specifies the node behavior if the content of the configured file/folder changes between executions,\ni.e., columns are added/removed to/from the file(s) or their types change. The following options are\navailable:\n\n<ul>\n<li><b>Fail</b>: If set, the node fails if the column names in the file have changed. Changes in column types\nwill not be detected.\n</li>\n<li><b>Use new schema</b>: If set, the node will compute a new table specification for the current schema of the file at\nthe time when the node is executed. Note that the node will not output a table specification\nbefore execution and that it will not apply transformations, therefore the transformation tab\nis disabled.\n</li>\n</ul>",
+                    "default" : "FAIL"
+                  },
+                  "ignoreSchemaChange" : {
+                    "type" : "boolean",
+                    "title" : "If schema changes, ignore schema change (deprecated)",
+                    "description" : "If set, the node tries to ignore the changes and outputs a table with the old table specification.\nThis option is deprecated. Once unchecked, it will disappear and cannot be selected again, as it may lead\nto invalid data in the resulting table.\n",
+                    "default" : false
+                  },
+                  "ignoreSchemaChangeWasSetInitially" : {
+                    "type" : "boolean",
+                    "default" : false
+                  }
+                },
+                "default" : {
+                  "ignoreSchemaChange" : false,
+                  "ifSchemaChangesOption" : "FAIL",
+                  "ignoreSchemaChangeWasSetInitially" : false
+                }
+              },
+              "multiFileReaderParams" : {
+                "type" : "object",
+                "properties" : {
+                  "appendPathColumn" : {
+                    "type" : [ "string", "null" ],
+                    "title" : "Append file path column",
+                    "description" : "Select this box if you want to add a column containing the path of the file from which the row is read.\nThe node will fail if adding the column with the provided name causes a name collision with any of the\ncolumns in the read table.\n",
+                    "default" : null
+                  },
+                  "howToCombineColumns" : {
+                    "oneOf" : [ {
+                      "const" : "FAIL",
+                      "title" : "Fail if different"
+                    }, {
+                      "const" : "UNION",
+                      "title" : "Union"
+                    }, {
+                      "const" : "INTERSECTION",
+                      "title" : "Intersection"
+                    } ],
+                    "title" : "How to combine columns",
+                    "description" : "Specifies how to deal with reading multiple files in which not all column names are identical.\n<ul>\n<li><b>Fail if different</b>: The node will fail if multiple files are read and not all files have the same column names.</li>\n<li><b>Union</b>: Any column that is part of any input file is considered. If a file is missing a column, it is filled\nup with missing values.\n</li>\n<li><b>Intersection</b>: Only columns that appear in all files are considered for the output table.</li>\n</ul>",
+                    "default" : "FAIL"
+                  }
+                },
+                "default" : {
+                  "appendPathColumn" : null,
+                  "howToCombineColumns" : "FAIL"
+                }
+              },
+              "multiFileSelectionParams" : {
+                "type" : "object",
+                "properties" : {
+                  "fileSystemFromPortNotAvailableMessage" : {
+                    "type" : "object"
+                  },
+                  "source" : {
+                    "type" : "object",
+                    "properties" : {
+                      "filterMode" : {
+                        "oneOf" : [ {
+                          "const" : "FILE",
+                          "title" : "File"
+                        }, {
+                          "const" : "FOLDER",
+                          "title" : "Folder"
+                        }, {
+                          "const" : "FILES_IN_FOLDERS",
+                          "title" : "Files in folders"
+                        }, {
+                          "const" : "FOLDERS",
+                          "title" : "Folders"
+                        }, {
+                          "const" : "FILES_AND_FOLDERS",
+                          "title" : "Files and folders"
+                        }, {
+                          "const" : "WORKFLOW",
+                          "title" : "Workflow"
+                        } ],
+                        "title" : "Mode",
+                        "description" : "Determine the mode how to select one or multiple files.\n<ul>\n<li><b>File</b>: Select a single file.</li>\n<li><b>Files in folders</b>: Select a folder and apply filters to select files within it.</li>\n</ul>",
+                        "default" : "FILE"
+                      },
+                      "filters" : {
+                        "type" : "object",
+                        "properties" : {
+                          "filesExtensionCaseSensitive" : {
+                            "type" : "boolean",
+                            "title" : "Case sensitive (extensions)",
+                            "description" : "Treat the entered extensions as case sensitive when matching.",
+                            "default" : false
+                          },
+                          "filesExtensionExpression" : {
+                            "type" : "string",
+                            "title" : "File extensions",
+                            "description" : "Semicolon-separated list of file extensions to include (e.g. 'xlsx;xlsm;xls').\nCase-insensitive unless 'Case sensitive (extensions)' is enabled.\n",
+                            "default" : ""
+                          },
+                          "filesNameCaseSensitive" : {
+                            "type" : "boolean",
+                            "title" : "Case sensitive (names)",
+                            "description" : "Make file name filtering case sensitive.",
+                            "default" : false
+                          },
+                          "filesNameExpression" : {
+                            "type" : "string",
+                            "title" : "File name filter pattern",
+                            "description" : "Pattern for file name filtering. With type 'Wildcard', use '*' and '?'.\nWith type 'Regex', enter a Java regular expression.\n",
+                            "default" : "*"
+                          },
+                          "filesNameFilterType" : {
+                            "oneOf" : [ {
+                              "const" : "WILDCARD",
+                              "title" : "Wildcard"
+                            }, {
+                              "const" : "REGEX",
+                              "title" : "Regular Expression"
+                            } ],
+                            "title" : "File name filter type",
+                            "description" : "Choose how to interpret the file name pattern.\n<ul>\n<li><b>Wildcard</b>: Enable using '*' and '?' as wildcards.</li>\n<li><b>Regular Expression</b>: Enable using a Java regular expression.</li>\n</ul>",
+                            "default" : "WILDCARD"
+                          },
+                          "filterFilesExtension" : {
+                            "type" : "boolean",
+                            "title" : "Filter by file extension",
+                            "description" : "Enable filtering files by their extension (e.g. 'xlsx;xlsm').",
+                            "default" : false
+                          },
+                          "filterFilesName" : {
+                            "type" : "boolean",
+                            "title" : "Filter by file name",
+                            "description" : "Enable filtering by file name pattern with wildcards or regular expression.",
+                            "default" : false
+                          },
+                          "filterFoldersName" : {
+                            "type" : "boolean",
+                            "title" : "Filter by folder name",
+                            "description" : "Enable filtering of folders by name pattern before descending into them.",
+                            "default" : false
+                          },
+                          "filterMode" : {
+                            "oneOf" : [ {
+                              "const" : "FILE",
+                              "title" : "File"
+                            }, {
+                              "const" : "FOLDER",
+                              "title" : "Folder"
+                            }, {
+                              "const" : "FILES_IN_FOLDERS",
+                              "title" : "Files in folders"
+                            }, {
+                              "const" : "FOLDERS",
+                              "title" : "Folders"
+                            }, {
+                              "const" : "FILES_AND_FOLDERS",
+                              "title" : "Files and folders"
+                            }, {
+                              "const" : "WORKFLOW",
+                              "title" : "Workflow"
+                            } ],
+                            "default" : "FILE"
+                          },
+                          "foldersNameCaseSensitive" : {
+                            "type" : "boolean",
+                            "title" : "Case sensitive (folders)",
+                            "description" : "Make folder name filtering case sensitive.",
+                            "default" : false
+                          },
+                          "foldersNameExpression" : {
+                            "type" : "string",
+                            "title" : "Folder name pattern",
+                            "description" : "Pattern for folder name filtering.\nNote that the pattern is applied to the path relative to the specified root folder.\nUse '*' and '?' with filter type 'Wildcard'.\nWith type 'Regex', enter a Java regular expression.\n",
+                            "default" : "*"
+                          },
+                          "foldersNameFilterType" : {
+                            "oneOf" : [ {
+                              "const" : "WILDCARD",
+                              "title" : "Wildcard"
+                            }, {
+                              "const" : "REGEX",
+                              "title" : "Regular Expression"
+                            } ],
+                            "title" : "Folder name filter type",
+                            "description" : "Choose how to interpret the folder name pattern.\n<ul>\n<li><b>Wildcard</b>: Enable using '*' and '?' as wildcards.</li>\n<li><b>Regular Expression</b>: Enable using a Java regular expression.</li>\n</ul>",
+                            "default" : "WILDCARD"
+                          },
+                          "followSymlinks" : {
+                            "type" : "boolean",
+                            "title" : "Follow symlinks",
+                            "description" : "Follow symbolic links while traversing folders (only relevant when selecting a folder).",
+                            "default" : false
+                          },
+                          "includeHiddenFiles" : {
+                            "type" : "boolean",
+                            "title" : "Include hidden files",
+                            "description" : "Include hidden files in the selection.",
+                            "default" : true
+                          },
+                          "includeHiddenFolders" : {
+                            "type" : "boolean",
+                            "title" : "Include hidden folders",
+                            "description" : "Descend into folders that are hidden (if they otherwise pass filters).",
+                            "default" : true
+                          },
+                          "includeSpecialFiles" : {
+                            "type" : "boolean",
+                            "title" : "Include special files",
+                            "description" : "Include special file types (workflows etc).",
+                            "default" : true
+                          }
+                        }
+                      },
+                      "includeSubfolders" : {
+                        "type" : "boolean",
+                        "title" : "Include Subfolders",
+                        "description" : "Whether to include subfolders when selecting multiple files within a folder.",
+                        "default" : false
+                      },
+                      "path" : {
+                        "type" : "object",
+                        "title" : "Source",
+                        "description" : "The path to the file or folder to select."
+                      }
+                    },
+                    "default" : {
+                      "filterMode" : "FILE",
+                      "path" : {
+                        "fsCategory" : "LOCAL",
+                        "path" : "",
+                        "timeout" : 10000,
+                        "context" : {
+                          "fsToString" : "(LOCAL, )"
+                        }
+                      },
+                      "includeSubfolders" : false,
+                      "filters" : {
+                        "filterMode" : "FILE",
+                        "filterFilesExtension" : false,
+                        "filesExtensionExpression" : "",
+                        "filesExtensionCaseSensitive" : false,
+                        "filterFilesName" : false,
+                        "filesNameExpression" : "*",
+                        "filesNameFilterType" : "WILDCARD",
+                        "filesNameCaseSensitive" : false,
+                        "includeHiddenFiles" : true,
+                        "includeSpecialFiles" : true,
+                        "filterFoldersName" : false,
+                        "foldersNameExpression" : "*",
+                        "foldersNameFilterType" : "WILDCARD",
+                        "foldersNameCaseSensitive" : false,
+                        "includeHiddenFolders" : true,
+                        "followSymlinks" : false
+                      }
+                    }
+                  }
+                },
+                "default" : {
+                  "source" : {
+                    "filterMode" : "FILE",
+                    "path" : {
+                      "fsCategory" : "LOCAL",
+                      "path" : "",
+                      "timeout" : 10000,
+                      "context" : {
+                        "fsToString" : "(LOCAL, )"
+                      }
+                    },
+                    "includeSubfolders" : false,
+                    "filters" : {
+                      "filterMode" : "FILE",
+                      "filterFilesExtension" : false,
+                      "filesExtensionExpression" : "",
+                      "filesExtensionCaseSensitive" : false,
+                      "filterFilesName" : false,
+                      "filesNameExpression" : "*",
+                      "filesNameFilterType" : "WILDCARD",
+                      "filesNameCaseSensitive" : false,
+                      "includeHiddenFiles" : true,
+                      "includeSpecialFiles" : true,
+                      "filterFoldersName" : false,
+                      "foldersNameExpression" : "*",
+                      "foldersNameFilterType" : "WILDCARD",
+                      "foldersNameCaseSensitive" : false,
+                      "includeHiddenFolders" : true,
+                      "followSymlinks" : false
+                    }
+                  }
+                }
+              },
+              "readAreaParams" : {
+                "type" : "object",
+                "properties" : {
+                  "readFromColumn" : {
+                    "type" : "string",
+                    "title" : "Read from column",
+                    "description" : "The first column to include specified as label (\"A\", \"B\", etc.) or number (starting at 1). Leave empty to read starting at the first column.",
+                    "default" : "A"
+                  },
+                  "readFromRow" : {
+                    "type" : "string",
+                    "title" : "Read from row",
+                    "description" : "The first row number to include (starting at 1). Leave empty to read starting from the first row.",
+                    "default" : "1"
+                  },
+                  "readToColumn" : {
+                    "type" : "string",
+                    "title" : "Read to column",
+                    "description" : "The last column to include specified as label (\"A\", \"B\", etc.) or number (starting at 1). Leave empty to read until the last column.",
+                    "default" : ""
+                  },
+                  "readToRow" : {
+                    "type" : "string",
+                    "title" : "Read to row",
+                    "description" : "The last row number to include (starting at 1). Leave empty to read until the last row.",
+                    "default" : ""
+                  },
+                  "sheetArea" : {
+                    "oneOf" : [ {
+                      "const" : "ENTIRE",
+                      "title" : "Whole sheet"
+                    }, {
+                      "const" : "CUSTOM",
+                      "title" : "Range by column and row"
+                    } ],
+                    "title" : "Define read area",
+                    "description" : "Choose whether to read the entire sheet or a custom area.\n<ul>\n<li><b>Whole sheet</b>: All the data contained in the sheet is read in. This includes areas where diagrams, borders, coloring, etc. are placed and could create empty rows or columns.</li>\n<li><b>Range by column and row</b>: Only the data in the specified area is read in. Both start and end columns/rows are inclusive. By leaving a field empty, the start or end of the area is not restricted.</li>\n</ul>",
+                    "default" : "ENTIRE"
+                  },
+                  "validationMessage" : {
+                    "type" : "object"
+                  }
+                },
+                "default" : {
+                  "sheetArea" : "ENTIRE",
+                  "readFromColumn" : "A",
+                  "readToColumn" : "",
+                  "readFromRow" : "1",
+                  "readToRow" : ""
+                }
+              },
+              "rowIdParams" : {
+                "type" : "object",
+                "properties" : {
+                  "rowIdColumn" : {
+                    "type" : "string",
+                    "title" : "RowID as in column",
+                    "description" : "The column (e.g., A, B, C or 1, 2, 3) to use as row IDs. The RowIDs in the selected column must be unique, otherwise the execution fails.",
+                    "default" : "A"
+                  },
+                  "rowIdMode" : {
+                    "oneOf" : [ {
+                      "const" : "ENUMERATE",
+                      "title" : "Enumerate rows (Row1, Row2, ...)"
+                    }, {
+                      "const" : "CUSTOM_COLUMN",
+                      "title" : "Use custom column"
+                    } ],
+                    "title" : "Define RowID",
+                    "description" : "Choose how to define row IDs for the table.\n<ul>\n<li><b>Enumerate rows (Row1, Row2, ...)</b>: Generate row IDs by enumerating rows.</li>\n<li><b>Use custom column</b>: Use a specific column as row IDs.</li>\n</ul>",
+                    "default" : "ENUMERATE"
+                  }
+                },
+                "default" : {
+                  "rowIdMode" : "ENUMERATE",
+                  "rowIdColumn" : "A"
+                }
+              },
+              "schemaDetectionParams" : {
+                "type" : "object",
+                "properties" : {
+                  "failOnDifferingSpecs" : {
+                    "type" : "boolean",
+                    "title" : "Fail if schemas differ between multiple files",
+                    "description" : "If checked, the node will fail if multiple files are read via the \"Files in folder\" option and not all files have the same table structure, i.e. the same columns.",
+                    "default" : true
+                  },
+                  "limitDataRowsScanned" : {
+                    "type" : "boolean",
+                    "title" : "Limit scanned rows",
+                    "description" : "If you limit the number of scanned rows, only the specified number of input rows are used to analyze the file (i.e. to determine the column types). This option is recommended for long files where the first n rows are representative for the whole file.",
+                    "default" : true
+                  },
+                  "maxDataRowsScanned" : {
+                    "type" : "integer",
+                    "format" : "int64",
+                    "title" : "Maximum number of scanned rows",
+                    "description" : "The maximum number of rows to scan for determining column types.",
+                    "default" : 10000
+                  }
+                },
+                "default" : {
+                  "limitDataRowsScanned" : true,
+                  "maxDataRowsScanned" : 10000,
+                  "failOnDifferingSpecs" : true
+                }
+              },
+              "selectSheetParams" : {
+                "type" : "object",
+                "properties" : {
+                  "sheetIndex" : {
+                    "type" : "integer",
+                    "format" : "int32",
+                    "title" : "Sheet position",
+                    "description" : "The position (starting at 0) of the sheet to read. The maximum position that can be selected depends on the number of sheets available in the first read file.",
+                    "default" : 0
+                  },
+                  "sheetName" : {
+                    "type" : "string",
+                    "title" : "Sheet name",
+                    "description" : "The name of the sheet to read.",
+                    "default" : ""
+                  },
+                  "sheetSelection" : {
+                    "oneOf" : [ {
+                      "const" : "FIRST",
+                      "title" : "First sheet with data"
+                    }, {
+                      "const" : "NAME",
+                      "title" : "By name"
+                    }, {
+                      "const" : "INDEX",
+                      "title" : "By position"
+                    } ],
+                    "title" : "Select sheet",
+                    "description" : "Choose which sheet to read from the Excel file. The order of the sheets is the same as displayed in Excel (i.e. not necessarily a lexicographic order).\n<ul>\n<li><b>First sheet with data</b>: The first sheet of the selected file(s) that contains data will be read in. Containing data means not being empty. If all sheets of a file are empty, an empty table is read in.</li>\n<li><b>By name</b>: The sheet with the selected name will be read in. If reading multiple files, the sheet names of the first file are shown and the node will fail if any of the other files does not contain a sheet with the selected name.</li>\n<li><b>By position</b>: The sheet at the selected position will be read in. If reading multiple files, the node will fail if any of the files does not contain a sheet at the selected position. The position starts at 0, i.e. the first sheet is at position 0.</li>\n</ul>",
+                    "default" : "FIRST"
+                  }
+                },
+                "default" : {
+                  "sheetSelection" : "FIRST",
+                  "sheetName" : "",
+                  "sheetIndex" : 0
+                }
+              },
+              "skipParams" : {
+                "type" : "object",
+                "properties" : {
+                  "skipEmptyColumns" : {
+                    "type" : "boolean",
+                    "title" : "Skip empty columns",
+                    "description" : "If checked, empty columns of the sheet will be skipped and not displayed in the output. Whether a column is considered empty depends on the <i>Column and Data Type Detection</i> settings: If the cells of a column for all scanned rows were empty, the column is considered empty, even if the sheet contains a non-empty cell after the scanned rows. Removing the limit of scanned rows ensures empty and non-empty columns being detected correctly but also increases the time required for scanning.",
+                    "default" : false
+                  },
+                  "skipEmptyRows" : {
+                    "type" : "boolean",
+                    "title" : "Skip empty rows",
+                    "description" : "If checked, empty rows of the sheet will be skipped and not displayed in the output.",
+                    "default" : true
+                  },
+                  "skipHiddenColumns" : {
+                    "type" : "boolean",
+                    "title" : "Skip hidden columns",
+                    "description" : "If checked, hidden columns of the sheet will be skipped and not displayed in the output.",
+                    "default" : true
+                  },
+                  "skipHiddenRows" : {
+                    "type" : "boolean",
+                    "title" : "Skip hidden rows",
+                    "description" : "If checked, hidden rows of the sheet will be skipped and not displayed in the output.",
+                    "default" : true
+                  }
+                },
+                "default" : {
+                  "skipEmptyColumns" : false,
+                  "skipHiddenColumns" : true,
+                  "skipEmptyRows" : true,
+                  "skipHiddenRows" : true
+                }
+              },
+              "valuesParams" : {
+                "type" : "object",
+                "properties" : {
+                  "formulaErrorHandling" : {
+                    "oneOf" : [ {
+                      "const" : "PATTERN",
+                      "title" : "String value"
+                    }, {
+                      "const" : "MISSING",
+                      "title" : "Missing value"
+                    } ],
+                    "title" : "On error insert",
+                    "description" : "Choose how to handle formula evaluation errors.\n<ul>\n<li><b>String value</b>: Insert the given String value. Inserting a string value causes the entire column to become a string column in case an error occurs.</li>\n<li><b>Missing value</b>: Insert a Missing value. Inserting a missing value is type innocent, but also unobtrusive.</li>\n</ul>",
+                    "default" : "PATTERN"
+                  },
+                  "formulaErrorPattern" : {
+                    "type" : "string",
+                    "title" : "String",
+                    "description" : "The string value to insert into a cell with a formula evaluation error.",
+                    "default" : "#XL_EVAL_ERROR#"
+                  },
+                  "reevaluateFormulas" : {
+                    "type" : "boolean",
+                    "title" : "Reevaluate formulas in all sheets",
+                    "description" : "If checked, formulas are reevaluated and put into the created table instead of using the cached values. This can cause errors when there are functions that are not implemented by the underlying Apache POI library. Note: Files with xlsb format do not support this option. For xlsx and xlsm files, reevaluation requires significantly more memory as the whole file needs to be kept in memory (xls files are anyway loaded completely into memory).",
+                    "default" : false
+                  },
+                  "replaceEmptyStringsWithMissingValues" : {
+                    "type" : "boolean",
+                    "title" : "Replace empty strings with missing values",
+                    "description" : "If checked, empty strings (i.e. strings with only whitespaces) are replaced with missing values. This option is also applied to formulas that evaluate to strings.",
+                    "default" : true
+                  },
+                  "use15DigitsPrecision" : {
+                    "type" : "boolean",
+                    "title" : "Use Excel 15 digits precision",
+                    "description" : "If checked, numbers are read in with 15 digits precision which is the same precision Excel is using to display numbers. This will prevent potential floating point issues. For most numbers, no difference can be observed if this option is unchecked.",
+                    "default" : true
+                  }
+                },
+                "default" : {
+                  "use15DigitsPrecision" : true,
+                  "replaceEmptyStringsWithMissingValues" : true,
+                  "reevaluateFormulas" : false,
+                  "formulaErrorHandling" : "PATTERN",
+                  "formulaErrorPattern" : "#XL_EVAL_ERROR#"
+                }
+              }
+            },
+            "default" : {
+              "multiFileSelectionParams" : {
+                "source" : {
+                  "filterMode" : "FILE",
+                  "path" : {
+                    "fsCategory" : "LOCAL",
+                    "path" : "",
+                    "timeout" : 10000,
+                    "context" : {
+                      "fsToString" : "(LOCAL, )"
+                    }
+                  },
+                  "includeSubfolders" : false,
+                  "filters" : {
+                    "filterMode" : "FILE",
+                    "filterFilesExtension" : false,
+                    "filesExtensionExpression" : "",
+                    "filesExtensionCaseSensitive" : false,
+                    "filterFilesName" : false,
+                    "filesNameExpression" : "*",
+                    "filesNameFilterType" : "WILDCARD",
+                    "filesNameCaseSensitive" : false,
+                    "includeHiddenFiles" : true,
+                    "includeSpecialFiles" : true,
+                    "filterFoldersName" : false,
+                    "foldersNameExpression" : "*",
+                    "foldersNameFilterType" : "WILDCARD",
+                    "foldersNameCaseSensitive" : false,
+                    "includeHiddenFolders" : true,
+                    "followSymlinks" : false
+                  }
+                }
+              },
+              "ifSchemaChangesParams" : {
+                "ignoreSchemaChange" : false,
+                "ifSchemaChangesOption" : "FAIL",
+                "ignoreSchemaChangeWasSetInitially" : false
+              },
+              "multiFileReaderParams" : {
+                "appendPathColumn" : null,
+                "howToCombineColumns" : "FAIL"
+              },
+              "excelFileInfoMessageParams" : { },
+              "selectSheetParams" : {
+                "sheetSelection" : "FIRST",
+                "sheetName" : "",
+                "sheetIndex" : 0
+              },
+              "readAreaParams" : {
+                "sheetArea" : "ENTIRE",
+                "readFromColumn" : "A",
+                "readToColumn" : "",
+                "readFromRow" : "1",
+                "readToRow" : ""
+              },
+              "columnNameParams" : {
+                "columnNameMode" : "CUSTOM_ROW",
+                "columnNamesRowNumber" : 1,
+                "emptyColHeaderPrefix" : "empty_",
+                "emptyColHeaderSuffix" : "EXCEL_HEADERS"
+              },
+              "rowIdParams" : {
+                "rowIdMode" : "ENUMERATE",
+                "rowIdColumn" : "A"
+              },
+              "skipParams" : {
+                "skipEmptyColumns" : false,
+                "skipHiddenColumns" : true,
+                "skipEmptyRows" : true,
+                "skipHiddenRows" : true
+              },
+              "schemaDetectionParams" : {
+                "limitDataRowsScanned" : true,
+                "maxDataRowsScanned" : 10000,
+                "failOnDifferingSpecs" : true
+              },
+              "valuesParams" : {
+                "use15DigitsPrecision" : true,
+                "replaceEmptyStringsWithMissingValues" : true,
+                "reevaluateFormulas" : false,
+                "formulaErrorHandling" : "PATTERN",
+                "formulaErrorPattern" : "#XL_EVAL_ERROR#"
+              },
+              "encryptionParams" : {
+                "encryptionMode" : "NO_ENCRYPTION",
+                "credentials" : {
+                  "credentials" : {
+                    "isHiddenPassword" : false,
+                    "isHiddenSecondFactor" : false,
+                    "username" : ""
+                  }
+                }
+              }
+            }
+          },
+          "transformationParameters" : {
+            "type" : "object",
+            "properties" : {
+              "columnTransformation" : {
+                "type" : "array",
+                "items" : {
+                  "type" : "object",
+                  "properties" : {
+                    "columnName" : {
+                      "type" : "string"
+                    },
+                    "columnRename" : {
+                      "type" : "string",
+                      "title" : "Column name"
+                    },
+                    "includeInOutput" : {
+                      "type" : "boolean",
+                      "title" : "Include in output",
+                      "default" : false
+                    },
+                    "originalProductionPath" : {
+                      "type" : "string"
+                    },
+                    "originalTypeLabel" : {
+                      "type" : "string"
+                    },
+                    "productionPath" : {
+                      "type" : "string",
+                      "title" : "Column type"
+                    }
+                  }
+                },
+                "title" : "Transformations",
+                "description" : "Use this option to modify the structure of the table. You can deselect each column to filter it out of the\noutput table, use the arrows to reorder the columns, or change the column name or column type of each\ncolumn. Note that the positions of columns are reset in the dialog if a new file or folder is selected.\nWhether and where to add unknown columns during execution is specified via the special row &lt;any unknown\nnew column&gt;. It is also possible to select the type new columns should be converted to. Note that the\nnode will fail if this conversion is not possible e.g. if the selected type is Integer but the new column is\nof type Double.\n",
+                "default" : [ {
+                  "columnName" : null,
+                  "originalProductionPath" : "<default-columntype>",
+                  "originalTypeLabel" : "Default columntype",
+                  "includeInOutput" : true,
+                  "columnRename" : null,
+                  "productionPath" : "<default-columntype>"
+                } ]
+              },
+              "enforceTypes" : {
+                "type" : "boolean",
+                "title" : "Enforce types",
+                "description" : "Controls how columns whose type changes are dealt with.\nIf selected, the mapping to the KNIME type you configured is attempted.\nThe node will fail if that is not possible.\nIf unselected, the KNIME type corresponding to the new type is used.\n",
+                "default" : true
+              },
+              "specs" : {
+                "type" : "array",
+                "items" : {
+                  "type" : "object",
+                  "properties" : {
+                    "fsLocation" : {
+                      "type" : "object"
+                    },
+                    "sourceIdentifier" : {
+                      "type" : "string"
+                    },
+                    "spec" : {
+                      "type" : "array",
+                      "items" : {
+                        "type" : "object",
+                        "properties" : {
+                          "hasType" : {
+                            "type" : "boolean",
+                            "default" : false
+                          },
+                          "name" : {
+                            "type" : "string"
+                          },
+                          "type" : {
+                            "type" : "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "default" : {
+              "enforceTypes" : true,
+              "columnTransformation" : [ {
+                "columnName" : null,
+                "originalProductionPath" : "<default-columntype>",
+                "originalTypeLabel" : "Default columntype",
+                "includeInOutput" : true,
+                "columnRename" : null,
+                "productionPath" : "<default-columntype>"
+              } ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "ui_schema" : {
+    "elements" : [ {
+      "label" : "File and Sheet",
+      "type" : "Section",
+      "elements" : [ {
+        "type" : "Control",
+        "id" : "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/fileSystemFromPortNotAvailableMessage",
+        "options" : {
+          "format" : "textMessage"
+        },
+        "providedOptions" : [ "message" ]
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source",
+        "options" : {
+          "fileExtensions" : [ "xlsx", "xls", "xlsm", "xlsb" ],
+          "filters" : {
+            "classId" : "org.knime.core.webui.node.dialog.defaultdialog.internal.file.DefaultFileChooserFilters",
+            "uiSchema" : {
+              "elements" : [ {
+                "label" : "File filter options",
+                "type" : "Section",
+                "rule" : {
+                  "effect" : "HIDE",
+                  "condition" : {
+                    "scope" : "#/properties/filterMode",
+                    "schema" : {
+                      "oneOf" : [ {
+                        "const" : "FOLDERS"
+                      } ]
+                    }
+                  }
+                },
+                "elements" : [ {
+                  "type" : "Control",
+                  "scope" : "#/properties/filterFilesExtension",
+                  "options" : {
+                    "format" : "checkbox"
+                  }
+                }, {
+                  "type" : "Control",
+                  "scope" : "#/properties/filesExtensionExpression",
+                  "rule" : {
+                    "effect" : "SHOW",
+                    "condition" : {
+                      "scope" : "#/properties/filterFilesExtension",
+                      "schema" : {
+                        "const" : true
+                      }
+                    }
+                  }
+                }, {
+                  "type" : "Control",
+                  "scope" : "#/properties/filesExtensionCaseSensitive",
+                  "options" : {
+                    "format" : "checkbox"
+                  },
+                  "rule" : {
+                    "effect" : "SHOW",
+                    "condition" : {
+                      "scope" : "#/properties/filterFilesExtension",
+                      "schema" : {
+                        "const" : true
+                      }
+                    }
+                  }
+                }, {
+                  "type" : "Control",
+                  "scope" : "#/properties/filterFilesName",
+                  "options" : {
+                    "format" : "checkbox"
+                  }
+                }, {
+                  "type" : "Control",
+                  "scope" : "#/properties/filesNameExpression",
+                  "rule" : {
+                    "effect" : "SHOW",
+                    "condition" : {
+                      "scope" : "#/properties/filterFilesName",
+                      "schema" : {
+                        "const" : true
+                      }
+                    }
+                  }
+                }, {
+                  "type" : "Control",
+                  "scope" : "#/properties/filesNameFilterType",
+                  "options" : {
+                    "format" : "valueSwitch"
+                  },
+                  "rule" : {
+                    "effect" : "SHOW",
+                    "condition" : {
+                      "scope" : "#/properties/filterFilesName",
+                      "schema" : {
+                        "const" : true
+                      }
+                    }
+                  }
+                }, {
+                  "type" : "Control",
+                  "scope" : "#/properties/filesNameCaseSensitive",
+                  "options" : {
+                    "format" : "checkbox"
+                  },
+                  "rule" : {
+                    "effect" : "SHOW",
+                    "condition" : {
+                      "scope" : "#/properties/filterFilesName",
+                      "schema" : {
+                        "const" : true
+                      }
+                    }
+                  }
+                }, {
+                  "type" : "Control",
+                  "scope" : "#/properties/includeHiddenFiles",
+                  "options" : {
+                    "format" : "checkbox"
+                  }
+                }, {
+                  "type" : "Control",
+                  "scope" : "#/properties/includeSpecialFiles",
+                  "options" : {
+                    "format" : "checkbox"
+                  }
+                } ]
+              }, {
+                "label" : "Folder filter options",
+                "type" : "Section",
+                "elements" : [ {
+                  "type" : "Control",
+                  "scope" : "#/properties/filterFoldersName",
+                  "options" : {
+                    "format" : "checkbox"
+                  }
+                }, {
+                  "type" : "Control",
+                  "scope" : "#/properties/foldersNameExpression",
+                  "rule" : {
+                    "effect" : "ENABLE",
+                    "condition" : {
+                      "scope" : "#/properties/filterFoldersName",
+                      "schema" : {
+                        "const" : true
+                      }
+                    }
+                  }
+                }, {
+                  "type" : "Control",
+                  "scope" : "#/properties/foldersNameFilterType",
+                  "options" : {
+                    "format" : "valueSwitch"
+                  },
+                  "rule" : {
+                    "effect" : "ENABLE",
+                    "condition" : {
+                      "scope" : "#/properties/filterFoldersName",
+                      "schema" : {
+                        "const" : true
+                      }
+                    }
+                  }
+                }, {
+                  "type" : "Control",
+                  "scope" : "#/properties/foldersNameCaseSensitive",
+                  "options" : {
+                    "format" : "checkbox"
+                  },
+                  "rule" : {
+                    "effect" : "ENABLE",
+                    "condition" : {
+                      "scope" : "#/properties/filterFoldersName",
+                      "schema" : {
+                        "const" : true
+                      }
+                    }
+                  }
+                }, {
+                  "type" : "Control",
+                  "scope" : "#/properties/includeHiddenFolders",
+                  "options" : {
+                    "format" : "checkbox"
+                  }
+                } ]
+              }, {
+                "label" : "Link options",
+                "type" : "Section",
+                "elements" : [ {
+                  "type" : "Control",
+                  "scope" : "#/properties/followSymlinks",
+                  "options" : {
+                    "format" : "checkbox"
+                  }
+                } ]
+              } ]
+            }
+          },
+          "isLocal" : true,
+          "possibleFilterModes" : [ "FILE", "FILES_IN_FOLDERS" ],
+          "spaceFSOptions" : {
+            "mountId" : "Local space"
+          },
+          "format" : "multiFileChooser"
+        }
+      }, {
+        "type" : "Control",
+        "id" : "#/properties/model/properties/excelTableReaderParameters/properties/excelFileInfoMessageParams/properties/fileInfoMessage",
+        "options" : {
+          "format" : "textMessage"
+        },
+        "providedOptions" : [ "message" ]
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/encryptionParams/properties/encryptionMode",
+        "options" : {
+          "isAdvanced" : true,
+          "format" : "valueSwitch"
+        }
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/encryptionParams/properties/credentials",
+        "options" : {
+          "hasUsername" : false,
+          "passwordLabel" : "Password",
+          "format" : "legacyCredentials",
+          "isAdvanced" : true
+        },
+        "rule" : {
+          "effect" : "SHOW",
+          "condition" : {
+            "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/encryptionParams/properties/encryptionMode",
+            "schema" : {
+              "oneOf" : [ {
+                "const" : "PASSWORD"
+              } ]
+            }
+          }
+        }
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/selectSheetParams/properties/sheetSelection",
+        "options" : {
+          "format" : "valueSwitch"
+        }
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/selectSheetParams/properties/sheetName",
+        "options" : {
+          "format" : "dropDown"
+        },
+        "providedOptions" : [ "possibleValues" ],
+        "rule" : {
+          "effect" : "SHOW",
+          "condition" : {
+            "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/selectSheetParams/properties/sheetSelection",
+            "schema" : {
+              "oneOf" : [ {
+                "const" : "NAME"
+              } ]
+            }
+          }
+        }
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/selectSheetParams/properties/sheetIndex",
+        "options" : {
+          "validation" : {
+            "max" : {
+              "errorMessage" : "The value must not exceed 2147483647.",
+              "parameters" : {
+                "isExclusive" : false,
+                "max" : 2.147483647E9
+              }
+            },
+            "min" : {
+              "errorMessage" : "The value must be at least 0.",
+              "parameters" : {
+                "isExclusive" : false,
+                "min" : 0.0
+              }
+            }
+          }
+        },
+        "providedOptions" : [ "validation.max" ],
+        "rule" : {
+          "effect" : "SHOW",
+          "condition" : {
+            "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/selectSheetParams/properties/sheetSelection",
+            "schema" : {
+              "oneOf" : [ {
+                "const" : "INDEX"
+              } ]
+            }
+          }
+        }
+      } ]
+    }, {
+      "label" : "Data Area",
+      "type" : "Section",
+      "elements" : [ {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/sheetArea",
+        "options" : {
+          "format" : "valueSwitch"
+        }
+      }, {
+        "type" : "HorizontalLayout",
+        "rule" : {
+          "effect" : "SHOW",
+          "condition" : {
+            "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/sheetArea",
+            "schema" : {
+              "oneOf" : [ {
+                "const" : "CUSTOM"
+              } ]
+            }
+          }
+        },
+        "elements" : [ {
+          "type" : "Control",
+          "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/readFromColumn",
+          "options" : {
+            "validation" : {
+              "pattern" : {
+                "errorMessage" : "Value must be an Excel column identifier (A, B, ... or 1, 2, ...) or empty",
+                "parameters" : {
+                  "pattern" : "[A-Z]*|\\d*"
+                }
+              }
+            }
+          }
+        }, {
+          "type" : "Control",
+          "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/readToColumn",
+          "options" : {
+            "validation" : {
+              "pattern" : {
+                "errorMessage" : "Value must be an Excel column identifier (A, B, ... or 1, 2, ...) or empty",
+                "parameters" : {
+                  "pattern" : "[A-Z]*|\\d*"
+                }
+              }
+            }
+          }
+        } ]
+      }, {
+        "type" : "HorizontalLayout",
+        "rule" : {
+          "effect" : "SHOW",
+          "condition" : {
+            "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/sheetArea",
+            "schema" : {
+              "oneOf" : [ {
+                "const" : "CUSTOM"
+              } ]
+            }
+          }
+        },
+        "elements" : [ {
+          "type" : "Control",
+          "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/readFromRow",
+          "options" : {
+            "validation" : {
+              "pattern" : {
+                "errorMessage" : "Value must be a positive integer or empty",
+                "parameters" : {
+                  "pattern" : "\\d*"
+                }
+              }
+            }
+          }
+        }, {
+          "type" : "Control",
+          "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/readToRow",
+          "options" : {
+            "validation" : {
+              "pattern" : {
+                "errorMessage" : "Value must be a positive integer or empty",
+                "parameters" : {
+                  "pattern" : "\\d*"
+                }
+              }
+            }
+          }
+        } ]
+      }, {
+        "type" : "Control",
+        "id" : "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/validationMessage",
+        "options" : {
+          "format" : "textMessage"
+        },
+        "providedOptions" : [ "message" ]
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/columnNameParams/properties/columnNameMode",
+        "options" : {
+          "isAdvanced" : true,
+          "format" : "radio",
+          "radioLayout" : "vertical"
+        }
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/columnNameParams/properties/columnNamesRowNumber",
+        "options" : {
+          "validation" : {
+            "max" : {
+              "errorMessage" : "The value must not exceed 1048576.",
+              "parameters" : {
+                "isExclusive" : false,
+                "max" : 1048576.0
+              }
+            },
+            "min" : {
+              "errorMessage" : "The value must be at least 1.",
+              "parameters" : {
+                "isExclusive" : false,
+                "min" : 1.0
+              }
+            }
+          },
+          "isAdvanced" : true
+        },
+        "rule" : {
+          "effect" : "SHOW",
+          "condition" : {
+            "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/columnNameParams/properties/columnNameMode",
+            "schema" : {
+              "oneOf" : [ {
+                "const" : "CUSTOM_ROW"
+              } ]
+            }
+          }
+        }
+      }, {
+        "type" : "HorizontalLayout",
+        "rule" : {
+          "effect" : "SHOW",
+          "condition" : {
+            "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/columnNameParams/properties/columnNameMode",
+            "schema" : {
+              "oneOf" : [ {
+                "const" : "CUSTOM_ROW"
+              } ]
+            }
+          }
+        },
+        "elements" : [ {
+          "type" : "Control",
+          "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/columnNameParams/properties/emptyColHeaderPrefix",
+          "options" : {
+            "isAdvanced" : true
+          }
+        }, {
+          "type" : "Control",
+          "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/columnNameParams/properties/emptyColHeaderSuffix",
+          "options" : {
+            "isAdvanced" : true,
+            "format" : "valueSwitch"
+          }
+        } ]
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/rowIdParams/properties/rowIdMode",
+        "options" : {
+          "isAdvanced" : true,
+          "format" : "radio",
+          "radioLayout" : "vertical"
+        }
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/rowIdParams/properties/rowIdColumn",
+        "options" : {
+          "validation" : {
+            "pattern" : {
+              "errorMessage" : "The value must be a valid Excel column identifier (e.g., A, B, AA, AB or 1, 2, 3).",
+              "parameters" : {
+                "pattern" : "[A-Z]+|[1-9][0-9]*"
+              }
+            }
+          },
+          "isAdvanced" : true
+        },
+        "rule" : {
+          "effect" : "SHOW",
+          "condition" : {
+            "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/rowIdParams/properties/rowIdMode",
+            "schema" : {
+              "oneOf" : [ {
+                "const" : "CUSTOM_COLUMN"
+              } ]
+            }
+          }
+        }
+      }, {
+        "type" : "HorizontalLayout",
+        "elements" : [ {
+          "type" : "Control",
+          "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/skipParams/properties/skipEmptyColumns",
+          "options" : {
+            "format" : "checkbox"
+          }
+        }, {
+          "type" : "Control",
+          "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/skipParams/properties/skipHiddenColumns",
+          "options" : {
+            "format" : "checkbox"
+          }
+        } ]
+      }, {
+        "type" : "HorizontalLayout",
+        "elements" : [ {
+          "type" : "Control",
+          "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/skipParams/properties/skipEmptyRows",
+          "options" : {
+            "format" : "checkbox"
+          }
+        }, {
+          "type" : "Control",
+          "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/skipParams/properties/skipHiddenRows",
+          "options" : {
+            "format" : "checkbox"
+          }
+        } ]
+      } ]
+    }, {
+      "label" : "Values",
+      "type" : "Section",
+      "options" : {
+        "isAdvanced" : true
+      },
+      "elements" : [ {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/valuesParams/properties/use15DigitsPrecision",
+        "options" : {
+          "format" : "checkbox"
+        }
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/valuesParams/properties/replaceEmptyStringsWithMissingValues",
+        "options" : {
+          "format" : "checkbox"
+        }
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/valuesParams/properties/reevaluateFormulas",
+        "options" : {
+          "format" : "checkbox"
+        }
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/valuesParams/properties/formulaErrorHandling",
+        "options" : {
+          "format" : "valueSwitch"
+        }
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/valuesParams/properties/formulaErrorPattern",
+        "rule" : {
+          "effect" : "SHOW",
+          "condition" : {
+            "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/valuesParams/properties/formulaErrorHandling",
+            "schema" : {
+              "oneOf" : [ {
+                "const" : "PATTERN"
+              } ]
+            }
+          }
+        }
+      } ]
+    }, {
+      "label" : "Column and Data Type Detection",
+      "type" : "Section",
+      "options" : {
+        "isAdvanced" : true
+      },
+      "elements" : [ {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/ifSchemaChangesParams/properties/ignoreSchemaChange",
+        "options" : {
+          "format" : "checkbox"
+        },
+        "rule" : {
+          "effect" : "SHOW",
+          "condition" : {
+            "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/ifSchemaChangesParams/properties/ignoreSchemaChangeWasSetInitially",
+            "schema" : {
+              "const" : true
+            }
+          }
+        }
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/ifSchemaChangesParams/properties/ifSchemaChangesOption",
+        "options" : {
+          "format" : "valueSwitch"
+        },
+        "rule" : {
+          "effect" : "SHOW",
+          "condition" : {
+            "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/ifSchemaChangesParams/properties/ignoreSchemaChange",
+            "schema" : {
+              "const" : false
+            }
+          }
+        }
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/schemaDetectionParams/properties/limitDataRowsScanned",
+        "options" : {
+          "format" : "checkbox"
+        }
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/schemaDetectionParams/properties/maxDataRowsScanned",
+        "options" : {
+          "validation" : {
+            "max" : {
+              "errorMessage" : "The value must not exceed 1048576.",
+              "parameters" : {
+                "isExclusive" : false,
+                "max" : 1048576.0
+              }
+            },
+            "min" : {
+              "errorMessage" : "The value must be at least 1.",
+              "parameters" : {
+                "isExclusive" : false,
+                "min" : 1.0
+              }
+            }
+          }
+        },
+        "rule" : {
+          "effect" : "SHOW",
+          "condition" : {
+            "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/schemaDetectionParams/properties/limitDataRowsScanned",
+            "schema" : {
+              "const" : true
+            }
+          }
+        }
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/schemaDetectionParams/properties/failOnDifferingSpecs",
+        "options" : {
+          "format" : "checkbox"
+        },
+        "rule" : {
+          "effect" : "SHOW",
+          "condition" : {
+            "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source",
+            "schema" : {
+              "properties" : {
+                "filterMode" : {
+                  "oneOf" : [ {
+                    "const" : "FILES_IN_FOLDERS"
+                  }, {
+                    "const" : "FOLDERS"
+                  }, {
+                    "const" : "FILES_AND_FOLDERS"
+                  } ]
+                }
+              },
+              "required" : [ "filterMode" ]
+            }
+          }
+        }
+      } ]
+    }, {
+      "label" : "Multiple File Handling",
+      "type" : "Section",
+      "options" : {
+        "isAdvanced" : true
+      },
+      "rule" : {
+        "effect" : "SHOW",
+        "condition" : {
+          "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source",
+          "schema" : {
+            "properties" : {
+              "filterMode" : {
+                "oneOf" : [ {
+                  "const" : "FILES_IN_FOLDERS"
+                }, {
+                  "const" : "FOLDERS"
+                }, {
+                  "const" : "FILES_AND_FOLDERS"
+                } ]
+              }
+            },
+            "required" : [ "filterMode" ]
+          }
+        }
+      },
+      "elements" : [ {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/howToCombineColumns",
+        "options" : {
+          "format" : "valueSwitch"
+        }
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/appendPathColumn",
+        "options" : {
+          "validation" : {
+            "pattern" : {
+              "errorMessage" : "The string must start and end with a non-whitespace character.",
+              "parameters" : {
+                "pattern" : "\\S(.*\\S)?"
+              }
+            }
+          },
+          "hideOnNull" : true
+        },
+        "providedOptions" : [ "default" ]
+      } ]
+    }, {
+      "label" : "Table Transformation",
+      "type" : "Section",
+      "description" : "Use this option to modify the structure of the table. You can deselect each column to filter it out of the\noutput table, use the arrows to reorder the columns, or change the column name or column type of each\ncolumn. Note that the positions of columns are reset in the dialog if a new file or folder is selected.\nWhether and where to add unknown columns during execution is specified via the special row &lt;any unknown\nnew column&gt;. It is also possible to select the type new columns should be converted to. Note that the\nnode will fail if this conversion is not possible e.g. if the selected type is Integer but the new column is\nof type Double.\n",
+      "options" : {
+        "isAdvanced" : true
+      },
+      "rule" : {
+        "effect" : "HIDE",
+        "condition" : {
+          "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/ifSchemaChangesParams/properties/ifSchemaChangesOption",
+          "schema" : {
+            "oneOf" : [ {
+              "const" : "USE_NEW_SCHEMA"
+            } ]
+          }
+        }
+      },
+      "elements" : [ {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/transformationParameters/properties/enforceTypes",
+        "options" : {
+          "format" : "checkbox"
+        }
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/transformationParameters/properties/columnTransformation",
+        "options" : {
+          "detail" : [ {
+            "type" : "Control",
+            "scope" : "#/properties/columnRename",
+            "options" : {
+              "validation" : {
+                "pattern" : {
+                  "errorMessage" : "The string must start and end with a non-whitespace character.",
+                  "parameters" : {
+                    "pattern" : "\\S(.*\\S)?"
+                  }
+                }
+              },
+              "hideControlHeader" : true
+            },
+            "rule" : {
+              "effect" : "SHOW",
+              "condition" : {
+                "type" : "AND",
+                "conditions" : [ {
+                  "scope" : "#/properties/_edit",
+                  "schema" : {
+                    "const" : true
+                  }
+                }, {
+                  "scope" : "#/properties/columnName",
+                  "schema" : {
+                    "not" : {
+                      "const" : null
+                    }
+                  }
+                } ]
+              }
+            }
+          }, {
+            "type" : "Control",
+            "scope" : "#/properties/productionPath",
+            "options" : {
+              "hideControlHeader" : true,
+              "format" : "dropDown"
+            },
+            "providedOptions" : [ "possibleValues" ],
+            "rule" : {
+              "effect" : "SHOW",
+              "condition" : {
+                "scope" : "#/properties/_edit",
+                "schema" : {
+                  "const" : true
+                }
+              }
+            }
+          } ],
+          "arrayElementTitle" : "Column",
+          "showSortButtons" : true,
+          "hasFixedSize" : true,
+          "withEditAndReset" : true,
+          "elementCheckboxScope" : "#/properties/includeInOutput"
+        },
+        "providedOptions" : [ "arrayElementTitle", "elementSubTitle" ],
+        "rule" : {
+          "effect" : "HIDE",
+          "condition" : {
+            "schema" : {
+              "not" : { }
+            }
+          }
+        }
+      } ]
+    } ]
+  },
+  "persist" : {
+    "type" : "object",
+    "properties" : {
+      "model" : {
+        "type" : "object",
+        "properties" : {
+          "excelTableReaderParameters" : {
+            "type" : "object",
+            "properties" : {
+              "multiFileSelectionParams" : {
+                "type" : "object",
+                "properties" : {
+                  "fileSystemFromPortNotAvailableMessage" : { },
+                  "source" : {
+                    "type" : "object",
+                    "properties" : {
+                      "filterMode" : { },
+                      "path" : { },
+                      "includeSubfolders" : { },
+                      "filters" : {
+                        "type" : "object",
+                        "properties" : {
+                          "filterMode" : {
+                            "configPaths" : [ ]
+                          },
+                          "filterFilesExtension" : { },
+                          "filesExtensionExpression" : { },
+                          "filesExtensionCaseSensitive" : { },
+                          "filterFilesName" : { },
+                          "filesNameExpression" : { },
+                          "filesNameFilterType" : { },
+                          "filesNameCaseSensitive" : { },
+                          "includeHiddenFiles" : { },
+                          "includeSpecialFiles" : { },
+                          "filterFoldersName" : { },
+                          "foldersNameExpression" : { },
+                          "foldersNameFilterType" : { },
+                          "foldersNameCaseSensitive" : { },
+                          "includeHiddenFolders" : { },
+                          "followSymlinks" : { }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "ifSchemaChangesParams" : {
+                "type" : "object",
+                "properties" : {
+                  "ignoreSchemaChange" : { },
+                  "ifSchemaChangesOption" : { },
+                  "ignoreSchemaChangeWasSetInitially" : {
+                    "configPaths" : [ ]
+                  }
+                }
+              },
+              "multiFileReaderParams" : {
+                "type" : "object",
+                "properties" : {
+                  "appendPathColumn" : {
+                    "configPaths" : [ [ "appendPathColumn_is_present" ], [ "appendPathColumn" ] ]
+                  },
+                  "howToCombineColumns" : { }
+                }
+              },
+              "excelFileInfoMessageParams" : {
+                "type" : "object",
+                "properties" : {
+                  "fileInfoMessage" : { }
+                },
+                "propertiesRoute" : [ ".." ]
+              },
+              "selectSheetParams" : {
+                "type" : "object",
+                "properties" : {
+                  "sheetSelection" : { },
+                  "sheetName" : { },
+                  "sheetIndex" : { }
+                }
+              },
+              "readAreaParams" : {
+                "type" : "object",
+                "properties" : {
+                  "sheetArea" : { },
+                  "readFromColumn" : { },
+                  "readToColumn" : { },
+                  "readFromRow" : { },
+                  "readToRow" : { },
+                  "validationMessage" : { }
+                }
+              },
+              "columnNameParams" : {
+                "type" : "object",
+                "properties" : {
+                  "columnNameMode" : { },
+                  "columnNamesRowNumber" : { },
+                  "emptyColHeaderPrefix" : { },
+                  "emptyColHeaderSuffix" : { }
+                }
+              },
+              "rowIdParams" : {
+                "type" : "object",
+                "properties" : {
+                  "rowIdMode" : { },
+                  "rowIdColumn" : { }
+                }
+              },
+              "skipParams" : {
+                "type" : "object",
+                "properties" : {
+                  "skipEmptyColumns" : { },
+                  "skipHiddenColumns" : { },
+                  "skipEmptyRows" : { },
+                  "skipHiddenRows" : { }
+                }
+              },
+              "schemaDetectionParams" : {
+                "type" : "object",
+                "properties" : {
+                  "limitDataRowsScanned" : { },
+                  "maxDataRowsScanned" : { },
+                  "failOnDifferingSpecs" : { }
+                }
+              },
+              "valuesParams" : {
+                "type" : "object",
+                "properties" : {
+                  "use15DigitsPrecision" : { },
+                  "replaceEmptyStringsWithMissingValues" : { },
+                  "reevaluateFormulas" : { },
+                  "formulaErrorHandling" : { },
+                  "formulaErrorPattern" : { }
+                }
+              },
+              "encryptionParams" : {
+                "type" : "object",
+                "properties" : {
+                  "encryptionMode" : { },
+                  "credentials" : {
+                    "type" : "object",
+                    "properties" : {
+                      "credentials" : { },
+                      "flowVarName" : {
+                        "configPaths" : [ ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "transformationParameters" : {
+            "type" : "object",
+            "properties" : {
+              "specs" : {
+                "type" : "array",
+                "items" : {
+                  "type" : "object",
+                  "properties" : {
+                    "fsLocation" : { },
+                    "sourceIdentifier" : { },
+                    "spec" : {
+                      "type" : "array",
+                      "items" : {
+                        "type" : "object",
+                        "properties" : {
+                          "name" : { },
+                          "type" : { },
+                          "hasType" : { }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "enforceTypes" : { },
+              "columnTransformation" : {
+                "type" : "array",
+                "items" : {
+                  "type" : "object",
+                  "properties" : {
+                    "columnName" : { },
+                    "originalProductionPath" : {
+                      "configPaths" : [ ]
+                    },
+                    "originalTypeLabel" : { },
+                    "includeInOutput" : { },
+                    "columnRename" : { },
+                    "productionPath" : {
+                      "configPaths" : [ ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "propertiesDeprecatedConfigKeys" : [ {
+          "deprecated" : [ [ "settings" ], [ "advanced_settings" ], [ "table_spec_config_Internals" ], [ "encryption" ] ]
+        } ]
+      }
+    }
+  },
+  "initialUpdates" : [ {
+    "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/ifSchemaChangesParams/properties/ignoreSchemaChangeWasSetInitially",
+    "values" : [ {
+      "indices" : [ ],
+      "value" : false
+    } ]
+  }, {
+    "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/appendPathColumn",
+    "providedOptionName" : "default",
+    "values" : [ {
+      "indices" : [ ],
+      "value" : "File Path"
+    } ]
+  }, {
+    "id" : "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/fileSystemFromPortNotAvailableMessage",
+    "providedOptionName" : "message",
+    "values" : [ {
+      "indices" : [ ],
+      "value" : null
+    } ]
+  }, {
+    "id" : "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/validationMessage",
+    "providedOptionName" : "message",
+    "values" : [ {
+      "indices" : [ ],
+      "value" : null
+    } ]
+  } ],
+  "globalUpdates" : [ {
+    "trigger" : {
+      "id" : "ElementResetButton"
+    },
+    "dependencies" : [ "#/properties/model/properties/transformationParameters/properties/columnTransformation/items/properties/columnName", "#/properties/model/properties/transformationParameters/properties/columnTransformation/items/properties/originalProductionPath" ]
+  }, {
+    "trigger" : {
+      "id" : "after-open-dialog"
+    },
+    "triggerInitially" : true,
+    "dependencies" : [ "#/properties/model/properties/excelTableReaderParameters", "#/properties/model/properties/excelTableReaderParameters/properties/encryptionParams", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/howToCombineColumns", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source", "#/properties/model/properties/excelTableReaderParameters/properties/selectSheetParams/properties/sheetName", "#/properties/model/properties/transformationParameters/properties/columnTransformation", "#/properties/model/properties/transformationParameters/properties/specs" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/columnNameParams/properties/columnNameMode"
+    },
+    "dependencies" : [ "#/properties/model/properties/excelTableReaderParameters", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/howToCombineColumns", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source", "#/properties/model/properties/transformationParameters/properties/columnTransformation", "#/properties/model/properties/transformationParameters/properties/specs" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/columnNameParams/properties/columnNamesRowNumber"
+    },
+    "dependencies" : [ "#/properties/model/properties/excelTableReaderParameters", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/howToCombineColumns", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source", "#/properties/model/properties/transformationParameters/properties/columnTransformation", "#/properties/model/properties/transformationParameters/properties/specs" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/columnNameParams/properties/emptyColHeaderPrefix"
+    },
+    "dependencies" : [ "#/properties/model/properties/excelTableReaderParameters", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/howToCombineColumns", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source", "#/properties/model/properties/transformationParameters/properties/columnTransformation", "#/properties/model/properties/transformationParameters/properties/specs" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/columnNameParams/properties/emptyColHeaderSuffix"
+    },
+    "dependencies" : [ "#/properties/model/properties/excelTableReaderParameters", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/howToCombineColumns", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source", "#/properties/model/properties/transformationParameters/properties/columnTransformation", "#/properties/model/properties/transformationParameters/properties/specs" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/encryptionParams"
+    },
+    "dependencies" : [ "#/properties/model/properties/excelTableReaderParameters/properties/encryptionParams", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source", "#/properties/model/properties/excelTableReaderParameters/properties/selectSheetParams/properties/sheetName" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/encryptionParams/properties/credentials"
+    },
+    "dependencies" : [ "#/properties/model/properties/excelTableReaderParameters", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/howToCombineColumns", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source", "#/properties/model/properties/transformationParameters/properties/columnTransformation", "#/properties/model/properties/transformationParameters/properties/specs" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/encryptionParams/properties/encryptionMode"
+    },
+    "dependencies" : [ "#/properties/model/properties/excelTableReaderParameters", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/howToCombineColumns", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source", "#/properties/model/properties/transformationParameters/properties/columnTransformation", "#/properties/model/properties/transformationParameters/properties/specs" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/howToCombineColumns"
+    },
+    "dependencies" : [ "#/properties/model/properties/excelTableReaderParameters", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/howToCombineColumns", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source", "#/properties/model/properties/transformationParameters/properties/columnTransformation", "#/properties/model/properties/transformationParameters/properties/specs" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source"
+    },
+    "dependencies" : [ "#/properties/model/properties/excelTableReaderParameters", "#/properties/model/properties/excelTableReaderParameters/properties/encryptionParams", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/howToCombineColumns", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source", "#/properties/model/properties/excelTableReaderParameters/properties/selectSheetParams/properties/sheetName", "#/properties/model/properties/transformationParameters/properties/columnTransformation", "#/properties/model/properties/transformationParameters/properties/specs" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/readFromColumn"
+    },
+    "dependencies" : [ "#/properties/model/properties/excelTableReaderParameters", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/howToCombineColumns", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source", "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/readFromColumn", "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/readFromRow", "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/readToColumn", "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/readToRow", "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/sheetArea", "#/properties/model/properties/transformationParameters/properties/columnTransformation", "#/properties/model/properties/transformationParameters/properties/specs" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/readFromRow"
+    },
+    "dependencies" : [ "#/properties/model/properties/excelTableReaderParameters", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/howToCombineColumns", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source", "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/readFromColumn", "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/readFromRow", "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/readToColumn", "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/readToRow", "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/sheetArea", "#/properties/model/properties/transformationParameters/properties/columnTransformation", "#/properties/model/properties/transformationParameters/properties/specs" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/readToColumn"
+    },
+    "dependencies" : [ "#/properties/model/properties/excelTableReaderParameters", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/howToCombineColumns", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source", "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/readFromColumn", "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/readFromRow", "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/readToColumn", "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/readToRow", "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/sheetArea", "#/properties/model/properties/transformationParameters/properties/columnTransformation", "#/properties/model/properties/transformationParameters/properties/specs" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/readToRow"
+    },
+    "dependencies" : [ "#/properties/model/properties/excelTableReaderParameters", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/howToCombineColumns", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source", "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/readFromColumn", "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/readFromRow", "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/readToColumn", "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/readToRow", "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/sheetArea", "#/properties/model/properties/transformationParameters/properties/columnTransformation", "#/properties/model/properties/transformationParameters/properties/specs" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/sheetArea"
+    },
+    "dependencies" : [ "#/properties/model/properties/excelTableReaderParameters", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/howToCombineColumns", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source", "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/readFromColumn", "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/readFromRow", "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/readToColumn", "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/readToRow", "#/properties/model/properties/excelTableReaderParameters/properties/readAreaParams/properties/sheetArea", "#/properties/model/properties/transformationParameters/properties/columnTransformation", "#/properties/model/properties/transformationParameters/properties/specs" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/rowIdParams/properties/rowIdColumn"
+    },
+    "dependencies" : [ "#/properties/model/properties/excelTableReaderParameters", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/howToCombineColumns", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source", "#/properties/model/properties/transformationParameters/properties/columnTransformation", "#/properties/model/properties/transformationParameters/properties/specs" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/rowIdParams/properties/rowIdMode"
+    },
+    "dependencies" : [ "#/properties/model/properties/excelTableReaderParameters", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/howToCombineColumns", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source", "#/properties/model/properties/transformationParameters/properties/columnTransformation", "#/properties/model/properties/transformationParameters/properties/specs" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/schemaDetectionParams/properties/failOnDifferingSpecs"
+    },
+    "dependencies" : [ "#/properties/model/properties/excelTableReaderParameters", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/howToCombineColumns", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source", "#/properties/model/properties/transformationParameters/properties/columnTransformation", "#/properties/model/properties/transformationParameters/properties/specs" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/schemaDetectionParams/properties/limitDataRowsScanned"
+    },
+    "dependencies" : [ "#/properties/model/properties/excelTableReaderParameters", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/howToCombineColumns", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source", "#/properties/model/properties/transformationParameters/properties/columnTransformation", "#/properties/model/properties/transformationParameters/properties/specs" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/schemaDetectionParams/properties/maxDataRowsScanned"
+    },
+    "dependencies" : [ "#/properties/model/properties/excelTableReaderParameters", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/howToCombineColumns", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source", "#/properties/model/properties/transformationParameters/properties/columnTransformation", "#/properties/model/properties/transformationParameters/properties/specs" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/selectSheetParams/properties/sheetIndex"
+    },
+    "dependencies" : [ "#/properties/model/properties/excelTableReaderParameters", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/howToCombineColumns", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source", "#/properties/model/properties/transformationParameters/properties/columnTransformation", "#/properties/model/properties/transformationParameters/properties/specs" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/selectSheetParams/properties/sheetName"
+    },
+    "dependencies" : [ "#/properties/model/properties/excelTableReaderParameters", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/howToCombineColumns", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source", "#/properties/model/properties/transformationParameters/properties/columnTransformation", "#/properties/model/properties/transformationParameters/properties/specs" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/selectSheetParams/properties/sheetSelection"
+    },
+    "dependencies" : [ "#/properties/model/properties/excelTableReaderParameters", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/howToCombineColumns", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source", "#/properties/model/properties/transformationParameters/properties/columnTransformation", "#/properties/model/properties/transformationParameters/properties/specs" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/skipParams/properties/skipEmptyColumns"
+    },
+    "dependencies" : [ "#/properties/model/properties/excelTableReaderParameters", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/howToCombineColumns", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source", "#/properties/model/properties/transformationParameters/properties/columnTransformation", "#/properties/model/properties/transformationParameters/properties/specs" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/skipParams/properties/skipHiddenColumns"
+    },
+    "dependencies" : [ "#/properties/model/properties/excelTableReaderParameters", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/howToCombineColumns", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source", "#/properties/model/properties/transformationParameters/properties/columnTransformation", "#/properties/model/properties/transformationParameters/properties/specs" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/skipParams/properties/skipHiddenRows"
+    },
+    "dependencies" : [ "#/properties/model/properties/excelTableReaderParameters", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/howToCombineColumns", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source", "#/properties/model/properties/transformationParameters/properties/columnTransformation", "#/properties/model/properties/transformationParameters/properties/specs" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/valuesParams/properties/formulaErrorHandling"
+    },
+    "dependencies" : [ "#/properties/model/properties/excelTableReaderParameters", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/howToCombineColumns", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source", "#/properties/model/properties/transformationParameters/properties/columnTransformation", "#/properties/model/properties/transformationParameters/properties/specs" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/valuesParams/properties/reevaluateFormulas"
+    },
+    "dependencies" : [ "#/properties/model/properties/excelTableReaderParameters", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/howToCombineColumns", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source", "#/properties/model/properties/transformationParameters/properties/columnTransformation", "#/properties/model/properties/transformationParameters/properties/specs" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/valuesParams/properties/replaceEmptyStringsWithMissingValues"
+    },
+    "dependencies" : [ "#/properties/model/properties/excelTableReaderParameters", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/howToCombineColumns", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source", "#/properties/model/properties/transformationParameters/properties/columnTransformation", "#/properties/model/properties/transformationParameters/properties/specs" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/valuesParams/properties/use15DigitsPrecision"
+    },
+    "dependencies" : [ "#/properties/model/properties/excelTableReaderParameters", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/howToCombineColumns", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source", "#/properties/model/properties/transformationParameters/properties/columnTransformation", "#/properties/model/properties/transformationParameters/properties/specs" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/transformationParameters/properties/specs"
+    },
+    "dependencies" : [ "#/properties/model/properties/excelTableReaderParameters", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source", "#/properties/model/properties/transformationParameters/properties/columnTransformation/items/properties/columnName", "#/properties/model/properties/transformationParameters/properties/columnTransformation/items/properties/originalTypeLabel" ]
+  } ]
+}

@@ -49,7 +49,6 @@
 package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
@@ -83,23 +82,19 @@ import org.knime.filehandling.core.node.table.reader.spec.DefaultExtractColumnHe
 import org.knime.filehandling.core.node.table.reader.spec.ExtractColumnHeaderRead;
 import org.knime.filehandling.core.node.table.reader.spec.TableSpecGuesser;
 import org.knime.filehandling.core.node.table.reader.spec.TypedReaderTableSpec;
-import org.knime.filehandling.core.node.table.reader.type.hierarchy.TreeTypeHierarchy;
-import org.knime.filehandling.core.node.table.reader.type.hierarchy.TypeTester;
 import org.knime.filehandling.core.node.table.reader.util.MultiTableUtils;
+
+import static org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelReadAdapterFactory.STRING_ONLY_HIERARCHY;
+import static org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelReadAdapterFactory.TYPE_HIERARCHY;
 
 /**
  * Reader for Excel files.
  *
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
  */
-final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIMECellType, ExcelCell> {
+public final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIMECellType, ExcelCell> {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(ExcelTableReader.class);
-
-    static final TreeTypeHierarchy<KNIMECellType, ExcelCell> TYPE_HIERARCHY = createHierarchy();
-
-    static final TreeTypeHierarchy<KNIMECellType, ExcelCell> STRING_ONLY_HIERARCHY =
-        TreeTypeHierarchy.builder(createTypeTester(KNIMECellType.STRING, KNIMECellType.values())).build();
 
     /** The change listener that is set by the dialog to get notified once sheet names are retrieved. */
     private ChangeListener m_listener;
@@ -252,24 +247,6 @@ final class ExcelTableReader implements TableReader<ExcelTableReaderConfig, KNIM
 
     private static TableSpecGuesser<FSPath, KNIMECellType, ExcelCell> createGuesser() {
         return new TableSpecGuesser<>(TYPE_HIERARCHY, ExcelCell::getStringValue);
-    }
-
-    private static TreeTypeHierarchy<KNIMECellType, ExcelCell> createHierarchy() {
-        return TreeTypeHierarchy.builder(createTypeTester(KNIMECellType.STRING, KNIMECellType.values()))
-            .addType(KNIMECellType.STRING,
-                createTypeTester(KNIMECellType.DOUBLE, KNIMECellType.LONG, KNIMECellType.INT))
-            .addType(KNIMECellType.DOUBLE, createTypeTester(KNIMECellType.LONG, KNIMECellType.INT))
-            .addType(KNIMECellType.LONG, createTypeTester(KNIMECellType.INT))
-            .addType(KNIMECellType.STRING, createTypeTester(KNIMECellType.BOOLEAN))
-            .addType(KNIMECellType.STRING, createTypeTester(KNIMECellType.LOCAL_DATE_TIME, KNIMECellType.LOCAL_DATE))
-            .addType(KNIMECellType.LOCAL_DATE_TIME, createTypeTester(KNIMECellType.LOCAL_DATE))
-            .addType(KNIMECellType.STRING, createTypeTester(KNIMECellType.LOCAL_TIME)).build();
-    }
-
-    private static TypeTester<KNIMECellType, ExcelCell> createTypeTester(final KNIMECellType type,
-        final KNIMECellType... compatibleTypes) {
-        return TypeTester.createTypeTester(type,
-            e -> type == e.getType() || Arrays.binarySearch(compatibleTypes, e.getType()) >= 0);
     }
 
     void setChangeListener(final ChangeListener l) {

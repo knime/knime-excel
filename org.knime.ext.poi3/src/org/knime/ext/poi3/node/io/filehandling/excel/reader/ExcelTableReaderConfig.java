@@ -64,7 +64,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     static final String CFG_PASSWORD = "password";
 
     /** The default String to be inserted when an error cell is encountered. */
-    static final String DEFAULT_FORMULA_ERROR_PATTERN = "#XL_EVAL_ERROR#";
+    public static final String DEFAULT_FORMULA_ERROR_PATTERN = "#XL_EVAL_ERROR#";
 
     private boolean m_useRawSettings = false;
 
