@@ -48,12 +48,12 @@ package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 
 import java.util.function.Supplier;
 
-import org.knime.base.node.io.filehandling.webui.reader2.ClassSerializer;
 import org.knime.base.node.io.filehandling.webui.reader2.SkipFirstDataRowsParameters;
 import org.knime.base.node.io.filehandling.webui.reader2.TransformationParametersStateProviders;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderNodeParameters.ExcelTableReaderParametersRef;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderSpecific.ConfigAndReader;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderSpecific.ProductionPathProviderAndTypeHierarchy;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
 
 /**
  * TODO (#4): Adjust Class<?> to match your TableReader's T type parameter if needed
@@ -64,13 +64,13 @@ final class ExcelTableReaderTransformationParametersStateProviders {
 
     static final class TypedReaderTableSpecsProvider
         extends TransformationParametersStateProviders.TypedReaderTableSpecsProvider<//
-                DummyTableReaderConfig, Class<?>, DummyMultiTableReadConfig>
+                ExcelTableReaderConfig, KNIMECellType, ExcelMultiTableReadConfig>
         implements ConfigAndReader {
 
         private Supplier<ExcelTableReaderParameters> m_readerNodeParamsSupplier;
 
         @Override
-        protected void applyParametersToConfig(final DummyMultiTableReadConfig config) {
+        protected void applyParametersToConfig(final ExcelMultiTableReadConfig config) {
             m_readerNodeParamsSupplier.get().saveToConfig(config);
         }
 
@@ -81,7 +81,7 @@ final class ExcelTableReaderTransformationParametersStateProviders {
         }
 
         interface Dependent
-            extends TransformationParametersStateProviders.TypedReaderTableSpecsProvider.Dependent<Class<?>> {
+            extends TransformationParametersStateProviders.TypedReaderTableSpecsProvider.Dependent<KNIMECellType> {
             @SuppressWarnings("unchecked")
             @Override
             default Class<TypedReaderTableSpecsProvider> getTypedReaderTableSpecsProvider() {
@@ -107,14 +107,14 @@ final class ExcelTableReaderTransformationParametersStateProviders {
 
     // TODO (#4): If your T is not Class<?>, replace ClassSerializer with appropriate serializer (e.g., DataTypeSerializer)
     static final class TableSpecSettingsProvider
-        extends TransformationParametersStateProviders.TableSpecSettingsProvider<Class<?>>
-        implements TypedReaderTableSpecsProvider.Dependent, ClassSerializer {
+        extends TransformationParametersStateProviders.TableSpecSettingsProvider<KNIMECellType>
+        implements TypedReaderTableSpecsProvider.Dependent, KNIMECellTypeSerializer {
     }
 
     // TODO (#4): If your T is not Class<?>, replace ClassSerializer with appropriate serializer (e.g., DataTypeSerializer)
     static final class TransformationElementSettingsProvider
-        extends TransformationParametersStateProviders.TransformationElementSettingsProvider<Class<?>>
-        implements ProductionPathProviderAndTypeHierarchy, TypedReaderTableSpecsProvider.Dependent, ClassSerializer {
+        extends TransformationParametersStateProviders.TransformationElementSettingsProvider<KNIMECellType>
+        implements ProductionPathProviderAndTypeHierarchy, TypedReaderTableSpecsProvider.Dependent, KNIMECellTypeSerializer {
 
         @Override
         protected boolean hasMultipleFileHandling() {
@@ -122,12 +122,12 @@ final class ExcelTableReaderTransformationParametersStateProviders {
         }
     }
 
-    static final class TypeChoicesProvider extends TransformationParametersStateProviders.TypeChoicesProvider<Class<?>>
+    static final class TypeChoicesProvider extends TransformationParametersStateProviders.TypeChoicesProvider<KNIMECellType>
         implements ProductionPathProviderAndTypeHierarchy, TypedReaderTableSpecsProvider.Dependent {
     }
 
     static final class TransformationSettingsWidgetModification
-        extends TransformationParametersStateProviders.TransformationSettingsWidgetModification<Class<?>> {
+        extends TransformationParametersStateProviders.TransformationSettingsWidgetModification<KNIMECellType> {
 
         @Override
         protected Class<TableSpecSettingsProvider> getSpecsValueProvider() {

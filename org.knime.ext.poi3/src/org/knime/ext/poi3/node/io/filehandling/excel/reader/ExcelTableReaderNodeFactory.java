@@ -57,6 +57,8 @@ import org.knime.base.node.io.filehandling.webui.reader2.WebUITableReaderNodeFac
 import org.knime.core.node.NodeDescription;
 import org.knime.core.node.context.NodeCreationConfiguration;
 import org.knime.core.util.Version;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
 import org.knime.filehandling.core.connections.FSPath;
 import org.knime.filehandling.core.node.table.reader.GenericTableReader;
 import org.knime.filehandling.core.node.table.reader.ReadAdapterFactory;
@@ -70,7 +72,7 @@ import org.knime.node.impl.description.DefaultNodeDescriptionUtil;
  */
 // TODO (#4): Adjust Class<?> (T) and String (V) to match your TableReader's type parameters if needed
 public class ExcelTableReaderNodeFactory extends WebUITableReaderNodeFactory<ExcelTableReaderNodeParameters, FSPath, //
-        MultiFileSelectionPath, DummyTableReaderConfig, Class<?>, String, DummyMultiTableReadConfig> {
+        MultiFileSelectionPath, ExcelTableReaderConfig, KNIMECellType, ExcelCell, ExcelMultiTableReadConfig> {
 
     @SuppressWarnings("javadoc")
     public ExcelTableReaderNodeFactory() {
@@ -98,25 +100,25 @@ public class ExcelTableReaderNodeFactory extends WebUITableReaderNodeFactory<Exc
 
     // TODO (#5): Return your ReadAdapterFactory instance
     @Override
-    protected ReadAdapterFactory<Class<?>, String> getReadAdapterFactory() {
+    protected ReadAdapterFactory<KNIMECellType, ExcelCell> getReadAdapterFactory() {
         return null;
     }
 
     // TODO (#3): Return new instance of your TableReader
     @Override
-    protected GenericTableReader<FSPath, DummyTableReaderConfig, Class<?>, String> createReader() {
-        return new DummyTableReader();
+    protected GenericTableReader<FSPath, ExcelTableReaderConfig, KNIMECellType, ExcelCell> createReader() {
+        return new ExcelTableReader();
     }
 
     // TODO (#5): Implement if your V type requires special handling
     @Override
-    protected String extractRowKey(final String value) {
-        return value;
+    protected String extractRowKey(final ExcelCell value) {
+        return value.getStringValue();
     }
 
     // TODO (#5): Return your ReadAdapterFactory's TYPE_HIERARCHY
     @Override
-    protected TypeHierarchy<Class<?>, Class<?>> getTypeHierarchy() {
+    protected TypeHierarchy<KNIMECellType, KNIMECellType> getTypeHierarchy() {
         return null;
     }
 
@@ -127,14 +129,14 @@ public class ExcelTableReaderNodeFactory extends WebUITableReaderNodeFactory<Exc
 
     private final class ExcelTableReaderConfigAndSourceSerializer
         extends NodeParametersConfigAndSourceSerializer<ExcelTableReaderNodeParameters, FSPath, MultiFileSelectionPath, //
-                DummyTableReaderConfig, Class<?>, DummyMultiTableReadConfig> {
+                ExcelTableReaderConfig, KNIMECellType, ExcelMultiTableReadConfig> {
         protected ExcelTableReaderConfigAndSourceSerializer() {
             super(ExcelTableReaderNodeParameters.class);
         }
 
         @Override
         protected void saveToSourceAndConfig(final ExcelTableReaderNodeParameters params,
-            final MultiFileSelectionPath sourceSettings, final DummyMultiTableReadConfig config) {
+            final MultiFileSelectionPath sourceSettings, final ExcelMultiTableReadConfig config) {
             params.saveToSource(sourceSettings);
             params.saveToConfig(config);
         }
@@ -149,8 +151,8 @@ public class ExcelTableReaderNodeFactory extends WebUITableReaderNodeFactory<Exc
     }
 
     @Override
-    protected DummyMultiTableReadConfig createConfig(final NodeCreationConfiguration nodeCreationConfig) {
-        final var cfg = new DummyMultiTableReadConfig();
+    protected ExcelMultiTableReadConfig createConfig(final NodeCreationConfiguration nodeCreationConfig) {
+        final var cfg = new ExcelMultiTableReadConfig();
         final var defaultParams = new ExcelTableReaderNodeParameters(nodeCreationConfig);
         defaultParams.saveToConfig(cfg);
         return cfg;

@@ -77,7 +77,7 @@ public class ExcelTableReaderParameters implements NodeParameters {
         // default constructor
     }
 
-    ConfigID saveToConfig(final DummyMultiTableReadConfig config) {
+    ConfigID saveToConfig(final ExcelMultiTableReadConfig config) {
         // TODO (#6): Save reader-specific parameters to config here
         final var tableReadConfig = config.getTableReadConfig();
         m_skipFirstDataRowsParams.saveToConfig(tableReadConfig);
