@@ -43,139 +43,116 @@
  *  when such Node is propagated with or for interoperation with KNIME.
  * ---------------------------------------------------------------------
  *
- * History
- *   Oct 13, 2020 (Simon Schmid, KNIME GmbH, Konstanz, Germany): created
  */
 package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 
-import java.util.Optional;
+import static org.knime.node.impl.description.PortDescription.dynamicPort;
+import static org.knime.node.impl.description.PortDescription.fixedPort;
 
-import org.knime.core.node.NodeDialogPane;
+import java.util.List;
+
+import org.knime.base.node.io.filehandling.webui.reader2.MultiFileSelectionPath;
+import org.knime.base.node.io.filehandling.webui.reader2.NodeParametersConfigAndSourceSerializer;
+import org.knime.base.node.io.filehandling.webui.reader2.WebUITableReaderNodeFactory;
+import org.knime.core.node.NodeDescription;
 import org.knime.core.node.context.NodeCreationConfiguration;
-import org.knime.core.node.context.ports.PortsConfiguration;
-import org.knime.core.node.context.url.URLConfiguration;
-import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell;
-import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
-import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelReadAdapterFactory;
-import org.knime.filehandling.core.connections.FSLocationUtil;
+import org.knime.core.util.Version;
 import org.knime.filehandling.core.connections.FSPath;
-import org.knime.filehandling.core.defaultnodesettings.EnumConfig;
-import org.knime.filehandling.core.defaultnodesettings.filechooser.reader.SettingsModelReaderFileChooser;
-import org.knime.filehandling.core.defaultnodesettings.filtermode.SettingsModelFilterMode.FilterMode;
-import org.knime.filehandling.core.node.table.reader.AbstractTableReaderNodeFactory;
-import org.knime.filehandling.core.node.table.reader.HierarchyAwareProductionPathProvider;
-import org.knime.filehandling.core.node.table.reader.MultiTableReadFactory;
-import org.knime.filehandling.core.node.table.reader.MultiTableReader;
-import org.knime.filehandling.core.node.table.reader.ProductionPathProvider;
+import org.knime.filehandling.core.node.table.reader.GenericTableReader;
 import org.knime.filehandling.core.node.table.reader.ReadAdapterFactory;
-import org.knime.filehandling.core.node.table.reader.config.DefaultTableReadConfig;
-import org.knime.filehandling.core.node.table.reader.config.StorableMultiTableReadConfig;
-import org.knime.filehandling.core.node.table.reader.paths.PathSettings;
-import org.knime.filehandling.core.node.table.reader.preview.dialog.AbstractTableReaderNodeDialog;
-import org.knime.filehandling.core.node.table.reader.type.hierarchy.TreeTypeHierarchy;
 import org.knime.filehandling.core.node.table.reader.type.hierarchy.TypeHierarchy;
+import org.knime.node.impl.description.DefaultNodeDescriptionUtil;
 
 /**
- * Node factory of Excel reader node.
+ * See README.md for instructions on how to use this excelTableReader class to create your own Table Reader node.
  *
- * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
+ * @author KNIME AG, Zurich, Switzerland
  */
-public final class ExcelTableReaderNodeFactory
-    extends AbstractTableReaderNodeFactory<ExcelTableReaderConfig, KNIMECellType, ExcelCell> {
+// TODO (#4): Adjust Class<?> (T) and String (V) to match your TableReader's type parameters if needed
+public class ExcelTableReaderNodeFactory extends WebUITableReaderNodeFactory<ExcelTableReaderNodeParameters, FSPath, //
+        MultiFileSelectionPath, DummyTableReaderConfig, Class<?>, String, DummyMultiTableReadConfig> {
 
-    private static final String[] FILE_SUFFIXES = new String[]{".xlsx", ".xlsm", ".xlsb", ".xls"};
-
-    private static final TreeTypeHierarchy<KNIMECellType, KNIMECellType> TYPE_HIERARCHY =
-        ExcelTableReader.TYPE_HIERARCHY.createTypeFocusedHierarchy();
-
-    @Override
-    public ExcelTableReaderNodeModel createNodeModel(final NodeCreationConfiguration creationConfig) {
-        final StorableMultiTableReadConfig<ExcelTableReaderConfig, KNIMECellType> config = createConfig(creationConfig);
-        final PathSettings pathSettings = createPathSettings(creationConfig);
-        final MultiTableReader<FSPath, ExcelTableReaderConfig, KNIMECellType> reader = createMultiTableReader();
-        final Optional<? extends PortsConfiguration> portConfig = creationConfig.getPortConfig();
-        if (portConfig.isPresent()) {
-            return new ExcelTableReaderNodeModel(config, pathSettings, reader, portConfig.get());
-        } else {
-            return new ExcelTableReaderNodeModel(config, pathSettings, reader);
-        }
+    @SuppressWarnings("javadoc")
+    public ExcelTableReaderNodeFactory() {
+        super(ExcelTableReaderNodeParameters.class);
     }
 
+    // TODO (#5): Complete the node description
     @Override
-    protected ProductionPathProvider<KNIMECellType> createProductionPathProvider() {
-        final ExcelReadAdapterFactory raf = ExcelReadAdapterFactory.INSTANCE;
-        return new HierarchyAwareProductionPathProvider<>(raf.getProducerRegistry(), TYPE_HIERARCHY, raf::getDefaultType,
-            (t, p) -> true);
+    protected NodeDescription createNodeDescription() {
+        return DefaultNodeDescriptionUtil.createNodeDescription( //
+            "TODO (#5): Name", //
+            "TODO (#5): Icon", //
+            List.of(dynamicPort(FS_CONNECT_GRP_ID, "File System Connection", "The file system connection.")), //
+            List.of(fixedPort("TODO (#5): Output name", "TODO (#5): Output description")), //
+            "TODO (#5): short description", //
+            "TODO (#5): Full description", //
+            List.of(), //
+            ExcelTableReaderNodeParameters.class, //
+            null, //
+            NodeType.Source, //
+            List.of("Input", "Read"), // TODO (#5): set additional keywords
+            new Version(5, 9, 0) // TODO (#5): Set the version when the node is first introduced
+        );
     }
 
+    // TODO (#5): Return your ReadAdapterFactory instance
     @Override
-    protected AbstractTableReaderNodeDialog<FSPath, ExcelTableReaderConfig, KNIMECellType> createNodeDialogPane(
-        final NodeCreationConfiguration creationConfig,
-        final MultiTableReadFactory<FSPath, ExcelTableReaderConfig, KNIMECellType> readFactory,
-        final ProductionPathProvider<KNIMECellType> defaultProductionPathFn) {
-        // we overwrite #createNodeDialogPane(NodeCreationConfiguration) directly to be able to pass a reference of the
-        // ExcelTableReader to the dialog; this reference will be used to fetch sheet name information during spec
-        // guessing
+    protected ReadAdapterFactory<Class<?>, String> getReadAdapterFactory() {
+        return null;
+    }
+
+    // TODO (#3): Return new instance of your TableReader
+    @Override
+    protected GenericTableReader<FSPath, DummyTableReaderConfig, Class<?>, String> createReader() {
+        return new DummyTableReader();
+    }
+
+    // TODO (#5): Implement if your V type requires special handling
+    @Override
+    protected String extractRowKey(final String value) {
+        return value;
+    }
+
+    // TODO (#5): Return your ReadAdapterFactory's TYPE_HIERARCHY
+    @Override
+    protected TypeHierarchy<Class<?>, Class<?>> getTypeHierarchy() {
         return null;
     }
 
     @Override
-    protected NodeDialogPane createNodeDialogPane(final NodeCreationConfiguration creationConfig) {
-        final ExcelTableReader tableReader = createReader();
-        final MultiTableReadFactory<FSPath, ExcelTableReaderConfig, KNIMECellType> readFactory =
-            createMultiTableReadFactory(tableReader);
-        final ProductionPathProvider<KNIMECellType> productionPathProvider = createProductionPathProvider();
-        return new ExcelTableReaderNodeDialog(createPathSettings(creationConfig), createConfig(creationConfig),
-            tableReader, readFactory, productionPathProvider);
+    protected ExcelTableReaderConfigAndSourceSerializer createSerializer() {
+        return new ExcelTableReaderConfigAndSourceSerializer();
     }
 
-    @Override
-    protected SettingsModelReaderFileChooser createPathSettings(final NodeCreationConfiguration nodeCreationConfig) {
-        final SettingsModelReaderFileChooser settingsModel = new SettingsModelReaderFileChooser("file_selection",
-            nodeCreationConfig.getPortConfig().orElseThrow(IllegalStateException::new), FS_CONNECT_GRP_ID,
-            EnumConfig.create(FilterMode.FILE, FilterMode.FILES_IN_FOLDERS), FILE_SUFFIXES);
-        final Optional<? extends URLConfiguration> urlConfig = nodeCreationConfig.getURLConfig();
-        if (urlConfig.isPresent()) {
-            settingsModel
-                .setLocation(FSLocationUtil.createFromURL(urlConfig.get().getUrl().toString()));
+    private final class ExcelTableReaderConfigAndSourceSerializer
+        extends NodeParametersConfigAndSourceSerializer<ExcelTableReaderNodeParameters, FSPath, MultiFileSelectionPath, //
+                DummyTableReaderConfig, Class<?>, DummyMultiTableReadConfig> {
+        protected ExcelTableReaderConfigAndSourceSerializer() {
+            super(ExcelTableReaderNodeParameters.class);
         }
-        return settingsModel;
+
+        @Override
+        protected void saveToSourceAndConfig(final ExcelTableReaderNodeParameters params,
+            final MultiFileSelectionPath sourceSettings, final DummyMultiTableReadConfig config) {
+            params.saveToSource(sourceSettings);
+            params.saveToConfig(config);
+        }
     }
 
     @Override
-    protected ReadAdapterFactory<KNIMECellType, ExcelCell> getReadAdapterFactory() {
-        return ExcelReadAdapterFactory.INSTANCE;
+    protected MultiFileSelectionPath createPathSettings(final NodeCreationConfiguration nodeCreationConfig) {
+        final var source = new MultiFileSelectionPath();
+        final var defaultParams = new ExcelTableReaderNodeParameters(nodeCreationConfig);
+        defaultParams.saveToSource(source);
+        return source;
     }
 
     @Override
-    protected ExcelTableReader createReader() {
-        return new ExcelTableReader();
+    protected DummyMultiTableReadConfig createConfig(final NodeCreationConfiguration nodeCreationConfig) {
+        final var cfg = new DummyMultiTableReadConfig();
+        final var defaultParams = new ExcelTableReaderNodeParameters(nodeCreationConfig);
+        defaultParams.saveToConfig(cfg);
+        return cfg;
     }
-
-    @Override
-    protected String extractRowKey(final ExcelCell value) {
-        return value.getStringValue();
-    }
-
-    @Override
-    protected TypeHierarchy<KNIMECellType, KNIMECellType> getTypeHierarchy() {
-        return ExcelTableReader.TYPE_HIERARCHY.createTypeFocusedHierarchy();
-    }
-
-    @Override
-    protected ExcelMultiTableReadConfig createConfig(final NodeCreationConfiguration nodeCreationConfig) {
-        ExcelMultiTableReadConfig config = new ExcelMultiTableReadConfig();
-        final DefaultTableReadConfig<ExcelTableReaderConfig> tc = config.getTableReadConfig();
-        tc.setColumnHeaderIdx(0);
-        tc.setSkipEmptyRows(true);
-        tc.setAllowShortRows(true);
-        tc.setDecorateRead(false);
-        return config;
-    }
-
-    @Override
-    protected boolean hasDialog() {
-        return true;
-    }
-
 }
