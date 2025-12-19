@@ -47,6 +47,7 @@
 package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 
 import org.knime.base.node.io.filehandling.webui.reader2.ReaderSpecific;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
 import org.knime.filehandling.core.node.table.reader.ProductionPathProvider;
 import org.knime.filehandling.core.node.table.reader.type.hierarchy.TypeHierarchy;
 
@@ -58,19 +59,19 @@ final class ExcelTableReaderSpecific {
 
     // TODO (#4): Adjust Class<?> to match your TableReader's T type parameter if needed
     // TODO (#5): Initialize from your ReadAdapterFactory
-    static final ProductionPathProvider<Class<?>> PRODUCTION_PATH_PROVIDER = null;
+    static final ProductionPathProvider<KNIMECellType> PRODUCTION_PATH_PROVIDER = null;
 
     // TODO (#4): Adjust Class<?> to match your TableReader's T type parameter if needed
     interface ProductionPathProviderAndTypeHierarchy
-        extends ReaderSpecific.ProductionPathProviderAndTypeHierarchy<Class<?>> {
+        extends ReaderSpecific.ProductionPathProviderAndTypeHierarchy<KNIMECellType> {
         @Override
-        default ProductionPathProvider<Class<?>> getProductionPathProvider() {
+        default ProductionPathProvider<KNIMECellType> getProductionPathProvider() {
             return PRODUCTION_PATH_PROVIDER;
         }
 
         // TODO (#5): Return your ReadAdapterFactory's TYPE_HIERARCHY
         @Override
-        default TypeHierarchy<Class<?>, Class<?>> getTypeHierarchy() {
+        default TypeHierarchy<KNIMECellType, KNIMECellType> getTypeHierarchy() {
             return null;
         }
     }
@@ -78,17 +79,17 @@ final class ExcelTableReaderSpecific {
     // TODO (#3): Replace with your config and reader types
     // TODO (#4): Adjust Class<?> to match your TableReader's T type parameter if needed
     interface ConfigAndReader
-        extends ReaderSpecific.ConfigAndReader<DummyTableReaderConfig, Class<?>, DummyMultiTableReadConfig> {
+        extends ReaderSpecific.ConfigAndReader<ExcelTableReaderConfig, KNIMECellType, ExcelMultiTableReadConfig> {
 
         @Override
-        default DummyMultiTableReadConfig createMultiTableReadConfig() {
-            return new DummyMultiTableReadConfig(); // TODO (#3): Replace with your MultiTableReadConfig
+        default ExcelMultiTableReadConfig createMultiTableReadConfig() {
+            return new ExcelMultiTableReadConfig();
         }
 
         @SuppressWarnings("unchecked")
         @Override
-        default DummyTableReader createTableReader() {
-            return new DummyTableReader(); // TODO (#3): Replace with your TableReader
+        default ExcelTableReader createTableReader() {
+            return new ExcelTableReader();
         }
 
     }

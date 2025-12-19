@@ -92,7 +92,7 @@ class ExcelTableReaderNodeParameters implements NodeParameters {
         m_excelTableReaderParameters.saveToSource(sourceSettings);
     }
 
-    void saveToConfig(final DummyMultiTableReadConfig config) {
+    void saveToConfig(final ExcelMultiTableReadConfig config) {
         final var configID = m_excelTableReaderParameters.saveToConfig(config);
         m_transformationParameters.saveToConfig(//
             config, m_excelTableReaderParameters.getSourcePath(), //

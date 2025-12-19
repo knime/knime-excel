@@ -46,9 +46,10 @@
  */
 package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 
-import org.knime.base.node.io.filehandling.webui.reader2.ClassBasedTransformationParameters;
-import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderSpecific.ProductionPathProviderAndTypeHierarchy;
+import org.knime.base.node.io.filehandling.webui.reader2.TransformationParameters;
 import org.knime.core.webui.node.dialog.defaultdialog.widget.Modification;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderSpecific.ProductionPathProviderAndTypeHierarchy;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
 
 /**
  * TODO (#4): If your T is not Class<?>, extend TransformationParameters<T> instead of
@@ -58,7 +59,16 @@ import org.knime.core.webui.node.dialog.defaultdialog.widget.Modification;
  */
 @SuppressWarnings("restriction")
 @Modification(ExcelTableReaderTransformationParametersStateProviders.TransformationSettingsWidgetModification.class)
-final class ExcelTableReaderTransformationParameters extends ClassBasedTransformationParameters
+final class ExcelTableReaderTransformationParameters extends TransformationParameters<KNIMECellType>
     implements ProductionPathProviderAndTypeHierarchy {
 
+    @Override
+    public String toSerializableType(final KNIMECellType type) {
+        return type.name();
+    }
+
+    @Override
+    public KNIMECellType toExternalType(final String typeName) {
+        return KNIMECellType.valueOf(typeName);
+    }
 }

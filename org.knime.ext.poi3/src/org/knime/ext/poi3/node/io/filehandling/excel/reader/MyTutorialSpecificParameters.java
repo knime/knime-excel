@@ -82,7 +82,7 @@ class MyExcelTableReaderSpecificParameters implements NodeParameters {
     @ValueReference(MyParameterAfterSourceRef.class)
     String m_myParameterAfterSource = "default value";
 
-    void saveToConfig(final DummyMultiTableReadConfig config) {
+    void saveToConfig(final ExcelMultiTableReadConfig config) {
         // saving logic here
     }
 

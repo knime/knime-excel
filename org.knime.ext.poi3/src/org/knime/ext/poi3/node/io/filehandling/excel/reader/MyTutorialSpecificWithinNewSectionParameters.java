@@ -65,7 +65,7 @@ class MyExcelTableReaderSpecificWithinNewSectionParameters implements NodeParame
         description = "The @Layout annotation on the class links this parameter to the NewSection layout.")
     String m_myParameterInNewSection = "default value";
 
-    void saveToConfig(final DummyMultiTableReadConfig config) {
+    void saveToConfig(final ExcelMultiTableReadConfig config) {
         // saving logic here
     }
 
