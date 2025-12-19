@@ -64,7 +64,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     static final String CFG_PASSWORD = "password";
 
     /** The default String to be inserted when an error cell is encountered. */
-    static final String DEFAULT_FORMULA_ERROR_PATTERN = "#XL_EVAL_ERROR#";
+    public static final String DEFAULT_FORMULA_ERROR_PATTERN = "#XL_EVAL_ERROR#";
 
     private boolean m_useRawSettings = false;
 
@@ -159,7 +159,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param use15DigitsPrecision the use15DigitsPrecision to set
      */
-    void setUse15DigitsPrecision(final boolean use15DigitsPrecision) {
+    public void setUse15DigitsPrecision(final boolean use15DigitsPrecision) {
         m_use15DigitsPrecision = use15DigitsPrecision;
     }
 
@@ -173,7 +173,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param sheetSelection the sheetSelection to set
      */
-    void setSheetSelection(final SheetSelection sheetSelection) {
+    public void setSheetSelection(final SheetSelection sheetSelection) {
         m_sheetSelection = sheetSelection;
     }
 
@@ -187,7 +187,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param selectedSheetName the selectedSheetName to set
      */
-    void setSheetName(final String selectedSheetName) {
+    public void setSheetName(final String selectedSheetName) {
         m_sheetName = selectedSheetName;
     }
 
@@ -201,7 +201,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param selectedSheetIdx the selectedSheetIdx to set
      */
-    void setSheetIdx(final int selectedSheetIdx) {
+    public void setSheetIdx(final int selectedSheetIdx) {
         m_sheetIdx = selectedSheetIdx;
     }
 
@@ -215,7 +215,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param skipHiddenCols the skipHiddenCols to set
      */
-    void setSkipHiddenCols(final boolean skipHiddenCols) {
+    public void setSkipHiddenCols(final boolean skipHiddenCols) {
         m_skipHiddenCols = skipHiddenCols;
     }
 
@@ -229,7 +229,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param skipHiddenRows the skipHiddenRows to set
      */
-    void setSkipHiddenRows(final boolean skipHiddenRows) {
+    public void setSkipHiddenRows(final boolean skipHiddenRows) {
         m_skipHiddenRows = skipHiddenRows;
     }
 
@@ -243,7 +243,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param reevaluateFormulas the reevaluateFormulas to set
      */
-    void setReevaluateFormulas(final boolean reevaluateFormulas) {
+    public void setReevaluateFormulas(final boolean reevaluateFormulas) {
         m_reevaluateFormulas = reevaluateFormulas;
     }
 
@@ -257,7 +257,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param formulaErrorHandling the formulaErrorHandling to set
      */
-    void setFormulaErrorHandling(final FormulaErrorHandling formulaErrorHandling) {
+    public void setFormulaErrorHandling(final FormulaErrorHandling formulaErrorHandling) {
         m_formulaErrorHandling = formulaErrorHandling;
     }
 
@@ -271,7 +271,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param errorPattern the errorPattern to set
      */
-    void setErrorPattern(final String errorPattern) {
+    public void setErrorPattern(final String errorPattern) {
         m_errorPattern = errorPattern;
     }
 
@@ -285,7 +285,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param readFromCol the readFromCol to set
      */
-    void setReadFromCol(final String readFromCol) {
+    public void setReadFromCol(final String readFromCol) {
         m_readFromCol = readFromCol;
     }
 
@@ -299,7 +299,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param readToCol the readToCol to set
      */
-    void setReadToCol(final String readToCol) {
+    public void setReadToCol(final String readToCol) {
         m_readToCol = readToCol;
     }
 
@@ -313,7 +313,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param readFromRow the readFromRow to set
      */
-    void setReadFromRow(final String readFromRow) {
+    public void setReadFromRow(final String readFromRow) {
         m_readFromRow = readFromRow;
     }
 
@@ -327,7 +327,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param readToRow the readToRow to set
      */
-    void setReadToRow(final String readToRow) {
+    public void setReadToRow(final String readToRow) {
         m_readToRow = readToRow;
     }
 
@@ -341,7 +341,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param areaOfSheetToRead the areaOfSheetToRead to set
      */
-    void setAreaOfSheetToRead(final AreaOfSheetToRead areaOfSheetToRead) {
+    public void setAreaOfSheetToRead(final AreaOfSheetToRead areaOfSheetToRead) {
         m_areaOfSheetToRead = areaOfSheetToRead;
     }
 
@@ -355,7 +355,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param rowIDCol the rowIDCol to set
      */
-    void setRowIDCol(final String rowIDCol) {
+    public void setRowIDCol(final String rowIDCol) {
         m_rowIDCol = rowIDCol;
     }
 
@@ -371,7 +371,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
      *
      * @param emptyColHeaderPrefix the prefix for empty column headers
      */
-    void setEmptyColHeaderPrefix(final String emptyColHeaderPrefix) {
+    public void setEmptyColHeaderPrefix(final String emptyColHeaderPrefix) {
         m_emptyColHeaderPrefix = emptyColHeaderPrefix;
     }
 
@@ -387,7 +387,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
      *
      * @param columnNameMode the {@link ColumnNameMode}
      */
-    void setColumnNameMode(final ColumnNameMode columnNameMode) {
+    public void setColumnNameMode(final ColumnNameMode columnNameMode) {
         m_columnNameMode = columnNameMode;
     }
 
@@ -401,7 +401,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param rowIdGeneration the rowIdGeneration to set
      */
-    void setRowIdGeneration(final RowIDGeneration rowIdGeneration) {
+    public void setRowIdGeneration(final RowIDGeneration rowIdGeneration) {
         m_rowIdGeneration = rowIdGeneration;
     }
 
@@ -429,7 +429,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param replaceEmptyStringsWithMissings the replaceEmptyStringsWithMissings to set
      */
-    void setReplaceEmptyStringsWithMissings(final boolean replaceEmptyStringsWithMissings) {
+    public void setReplaceEmptyStringsWithMissings(final boolean replaceEmptyStringsWithMissings) {
         m_replaceEmptyStringsWithMissings = replaceEmptyStringsWithMissings;
     }
 
