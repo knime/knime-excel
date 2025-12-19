@@ -152,7 +152,7 @@ enum ExcelMultiTableReadConfigSerializer
 
     private final TableSpecConfigSerializer<KNIMECellType> m_tableSpecConfigSerializer;
 
-    private enum ExcelTypeSerializer implements NodeSettingsSerializer<KNIMECellType> {
+    enum ExcelTypeSerializer implements NodeSettingsSerializer<KNIMECellType> {
             SERIALIZER;
 
         private static final String CFG_TYPE = "type";

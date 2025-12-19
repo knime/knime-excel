@@ -48,8 +48,13 @@
  */
 package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+
+import org.knime.base.node.io.filehandling.webui.reader2.MultiFileSelectionPath;
 import org.knime.core.node.ExecutionContext;
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.context.ports.PortsConfiguration;
 import org.knime.core.node.port.PortObject;
 import org.knime.core.node.port.PortObjectSpec;
@@ -58,46 +63,36 @@ import org.knime.core.node.streamable.StreamableOperator;
 import org.knime.core.node.streamable.StreamableOperatorInternals;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
 import org.knime.filehandling.core.connections.FSPath;
+import org.knime.filehandling.core.node.table.reader.BackwardsCompatibleCommonTableReaderNodeModel;
+import org.knime.filehandling.core.node.table.reader.CommonTableReaderNodeFactory;
 import org.knime.filehandling.core.node.table.reader.MultiTableReader;
-import org.knime.filehandling.core.node.table.reader.TableReaderNodeModel;
 import org.knime.filehandling.core.node.table.reader.config.StorableMultiTableReadConfig;
-import org.knime.filehandling.core.node.table.reader.paths.PathSettings;
+import org.knime.filehandling.core.node.table.reader.paths.SourceSettings;
 
 /**
- * Node model of Excel reader node.
+ * Custom node model for the {@link ExcelTableReaderNodeFactory} to set the credentials provider
  *
- * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
+ * @author Thomas Reifenberger, TNG Technology Consulting GmbH, Germany
  */
-final class ExcelTableReaderNodeModel extends TableReaderNodeModel<FSPath, ExcelTableReaderConfig, KNIMECellType> {
+final class ExcelTableReaderNodeModel extends
+    BackwardsCompatibleCommonTableReaderNodeModel<FSPath, MultiFileSelectionPath, ExcelTableReaderConfig, KNIMECellType, ExcelMultiTableReadConfig> {
 
-    /**
-     * Constructs a node model with no inputs and one output.
-     *
-     * @param config storing the user settings
-     * @param pathSettingsModel storing the paths selected by the user
-     * @param tableReader reader for reading tables
-     */
-    protected ExcelTableReaderNodeModel(
-        final StorableMultiTableReadConfig<ExcelTableReaderConfig, KNIMECellType> config,
-        final PathSettings pathSettingsModel,
-        final MultiTableReader<FSPath, ExcelTableReaderConfig, KNIMECellType> tableReader) {
-        super(config, pathSettingsModel, tableReader);
+    ExcelTableReaderNodeModel(final Supplier<ExcelMultiTableReadConfig> config,
+        final MultiFileSelectionPath pathSettingsModel,
+        final MultiTableReader<FSPath, ExcelTableReaderConfig, KNIMECellType> tableReader,
+        final CommonTableReaderNodeFactory.ConfigAndSourceSerializer<FSPath, MultiFileSelectionPath, ExcelTableReaderConfig, KNIMECellType, ExcelMultiTableReadConfig> serializer,
+        final SourceSettings<FSPath> legacySourceSettings, final Predicate<NodeSettingsRO> isLegacySettingsPredicate) {
+        super(config, pathSettingsModel, tableReader, serializer, legacySourceSettings, isLegacySettingsPredicate);
     }
 
-    /**
-     * Constructs a node model with the inputs and outputs specified in the passed {@link PortsConfiguration}.
-     *
-     * @param config storing the user settings
-     * @param pathSettingsModel storing the paths selected by the user
-     * @param tableReader reader for reading tables
-     * @param portsConfig determines the in and outports
-     */
-    protected ExcelTableReaderNodeModel(
-        final StorableMultiTableReadConfig<ExcelTableReaderConfig, KNIMECellType> config,
-        final PathSettings pathSettingsModel,
+    ExcelTableReaderNodeModel(final Supplier<ExcelMultiTableReadConfig> config,
+        final MultiFileSelectionPath pathSettingsModel,
         final MultiTableReader<FSPath, ExcelTableReaderConfig, KNIMECellType> tableReader,
-        final PortsConfiguration portsConfig) {
-        super(config, pathSettingsModel, tableReader, portsConfig);
+        final CommonTableReaderNodeFactory.ConfigAndSourceSerializer<FSPath, MultiFileSelectionPath, ExcelTableReaderConfig, KNIMECellType, ExcelMultiTableReadConfig> serializer,
+        final PortsConfiguration portsConfig, final SourceSettings<FSPath> legacySourceSettings,
+        final Predicate<NodeSettingsRO> isLegacySettingsPredicate) {
+        super(config, pathSettingsModel, tableReader, serializer, portsConfig, legacySourceSettings,
+            isLegacySettingsPredicate);
     }
 
     @Override
@@ -120,10 +115,9 @@ final class ExcelTableReaderNodeModel extends TableReaderNodeModel<FSPath, Excel
         return super.createStreamableOperator(partitionInfo, inSpecs);
     }
 
-    private StorableMultiTableReadConfig<ExcelTableReaderConfig, KNIMECellType> setCredentialsProvider() {
+    private void setCredentialsProvider() {
         final StorableMultiTableReadConfig<ExcelTableReaderConfig, KNIMECellType> config = getConfig();
         final ExcelTableReaderConfig excelConfig = config.getTableReadConfig().getReaderSpecificConfig();
         excelConfig.setCredentialsProvider(getCredentialsProvider());
-        return config;
     }
 }
