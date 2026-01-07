@@ -459,8 +459,8 @@ class ExcelTableWriterNodeParameters implements NodeParameters {
         }
 
         @Override
-        protected SheetName newInstance() {
-            return new SheetName();
+        protected SheetName newInstance(final int index) {
+            return new SheetName("default_" + (index + 1));
         }
     }
 
