@@ -153,7 +153,7 @@ public final class ExcelTableWriterNodeFactory extends ConfigurableNodeFactory<E
                     appendend to the last sheet in the name sequence. The original sheet name does not have to be changed.
                     </p> <p>This node does not support writing files in the '.xlsm' format, yet appending is supported.</p>
                     <p> <i>This node can access a variety of different</i> <a
-                    href="https://docs.knime.com/2021-06/analytics_platform_file_handling_guide/index.html#analytics-platform-file-systems"><i>file
+                    href="https://docs.knime.com/ap/latest/analytics_platform_file_handling_guide/index.html#knime-analytics-platform-and-file-systems"><i>file
                     systems.</i></a> <i>More information about file handling in KNIME can be found in the official</i> <a
                     href="https://docs.knime.com/latest/analytics_platform_file_handling_guide/index.html"><i>File Handling
                     Guide.</i></a> </p>
