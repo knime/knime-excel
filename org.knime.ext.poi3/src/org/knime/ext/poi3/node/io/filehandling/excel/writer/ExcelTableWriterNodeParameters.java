@@ -58,6 +58,7 @@ import org.apache.poi.EncryptedDocumentException;
 import org.knime.base.node.io.filehandling.webui.FileChooserPathAccessor;
 import org.knime.base.node.io.filehandling.webui.FileSystemPortConnectionUtil;
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.webui.node.dialog.defaultdialog.internal.file.FileSelection;
@@ -465,6 +466,9 @@ class ExcelTableWriterNodeParameters implements NodeParameters {
     }
 
     private static class SheetNamesChoicesProvider implements StringChoicesProvider {
+
+        private static final NodeLogger LOGGER = NodeLogger.getLogger(SheetNamesChoicesProvider.class);
+
         Supplier<FileSelection> m_outputFileSelection;
 
         Supplier<ExcelEncryptionSettings> m_encryption;
@@ -487,6 +491,7 @@ class ExcelTableWriterNodeParameters implements NodeParameters {
                 final var path = accessor.getPaths(s -> {
                 }).get(0);
                 if (!Files.exists(path)) {
+                    LOGGER.info("File %s does not exist, cannot provide sheet name suggestions.".formatted(path));
                     return Collections.emptyList();
                 }
                 try (final var inputStream = FSFiles.newInputStream(path)) {
@@ -495,6 +500,7 @@ class ExcelTableWriterNodeParameters implements NodeParameters {
                 }
             } catch (final Exception e) {
                 // in case of any error, return no choices
+                LOGGER.warn("Could not read sheet names for suggestions.", e);
                 return Collections.emptyList();
             }
         }
