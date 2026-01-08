@@ -49,6 +49,7 @@
 package org.knime.ext.poi3.node.io.filehandling.excel.writer.util;
 
 import org.apache.poi.ss.usermodel.PrintSetup;
+import org.knime.node.parameters.widget.choices.Label;
 
 /**
  * Enum encoding the supported paper sizes by the 'Excel table writer' node.
@@ -58,30 +59,39 @@ import org.apache.poi.ss.usermodel.PrintSetup;
 public enum PaperSize {
 
         /** A4 paper size. */
+        @Label("A4 - 210x297 mm")
         A4_PAPERSIZE("A4 - 210x297 mm", PrintSetup.A4_PAPERSIZE),
 
         /** A5 paper size. */
+        @Label("A5 - 148x210 mm")
         A5_PAPERSIZE("A5 - 148x210 mm", PrintSetup.A5_PAPERSIZE),
 
         /** Envelope 10 paper size. */
+        @Label("US Envelope #10 4 1/8 x 9 1/2")
         ENVELOPE_10_PAPERSIZE("US Envelope #10 4 1/8 x 9 1/2", PrintSetup.ENVELOPE_10_PAPERSIZE),
 
         /** Envelope CS paper size. */
+        @Label("Envelope C5 162x229 mm")
         ENVELOPE_CS_PAPERSIZE("Envelope C5 162x229 mm", PrintSetup.ENVELOPE_CS_PAPERSIZE),
 
         /** Envelope DL paper size. */
+        @Label("Envelope DL 110x220 mm")
         ENVELOPE_DL_PAPERSIZE("Envelope DL 110x220 mm", PrintSetup.ENVELOPE_DL_PAPERSIZE),
 
         /** Envelope monarch paper size. */
+        @Label("Envelope Monarch 98.4×190.5 mm")
         ENVELOPE_MONARCH_PAPERSIZE("Envelope Monarch 98.4×190.5 mm", PrintSetup.ENVELOPE_MONARCH_PAPERSIZE),
 
         /** Executive paper size. */
+        @Label("US Executive 7 1/4 x 10 1/2 in")
         EXECUTIVE_PAPERSIZE("US Executive 7 1/4 x 10 1/2 in", PrintSetup.EXECUTIVE_PAPERSIZE),
 
         /** Legal paper size. */
+        @Label("US Legal 8 1/2 x 14 in")
         LEGAL_PAPERSIZE("US Legal 8 1/2 x 14 in", PrintSetup.LEGAL_PAPERSIZE),
 
         /** Letter paper size. */
+        @Label("US Letter 8 1/2 x 11 in")
         LETTER_PAPERSIZE("US Letter 8 1/2 x 11 in", PrintSetup.LETTER_PAPERSIZE);
 
     private PaperSize(final String text, final short printSetup) {

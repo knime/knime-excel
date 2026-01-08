@@ -49,6 +49,7 @@
 package org.knime.ext.poi3.node.io.filehandling.excel.writer.util;
 
 import org.knime.core.node.util.ButtonGroupEnumInterface;
+import org.knime.node.parameters.widget.choices.Label;
 
 /**
  * Enum encoding the supported orientations by the 'Excel table writer' node.
@@ -58,9 +59,11 @@ import org.knime.core.node.util.ButtonGroupEnumInterface;
 public enum Orientation implements ButtonGroupEnumInterface {
 
         /** Portrait orientation. */
+        @Label("Portrait")
         PORTRAIT("Portrait"),
 
         /** Landscape orientation. */
+        @Label("Landscape")
         LANDSCAPE("Landscape");
 
     private final String m_text;
