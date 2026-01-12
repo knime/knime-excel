@@ -58,7 +58,7 @@ import org.knime.node.parameters.updates.ValueReference;
 
 /**
  *
- * @author KNIME AG, Zurich, Switzerland
+ * @author Thomas Reifenberger, TNG Technology Consulting GmbH, Germany
  */
 class ExcelTableReaderNodeParameters implements NodeParameters {
 
@@ -86,7 +86,8 @@ class ExcelTableReaderNodeParameters implements NodeParameters {
     @ValueReference(ExcelTableReaderParametersRef.class)
     ExcelTableReaderParameters m_excelTableReaderParameters = new ExcelTableReaderParameters();
 
-    ExcelTableReaderTransformationParameters m_transformationParameters = new ExcelTableReaderTransformationParameters();
+    ExcelTableReaderTransformationParameters m_transformationParameters =
+        new ExcelTableReaderTransformationParameters();
 
     void saveToSource(final MultiFileSelectionPath sourceSettings) {
         m_excelTableReaderParameters.saveToSource(sourceSettings);

@@ -56,9 +56,7 @@ import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderSpec
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
 
 /**
- * TODO (#4): Adjust Class<?> to match your TableReader's T type parameter if needed
- *
- * @author KNIME AG, Zurich, Switzerland
+ * @author Thomas Reifenberger, TNG Technology Consulting GmbH, Germany
  */
 final class ExcelTableReaderTransformationParametersStateProviders {
 
@@ -105,16 +103,14 @@ final class ExcelTableReaderTransformationParametersStateProviders {
         }
     }
 
-    // TODO (#4): If your T is not Class<?>, replace ClassSerializer with appropriate serializer (e.g., DataTypeSerializer)
     static final class TableSpecSettingsProvider
         extends TransformationParametersStateProviders.TableSpecSettingsProvider<KNIMECellType>
         implements TypedReaderTableSpecsProvider.Dependent, KNIMECellTypeSerializer {
     }
 
-    // TODO (#4): If your T is not Class<?>, replace ClassSerializer with appropriate serializer (e.g., DataTypeSerializer)
     static final class TransformationElementSettingsProvider
-        extends TransformationParametersStateProviders.TransformationElementSettingsProvider<KNIMECellType>
-        implements ProductionPathProviderAndTypeHierarchy, TypedReaderTableSpecsProvider.Dependent, KNIMECellTypeSerializer {
+        extends TransformationParametersStateProviders.TransformationElementSettingsProvider<KNIMECellType> implements
+        ProductionPathProviderAndTypeHierarchy, TypedReaderTableSpecsProvider.Dependent, KNIMECellTypeSerializer {
 
         @Override
         protected boolean hasMultipleFileHandling() {
@@ -122,7 +118,8 @@ final class ExcelTableReaderTransformationParametersStateProviders {
         }
     }
 
-    static final class TypeChoicesProvider extends TransformationParametersStateProviders.TypeChoicesProvider<KNIMECellType>
+    static final class TypeChoicesProvider
+        extends TransformationParametersStateProviders.TypeChoicesProvider<KNIMECellType>
         implements ProductionPathProviderAndTypeHierarchy, TypedReaderTableSpecsProvider.Dependent {
     }
 

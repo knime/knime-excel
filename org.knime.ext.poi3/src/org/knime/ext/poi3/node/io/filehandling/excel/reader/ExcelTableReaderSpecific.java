@@ -52,16 +52,13 @@ import org.knime.filehandling.core.node.table.reader.ProductionPathProvider;
 import org.knime.filehandling.core.node.table.reader.type.hierarchy.TypeHierarchy;
 
 /**
- *
- * @author KNIME AG, Zurich, Switzerland
+ * @author Thomas Reifenberger, TNG Technology Consulting GmbH, Germany
  */
 final class ExcelTableReaderSpecific {
 
-    // TODO (#4): Adjust Class<?> to match your TableReader's T type parameter if needed
     // TODO (#5): Initialize from your ReadAdapterFactory
     static final ProductionPathProvider<KNIMECellType> PRODUCTION_PATH_PROVIDER = null;
 
-    // TODO (#4): Adjust Class<?> to match your TableReader's T type parameter if needed
     interface ProductionPathProviderAndTypeHierarchy
         extends ReaderSpecific.ProductionPathProviderAndTypeHierarchy<KNIMECellType> {
         @Override
@@ -76,8 +73,6 @@ final class ExcelTableReaderSpecific {
         }
     }
 
-    // TODO (#3): Replace with your config and reader types
-    // TODO (#4): Adjust Class<?> to match your TableReader's T type parameter if needed
     interface ConfigAndReader
         extends ReaderSpecific.ConfigAndReader<ExcelTableReaderConfig, KNIMECellType, ExcelMultiTableReadConfig> {
 

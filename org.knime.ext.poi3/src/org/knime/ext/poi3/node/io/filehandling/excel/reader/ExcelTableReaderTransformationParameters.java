@@ -52,10 +52,7 @@ import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderSpec
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
 
 /**
- * TODO (#4): If your T is not Class<?>, extend TransformationParameters<T> instead of
- * ClassBasedTransformationParameters
- *
- * @author KNIME AG, Zurich, Switzerland
+ * @author Thomas Reifenberger, TNG Technology Consulting GmbH, Germany
  */
 @SuppressWarnings("restriction")
 @Modification(ExcelTableReaderTransformationParametersStateProviders.TransformationSettingsWidgetModification.class)

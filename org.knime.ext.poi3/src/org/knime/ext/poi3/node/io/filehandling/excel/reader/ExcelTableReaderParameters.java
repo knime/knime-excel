@@ -62,7 +62,7 @@ import org.knime.node.parameters.NodeParameters;
 /**
  * TODO (#6): Add reader-specific parameters (fields with @Widget annotations)
  *
- * @author KNIME AG, Zurich, Switzerland
+ * @author Thomas Reifenberger, TNG Technology Consulting GmbH, Germany
  */
 @SuppressWarnings("restriction")
 public class ExcelTableReaderParameters implements NodeParameters {

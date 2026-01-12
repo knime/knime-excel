@@ -66,11 +66,8 @@ import org.knime.filehandling.core.node.table.reader.type.hierarchy.TypeHierarch
 import org.knime.node.impl.description.DefaultNodeDescriptionUtil;
 
 /**
- * See README.md for instructions on how to use this excelTableReader class to create your own Table Reader node.
- *
- * @author KNIME AG, Zurich, Switzerland
+ * @author Thomas Reifenberger, TNG Technology Consulting GmbH, Germany
  */
-// TODO (#4): Adjust Class<?> (T) and String (V) to match your TableReader's type parameters if needed
 public class ExcelTableReaderNodeFactory extends WebUITableReaderNodeFactory<ExcelTableReaderNodeParameters, FSPath, //
         MultiFileSelectionPath, ExcelTableReaderConfig, KNIMECellType, ExcelCell, ExcelMultiTableReadConfig> {
 
@@ -104,7 +101,6 @@ public class ExcelTableReaderNodeFactory extends WebUITableReaderNodeFactory<Exc
         return null;
     }
 
-    // TODO (#3): Return new instance of your TableReader
     @Override
     protected GenericTableReader<FSPath, ExcelTableReaderConfig, KNIMECellType, ExcelCell> createReader() {
         return new ExcelTableReader();

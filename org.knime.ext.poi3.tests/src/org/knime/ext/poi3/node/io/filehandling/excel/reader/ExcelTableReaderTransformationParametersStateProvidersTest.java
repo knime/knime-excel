@@ -56,12 +56,13 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.knime.base.node.io.filehandling.webui.reader2.MultiFileReaderParameters.HowToCombineColumnsOption;
+import org.knime.base.node.io.filehandling.webui.reader2.ReaderSpecific;
 import org.knime.base.node.io.filehandling.webui.reader2.TransformationParameters;
-// TODO (#4): If your T is not Class<?>, extend TransformationParametersUpdatesTest<T, ...> instead of TransformationParametersUpdatesTestClassBased
-import org.knime.base.node.io.filehandling.webui.reader2.TransformationParametersStateProviderTestUtils.TransformationParametersUpdatesTestClassBased;
+import org.knime.base.node.io.filehandling.webui.reader2.TransformationParametersUpdatesTest;
 import org.knime.core.data.DataType;
 import org.knime.core.data.def.LongCell;
 import org.knime.core.util.Pair;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell;
 import org.knime.filehandling.core.connections.FSLocation;
 import org.knime.filehandling.core.node.table.reader.ProductionPathProvider;
 
@@ -71,7 +72,7 @@ import org.knime.filehandling.core.node.table.reader.ProductionPathProvider;
  */
 @Disabled("TODO (#7): Enable this test class when you have implemented the required methods")
 final class ExcelTableReaderTransformationParametersStateProvidersTest
-    extends TransformationParametersUpdatesTestClassBased<ExcelTableReaderNodeParameters> {
+    extends TransformationParametersUpdatesTest<ExcelTableReaderNodeParameters, ExcelCell.KNIMECellType> {
 
     // TODO (#6): Add trigger paths for your reader-specific parameters
     // e.g., List.of("excelTableReaderParameters", "myExcelTableReaderSpecificParams", "myReaderSpecificSetting")
@@ -93,8 +94,7 @@ final class ExcelTableReaderTransformationParametersStateProvidersTest
     }
 
     @Override
-    // TODO (#4): Adjust Class<?> to match your TableReader's T type parameter if needed
-    protected TransformationParameters<Class<?>> getTransformationSettings(final ExcelTableReaderNodeParameters params) {
+    protected TransformationParameters<ExcelCell.KNIMECellType> getTransformationSettings(final ExcelTableReaderNodeParameters params) {
         return params.m_transformationParameters;
     }
 
@@ -110,8 +110,7 @@ final class ExcelTableReaderTransformationParametersStateProvidersTest
     }
 
     @Override
-    // TODO (#4): Adjust Class<?> to match your TableReader's T type parameter if needed
-    protected ProductionPathProvider<Class<?>> getProductionPathProvider() {
+    protected ProductionPathProvider<ExcelCell.KNIMECellType> getProductionPathProvider() {
         return ExcelTableReaderSpecific.PRODUCTION_PATH_PROVIDER;
     }
 
@@ -121,6 +120,21 @@ final class ExcelTableReaderTransformationParametersStateProvidersTest
          * TODO (#7): Possibly change the unreachable type according to your format.
          */
         return new Pair<>(LongCell.TYPE, List.of(IntOrString.STRING));
+    }
+
+    @Override
+    protected ExcelCell.KNIMECellType getIntType() {
+        return ExcelCell.KNIMECellType.INT;
+    }
+
+    @Override
+    protected ExcelCell.KNIMECellType getStringType() {
+        return ExcelCell.KNIMECellType.STRING;
+    }
+
+    @Override
+    protected ExcelCell.KNIMECellType getDoubleType() {
+        return ExcelCell.KNIMECellType.DOUBLE;
     }
 
     @Override
@@ -136,6 +150,11 @@ final class ExcelTableReaderTransformationParametersStateProvidersTest
     @Override
     protected String getFileName() {
         return "test.TODO (#7)"; // TODO (#7): Set the file extension for your format
+    }
+
+    @Override
+    protected ReaderSpecific.ExternalDataTypeSerializer<ExcelCell.KNIMECellType> getExternalDataTypeSerializer() {
+        return new ExcelTableReaderTransformationParameters();
     }
 
     @ParameterizedTest
