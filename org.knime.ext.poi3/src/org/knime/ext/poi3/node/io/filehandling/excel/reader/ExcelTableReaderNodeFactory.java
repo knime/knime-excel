@@ -59,6 +59,7 @@ import org.knime.core.node.context.NodeCreationConfiguration;
 import org.knime.core.util.Version;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelReadAdapterFactory;
 import org.knime.filehandling.core.connections.FSPath;
 import org.knime.filehandling.core.node.table.reader.GenericTableReader;
 import org.knime.filehandling.core.node.table.reader.ReadAdapterFactory;
@@ -76,29 +77,29 @@ public class ExcelTableReaderNodeFactory extends WebUITableReaderNodeFactory<Exc
         super(ExcelTableReaderNodeParameters.class);
     }
 
-    // TODO (#5): Complete the node description
     @Override
     protected NodeDescription createNodeDescription() {
         return DefaultNodeDescriptionUtil.createNodeDescription( //
-            "TODO (#5): Name", //
-            "TODO (#5): Icon", //
+            "Excel Reader", //
+            "excel_reader.png", //
             List.of(dynamicPort(FS_CONNECT_GRP_ID, "File System Connection", "The file system connection.")), //
-            List.of(fixedPort("TODO (#5): Output name", "TODO (#5): Output description")), //
-            "TODO (#5): short description", //
-            "TODO (#5): Full description", //
+            List.of(fixedPort("File Table", "The data table read from the Excel file.")), //
+            "Reads one or more Excel files.", //
+            "This node reads Excel files (xlsx, xlsm, xlsb, and xls format). It can read a single or multiple files "
+                + "at the same time, however reading only one sheet per file. The supported Excel types that can be read in "
+                + "are string, number, boolean, date, and time but not pictures, diagrams, etc.", //
             List.of(), //
             ExcelTableReaderNodeParameters.class, //
             null, //
             NodeType.Source, //
-            List.of("Input", "Read"), // TODO (#5): set additional keywords
-            new Version(5, 9, 0) // TODO (#5): Set the version when the node is first introduced
+            List.of("Input", "Read", "Excel", "XLSX", "XLS", "XLSM", "XLSB", "Spreadsheet"), //
+            new Version(5, 9, 0)
         );
     }
 
-    // TODO (#5): Return your ReadAdapterFactory instance
     @Override
     protected ReadAdapterFactory<KNIMECellType, ExcelCell> getReadAdapterFactory() {
-        return null;
+        return ExcelReadAdapterFactory.INSTANCE;
     }
 
     @Override
@@ -106,16 +107,15 @@ public class ExcelTableReaderNodeFactory extends WebUITableReaderNodeFactory<Exc
         return new ExcelTableReader();
     }
 
-    // TODO (#5): Implement if your V type requires special handling
     @Override
     protected String extractRowKey(final ExcelCell value) {
         return value.getStringValue();
     }
 
-    // TODO (#5): Return your ReadAdapterFactory's TYPE_HIERARCHY
     @Override
     protected TypeHierarchy<KNIMECellType, KNIMECellType> getTypeHierarchy() {
-        return null;
+        // TODO is this correct?
+        return ExcelReadAdapterFactory.TYPE_HIERARCHY.createTypeFocusedHierarchy();
     }
 
     @Override

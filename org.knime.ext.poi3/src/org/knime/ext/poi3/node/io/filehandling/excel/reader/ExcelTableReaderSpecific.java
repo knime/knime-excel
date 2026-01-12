@@ -48,6 +48,7 @@ package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 
 import org.knime.base.node.io.filehandling.webui.reader2.ReaderSpecific;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelReadAdapterFactory;
 import org.knime.filehandling.core.node.table.reader.ProductionPathProvider;
 import org.knime.filehandling.core.node.table.reader.type.hierarchy.TypeHierarchy;
 
@@ -56,8 +57,8 @@ import org.knime.filehandling.core.node.table.reader.type.hierarchy.TypeHierarch
  */
 final class ExcelTableReaderSpecific {
 
-    // TODO (#5): Initialize from your ReadAdapterFactory
-    static final ProductionPathProvider<KNIMECellType> PRODUCTION_PATH_PROVIDER = null;
+    static final ProductionPathProvider<KNIMECellType> PRODUCTION_PATH_PROVIDER =
+        ExcelReadAdapterFactory.INSTANCE.createProductionPathProvider();
 
     interface ProductionPathProviderAndTypeHierarchy
         extends ReaderSpecific.ProductionPathProviderAndTypeHierarchy<KNIMECellType> {
@@ -66,10 +67,9 @@ final class ExcelTableReaderSpecific {
             return PRODUCTION_PATH_PROVIDER;
         }
 
-        // TODO (#5): Return your ReadAdapterFactory's TYPE_HIERARCHY
         @Override
         default TypeHierarchy<KNIMECellType, KNIMECellType> getTypeHierarchy() {
-            return null;
+            return ExcelReadAdapterFactory.TYPE_HIERARCHY.createTypeFocusedHierarchy();
         }
     }
 
