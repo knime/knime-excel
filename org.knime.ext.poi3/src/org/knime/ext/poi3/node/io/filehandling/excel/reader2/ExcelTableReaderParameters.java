@@ -44,7 +44,7 @@
  * ---------------------------------------------------------------------
  *
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.reader;
+package org.knime.ext.poi3.node.io.filehandling.excel.reader2;
 
 import java.net.URL;
 
@@ -56,6 +56,7 @@ import org.knime.base.node.io.filehandling.webui.reader2.MultiFileSelectionPath;
 import org.knime.base.node.io.filehandling.webui.reader2.SkipFirstDataRowsParameters;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.webui.node.dialog.defaultdialog.widget.Modification;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelMultiTableReadConfig;
 import org.knime.filehandling.core.node.table.reader.config.tablespec.ConfigID;
 import org.knime.node.parameters.NodeParameters;
 
@@ -108,11 +109,10 @@ public class ExcelTableReaderParameters implements NodeParameters {
     // Common parameters
     // TODO (#6): Remove any of the following parameters that are not needed for your reader
 
-    // TODO (#6): Set the file extensions for your reader
     static final class SetExcelTableReaderExtensions extends MultiFileSelectionParameters.SetFileReaderWidgetExtensions {
         @Override
         protected String[] getExtensions() {
-            return new String[]{"TODO (#6)"};
+            return new String[]{"xlsx", "xls", "xlsm", "xlsb"};
         }
     }
 

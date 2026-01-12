@@ -44,7 +44,7 @@
  * ---------------------------------------------------------------------
  *
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.reader;
+package org.knime.ext.poi3.node.io.filehandling.excel.reader2;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -63,6 +63,9 @@ import org.knime.core.data.DataType;
 import org.knime.core.data.def.LongCell;
 import org.knime.core.util.Pair;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader2.ExcelTableReaderNodeParameters;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader2.ExcelTableReaderSpecific;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader2.ExcelTableReaderTransformationParameters;
 import org.knime.filehandling.core.connections.FSLocation;
 import org.knime.filehandling.core.node.table.reader.ProductionPathProvider;
 

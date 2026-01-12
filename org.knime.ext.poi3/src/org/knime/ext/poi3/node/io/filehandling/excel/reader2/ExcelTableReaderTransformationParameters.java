@@ -43,35 +43,29 @@
  *  when such Node is propagated with or for interoperation with KNIME.
  * ---------------------------------------------------------------------
  *
- * History
- *   Nov 25, 2025 (Paul Bärnreuther): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.reader;
+package org.knime.ext.poi3.node.io.filehandling.excel.reader2;
 
-import org.knime.core.node.InvalidSettingsException;
-import org.knime.node.parameters.NodeParameters;
-import org.knime.node.parameters.Widget;
-import org.knime.node.parameters.layout.Layout;
+import org.knime.base.node.io.filehandling.webui.reader2.TransformationParameters;
+import org.knime.core.webui.node.dialog.defaultdialog.widget.Modification;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader2.ExcelTableReaderSpecific.ProductionPathProviderAndTypeHierarchy;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
 
 /**
- * Dummy parameter class to demonstrate how to create a new section with parameters inside of it in the excelTableReader.
- *
- * TODO (#6): Delete this file once the excelTableReader is finished.
+ * @author Thomas Reifenberger, TNG Technology Consulting GmbH, Germany
  */
-@Layout(MyNewSection.class)
-class MyExcelTableReaderSpecificWithinNewSectionParameters implements NodeParameters {
+@SuppressWarnings("restriction")
+@Modification(ExcelTableReaderTransformationParametersStateProviders.TransformationSettingsWidgetModification.class)
+final class ExcelTableReaderTransformationParameters extends TransformationParameters<KNIMECellType>
+    implements ProductionPathProviderAndTypeHierarchy {
 
-    @Widget(title = "This is inside the new section",
-        description = "The @Layout annotation on the class links this parameter to the NewSection layout.")
-    String m_myParameterInNewSection = "default value";
-
-    void saveToConfig(final ExcelMultiTableReadConfig config) {
-        // saving logic here
+    @Override
+    public String toSerializableType(final KNIMECellType type) {
+        return type.name();
     }
 
     @Override
-    public void validate() throws InvalidSettingsException {
-        // validation logic here
+    public KNIMECellType toExternalType(final String typeName) {
+        return KNIMECellType.valueOf(typeName);
     }
-
 }

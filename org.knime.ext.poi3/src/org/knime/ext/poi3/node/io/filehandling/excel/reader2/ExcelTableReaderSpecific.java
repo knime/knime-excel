@@ -43,25 +43,56 @@
  *  when such Node is propagated with or for interoperation with KNIME.
  * ---------------------------------------------------------------------
  *
- * History
- *   Nov 25, 2025 (Paul Bärnreuther): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.reader;
+package org.knime.ext.poi3.node.io.filehandling.excel.reader2;
 
-import org.knime.base.node.io.filehandling.webui.reader2.ReaderLayout;
-import org.knime.node.parameters.layout.After;
-import org.knime.node.parameters.layout.Before;
-import org.knime.node.parameters.layout.Section;
+import org.knime.base.node.io.filehandling.webui.reader2.ReaderSpecific;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelMultiTableReadConfig;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReader;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelReadAdapterFactory;
+import org.knime.filehandling.core.node.table.reader.ProductionPathProvider;
+import org.knime.filehandling.core.node.table.reader.type.hierarchy.TypeHierarchy;
 
 /**
- * Example implementation of a new section custom to this excelTableReader reader. See
- * {@link MyExcelTableReaderSpecificWithinNewSectionParameters} for how to position new parameters inside of it.
- *
- * TODO (#6): Delete this file once the excelTableReader is finished.
+ * @author Thomas Reifenberger, TNG Technology Consulting GmbH, Germany
  */
-@After(ReaderLayout.DataArea.class)
-@Before(ReaderLayout.ColumnAndDataTypeDetection.class)
-@Section(title = "New Section")
-interface MyNewSection {
+final class ExcelTableReaderSpecific {
 
+    static final ProductionPathProvider<KNIMECellType> PRODUCTION_PATH_PROVIDER =
+        ExcelReadAdapterFactory.INSTANCE.createProductionPathProvider();
+
+    interface ProductionPathProviderAndTypeHierarchy
+        extends ReaderSpecific.ProductionPathProviderAndTypeHierarchy<KNIMECellType> {
+        @Override
+        default ProductionPathProvider<KNIMECellType> getProductionPathProvider() {
+            return PRODUCTION_PATH_PROVIDER;
+        }
+
+        @Override
+        default TypeHierarchy<KNIMECellType, KNIMECellType> getTypeHierarchy() {
+            return ExcelReadAdapterFactory.TYPE_HIERARCHY.createTypeFocusedHierarchy();
+        }
+    }
+
+    interface ConfigAndReader
+        extends ReaderSpecific.ConfigAndReader<ExcelTableReaderConfig, KNIMECellType, ExcelMultiTableReadConfig> {
+
+        @Override
+        default ExcelMultiTableReadConfig createMultiTableReadConfig() {
+            return new ExcelMultiTableReadConfig();
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        default ExcelTableReader createTableReader() {
+            return new ExcelTableReader();
+        }
+
+    }
+
+    private ExcelTableReaderSpecific() {
+        // Utility class
+    }
 }

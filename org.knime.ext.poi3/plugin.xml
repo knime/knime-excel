@@ -5,8 +5,13 @@
          point="org.knime.workbench.repository.nodes">
       <node
             category-path="/io/read"
-            deprecated="false"
+            deprecated="true"
             factory-class="org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderNodeFactory">
+      </node>
+      <node
+            category-path="/io/read"
+            deprecated="false"
+            factory-class="org.knime.ext.poi3.node.io.filehandling.excel.reader2.ExcelTableReaderNodeFactory2">
       </node>
       <node
             category-path="/io/write"
@@ -41,5 +46,20 @@
                extension="xlsb">
          </FileExtension>
       </FileExtensionMapping>
+       <FileExtensionMapping
+               NodeFactory="org.knime.ext.poi3.node.io.filehandling.excel.reader2.ExcelTableReaderNodeFactory2">
+           <FileExtension
+                   extension="xls">
+           </FileExtension>
+           <FileExtension
+                   extension="xlsx">
+           </FileExtension>
+           <FileExtension
+                   extension="xlsm">
+           </FileExtension>
+           <FileExtension
+                   extension="xlsb">
+           </FileExtension>
+       </FileExtensionMapping>
    </extension>
 </plugin>

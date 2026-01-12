@@ -46,10 +46,11 @@
  * History
  *   Nov 25, 2025 (Paul Bärnreuther): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.reader;
+package org.knime.ext.poi3.node.io.filehandling.excel.reader2;
 
 import org.knime.base.node.io.filehandling.webui.reader2.ReaderLayout;
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelMultiTableReadConfig;
 import org.knime.node.parameters.NodeParameters;
 import org.knime.node.parameters.Widget;
 import org.knime.node.parameters.layout.After;

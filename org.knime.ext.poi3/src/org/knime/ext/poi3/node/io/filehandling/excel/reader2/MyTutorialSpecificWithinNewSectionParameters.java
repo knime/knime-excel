@@ -42,52 +42,37 @@
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
  * ---------------------------------------------------------------------
+ *
+ * History
+ *   Nov 25, 2025 (Paul Bärnreuther): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.reader;
+package org.knime.ext.poi3.node.io.filehandling.excel.reader2;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-
-import org.junit.jupiter.api.Disabled;
 import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.NodeSettings;
-import org.knime.core.webui.node.dialog.SettingsType;
-import org.knime.core.webui.node.dialog.defaultdialog.NodeParametersUtil;
-import org.knime.testing.node.dialog.DefaultNodeSettingsSnapshotTest;
-import org.knime.testing.node.dialog.SnapshotTestConfiguration;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelMultiTableReadConfig;
+import org.knime.node.parameters.NodeParameters;
+import org.knime.node.parameters.Widget;
+import org.knime.node.parameters.layout.Layout;
 
 /**
+ * Dummy parameter class to demonstrate how to create a new section with parameters inside of it in the excelTableReader.
  *
- * @author KNIME AG, Zurich, Switzerland
+ * TODO (#6): Delete this file once the excelTableReader is finished.
  */
-@SuppressWarnings("restriction")
-@Disabled("TODO (#7): Enable this test class when you have created the node_settings XML file")
-class ExcelTableReaderNodeParametersTest extends DefaultNodeSettingsSnapshotTest {
-    protected ExcelTableReaderNodeParametersTest() {
-        super(getConfig());
+@Layout(MyNewSection.class)
+class MyExcelTableReaderSpecificWithinNewSectionParameters implements NodeParameters {
+
+    @Widget(title = "This is inside the new section",
+        description = "The @Layout annotation on the class links this parameter to the NewSection layout.")
+    String m_myParameterInNewSection = "default value";
+
+    void saveToConfig(final ExcelMultiTableReadConfig config) {
+        // saving logic here
     }
 
-    private static SnapshotTestConfiguration getConfig() {
-        return SnapshotTestConfiguration.builder() //
-            .testJsonFormsForModel(ExcelTableReaderNodeParameters.class) //
-            .testJsonFormsWithInstance(SettingsType.MODEL, () -> readSettings()) //
-            .testNodeSettingsStructure(() -> readSettings()) //
-            .build();
-    }
-
-    // TODO (#7): Create the node_settings/ExcelTableReaderTableReaderNodeParameters.xml file
-    private static ExcelTableReaderNodeParameters readSettings() {
-        try {
-            var path = getSnapshotPath(ExcelTableReaderNodeParametersTest.class).getParent().resolve("node_settings")
-                .resolve("ExcelTableReaderNodeParameters.xml"); // TODO (#7): Rename to match your parameters class
-            try (var fis = new FileInputStream(path.toFile())) {
-                var nodeSettings = NodeSettings.loadFromXML(fis);
-                return NodeParametersUtil.loadSettings(nodeSettings.getNodeSettings(SettingsType.MODEL.getConfigKey()),
-                    ExcelTableReaderNodeParameters.class);
-            }
-        } catch (IOException | InvalidSettingsException e) {
-            throw new RuntimeException(e);
-        }
+    @Override
+    public void validate() throws InvalidSettingsException {
+        // validation logic here
     }
 
 }

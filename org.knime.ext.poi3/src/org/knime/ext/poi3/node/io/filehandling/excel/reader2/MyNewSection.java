@@ -43,29 +43,25 @@
  *  when such Node is propagated with or for interoperation with KNIME.
  * ---------------------------------------------------------------------
  *
+ * History
+ *   Nov 25, 2025 (Paul Bärnreuther): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.reader;
+package org.knime.ext.poi3.node.io.filehandling.excel.reader2;
 
-import org.knime.base.node.io.filehandling.webui.reader2.TransformationParameters;
-import org.knime.core.webui.node.dialog.defaultdialog.widget.Modification;
-import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderSpecific.ProductionPathProviderAndTypeHierarchy;
-import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
+import org.knime.base.node.io.filehandling.webui.reader2.ReaderLayout;
+import org.knime.node.parameters.layout.After;
+import org.knime.node.parameters.layout.Before;
+import org.knime.node.parameters.layout.Section;
 
 /**
- * @author Thomas Reifenberger, TNG Technology Consulting GmbH, Germany
+ * Example implementation of a new section custom to this excelTableReader reader. See
+ * {@link MyExcelTableReaderSpecificWithinNewSectionParameters} for how to position new parameters inside of it.
+ *
+ * TODO (#6): Delete this file once the excelTableReader is finished.
  */
-@SuppressWarnings("restriction")
-@Modification(ExcelTableReaderTransformationParametersStateProviders.TransformationSettingsWidgetModification.class)
-final class ExcelTableReaderTransformationParameters extends TransformationParameters<KNIMECellType>
-    implements ProductionPathProviderAndTypeHierarchy {
+@After(ReaderLayout.DataArea.class)
+@Before(ReaderLayout.ColumnAndDataTypeDetection.class)
+@Section(title = "New Section")
+interface MyNewSection {
 
-    @Override
-    public String toSerializableType(final KNIMECellType type) {
-        return type.name();
-    }
-
-    @Override
-    public KNIMECellType toExternalType(final String typeName) {
-        return KNIMECellType.valueOf(typeName);
-    }
 }

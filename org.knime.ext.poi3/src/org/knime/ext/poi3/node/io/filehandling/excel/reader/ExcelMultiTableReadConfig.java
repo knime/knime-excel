@@ -58,10 +58,10 @@ import org.knime.filehandling.core.node.table.reader.config.MultiTableReadConfig
  *
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
  */
-final class ExcelMultiTableReadConfig extends
+public final class ExcelMultiTableReadConfig extends
     AbstractMultiTableReadConfig<ExcelTableReaderConfig, DefaultTableReadConfig<ExcelTableReaderConfig>, KNIMECellType, ExcelMultiTableReadConfig> {
 
-    ExcelMultiTableReadConfig() {
+    public ExcelMultiTableReadConfig() {
         super(new DefaultTableReadConfig<>(new ExcelTableReaderConfig()), ExcelMultiTableReadConfigSerializer.INSTANCE,
             ExcelMultiTableReadConfigSerializer.INSTANCE);
         setItemIdentifierColumnName("Path");

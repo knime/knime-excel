@@ -42,54 +42,52 @@
  *  may freely choose the license terms applicable to such Node, including
  *  when such Node is propagated with or for interoperation with KNIME.
  * ---------------------------------------------------------------------
- *
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.reader;
+package org.knime.ext.poi3.node.io.filehandling.excel.reader2;
 
-import org.knime.base.node.io.filehandling.webui.reader2.ReaderSpecific;
-import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
-import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelReadAdapterFactory;
-import org.knime.filehandling.core.node.table.reader.ProductionPathProvider;
-import org.knime.filehandling.core.node.table.reader.type.hierarchy.TypeHierarchy;
+import java.io.FileInputStream;
+import java.io.IOException;
+
+import org.junit.jupiter.api.Disabled;
+import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.node.NodeSettings;
+import org.knime.core.webui.node.dialog.SettingsType;
+import org.knime.core.webui.node.dialog.defaultdialog.NodeParametersUtil;
+import org.knime.testing.node.dialog.DefaultNodeSettingsSnapshotTest;
+import org.knime.testing.node.dialog.SnapshotTestConfiguration;
 
 /**
- * @author Thomas Reifenberger, TNG Technology Consulting GmbH, Germany
+ *
+ * @author KNIME AG, Zurich, Switzerland
  */
-final class ExcelTableReaderSpecific {
+@SuppressWarnings("restriction")
+@Disabled("TODO (#7): Enable this test class when you have created the node_settings XML file")
+class ExcelTableReaderNodeParameters2Test extends DefaultNodeSettingsSnapshotTest {
+    protected ExcelTableReaderNodeParameters2Test() {
+        super(getConfig());
+    }
 
-    static final ProductionPathProvider<KNIMECellType> PRODUCTION_PATH_PROVIDER =
-        ExcelReadAdapterFactory.INSTANCE.createProductionPathProvider();
+    private static SnapshotTestConfiguration getConfig() {
+        return SnapshotTestConfiguration.builder() //
+            .testJsonFormsForModel(ExcelTableReaderNodeParameters.class) //
+            .testJsonFormsWithInstance(SettingsType.MODEL, () -> readSettings()) //
+            .testNodeSettingsStructure(() -> readSettings()) //
+            .build();
+    }
 
-    interface ProductionPathProviderAndTypeHierarchy
-        extends ReaderSpecific.ProductionPathProviderAndTypeHierarchy<KNIMECellType> {
-        @Override
-        default ProductionPathProvider<KNIMECellType> getProductionPathProvider() {
-            return PRODUCTION_PATH_PROVIDER;
-        }
-
-        @Override
-        default TypeHierarchy<KNIMECellType, KNIMECellType> getTypeHierarchy() {
-            return ExcelReadAdapterFactory.TYPE_HIERARCHY.createTypeFocusedHierarchy();
+    // TODO (#7): Create the node_settings/ExcelTableReaderTableReaderNodeParameters.xml file
+    private static ExcelTableReaderNodeParameters readSettings() {
+        try {
+            var path = getSnapshotPath(ExcelTableReaderNodeParameters2Test.class).getParent().resolve("node_settings")
+                .resolve("ExcelTableReaderNodeParameters.xml"); // TODO (#7): Rename to match your parameters class
+            try (var fis = new FileInputStream(path.toFile())) {
+                var nodeSettings = NodeSettings.loadFromXML(fis);
+                return NodeParametersUtil.loadSettings(nodeSettings.getNodeSettings(SettingsType.MODEL.getConfigKey()),
+                    ExcelTableReaderNodeParameters.class);
+            }
+        } catch (IOException | InvalidSettingsException e) {
+            throw new RuntimeException(e);
         }
     }
 
-    interface ConfigAndReader
-        extends ReaderSpecific.ConfigAndReader<ExcelTableReaderConfig, KNIMECellType, ExcelMultiTableReadConfig> {
-
-        @Override
-        default ExcelMultiTableReadConfig createMultiTableReadConfig() {
-            return new ExcelMultiTableReadConfig();
-        }
-
-        @SuppressWarnings("unchecked")
-        @Override
-        default ExcelTableReader createTableReader() {
-            return new ExcelTableReader();
-        }
-
-    }
-
-    private ExcelTableReaderSpecific() {
-        // Utility class
-    }
 }

@@ -44,15 +44,18 @@
  * ---------------------------------------------------------------------
  *
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.reader;
+package org.knime.ext.poi3.node.io.filehandling.excel.reader2;
 
 import java.util.function.Supplier;
 
 import org.knime.base.node.io.filehandling.webui.reader2.SkipFirstDataRowsParameters;
 import org.knime.base.node.io.filehandling.webui.reader2.TransformationParametersStateProviders;
-import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderNodeParameters.ExcelTableReaderParametersRef;
-import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderSpecific.ConfigAndReader;
-import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderSpecific.ProductionPathProviderAndTypeHierarchy;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelMultiTableReadConfig;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.KNIMECellTypeSerializer;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader2.ExcelTableReaderNodeParameters.ExcelTableReaderParametersRef;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader2.ExcelTableReaderSpecific.ConfigAndReader;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader2.ExcelTableReaderSpecific.ProductionPathProviderAndTypeHierarchy;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
 
 /**
@@ -62,7 +65,7 @@ final class ExcelTableReaderTransformationParametersStateProviders {
 
     static final class TypedReaderTableSpecsProvider
         extends TransformationParametersStateProviders.TypedReaderTableSpecsProvider<//
-                ExcelTableReaderConfig, KNIMECellType, ExcelMultiTableReadConfig>
+            ExcelTableReaderConfig, KNIMECellType, ExcelMultiTableReadConfig>
         implements ConfigAndReader {
 
         private Supplier<ExcelTableReaderParameters> m_readerNodeParamsSupplier;
