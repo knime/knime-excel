@@ -93,15 +93,11 @@ final class ExcelTableReaderTransformationParametersStateProviders {
             default void initConfigIdTriggers(final StateProviderInitializer initializer) {
                 // Register triggers for all reader-specific parameters that affect table spec detection
                 initializer.computeOnValueChange(SkipFirstDataRowsParameters.SkipFirstDataRowsRef.class);
-                /**
-                 * TODO (#6): Add triggers for your reader-specific parameters here. Note that not every setting is
-                 * relevant for table spec detection! The existing framework calls settings that affect table spec
-                 * detection "configId", so a good place to look at for determining which parameter references have to
-                 * be listed here is the ConfigIdFactory#createFromConfig method within the factory passed to the
-                 * super-constructor of your specific implementation of AbstractMultiTableReadConfig.
-                 */
-                // Example:
-                initializer.computeOnValueChange(MyExcelTableReaderSpecificParameters.MyParameterAfterSourceRef.class);
+
+                // Sheet selection parameters affect table spec
+                initializer.computeOnValueChange(SelectSheetParameters.SheetSelectionRef.class);
+                initializer.computeOnValueChange(SelectSheetParameters.SheetNameRef.class);
+                initializer.computeOnValueChange(SelectSheetParameters.SheetIndexRef.class);
             }
         }
     }

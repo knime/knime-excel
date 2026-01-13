@@ -48,30 +48,31 @@ package org.knime.ext.poi3.node.io.filehandling.excel.reader2;
 
 import java.net.URL;
 
-import org.knime.base.node.io.filehandling.webui.reader2.IfSchemaChangesParameters;
-import org.knime.base.node.io.filehandling.webui.reader2.MaxNumberOfRowsParameters;
-import org.knime.base.node.io.filehandling.webui.reader2.MultiFileReaderParameters;
-import org.knime.base.node.io.filehandling.webui.reader2.MultiFileSelectionParameters;
-import org.knime.base.node.io.filehandling.webui.reader2.MultiFileSelectionPath;
-import org.knime.base.node.io.filehandling.webui.reader2.SkipFirstDataRowsParameters;
+import org.knime.base.node.io.filehandling.webui.reader2.*;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.webui.node.dialog.defaultdialog.widget.Modification;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelMultiTableReadConfig;
 import org.knime.filehandling.core.node.table.reader.config.tablespec.ConfigID;
 import org.knime.node.parameters.NodeParameters;
+import org.knime.node.parameters.layout.Before;
+import org.knime.node.parameters.layout.Layout;
+import org.knime.node.parameters.layout.Section;
 
 /**
- * TODO (#6): Add reader-specific parameters (fields with @Widget annotations)
- *
  * @author Thomas Reifenberger, TNG Technology Consulting GmbH, Germany
  */
 @SuppressWarnings("restriction")
 public class ExcelTableReaderParameters implements NodeParameters {
 
-    // TODO (#6): Add reader-specific parameter fields here
+    @Section(title = "File and Sheet")
+    @Before(ReaderLayout.DataArea.class)
+    public interface FileAndSheetSection {
+        interface Source {
+        }
+    }
 
     ExcelTableReaderParameters(final URL url) {
-        // TODO (#6): Initialize URL-dependent defaults here if needed
+        // Initialize URL-dependent defaults here if needed
     }
 
     ExcelTableReaderParameters() {
@@ -86,20 +87,16 @@ public class ExcelTableReaderParameters implements NodeParameters {
         m_ifSchemaChangesParams.saveToConfig(config);
         m_multiFileReaderParams.saveToConfig(config);
 
-        m_myExcelTableReaderSpecificParameters.saveToConfig(config);
-        m_myExcelTableReaderSpecificParametersWithinNewSection.saveToConfig(config);
         return config.getConfigID();
     }
 
     @Override
     public void validate() throws InvalidSettingsException {
-        // TODO (#6): Add validation logic for your reader-specific parameters here
         m_skipFirstDataRowsParams.validate();
         m_maxNumberOfRowsParams.validate();
         m_multiFileReaderParams.validate();
 
-        m_myExcelTableReaderSpecificParameters.validate();
-        m_myExcelTableReaderSpecificParametersWithinNewSection.validate();
+        m_selectSheetParams.validate();
     }
 
     void saveToSource(final MultiFileSelectionPath sourceSettings) {
@@ -109,14 +106,22 @@ public class ExcelTableReaderParameters implements NodeParameters {
     // Common parameters
     // TODO (#6): Remove any of the following parameters that are not needed for your reader
 
-    static final class SetExcelTableReaderExtensions extends MultiFileSelectionParameters.SetFileReaderWidgetExtensions {
+    static final class SetExcelTableReaderExtensions
+        extends MultiFileSelectionParameters.SetFileReaderWidgetExtensions {
         @Override
         protected String[] getExtensions() {
             return new String[]{"xlsx", "xls", "xlsm", "xlsb"};
         }
     }
 
-    @Modification(SetExcelTableReaderExtensions.class)
+    static final class OverrideExcelReaderSourceLayout extends MultiFileSelectionParameters.OverrideReaderSourceLayout {
+        @Override
+        protected Class<?> getSourceLayoutClass() {
+            return FileAndSheetSection.class;
+        }
+    }
+
+    @Modification({SetExcelTableReaderExtensions.class, OverrideExcelReaderSourceLayout.class})
     MultiFileSelectionParameters m_multiFileSelectionParams = new MultiFileSelectionParameters();
 
     SkipFirstDataRowsParameters m_skipFirstDataRowsParams = new SkipFirstDataRowsParameters();
@@ -129,23 +134,7 @@ public class ExcelTableReaderParameters implements NodeParameters {
 
     // ExcelTableReader-specific parameters
 
-    /**
-     * TODO (#6): Add your excelTableReader-specific parameter fields here. There are two to be removed examples given below:
-     * Each new parameter class has to be positioned within the existing layout either relative to other common
-     * parameters or within a new section (that defines its position within the layout).
-     */
-
-    /**
-     * TODO (#6): Example of a excelTableReader-specific parameter that is positioned relative to other common parameters.
-     */
-    MyExcelTableReaderSpecificParameters m_myExcelTableReaderSpecificParameters = new MyExcelTableReaderSpecificParameters();
-
-    /**
-     * TODO (#6): Example of a excelTableReader-specific parameter that is positioned within the new section
-     * {@link MyNewSection}.
-     */
-    MyExcelTableReaderSpecificWithinNewSectionParameters m_myExcelTableReaderSpecificParametersWithinNewSection =
-        new MyExcelTableReaderSpecificWithinNewSectionParameters();
+    SelectSheetParameters m_selectSheetParams = new SelectSheetParameters();
 
     String getSourcePath() {
         return m_multiFileSelectionParams.getSourcePath();

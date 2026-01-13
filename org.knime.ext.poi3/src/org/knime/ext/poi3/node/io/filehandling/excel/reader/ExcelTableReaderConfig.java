@@ -173,7 +173,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param sheetSelection the sheetSelection to set
      */
-    void setSheetSelection(final SheetSelection sheetSelection) {
+    public void setSheetSelection(final SheetSelection sheetSelection) {
         m_sheetSelection = sheetSelection;
     }
 
@@ -187,7 +187,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param selectedSheetName the selectedSheetName to set
      */
-    void setSheetName(final String selectedSheetName) {
+    public void setSheetName(final String selectedSheetName) {
         m_sheetName = selectedSheetName;
     }
 
@@ -201,7 +201,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param selectedSheetIdx the selectedSheetIdx to set
      */
-    void setSheetIdx(final int selectedSheetIdx) {
+    public void setSheetIdx(final int selectedSheetIdx) {
         m_sheetIdx = selectedSheetIdx;
     }
 
