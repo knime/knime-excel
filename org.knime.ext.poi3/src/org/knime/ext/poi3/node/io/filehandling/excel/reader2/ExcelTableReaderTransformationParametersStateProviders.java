@@ -110,6 +110,10 @@ final class ExcelTableReaderTransformationParametersStateProviders {
                 initializer.computeOnValueChange(ColumnNameParameters.ColumnNameModeRef.class);
                 initializer.computeOnValueChange(ColumnNameParameters.ColumnNamesRowNumberRef.class);
                 initializer.computeOnValueChange(ColumnNameParameters.EmptyColHeaderPrefixRef.class);
+
+                // RowID parameters affect table spec
+                initializer.computeOnValueChange(RowIdParameters.RowIdModeRef.class);
+                initializer.computeOnValueChange(RowIdParameters.RowIdColumnRef.class);
             }
         }
     }

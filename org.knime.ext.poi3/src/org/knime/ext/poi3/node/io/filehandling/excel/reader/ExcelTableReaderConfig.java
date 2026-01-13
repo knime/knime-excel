@@ -355,7 +355,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param rowIDCol the rowIDCol to set
      */
-    void setRowIDCol(final String rowIDCol) {
+    public void setRowIDCol(final String rowIDCol) {
         m_rowIDCol = rowIDCol;
     }
 
@@ -401,7 +401,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param rowIdGeneration the rowIdGeneration to set
      */
-    void setRowIdGeneration(final RowIDGeneration rowIdGeneration) {
+    public void setRowIdGeneration(final RowIDGeneration rowIdGeneration) {
         m_rowIdGeneration = rowIdGeneration;
     }
 
