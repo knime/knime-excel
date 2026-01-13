@@ -81,8 +81,6 @@ public class ExcelTableReaderParameters implements NodeParameters {
     ConfigID saveToConfig(final ExcelMultiTableReadConfig config) {
         // TODO (#6): Save reader-specific parameters to config here
         final var tableReadConfig = config.getTableReadConfig();
-        m_skipFirstDataRowsParams.saveToConfig(tableReadConfig);
-        m_maxNumberOfRowsParams.saveToConfig(tableReadConfig);
         m_ifSchemaChangesParams.saveToConfig(config);
         m_multiFileReaderParams.saveToConfig(config);
 
@@ -96,8 +94,6 @@ public class ExcelTableReaderParameters implements NodeParameters {
 
     @Override
     public void validate() throws InvalidSettingsException {
-        m_skipFirstDataRowsParams.validate();
-        m_maxNumberOfRowsParams.validate();
         m_multiFileReaderParams.validate();
 
         m_selectSheetParams.validate();
@@ -131,10 +127,7 @@ public class ExcelTableReaderParameters implements NodeParameters {
     @Modification({SetExcelTableReaderExtensions.class, OverrideExcelReaderSourceLayout.class})
     MultiFileSelectionParameters m_multiFileSelectionParams = new MultiFileSelectionParameters();
 
-    SkipFirstDataRowsParameters m_skipFirstDataRowsParams = new SkipFirstDataRowsParameters();
-
-    MaxNumberOfRowsParameters m_maxNumberOfRowsParams = new MaxNumberOfRowsParameters();
-
+    // TODO in the Figma design, this is located under "File & Sheet" - change?
     IfSchemaChangesParameters m_ifSchemaChangesParams = new IfSchemaChangesParameters();
 
     MultiFileReaderParameters m_multiFileReaderParams = new MultiFileReaderParameters();
