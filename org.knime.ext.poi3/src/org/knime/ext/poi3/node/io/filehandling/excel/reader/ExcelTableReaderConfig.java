@@ -371,7 +371,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
      *
      * @param emptyColHeaderPrefix the prefix for empty column headers
      */
-    void setEmptyColHeaderPrefix(final String emptyColHeaderPrefix) {
+    public void setEmptyColHeaderPrefix(final String emptyColHeaderPrefix) {
         m_emptyColHeaderPrefix = emptyColHeaderPrefix;
     }
 
@@ -387,7 +387,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
      *
      * @param columnNameMode the {@link ColumnNameMode}
      */
-    void setColumnNameMode(final ColumnNameMode columnNameMode) {
+    public void setColumnNameMode(final ColumnNameMode columnNameMode) {
         m_columnNameMode = columnNameMode;
     }
 

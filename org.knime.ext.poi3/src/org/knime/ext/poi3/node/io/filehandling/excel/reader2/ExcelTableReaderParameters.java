@@ -55,7 +55,6 @@ import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelMultiTableReadC
 import org.knime.filehandling.core.node.table.reader.config.tablespec.ConfigID;
 import org.knime.node.parameters.NodeParameters;
 import org.knime.node.parameters.layout.Before;
-import org.knime.node.parameters.layout.Layout;
 import org.knime.node.parameters.layout.Section;
 
 /**
@@ -89,6 +88,7 @@ public class ExcelTableReaderParameters implements NodeParameters {
 
         m_selectSheetParams.saveToConfig(config);
         m_readAreaParams.saveToConfig(config);
+        m_columnNameParams.saveToConfig(config);
 
         return config.getConfigID();
     }
@@ -141,6 +141,8 @@ public class ExcelTableReaderParameters implements NodeParameters {
     SelectSheetParameters m_selectSheetParams = new SelectSheetParameters();
 
     ReadAreaParameters m_readAreaParams = new ReadAreaParameters();
+
+    ColumnNameParameters m_columnNameParams = new ColumnNameParameters();
 
     String getSourcePath() {
         return m_multiFileSelectionParams.getSourcePath();
