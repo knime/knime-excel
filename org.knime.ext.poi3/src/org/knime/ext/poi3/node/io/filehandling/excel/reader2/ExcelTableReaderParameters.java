@@ -87,6 +87,9 @@ public class ExcelTableReaderParameters implements NodeParameters {
         m_ifSchemaChangesParams.saveToConfig(config);
         m_multiFileReaderParams.saveToConfig(config);
 
+        m_selectSheetParams.saveToConfig(config);
+        m_readAreaParams.saveToConfig(config);
+
         return config.getConfigID();
     }
 
@@ -97,6 +100,7 @@ public class ExcelTableReaderParameters implements NodeParameters {
         m_multiFileReaderParams.validate();
 
         m_selectSheetParams.validate();
+        m_readAreaParams.validate();
     }
 
     void saveToSource(final MultiFileSelectionPath sourceSettings) {
@@ -135,6 +139,8 @@ public class ExcelTableReaderParameters implements NodeParameters {
     // ExcelTableReader-specific parameters
 
     SelectSheetParameters m_selectSheetParams = new SelectSheetParameters();
+
+    ReadAreaParameters m_readAreaParams = new ReadAreaParameters();
 
     String getSourcePath() {
         return m_multiFileSelectionParams.getSourcePath();

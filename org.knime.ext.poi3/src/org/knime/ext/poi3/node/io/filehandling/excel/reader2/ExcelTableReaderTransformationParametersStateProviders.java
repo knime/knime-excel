@@ -98,6 +98,13 @@ final class ExcelTableReaderTransformationParametersStateProviders {
                 initializer.computeOnValueChange(SelectSheetParameters.SheetSelectionRef.class);
                 initializer.computeOnValueChange(SelectSheetParameters.SheetNameRef.class);
                 initializer.computeOnValueChange(SelectSheetParameters.SheetIndexRef.class);
+
+                // Read area parameters affect table spec
+                initializer.computeOnValueChange(ReadAreaParameters.SheetAreaRef.class);
+                initializer.computeOnValueChange(ReadAreaParameters.ReadFromColumnRef.class);
+                initializer.computeOnValueChange(ReadAreaParameters.ReadToColumnRef.class);
+                initializer.computeOnValueChange(ReadAreaParameters.ReadFromRowRef.class);
+                initializer.computeOnValueChange(ReadAreaParameters.ReadToRowRef.class);
             }
         }
     }

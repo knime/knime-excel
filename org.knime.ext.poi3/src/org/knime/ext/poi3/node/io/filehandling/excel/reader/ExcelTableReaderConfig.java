@@ -285,7 +285,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param readFromCol the readFromCol to set
      */
-    void setReadFromCol(final String readFromCol) {
+    public void setReadFromCol(final String readFromCol) {
         m_readFromCol = readFromCol;
     }
 
@@ -299,7 +299,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param readToCol the readToCol to set
      */
-    void setReadToCol(final String readToCol) {
+    public void setReadToCol(final String readToCol) {
         m_readToCol = readToCol;
     }
 
@@ -313,7 +313,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param readFromRow the readFromRow to set
      */
-    void setReadFromRow(final String readFromRow) {
+    public void setReadFromRow(final String readFromRow) {
         m_readFromRow = readFromRow;
     }
 
@@ -327,7 +327,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param readToRow the readToRow to set
      */
-    void setReadToRow(final String readToRow) {
+    public void setReadToRow(final String readToRow) {
         m_readToRow = readToRow;
     }
 
@@ -341,7 +341,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param areaOfSheetToRead the areaOfSheetToRead to set
      */
-    void setAreaOfSheetToRead(final AreaOfSheetToRead areaOfSheetToRead) {
+    public void setAreaOfSheetToRead(final AreaOfSheetToRead areaOfSheetToRead) {
         m_areaOfSheetToRead = areaOfSheetToRead;
     }
 
