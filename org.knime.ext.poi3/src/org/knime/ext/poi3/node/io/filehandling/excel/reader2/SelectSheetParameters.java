@@ -86,15 +86,23 @@ class SelectSheetParameters implements NodeParameters {
     static final class SheetIndexRef implements ParameterReference<Integer> {
     }
 
-    private enum SheetSelectionMode {
-            @Label(value = "First sheet with data", description = "Select the first sheet that contains data.")
+    enum SheetSelectionMode {
+            @Label(value = "First sheet with data",
+                description = "The first sheet of the selected file(s) that contains data will be read in. "
+                    + "Containing data means not being empty. If all sheets of a file are empty, an empty table is read in.")
             FIRST,
 
-            @Label(value = "By name", description = "Select a sheet by its name.")
+            @Label(value = "By name",
+                description = "The sheet with the selected name will be read in. If reading multiple files, "
+                    + "the sheet names of the first file are shown and the node will fail if any of the other files "
+                    + "does not contain a sheet with the selected name.")
             NAME,
 
-            @Label(value = "By position", description = "Select a sheet by its position (0-based index).")
-            INDEX,
+            @Label(value = "By position",
+                description = "The sheet at the selected position will be read in. If reading multiple files, "
+                    + "the node will fail if any of the files does not contain a sheet at the selected position. "
+                    + "The position starts at 0, i.e. the first sheet is at position 0.")
+            INDEX
     }
 
     static final class IsSheetNameMode implements EffectPredicateProvider {
@@ -111,7 +119,9 @@ class SelectSheetParameters implements NodeParameters {
         }
     }
 
-    @Widget(title = "Select sheet", description = "Choose how to select the sheet to read from the Excel file.")
+    @Widget(title = "Select sheet",
+        description = "Choose which sheet to read from the Excel file. "
+            + "The order of the sheets is the same as displayed in Excel (i.e. not necessarily a lexicographic order).")
     @ValueSwitchWidget
     @ValueReference(SheetSelectionRef.class)
     SheetSelectionMode m_sheetSelection = SheetSelectionMode.FIRST;
@@ -123,7 +133,10 @@ class SelectSheetParameters implements NodeParameters {
     @TextInputWidget
     String m_sheetName = "";
 
-    @Widget(title = "Sheet position", description = "The position (0-based index) of the sheet to read.")
+    // TODO max validation
+    @Widget(title = "Sheet position",
+        description = "The position (0-based index) of the sheet to read. "
+            + "The maximum position that can be selected depends on the number of sheets available in the first read file.")
     @NumberInputWidget(minValidation = IsNonNegativeValidation.class)
     @ValueReference(SheetIndexRef.class)
     @Effect(predicate = IsSheetIndexMode.class, type = EffectType.SHOW)

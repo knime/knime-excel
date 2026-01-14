@@ -123,10 +123,13 @@ class ReadAreaParameters implements NodeParameters {
     }
 
     enum SheetAreaMode {
-            @Label(value = "Entire sheet", description = "Read the entire sheet.")
+            @Label(value = "Whole sheet",
+                description = "All the data contained in the sheet is read in. This includes areas where diagrams, borders, "
+                    + "coloring, etc. are placed and could create empty rows or columns.")
             ENTIRE,
 
-            @Label(value = "Custom area", description = "Define a custom area to read.")
+            @Label(value = "Range by column and row",
+                description = "Only the data in the specified area is read in. Both start and end columns/rows are inclusive.")
             CUSTOM
     }
 
