@@ -92,7 +92,6 @@ final class ExcelTableReaderTransformationParametersStateProviders {
             @Override
             default void initConfigIdTriggers(final StateProviderInitializer initializer) {
                 // Register triggers for all reader-specific parameters that affect table spec detection
-                initializer.computeOnValueChange(SkipFirstDataRowsParameters.SkipFirstDataRowsRef.class);
 
                 // Sheet selection parameters affect table spec
                 initializer.computeOnValueChange(SelectSheetParameters.SheetSelectionRef.class);

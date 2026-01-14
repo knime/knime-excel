@@ -215,7 +215,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param skipHiddenCols the skipHiddenCols to set
      */
-    void setSkipHiddenCols(final boolean skipHiddenCols) {
+    public void setSkipHiddenCols(final boolean skipHiddenCols) {
         m_skipHiddenCols = skipHiddenCols;
     }
 
@@ -229,7 +229,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param skipHiddenRows the skipHiddenRows to set
      */
-    void setSkipHiddenRows(final boolean skipHiddenRows) {
+    public void setSkipHiddenRows(final boolean skipHiddenRows) {
         m_skipHiddenRows = skipHiddenRows;
     }
 
