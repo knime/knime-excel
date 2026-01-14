@@ -89,6 +89,7 @@ public class ExcelTableReaderParameters implements NodeParameters {
         m_columnNameParams.saveToConfig(config);
         m_rowIdParams.saveToConfig(config);
         m_skipParams.saveToConfig(config);
+        m_schemaDetectionParams.saveToConfig(config);
 
         return config.getConfigID();
     }
@@ -102,6 +103,7 @@ public class ExcelTableReaderParameters implements NodeParameters {
         m_columnNameParams.validate();
         m_rowIdParams.validate();
         m_skipParams.validate();
+        m_schemaDetectionParams.validate();
     }
 
     void saveToSource(final MultiFileSelectionPath sourceSettings) {
@@ -145,6 +147,8 @@ public class ExcelTableReaderParameters implements NodeParameters {
     RowIdParameters m_rowIdParams = new RowIdParameters();
 
     SkipParameters m_skipParams = new SkipParameters();
+
+    SchemaDetectionParameters m_schemaDetectionParams = new SchemaDetectionParameters();
 
     String getSourcePath() {
         return m_multiFileSelectionParams.getSourcePath();

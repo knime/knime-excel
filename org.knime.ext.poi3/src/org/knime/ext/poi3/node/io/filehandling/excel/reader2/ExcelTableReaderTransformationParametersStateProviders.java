@@ -113,6 +113,11 @@ final class ExcelTableReaderTransformationParametersStateProviders {
                 // RowID parameters affect table spec
                 initializer.computeOnValueChange(RowIdParameters.RowIdModeRef.class);
                 initializer.computeOnValueChange(RowIdParameters.RowIdColumnRef.class);
+
+                // Schema detection parameters affect table spec
+                initializer.computeOnValueChange(SchemaDetectionParameters.LimitDataRowsScannedRef.class);
+                initializer.computeOnValueChange(SchemaDetectionParameters.MaxDataRowsScannedRef.class);
+                initializer.computeOnValueChange(SchemaDetectionParameters.FailOnDifferingSpecsRef.class);
             }
         }
     }
