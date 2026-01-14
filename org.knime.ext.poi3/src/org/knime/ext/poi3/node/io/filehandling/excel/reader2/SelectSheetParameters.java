@@ -73,7 +73,7 @@ import org.knime.node.parameters.widget.text.TextInputWidget;
 @Layout(SelectSheetParameters.SelectSheetLayout.class)
 class SelectSheetParameters implements NodeParameters {
 
-    @After(ExcelTableReaderParameters.FileAndSheetSection.Source.class)
+    @After(EncryptionParameters.EncryptionLayout.class)
     interface SelectSheetLayout {
     }
 
