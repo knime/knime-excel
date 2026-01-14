@@ -93,11 +93,13 @@ class ReadAreaParameters implements NodeParameters {
     interface ReadAreaLayout {
 
         @HorizontalLayout
+        @Effect(predicate = IsCustomAreaMode.class, type = EffectType.SHOW)
         interface ColumnSelection {
         }
 
         @HorizontalLayout
         @After(ColumnSelection.class)
+        @Effect(predicate = IsCustomAreaMode.class, type = EffectType.SHOW)
         interface RowSelection {
         }
 
@@ -147,28 +149,24 @@ class ReadAreaParameters implements NodeParameters {
 
     @Widget(title = "Read from column", description = "The starting column (e.g., A, B, C).")
     @ValueReference(ReadFromColumnRef.class)
-    @Effect(predicate = IsCustomAreaMode.class, type = EffectType.SHOW)
     @TextInputWidget(patternValidation = ExcelColumnNameValidation.class)
     @Layout(ReadAreaLayout.ColumnSelection.class)
     String m_readFromColumn = "A";
 
     @Widget(title = "Read to column", description = "The ending column (e.g., Z, AA, AB). Leave empty for last column.")
     @ValueReference(ReadToColumnRef.class)
-    @Effect(predicate = IsCustomAreaMode.class, type = EffectType.SHOW)
     @TextInputWidget(patternValidation = ExcelColumnNameValidation.class)
     @Layout(ReadAreaLayout.ColumnSelection.class)
     String m_readToColumn = "";
 
     @Widget(title = "Read from row", description = "The starting row number (1-based).")
     @ValueReference(ReadFromRowRef.class)
-    @Effect(predicate = IsCustomAreaMode.class, type = EffectType.SHOW)
     @TextInputWidget(patternValidation = ExcelRowIndexValidation.class)
     @Layout(ReadAreaLayout.RowSelection.class)
     String m_readFromRow = "1";
 
     @Widget(title = "Read to row", description = "The ending row number. Leave empty for last row.")
     @ValueReference(ReadToRowRef.class)
-    @Effect(predicate = IsCustomAreaMode.class, type = EffectType.SHOW)
     @TextInputWidget(patternValidation = ExcelRowIndexValidation.class)
     @Layout(ReadAreaLayout.RowSelection.class)
     String m_readToRow = "";
