@@ -53,6 +53,7 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.webui.node.dialog.defaultdialog.widget.Modification;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelMultiTableReadConfig;
 import org.knime.filehandling.core.node.table.reader.config.tablespec.ConfigID;
+import org.knime.node.parameters.Advanced;
 import org.knime.node.parameters.NodeParameters;
 import org.knime.node.parameters.layout.After;
 import org.knime.node.parameters.layout.Before;
@@ -73,6 +74,7 @@ public class ExcelTableReaderParameters implements NodeParameters {
 
     @Section(title = "Values")
     @After(ReaderLayout.DataArea.class)
+    @Advanced
     public interface ValuesSection {
 
     }

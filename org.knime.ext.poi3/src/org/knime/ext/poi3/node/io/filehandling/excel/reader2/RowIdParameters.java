@@ -51,6 +51,7 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelMultiTableReadConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.RowIDGeneration;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelUtils;
+import org.knime.node.parameters.Advanced;
 import org.knime.node.parameters.NodeParameters;
 import org.knime.node.parameters.Widget;
 import org.knime.node.parameters.layout.After;
@@ -72,6 +73,7 @@ import org.knime.node.parameters.widget.text.TextInputWidgetValidation.PatternVa
  *
  * @author Thomas Reifenberger, TNG Technology Consulting GmbH, Germany
  */
+@Advanced
 @Layout(RowIdParameters.RowIdLayout.class)
 class RowIdParameters implements NodeParameters {
 

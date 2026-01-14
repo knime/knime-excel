@@ -50,6 +50,8 @@ import org.knime.base.node.io.filehandling.webui.reader2.ReaderLayout;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelMultiTableReadConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.columnnames.ColumnNameMode;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader2.ExcelTableReaderValidation.MaxNumberOfExcelRows;
+import org.knime.node.parameters.Advanced;
 import org.knime.node.parameters.NodeParameters;
 import org.knime.node.parameters.Widget;
 import org.knime.node.parameters.layout.After;
@@ -72,6 +74,7 @@ import org.knime.node.parameters.widget.text.TextInputWidget;
  *
  * @author Thomas Reifenberger, TNG Technology Consulting GmbH, Germany
  */
+@Advanced
 @Layout(ColumnNameParameters.ColumnNameLayout.class)
 class ColumnNameParameters implements NodeParameters {
 
@@ -115,8 +118,7 @@ class ColumnNameParameters implements NodeParameters {
     ColumnNameModeOption m_columnNameMode = ColumnNameModeOption.CUSTOM_ROW;
 
     @Widget(title = "Header as in row", description = "The row number (1-based) containing column names.")
-    // TODO max validation needed?
-    @NumberInputWidget(minValidation = IsPositiveIntegerValidation.class)
+    @NumberInputWidget(minValidation = IsPositiveIntegerValidation.class, maxValidation = MaxNumberOfExcelRows.class)
     @ValueReference(ColumnNamesRowNumberRef.class)
     @Effect(predicate = IsCustomRowMode.class, type = EffectType.SHOW)
     long m_columnNamesRowNumber = 1;
@@ -152,7 +154,6 @@ class ColumnNameParameters implements NodeParameters {
     @Override
     public void validate() throws InvalidSettingsException {
         // no validations
-        // TODO do we need validations?
     }
 
 }

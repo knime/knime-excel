@@ -49,6 +49,7 @@ package org.knime.ext.poi3.node.io.filehandling.excel.reader2;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.defaultnodesettings.SettingsModelAuthentication.AuthenticationType;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelMultiTableReadConfig;
+import org.knime.node.parameters.Advanced;
 import org.knime.node.parameters.NodeParameters;
 import org.knime.node.parameters.Widget;
 import org.knime.node.parameters.layout.After;
@@ -69,6 +70,7 @@ import org.knime.node.parameters.widget.credentials.PasswordWidget;
  *
  * @author Thomas Reifenberger, TNG Technology Consulting GmbH, Germany
  */
+@Advanced
 @Layout(EncryptionParameters.EncryptionLayout.class)
 class EncryptionParameters implements NodeParameters {
 
