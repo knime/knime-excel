@@ -64,7 +64,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     static final String CFG_PASSWORD = "password";
 
     /** The default String to be inserted when an error cell is encountered. */
-    static final String DEFAULT_FORMULA_ERROR_PATTERN = "#XL_EVAL_ERROR#";
+    public static final String DEFAULT_FORMULA_ERROR_PATTERN = "#XL_EVAL_ERROR#";
 
     private boolean m_useRawSettings = false;
 
@@ -159,7 +159,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param use15DigitsPrecision the use15DigitsPrecision to set
      */
-    void setUse15DigitsPrecision(final boolean use15DigitsPrecision) {
+    public void setUse15DigitsPrecision(final boolean use15DigitsPrecision) {
         m_use15DigitsPrecision = use15DigitsPrecision;
     }
 
@@ -243,7 +243,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param reevaluateFormulas the reevaluateFormulas to set
      */
-    void setReevaluateFormulas(final boolean reevaluateFormulas) {
+    public void setReevaluateFormulas(final boolean reevaluateFormulas) {
         m_reevaluateFormulas = reevaluateFormulas;
     }
 
@@ -257,7 +257,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param formulaErrorHandling the formulaErrorHandling to set
      */
-    void setFormulaErrorHandling(final FormulaErrorHandling formulaErrorHandling) {
+    public void setFormulaErrorHandling(final FormulaErrorHandling formulaErrorHandling) {
         m_formulaErrorHandling = formulaErrorHandling;
     }
 
@@ -271,7 +271,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param errorPattern the errorPattern to set
      */
-    void setErrorPattern(final String errorPattern) {
+    public void setErrorPattern(final String errorPattern) {
         m_errorPattern = errorPattern;
     }
 
@@ -429,7 +429,7 @@ public final class ExcelTableReaderConfig implements ReaderSpecificConfig<ExcelT
     /**
      * @param replaceEmptyStringsWithMissings the replaceEmptyStringsWithMissings to set
      */
-    void setReplaceEmptyStringsWithMissings(final boolean replaceEmptyStringsWithMissings) {
+    public void setReplaceEmptyStringsWithMissings(final boolean replaceEmptyStringsWithMissings) {
         m_replaceEmptyStringsWithMissings = replaceEmptyStringsWithMissings;
     }
 

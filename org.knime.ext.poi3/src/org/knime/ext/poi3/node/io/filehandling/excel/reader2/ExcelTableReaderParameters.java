@@ -54,6 +54,7 @@ import org.knime.core.webui.node.dialog.defaultdialog.widget.Modification;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelMultiTableReadConfig;
 import org.knime.filehandling.core.node.table.reader.config.tablespec.ConfigID;
 import org.knime.node.parameters.NodeParameters;
+import org.knime.node.parameters.layout.After;
 import org.knime.node.parameters.layout.Before;
 import org.knime.node.parameters.layout.Section;
 
@@ -70,6 +71,12 @@ public class ExcelTableReaderParameters implements NodeParameters {
         }
     }
 
+    @Section(title = "Values")
+    @After(ReaderLayout.DataArea.class)
+    public interface ValuesSection {
+
+    }
+
     ExcelTableReaderParameters(final URL url) {
         // Initialize URL-dependent defaults here if needed
     }
@@ -81,6 +88,8 @@ public class ExcelTableReaderParameters implements NodeParameters {
     ConfigID saveToConfig(final ExcelMultiTableReadConfig config) {
         // TODO (#6): Save reader-specific parameters to config here
         final var tableReadConfig = config.getTableReadConfig();
+        tableReadConfig.setDecorateRead(false);
+
         m_ifSchemaChangesParams.saveToConfig(config);
         m_multiFileReaderParams.saveToConfig(config);
 
@@ -90,6 +99,7 @@ public class ExcelTableReaderParameters implements NodeParameters {
         m_rowIdParams.saveToConfig(config);
         m_skipParams.saveToConfig(config);
         m_schemaDetectionParams.saveToConfig(config);
+        m_valuesParams.saveToConfig(config);
 
         return config.getConfigID();
     }
@@ -104,6 +114,7 @@ public class ExcelTableReaderParameters implements NodeParameters {
         m_rowIdParams.validate();
         m_skipParams.validate();
         m_schemaDetectionParams.validate();
+        m_valuesParams.validate();
     }
 
     void saveToSource(final MultiFileSelectionPath sourceSettings) {
@@ -149,6 +160,8 @@ public class ExcelTableReaderParameters implements NodeParameters {
     SkipParameters m_skipParams = new SkipParameters();
 
     SchemaDetectionParameters m_schemaDetectionParams = new SchemaDetectionParameters();
+
+    ValuesParameters m_valuesParams = new ValuesParameters();
 
     String getSourcePath() {
         return m_multiFileSelectionParams.getSourcePath();
