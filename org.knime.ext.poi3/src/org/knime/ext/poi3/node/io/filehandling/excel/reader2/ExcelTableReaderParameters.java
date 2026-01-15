@@ -50,6 +50,8 @@ import java.net.URL;
 
 import org.knime.base.node.io.filehandling.webui.reader2.*;
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.webui.node.dialog.defaultdialog.internal.file.FileChooserFilters;
+import org.knime.core.webui.node.dialog.defaultdialog.internal.widget.PersistWithin;
 import org.knime.core.webui.node.dialog.defaultdialog.widget.Modification;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelMultiTableReadConfig;
 import org.knime.filehandling.core.node.table.reader.config.tablespec.ConfigID;
@@ -58,6 +60,9 @@ import org.knime.node.parameters.NodeParameters;
 import org.knime.node.parameters.layout.After;
 import org.knime.node.parameters.layout.Before;
 import org.knime.node.parameters.layout.Section;
+import org.knime.node.parameters.persistence.Persistor;
+import org.knime.node.parameters.updates.ParameterReference;
+import org.knime.node.parameters.updates.ValueReference;
 
 /**
  * @author Thomas Reifenberger, TNG Technology Consulting GmbH, Germany
@@ -85,6 +90,9 @@ public class ExcelTableReaderParameters implements NodeParameters {
 
     ExcelTableReaderParameters() {
         // default constructor
+    }
+
+    interface EncryptionParametersRef extends ParameterReference<EncryptionParameters> {
     }
 
     ConfigID saveToConfig(final ExcelMultiTableReadConfig config) {
@@ -153,6 +161,9 @@ public class ExcelTableReaderParameters implements NodeParameters {
 
     // ExcelTableReader-specific parameters
 
+    @PersistWithin.PersistEmbedded // skip persisting an empty entry, this field only contains one Void field
+    ExcelFileInfoMessage m_excelFileInfoMessageParams = new ExcelFileInfoMessage();
+
     SelectSheetParameters m_selectSheetParams = new SelectSheetParameters();
 
     ReadAreaParameters m_readAreaParams = new ReadAreaParameters();
@@ -167,6 +178,7 @@ public class ExcelTableReaderParameters implements NodeParameters {
 
     ValuesParameters m_valuesParams = new ValuesParameters();
 
+    @ValueReference(EncryptionParametersRef.class)
     EncryptionParameters m_encryptionParams = new EncryptionParameters();
 
     String getSourcePath() {

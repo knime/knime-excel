@@ -74,7 +74,7 @@ import org.knime.node.parameters.widget.credentials.PasswordWidget;
 @Layout(EncryptionParameters.EncryptionLayout.class)
 class EncryptionParameters implements NodeParameters {
 
-    @After(ExcelTableReaderParameters.FileAndSheetSection.Source.class)
+    @After(ExcelFileInfoMessage.FileInfoMessageLayout.class)
     interface EncryptionLayout {
     }
 

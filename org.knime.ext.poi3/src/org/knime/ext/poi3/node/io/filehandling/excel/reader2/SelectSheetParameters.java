@@ -47,23 +47,28 @@
 package org.knime.ext.poi3.node.io.filehandling.excel.reader2;
 
 import org.knime.core.node.InvalidSettingsException;
+import org.knime.core.webui.node.dialog.defaultdialog.util.updates.StateComputationFailureException;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelMultiTableReadConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.SheetSelection;
 import org.knime.node.parameters.NodeParameters;
+import org.knime.node.parameters.NodeParametersInput;
 import org.knime.node.parameters.Widget;
 import org.knime.node.parameters.layout.After;
 import org.knime.node.parameters.layout.Layout;
-import org.knime.node.parameters.updates.Effect;
+import org.knime.node.parameters.updates.*;
 import org.knime.node.parameters.updates.Effect.EffectType;
-import org.knime.node.parameters.updates.EffectPredicate;
-import org.knime.node.parameters.updates.EffectPredicateProvider;
-import org.knime.node.parameters.updates.ParameterReference;
-import org.knime.node.parameters.updates.ValueReference;
+import org.knime.node.parameters.updates.legacy.AutoGuessValueProvider;
+import org.knime.node.parameters.widget.choices.ChoicesProvider;
 import org.knime.node.parameters.widget.choices.Label;
+import org.knime.node.parameters.widget.choices.StringChoicesProvider;
 import org.knime.node.parameters.widget.choices.ValueSwitchWidget;
 import org.knime.node.parameters.widget.number.NumberInputWidget;
+import org.knime.node.parameters.widget.number.NumberInputWidgetValidation;
 import org.knime.node.parameters.widget.number.NumberInputWidgetValidation.MinValidation.IsNonNegativeValidation;
-import org.knime.node.parameters.widget.text.TextInputWidget;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Supplier;
 
 /**
  * Parameters for sheet selection in Excel files.
@@ -126,26 +131,86 @@ class SelectSheetParameters implements NodeParameters {
     @ValueReference(SheetSelectionRef.class)
     SheetSelectionMode m_sheetSelection = SheetSelectionMode.FIRST;
 
-    // TODO provide choices based on excel file selected in file selection. Use a dropdown.
     @Widget(title = "Sheet name", description = "The name of the sheet to read.")
     @ValueReference(SheetNameRef.class)
     @Effect(predicate = IsSheetNameMode.class, type = EffectType.SHOW)
-    @TextInputWidget
+    @ChoicesProvider(SheetNamesChoicesProvider.class)
+    @ValueProvider(SheetNamesDefaultProvider.class)
     String m_sheetName = "";
 
-    // TODO max validation
-    @Widget(title = "Sheet position",
-        description = "The position (0-based index) of the sheet to read. "
-            + "The maximum position that can be selected depends on the number of sheets available in the first read file.")
-    @NumberInputWidget(minValidation = IsNonNegativeValidation.class)
+    @Widget(title = "Sheet position", description = "The position (0-based index) of the sheet to read. "
+        + "The maximum position that can be selected depends on the number of sheets available in the first read file.")
+    @NumberInputWidget(minValidation = IsNonNegativeValidation.class,
+        maxValidationProvider = MaxSheetIndexProvider.class)
     @ValueReference(SheetIndexRef.class)
     @Effect(predicate = IsSheetIndexMode.class, type = EffectType.SHOW)
     int m_sheetIndex = 0;
 
+    private static class SheetNamesChoicesProvider implements StringChoicesProvider {
+
+        Supplier<ExcelFileContentInfoStateProvider.ExcelFileInfo> m_excelFileInfo;
+
+        @Override
+        public void init(final StateProviderInitializer initializer) {
+            m_excelFileInfo = initializer.computeFromProvidedState(ExcelFileContentInfoStateProvider.class);
+        }
+
+        @Override
+        public List<String> choices(final NodeParametersInput context) {
+            return m_excelFileInfo.get().getSheetNames();
+        }
+    }
+
+    private static class SheetNamesDefaultProvider extends AutoGuessValueProvider<String> {
+        SheetNamesDefaultProvider() {
+            super(SheetNameRef.class);
+        }
+
+        Supplier<ExcelFileContentInfoStateProvider.ExcelFileInfo> m_excelFileInfo;
+
+        @Override
+        public void init(final StateProviderInitializer initializer) {
+            super.init(initializer);
+            m_excelFileInfo = initializer.computeFromProvidedState(ExcelFileContentInfoStateProvider.class);
+        }
+
+        @Override
+        protected boolean isEmpty(String value) {
+            return value == null || value.isEmpty();
+        }
+
+        @Override
+        protected String autoGuessValue(NodeParametersInput parametersInput) throws StateComputationFailureException {
+            return Optional.of(m_excelFileInfo.get()) //
+                .orElseThrow(StateComputationFailureException::new) //
+                .getSheetNames().stream().findFirst() //
+                .orElseThrow(StateComputationFailureException::new);
+        }
+    }
+
+    private static class MaxSheetIndexProvider implements StateProvider<NumberInputWidgetValidation.MaxValidation> {
+
+        Supplier<ExcelFileContentInfoStateProvider.ExcelFileInfo> m_excelFileInfo;
+
+        @Override
+        public void init(final StateProviderInitializer initializer) {
+            m_excelFileInfo = initializer.computeFromProvidedState(ExcelFileContentInfoStateProvider.class);
+        }
+
+        @Override
+        public NumberInputWidgetValidation.MaxValidation computeState(NodeParametersInput parametersInput) {
+            return new NumberInputWidgetValidation.MaxValidation() {
+                @Override
+                protected double getMax() {
+                    return Math.max(m_excelFileInfo.get().getSheetNames().size() - 1, 0);
+                }
+            };
+        }
+    }
+
     void saveToConfig(final ExcelMultiTableReadConfig config) {
         final var excelConfig = config.getReaderSpecificConfig();
 
-        // Convert SheetSelectionMode to SheetSelection enum
         switch (m_sheetSelection) {
             case FIRST:
                 excelConfig.setSheetSelection(SheetSelection.FIRST);
@@ -163,12 +228,7 @@ class SelectSheetParameters implements NodeParameters {
 
     @Override
     public void validate() throws InvalidSettingsException {
-        if (m_sheetSelection == SheetSelectionMode.NAME && (m_sheetName == null || m_sheetName.trim().isEmpty())) {
-            throw new InvalidSettingsException("Sheet name must not be empty when selecting by name.");
-        }
-        if (m_sheetSelection == SheetSelectionMode.INDEX && m_sheetIndex < 0) {
-            throw new InvalidSettingsException("Sheet position must be non-negative.");
-        }
+        // nothing to validate here
     }
 
 }
