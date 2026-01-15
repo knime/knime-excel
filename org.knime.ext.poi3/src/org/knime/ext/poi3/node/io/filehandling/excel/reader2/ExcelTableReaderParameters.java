@@ -50,7 +50,6 @@ import java.net.URL;
 
 import org.knime.base.node.io.filehandling.webui.reader2.*;
 import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.webui.node.dialog.defaultdialog.internal.file.FileChooserFilters;
 import org.knime.core.webui.node.dialog.defaultdialog.internal.widget.PersistWithin;
 import org.knime.core.webui.node.dialog.defaultdialog.widget.Modification;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelMultiTableReadConfig;
@@ -60,7 +59,6 @@ import org.knime.node.parameters.NodeParameters;
 import org.knime.node.parameters.layout.After;
 import org.knime.node.parameters.layout.Before;
 import org.knime.node.parameters.layout.Section;
-import org.knime.node.parameters.persistence.Persistor;
 import org.knime.node.parameters.updates.ParameterReference;
 import org.knime.node.parameters.updates.ValueReference;
 
