@@ -93,6 +93,9 @@ class ColumnNameParameters implements NodeParameters {
     }
 
     enum ColumnNameModeOption {
+            @Label(value = "Use custom row", description = "Use a specific row as column names.")
+            CUSTOM_ROW,
+
             @Label(value = "Excel headers (A, B, C)",
                 description = "Use Excel column headers (A, B, C, ...) as column names.")
             EXCEL_HEADERS,
@@ -100,9 +103,6 @@ class ColumnNameParameters implements NodeParameters {
             @Label(value = "Enumerate columns (Col1, Col2...)",
                 description = "Use enumerated column names (Col1, Col2, ...) as column names.")
             ENUMERATE_COLUMNS,
-
-            @Label(value = "Use custom row", description = "Use a specific row as column names.")
-            CUSTOM_ROW,
     }
 
     static final class IsCustomRowMode implements EffectPredicateProvider {

@@ -93,7 +93,7 @@ class SchemaDetectionParameters implements NodeParameters {
             + "to analyze the file (i.e. to determine the column types). This option is recommended for long files "
             + "where the first n rows are representative for the whole file.")
     @ValueReference(LimitDataRowsScannedRef.class)
-    boolean m_limitDataRowsScanned = false;
+    boolean m_limitDataRowsScanned = true;
 
     @Widget(title = "Maximum number of scanned rows",
         description = "The maximum number of rows to scan for determining column types.")
