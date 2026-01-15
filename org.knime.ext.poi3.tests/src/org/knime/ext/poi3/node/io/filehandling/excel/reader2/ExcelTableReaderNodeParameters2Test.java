@@ -48,7 +48,6 @@ package org.knime.ext.poi3.node.io.filehandling.excel.reader2;
 import java.io.FileInputStream;
 import java.io.IOException;
 
-import org.junit.jupiter.api.Disabled;
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettings;
 import org.knime.core.webui.node.dialog.SettingsType;
@@ -61,7 +60,6 @@ import org.knime.testing.node.dialog.SnapshotTestConfiguration;
  * @author KNIME AG, Zurich, Switzerland
  */
 @SuppressWarnings("restriction")
-@Disabled("TODO (#7): Enable this test class when you have created the node_settings XML file")
 class ExcelTableReaderNodeParameters2Test extends DefaultNodeSettingsSnapshotTest {
     protected ExcelTableReaderNodeParameters2Test() {
         super(getConfig());
@@ -75,7 +73,7 @@ class ExcelTableReaderNodeParameters2Test extends DefaultNodeSettingsSnapshotTes
             .build();
     }
 
-    // TODO (#7): Create the node_settings/ExcelTableReaderTableReaderNodeParameters.xml file
+    // TODO (#7): Create the node_settings/ExcelTableReaderNodeParameters.xml file
     private static ExcelTableReaderNodeParameters readSettings() {
         try {
             var path = getSnapshotPath(ExcelTableReaderNodeParameters2Test.class).getParent().resolve("node_settings")

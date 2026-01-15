@@ -48,7 +48,6 @@ package org.knime.ext.poi3.node.io.filehandling.excel.reader2;
 
 import java.util.function.Supplier;
 
-import org.knime.base.node.io.filehandling.webui.reader2.SkipFirstDataRowsParameters;
 import org.knime.base.node.io.filehandling.webui.reader2.TransformationParametersStateProviders;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelMultiTableReadConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
