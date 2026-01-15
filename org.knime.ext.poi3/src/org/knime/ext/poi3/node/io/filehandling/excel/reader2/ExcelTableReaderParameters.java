@@ -96,7 +96,6 @@ public class ExcelTableReaderParameters implements NodeParameters {
     }
 
     ConfigID saveToConfig(final ExcelMultiTableReadConfig config) {
-        // TODO (#6): Save reader-specific parameters to config here
         final var tableReadConfig = config.getTableReadConfig();
         tableReadConfig.setDecorateRead(false);
 
@@ -134,8 +133,6 @@ public class ExcelTableReaderParameters implements NodeParameters {
     }
 
     // Common parameters
-    // TODO (#6): Remove any of the following parameters that are not needed for your reader
-
     static final class SetExcelTableReaderExtensions
         extends MultiFileSelectionParameters.SetFileReaderWidgetExtensions {
         @Override
