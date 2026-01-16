@@ -84,7 +84,7 @@ class EncryptionParameters implements NodeParameters {
     static final class CredentialsRef implements ParameterReference<Credentials> {
     }
 
-    enum EncryptionMode {
+    private enum EncryptionMode {
             @Label(value = "No encryption", description = "Files are not password protected.")
             NO_ENCRYPTION,
 
@@ -92,7 +92,7 @@ class EncryptionParameters implements NodeParameters {
             PASSWORD
     }
 
-    static final class IsPasswordEncryption implements EffectPredicateProvider {
+    private static final class IsPasswordEncryption implements EffectPredicateProvider {
         @Override
         public EffectPredicate init(final PredicateInitializer i) {
             return i.getEnum(EncryptionModeRef.class).isOneOf(EncryptionMode.PASSWORD);

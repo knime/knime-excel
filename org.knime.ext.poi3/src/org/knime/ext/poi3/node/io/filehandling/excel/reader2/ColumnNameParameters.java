@@ -92,7 +92,7 @@ class ColumnNameParameters implements NodeParameters {
     static final class EmptyColHeaderPrefixRef implements ParameterReference<String> {
     }
 
-    enum ColumnNameModeOption {
+    private enum ColumnNameModeOption {
             @Label(value = "Use custom row", description = "Use a specific row as column names.")
             CUSTOM_ROW,
 
@@ -105,7 +105,7 @@ class ColumnNameParameters implements NodeParameters {
             ENUMERATE_COLUMNS,
     }
 
-    static final class IsCustomRowMode implements EffectPredicateProvider {
+    private static final class IsCustomRowMode implements EffectPredicateProvider {
         @Override
         public EffectPredicate init(final PredicateInitializer i) {
             return i.getEnum(ColumnNameModeRef.class).isOneOf(ColumnNameModeOption.CUSTOM_ROW);

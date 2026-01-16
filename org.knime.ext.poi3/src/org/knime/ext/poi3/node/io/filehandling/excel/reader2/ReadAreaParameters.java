@@ -124,7 +124,7 @@ class ReadAreaParameters implements NodeParameters {
     static final class ReadToRowRef implements ParameterReference<String> {
     }
 
-    enum SheetAreaMode {
+    private enum SheetAreaMode {
             @Label(value = "Whole sheet",
                 description = "All the data contained in the sheet is read in. This includes areas where diagrams, borders, "
                     + "coloring, etc. are placed and could create empty rows or columns.")
@@ -135,7 +135,7 @@ class ReadAreaParameters implements NodeParameters {
             CUSTOM
     }
 
-    static final class IsCustomAreaMode implements EffectPredicateProvider {
+    private static final class IsCustomAreaMode implements EffectPredicateProvider {
         @Override
         public EffectPredicate init(final PredicateInitializer i) {
             return i.getEnum(SheetAreaRef.class).isOneOf(SheetAreaMode.CUSTOM);

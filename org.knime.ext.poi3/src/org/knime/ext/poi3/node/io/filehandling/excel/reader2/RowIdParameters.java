@@ -82,19 +82,13 @@ class RowIdParameters implements NodeParameters {
     interface RowIdLayout {
     }
 
-    /**
-     * Reference for RowID mode to trigger table spec recalculation.
-     */
     static final class RowIdModeRef implements ParameterReference<RowIdMode> {
     }
 
-    /**
-     * Reference for RowID column to trigger table spec recalculation.
-     */
     static final class RowIdColumnRef implements ParameterReference<String> {
     }
 
-    enum RowIdMode {
+    private enum RowIdMode {
             @Label(value = "Enumerate rows (Row1, Row2, ...)", description = "Generate row IDs by enumerating rows.")
             ENUMERATE,
 
@@ -102,14 +96,14 @@ class RowIdParameters implements NodeParameters {
             CUSTOM_COLUMN
     }
 
-    static final class IsCustomColumnMode implements EffectPredicateProvider {
+    private static final class IsCustomColumnMode implements EffectPredicateProvider {
         @Override
         public EffectPredicate init(final PredicateInitializer i) {
             return i.getEnum(RowIdModeRef.class).isOneOf(RowIdMode.CUSTOM_COLUMN);
         }
     }
 
-    static final class ExcelColumnPatternValidation extends PatternValidation {
+    private static final class ExcelColumnPatternValidation extends PatternValidation {
         @Override
         protected String getPattern() {
             // Matches Excel column letters or numeric column indices (starting at 1)

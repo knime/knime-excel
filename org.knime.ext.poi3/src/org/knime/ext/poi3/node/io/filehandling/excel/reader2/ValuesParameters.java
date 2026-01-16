@@ -87,7 +87,7 @@ class ValuesParameters implements NodeParameters {
     static final class FormulaErrorPatternRef implements ParameterReference<String> {
     }
 
-    enum FormulaErrorHandlingOption {
+    private enum FormulaErrorHandlingOption {
             @Label(value = "String value",
                 description = "Insert the given String value. Inserting a string value causes the entire column "
                     + "to become a string column in case an error occurs.")
@@ -98,14 +98,14 @@ class ValuesParameters implements NodeParameters {
             MISSING
     }
 
-    static final class IsReevaluateFormulasEnabled implements EffectPredicateProvider {
+    private static final class IsReevaluateFormulasEnabled implements EffectPredicateProvider {
         @Override
         public EffectPredicate init(final PredicateInitializer i) {
             return i.getBoolean(ReevaluateFormulasRef.class).isTrue();
         }
     }
 
-    static final class IsFormulaErrorPatternEnabled implements EffectPredicateProvider {
+    private static final class IsFormulaErrorPatternEnabled implements EffectPredicateProvider {
         @Override
         public EffectPredicate init(final PredicateInitializer i) {
             return i.getBoolean(ReevaluateFormulasRef.class).isTrue()

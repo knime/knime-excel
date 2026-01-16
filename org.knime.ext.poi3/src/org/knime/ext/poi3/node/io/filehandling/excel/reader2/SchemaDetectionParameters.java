@@ -81,7 +81,7 @@ class SchemaDetectionParameters implements NodeParameters {
     static final class FailOnDifferingSpecsRef implements ParameterReference<Boolean> {
     }
 
-    static final class IsLimitEnabled implements EffectPredicateProvider {
+    private static final class IsLimitEnabled implements EffectPredicateProvider {
         @Override
         public EffectPredicate init(final PredicateInitializer i) {
             return i.getBoolean(LimitDataRowsScannedRef.class).isTrue();

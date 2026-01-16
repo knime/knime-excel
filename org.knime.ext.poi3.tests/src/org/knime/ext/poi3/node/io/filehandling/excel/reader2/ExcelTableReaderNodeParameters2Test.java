@@ -57,7 +57,7 @@ import org.knime.testing.node.dialog.SnapshotTestConfiguration;
 
 /**
  *
- * @author KNIME AG, Zurich, Switzerland
+ * @author Thomas Reifenberger, TNG Technology Consulting GmbH, Germany
  */
 @SuppressWarnings("restriction")
 class ExcelTableReaderNodeParameters2Test extends DefaultNodeSettingsSnapshotTest {

@@ -91,7 +91,7 @@ class SelectSheetParameters implements NodeParameters {
     static final class SheetIndexRef implements ParameterReference<Integer> {
     }
 
-    enum SheetSelectionMode {
+    private enum SheetSelectionMode {
             @Label(value = "First sheet with data",
                 description = "The first sheet of the selected file(s) that contains data will be read in. "
                     + "Containing data means not being empty. If all sheets of a file are empty, an empty table is read in.")
@@ -110,14 +110,14 @@ class SelectSheetParameters implements NodeParameters {
             INDEX
     }
 
-    static final class IsSheetNameMode implements EffectPredicateProvider {
+    private static final class IsSheetNameMode implements EffectPredicateProvider {
         @Override
         public EffectPredicate init(final PredicateInitializer i) {
             return i.getEnum(SheetSelectionRef.class).isOneOf(SheetSelectionMode.NAME);
         }
     }
 
-    static final class IsSheetIndexMode implements EffectPredicateProvider {
+    private static final class IsSheetIndexMode implements EffectPredicateProvider {
         @Override
         public EffectPredicate init(final PredicateInitializer i) {
             return i.getEnum(SheetSelectionRef.class).isOneOf(SheetSelectionMode.INDEX);
