@@ -73,11 +73,10 @@ class ExcelTableReaderNodeParameters2Test extends DefaultNodeSettingsSnapshotTes
             .build();
     }
 
-    // TODO (#7): Create the node_settings/ExcelTableReaderNodeParameters.xml file
     private static ExcelTableReaderNodeParameters readSettings() {
         try {
             var path = getSnapshotPath(ExcelTableReaderNodeParameters2Test.class).getParent().resolve("node_settings")
-                .resolve("ExcelTableReaderNodeParameters.xml"); // TODO (#7): Rename to match your parameters class
+                .resolve("ExcelTableReaderNodeParameters.xml");
             try (var fis = new FileInputStream(path.toFile())) {
                 var nodeSettings = NodeSettings.loadFromXML(fis);
                 return NodeParametersUtil.loadSettings(nodeSettings.getNodeSettings(SettingsType.MODEL.getConfigKey()),

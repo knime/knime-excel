@@ -206,7 +206,7 @@ final class ExcelTableReaderTransformationParametersStateProvidersTest
 
     @Override
     protected String getFileName() {
-        return "test.xlsx"; // TODO (#7): Set the file extension for your format
+        return "test.xlsx";
     }
 
     @Override
