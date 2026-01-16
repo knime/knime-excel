@@ -55,6 +55,8 @@ import org.knime.node.parameters.layout.After;
 import org.knime.node.parameters.layout.HorizontalLayout;
 import org.knime.node.parameters.layout.Inside;
 import org.knime.node.parameters.layout.Layout;
+import org.knime.node.parameters.updates.ParameterReference;
+import org.knime.node.parameters.updates.ValueReference;
 
 /**
  * Parameters for skipping empty/hidden rows and columns in Excel files.
@@ -76,6 +78,18 @@ class SkipParameters implements NodeParameters {
         }
     }
 
+    static final class SkipEmptyColumnsRef implements ParameterReference<Boolean> {
+    }
+
+    static final class SkipHiddenColumnsRef implements ParameterReference<Boolean> {
+    }
+
+    static final class SkipEmptyRowsRef implements ParameterReference<Boolean> {
+    }
+
+    static final class SkipHiddenRowsRef implements ParameterReference<Boolean> {
+    }
+
     @Widget(title = "Skip empty columns",
         description = "If checked, empty columns of the sheet will be skipped and not displayed in the output. "
             + "Whether a column is considered empty depends on the <i>Table specification</i> settings. "
@@ -84,21 +98,25 @@ class SkipParameters implements NodeParameters {
             + "Removing the limit of scanned rows ensures empty and non-empty columns being detected correctly "
             + "but also increases the time required for scanning.")
     @Layout(SkipLayout.SkipColumns.class)
+    @ValueReference(SkipEmptyColumnsRef.class)
     boolean m_skipEmptyColumns = false;
 
     @Widget(title = "Skip hidden columns",
         description = "If checked, hidden columns of the sheet will be skipped and not displayed in the output.")
     @Layout(SkipLayout.SkipColumns.class)
+    @ValueReference(SkipHiddenColumnsRef.class)
     boolean m_skipHiddenColumns = true;
 
     @Widget(title = "Skip empty rows",
         description = "If checked, empty rows of the sheet will be skipped and not displayed in the output.")
     @Layout(SkipLayout.SkipRows.class)
+    @ValueReference(SkipEmptyRowsRef.class)
     boolean m_skipEmptyRows = true;
 
     @Widget(title = "Skip hidden rows",
         description = "If checked, hidden rows of the sheet will be skipped and not displayed in the output.")
     @Layout(SkipLayout.SkipRows.class)
+    @ValueReference(SkipHiddenRowsRef.class)
     boolean m_skipHiddenRows = true;
 
     void saveToConfig(final ExcelMultiTableReadConfig config) {

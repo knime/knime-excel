@@ -58,13 +58,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.knime.base.node.io.filehandling.webui.reader2.MultiFileReaderParameters.HowToCombineColumnsOption;
+import org.knime.base.node.io.filehandling.webui.testing.reader2.TransformationParametersUpdatesTest;
 import org.knime.base.node.io.filehandling.webui.reader2.ReaderSpecific;
 import org.knime.base.node.io.filehandling.webui.reader2.TransformationParameters;
-import org.knime.base.node.io.filehandling.webui.reader2.TransformationParametersUpdatesTest;
 import org.knime.core.data.DataType;
-import org.knime.core.data.def.LongCell;
+import org.knime.core.data.def.BooleanCell;
 import org.knime.core.node.workflow.NodeContext;
-import org.knime.core.node.workflow.NodeID;
 import org.knime.core.util.Pair;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell;
 import org.knime.filehandling.core.connections.FSLocation;
@@ -77,18 +76,10 @@ import org.knime.filehandling.core.node.table.reader.ProductionPathProvider;
 final class ExcelTableReaderTransformationParametersStateProvidersTest
     extends TransformationParametersUpdatesTest<ExcelTableReaderNodeParameters, ExcelCell.KNIMECellType> {
 
-
-    NodeID m_nodeId;
-
     @BeforeEach
     @Override
     protected void setUpSettingsAndFile() {
-        m_nodeId = m_wfm.createAndAddNode(new ExcelTableReaderNodeFactory2());
-        m_wfm.getNodeContainer(m_nodeId);
-        NodeContext.pushContext(m_wfm.getNodeContainer(m_nodeId));
-        NodeContext context = NodeContext.getContext();
-        System.out.println("Context container: " + context.getNodeContainer());
-        var c = context.getNodeContainer();
+        NodeContext.pushContext(m_wfm.getNodeContainer(m_wfm.createAndAddNode(new ExcelTableReaderNodeFactory2())));
         super.setUpSettingsAndFile();
     }
 
@@ -98,7 +89,6 @@ final class ExcelTableReaderTransformationParametersStateProvidersTest
     }
 
     // Trigger paths for Excel reader-specific parameters that affect table spec (ConfigID)
-    // Based on saveConfigIDSettingsTab (all from saveSettingsTab) and saveConfigIDAdvancedSettingsTab
     // Note: Encryption settings also affect spec (encrypted files require credentials to read)
     static final List<List<String>> TRIGGER_PATHS = List.of( //
         // SelectSheetParameters (from saveConfigIDSettingsTab -> saveSettingsTab)
@@ -131,7 +121,7 @@ final class ExcelTableReaderTransformationParametersStateProvidersTest
         List.of("excelTableReaderParameters", "schemaDetectionParams", "limitDataRowsScanned"), //
         List.of("excelTableReaderParameters", "schemaDetectionParams", "maxDataRowsScanned"), //
 
-        // ValuesParameters (from saveConfigIDAdvancedSettingsTab - ONLY these 4, NOT formulaErrorPattern)
+        // ValuesParameters (from saveConfigIDAdvancedSettingsTab)
         List.of("excelTableReaderParameters", "valuesParams", "use15DigitsPrecision"), //
         List.of("excelTableReaderParameters", "valuesParams", "replaceEmptyStringsWithMissingValues"), //
         List.of("excelTableReaderParameters", "valuesParams", "reevaluateFormulas"), //
@@ -186,10 +176,7 @@ final class ExcelTableReaderTransformationParametersStateProvidersTest
 
     @Override
     protected Pair<DataType, Collection<IntOrString>> getUnreachableType() {
-        /**
-         * TODO (#7): Possibly change the unreachable type according to your format.
-         */
-        return new Pair<>(LongCell.TYPE, List.of(IntOrString.STRING));
+        return new Pair<>(BooleanCell.TYPE, List.of(IntOrString.INT));
     }
 
     @Override

@@ -55,6 +55,13 @@ import org.knime.ext.poi3.node.io.filehandling.excel.reader.KNIMECellTypeSeriali
 import org.knime.ext.poi3.node.io.filehandling.excel.reader2.ExcelTableReaderNodeParameters.ExcelTableReaderParametersRef;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader2.ExcelTableReaderSpecific.ConfigAndReader;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader2.ExcelTableReaderSpecific.ProductionPathProviderAndTypeHierarchy;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader2.SkipParameters.SkipEmptyColumnsRef;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader2.SkipParameters.SkipHiddenColumnsRef;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader2.SkipParameters.SkipHiddenRowsRef;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader2.ValuesParameters.FormulaErrorHandlingRef;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader2.ValuesParameters.ReevaluateFormulasRef;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader2.ValuesParameters.ReplaceEmptyStringsWithMissingValuesRef;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader2.ValuesParameters.Use15DigitsPrecisionRef;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
 
 /**
@@ -72,7 +79,7 @@ final class ExcelTableReaderTransformationParametersStateProviders {
         @Override
         protected void applyParametersToConfig(final ExcelMultiTableReadConfig config) {
             m_readerNodeParamsSupplier.get().saveToConfig(config);
-        }
+    }
 
         @Override
         public void init(final StateProviderInitializer initializer) {
@@ -92,8 +99,8 @@ final class ExcelTableReaderTransformationParametersStateProviders {
             default void initConfigIdTriggers(final StateProviderInitializer initializer) {
                 // Register triggers for all reader-specific parameters that affect table spec detection
 
-//                initializer.computeOnValueChange(EncryptionParameters.EncryptionModeRef.class);
-//                initializer.computeOnValueChange(EncryptionParameters.CredentialsRef.class);
+                initializer.computeOnValueChange(EncryptionParameters.EncryptionModeRef.class);
+                initializer.computeOnValueChange(EncryptionParameters.CredentialsRef.class);
 
                 // Sheet selection parameters affect table spec
                 initializer.computeOnValueChange(SelectSheetParameters.SheetSelectionRef.class);
@@ -120,6 +127,17 @@ final class ExcelTableReaderTransformationParametersStateProviders {
                 initializer.computeOnValueChange(SchemaDetectionParameters.LimitDataRowsScannedRef.class);
                 initializer.computeOnValueChange(SchemaDetectionParameters.MaxDataRowsScannedRef.class);
                 initializer.computeOnValueChange(SchemaDetectionParameters.FailOnDifferingSpecsRef.class);
+
+                // Skip parameters affect table spec (ONLY these 3, NOT skipEmptyRows)
+                initializer.computeOnValueChange(SkipEmptyColumnsRef.class);
+                initializer.computeOnValueChange(SkipHiddenColumnsRef.class);
+                initializer.computeOnValueChange(SkipHiddenRowsRef.class);
+
+                // Values parameters affect table spec
+                initializer.computeOnValueChange(Use15DigitsPrecisionRef.class);
+                initializer.computeOnValueChange(ReplaceEmptyStringsWithMissingValuesRef.class);
+                initializer.computeOnValueChange(ReevaluateFormulasRef.class);
+                initializer.computeOnValueChange(FormulaErrorHandlingRef.class);
             }
         }
     }
