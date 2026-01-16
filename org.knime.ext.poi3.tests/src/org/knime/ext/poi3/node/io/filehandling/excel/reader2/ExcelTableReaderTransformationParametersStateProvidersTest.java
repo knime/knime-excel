@@ -51,7 +51,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.Disabled;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -61,27 +63,83 @@ import org.knime.base.node.io.filehandling.webui.reader2.TransformationParameter
 import org.knime.base.node.io.filehandling.webui.reader2.TransformationParametersUpdatesTest;
 import org.knime.core.data.DataType;
 import org.knime.core.data.def.LongCell;
+import org.knime.core.node.workflow.NodeContext;
+import org.knime.core.node.workflow.NodeID;
 import org.knime.core.util.Pair;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell;
-import org.knime.ext.poi3.node.io.filehandling.excel.reader2.ExcelTableReaderNodeParameters;
-import org.knime.ext.poi3.node.io.filehandling.excel.reader2.ExcelTableReaderSpecific;
-import org.knime.ext.poi3.node.io.filehandling.excel.reader2.ExcelTableReaderTransformationParameters;
 import org.knime.filehandling.core.connections.FSLocation;
 import org.knime.filehandling.core.node.table.reader.ProductionPathProvider;
 
 /**
  *
- * @author KNIME AG, Zurich, Switzerland
+ * @author Thomas Reifenberger, TNG Technology Consulting GmbH, Germany
  */
-@Disabled("TODO (#7): Enable this test class when you have implemented the required methods")
 final class ExcelTableReaderTransformationParametersStateProvidersTest
     extends TransformationParametersUpdatesTest<ExcelTableReaderNodeParameters, ExcelCell.KNIMECellType> {
 
-    // TODO (#6): Add trigger paths for your reader-specific parameters
-    // e.g., List.of("excelTableReaderParameters", "myExcelTableReaderSpecificParams", "myReaderSpecificSetting")
+
+    NodeID m_nodeId;
+
+    @BeforeEach
+    @Override
+    protected void setUpSettingsAndFile() {
+        m_nodeId = m_wfm.createAndAddNode(new ExcelTableReaderNodeFactory2());
+        m_wfm.getNodeContainer(m_nodeId);
+        NodeContext.pushContext(m_wfm.getNodeContainer(m_nodeId));
+        NodeContext context = NodeContext.getContext();
+        System.out.println("Context container: " + context.getNodeContainer());
+        var c = context.getNodeContainer();
+        super.setUpSettingsAndFile();
+    }
+
+    @AfterEach
+    void teardown() {
+        NodeContext.removeLastContext();
+    }
+
+    // Trigger paths for Excel reader-specific parameters that affect table spec (ConfigID)
+    // Based on saveConfigIDSettingsTab (all from saveSettingsTab) and saveConfigIDAdvancedSettingsTab
+    // Note: Encryption settings also affect spec (encrypted files require credentials to read)
     static final List<List<String>> TRIGGER_PATHS = List.of( //
-        List.of("excelTableReaderParameters", "skipFirstDataRowsParams", "skipFirstDataRows"), //
-        List.of("excelTableReaderParameters", "myExcelTableReaderSpecificParameters", "myParameterAfterSource") // TODO (#6): Example path - adjust to your actual parameters
+        // SelectSheetParameters (from saveConfigIDSettingsTab -> saveSettingsTab)
+        List.of("excelTableReaderParameters", "selectSheetParams", "sheetSelection"), //
+        List.of("excelTableReaderParameters", "selectSheetParams", "sheetName"), //
+        List.of("excelTableReaderParameters", "selectSheetParams", "sheetIndex"), //
+
+        // ReadAreaParameters (from saveConfigIDSettingsTab -> saveSettingsTab)
+        List.of("excelTableReaderParameters", "readAreaParams", "sheetArea"), //
+        List.of("excelTableReaderParameters", "readAreaParams", "readFromColumn"), //
+        List.of("excelTableReaderParameters", "readAreaParams", "readToColumn"), //
+        List.of("excelTableReaderParameters", "readAreaParams", "readFromRow"), //
+        List.of("excelTableReaderParameters", "readAreaParams", "readToRow"), //
+
+        // ColumnNameParameters (from saveConfigIDSettingsTab -> saveSettingsTab)
+        List.of("excelTableReaderParameters", "columnNameParams", "columnNameMode"), //
+        List.of("excelTableReaderParameters", "columnNameParams", "columnNamesRowNumber"), //
+        List.of("excelTableReaderParameters", "columnNameParams", "emptyColHeaderPrefix"), //
+
+        // RowIdParameters (from saveConfigIDSettingsTab -> saveSettingsTab)
+        List.of("excelTableReaderParameters", "rowIdParams", "rowIdMode"), //
+        List.of("excelTableReaderParameters", "rowIdParams", "rowIdColumn"), //
+
+        // SkipParameters (from saveConfigIDAdvancedSettingsTab - ONLY these 3, NOT skipEmptyRows)
+        List.of("excelTableReaderParameters", "skipParams", "skipEmptyColumns"), //
+        List.of("excelTableReaderParameters", "skipParams", "skipHiddenColumns"), //
+        List.of("excelTableReaderParameters", "skipParams", "skipHiddenRows"), //
+
+        // SchemaDetectionParameters (from saveConfigIDAdvancedSettingsTab - ONLY these 2, NOT failOnDifferingSpecs)
+        List.of("excelTableReaderParameters", "schemaDetectionParams", "limitDataRowsScanned"), //
+        List.of("excelTableReaderParameters", "schemaDetectionParams", "maxDataRowsScanned"), //
+
+        // ValuesParameters (from saveConfigIDAdvancedSettingsTab - ONLY these 4, NOT formulaErrorPattern)
+        List.of("excelTableReaderParameters", "valuesParams", "use15DigitsPrecision"), //
+        List.of("excelTableReaderParameters", "valuesParams", "replaceEmptyStringsWithMissingValues"), //
+        List.of("excelTableReaderParameters", "valuesParams", "reevaluateFormulas"), //
+        List.of("excelTableReaderParameters", "valuesParams", "formulaErrorHandling"), //
+
+        // EncryptionParameters (required for reading encrypted files - affects spec detection)
+        List.of("excelTableReaderParameters", "encryptionParams", "encryptionMode"), //
+        List.of("excelTableReaderParameters", "encryptionParams", "credentials") //
     );
 
     @Override
@@ -93,23 +151,32 @@ final class ExcelTableReaderTransformationParametersStateProvidersTest
     protected void setHowToCombineColumns(final ExcelTableReaderNodeParameters settings,
         final HowToCombineColumnsOption howToCombineColumns) {
         settings.m_excelTableReaderParameters.m_multiFileReaderParams.m_howToCombineColumns = howToCombineColumns;
-
     }
 
     @Override
-    protected TransformationParameters<ExcelCell.KNIMECellType> getTransformationSettings(final ExcelTableReaderNodeParameters params) {
+    protected TransformationParameters<ExcelCell.KNIMECellType>
+        getTransformationSettings(final ExcelTableReaderNodeParameters params) {
         return params.m_transformationParameters;
     }
 
     @Override
     protected void writeFileWithIntegerAndStringColumn(final String filePath) throws IOException {
-        /**
-         * TODO (#7): Implement file writing for your format.
-         *
-         * When this method was called, a future read of the file at the file path should result in a spec with an
-         * integer column "intCol" followed by a string column "stringCol".
-         */
-        throw new UnsupportedOperationException("Implement this method for your file format");
+        try (var workbook = new XSSFWorkbook()) {
+            var sheet = workbook.createSheet("Sheet1");
+            var headerRow = sheet.createRow(0);
+            headerRow.createCell(0).setCellValue("intCol");
+            headerRow.createCell(1).setCellValue("stringCol");
+            var row1 = sheet.createRow(1);
+            row1.createCell(0).setCellValue(1);
+            row1.createCell(1).setCellValue("value1");
+            var row2 = sheet.createRow(2);
+            row2.createCell(0).setCellValue(2);
+            row2.createCell(1).setCellValue("value2");
+
+            try (var outputStream = new java.io.FileOutputStream(filePath)) {
+                workbook.write(outputStream);
+            }
+        }
     }
 
     @Override
@@ -152,7 +219,7 @@ final class ExcelTableReaderTransformationParametersStateProvidersTest
 
     @Override
     protected String getFileName() {
-        return "test.TODO (#7)"; // TODO (#7): Set the file extension for your format
+        return "test.xlsx"; // TODO (#7): Set the file extension for your format
     }
 
     @Override
