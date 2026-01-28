@@ -59,7 +59,8 @@
         "columnNameParams" : {
           "columnNameMode" : "CUSTOM_ROW",
           "columnNamesRowNumber" : 1,
-          "emptyColHeaderPrefix" : "empty_"
+          "emptyColHeaderPrefix" : "empty_",
+          "emptyColHeaderSuffix" : "ENUMERATE_COLUMNS"
         },
         "rowIdParams" : {
           "rowIdMode" : "ENUMERATE",
@@ -210,15 +211,28 @@
                   },
                   "emptyColHeaderPrefix" : {
                     "type" : "string",
-                    "title" : "Prefix for empty column headers",
+                    "title" : "Prefix for empty headers",
                     "description" : "Prefix to use for empty column headers.",
                     "default" : "empty_"
+                  },
+                  "emptyColHeaderSuffix" : {
+                    "oneOf" : [ {
+                      "const" : "EXCEL_HEADERS",
+                      "title" : "A, B, ..."
+                    }, {
+                      "const" : "ENUMERATE_COLUMNS",
+                      "title" : "1, 2, ..."
+                    } ],
+                    "title" : "Suffix for empty headers",
+                    "description" : "Choose the suffix format for empty column headers.\n<ul>\n<li><b>A, B, ...</b>: Use Excel column headers (A, B, C, ...) as column name suffix for empty columns.</li>\n<li><b>1, 2, ...</b>: Use enumerated indices (1, 2, ...) as column name suffix for empty columns.</li>\n</ul>",
+                    "default" : "EXCEL_HEADERS"
                   }
                 },
                 "default" : {
                   "columnNameMode" : "CUSTOM_ROW",
                   "columnNamesRowNumber" : 1,
-                  "emptyColHeaderPrefix" : "empty_"
+                  "emptyColHeaderPrefix" : "empty_",
+                  "emptyColHeaderSuffix" : "EXCEL_HEADERS"
                 }
               },
               "encryptionParams" : {
@@ -884,7 +898,8 @@
               "columnNameParams" : {
                 "columnNameMode" : "CUSTOM_ROW",
                 "columnNamesRowNumber" : 1,
-                "emptyColHeaderPrefix" : "empty_"
+                "emptyColHeaderPrefix" : "empty_",
+                "emptyColHeaderSuffix" : "EXCEL_HEADERS"
               },
               "rowIdParams" : {
                 "rowIdMode" : "ENUMERATE",
@@ -1453,11 +1468,7 @@
           }
         }
       }, {
-        "type" : "Control",
-        "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/columnNameParams/properties/emptyColHeaderPrefix",
-        "options" : {
-          "isAdvanced" : true
-        },
+        "type" : "HorizontalLayout",
         "rule" : {
           "effect" : "SHOW",
           "condition" : {
@@ -1468,7 +1479,21 @@
               } ]
             }
           }
-        }
+        },
+        "elements" : [ {
+          "type" : "Control",
+          "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/columnNameParams/properties/emptyColHeaderPrefix",
+          "options" : {
+            "isAdvanced" : true
+          }
+        }, {
+          "type" : "Control",
+          "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/columnNameParams/properties/emptyColHeaderSuffix",
+          "options" : {
+            "isAdvanced" : true,
+            "format" : "valueSwitch"
+          }
+        } ]
       }, {
         "type" : "Control",
         "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/rowIdParams/properties/rowIdMode",
@@ -1935,7 +1960,8 @@
                 "properties" : {
                   "columnNameMode" : { },
                   "columnNamesRowNumber" : { },
-                  "emptyColHeaderPrefix" : { }
+                  "emptyColHeaderPrefix" : { },
+                  "emptyColHeaderSuffix" : { }
                 }
               },
               "rowIdParams" : {
@@ -2089,6 +2115,11 @@
   }, {
     "trigger" : {
       "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/columnNameParams/properties/emptyColHeaderPrefix"
+    },
+    "dependencies" : [ "#/properties/model/properties/excelTableReaderParameters", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/howToCombineColumns", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source", "#/properties/model/properties/transformationParameters/properties/columnTransformation", "#/properties/model/properties/transformationParameters/properties/specs" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/columnNameParams/properties/emptyColHeaderSuffix"
     },
     "dependencies" : [ "#/properties/model/properties/excelTableReaderParameters", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/howToCombineColumns", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source", "#/properties/model/properties/transformationParameters/properties/columnTransformation", "#/properties/model/properties/transformationParameters/properties/specs" ]
   }, {

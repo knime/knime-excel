@@ -49,6 +49,7 @@ package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 import java.util.function.Supplier;
 
 import org.knime.base.node.io.filehandling.webui.reader2.TransformationParametersStateProviders;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.ColumnNameParameters.EmptyColHeaderSuffixRef;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderNodeParameters.ExcelTableReaderParametersRef;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderSpecific.ConfigAndReader;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderSpecific.ProductionPathProviderAndTypeHierarchy;
@@ -115,6 +116,7 @@ final class ExcelTableReaderTransformationParametersStateProviders {
                 initializer.computeOnValueChange(ColumnNameParameters.ColumnNameModeRef.class);
                 initializer.computeOnValueChange(ColumnNameParameters.ColumnNamesRowNumberRef.class);
                 initializer.computeOnValueChange(ColumnNameParameters.EmptyColHeaderPrefixRef.class);
+                initializer.computeOnValueChange(EmptyColHeaderSuffixRef.class);
 
                 // RowID parameters affect table spec
                 initializer.computeOnValueChange(RowIdParameters.RowIdModeRef.class);

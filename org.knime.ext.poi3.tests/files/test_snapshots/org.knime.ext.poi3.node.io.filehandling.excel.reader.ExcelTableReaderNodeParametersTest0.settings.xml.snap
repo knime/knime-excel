@@ -54,6 +54,7 @@
             <entry key="columnNameMode" type="xstring" value="CUSTOM_ROW"/>
             <entry key="columnNamesRowNumber" type="xlong" value="1"/>
             <entry key="emptyColHeaderPrefix" type="xstring" value="empty_"/>
+            <entry key="emptyColHeaderSuffix" type="xstring" value="ENUMERATE_COLUMNS"/>
         </config>
         <config key="rowIdParams">
             <entry key="rowIdMode" type="xstring" value="ENUMERATE"/>
@@ -106,7 +107,7 @@
                 <entry key="read_from_row" type="xstring" value="1"/>
                 <entry key="read_to_row" type="xstring" value=""/>
                 <entry key="empty_col_header_prefix" type="xstring" value="empty_"/>
-                <entry key="column_name_mode" type="xstring" value="EXCEL_COL_NAME"/>
+                <entry key="column_name_mode" type="xstring" value="COL_INDEX"/>
             </config>
             <config key="advanced_settings">
                 <entry key="skip_hidden_columns" type="xboolean" value="true"/>

@@ -48,12 +48,13 @@ package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 
 import org.knime.base.node.io.filehandling.webui.reader2.ReaderLayout;
 import org.knime.core.node.InvalidSettingsException;
-import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.columnnames.ColumnNameMode;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderValidation.MaxNumberOfExcelRows;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.columnnames.ColumnNameMode;
 import org.knime.node.parameters.Advanced;
 import org.knime.node.parameters.NodeParameters;
 import org.knime.node.parameters.Widget;
 import org.knime.node.parameters.layout.After;
+import org.knime.node.parameters.layout.HorizontalLayout;
 import org.knime.node.parameters.layout.Inside;
 import org.knime.node.parameters.layout.Layout;
 import org.knime.node.parameters.updates.Effect;
@@ -64,6 +65,7 @@ import org.knime.node.parameters.updates.ParameterReference;
 import org.knime.node.parameters.updates.ValueReference;
 import org.knime.node.parameters.widget.choices.Label;
 import org.knime.node.parameters.widget.choices.RadioButtonsWidget;
+import org.knime.node.parameters.widget.choices.ValueSwitchWidget;
 import org.knime.node.parameters.widget.number.NumberInputWidget;
 import org.knime.node.parameters.widget.number.NumberInputWidgetValidation.MinValidation.IsPositiveIntegerValidation;
 import org.knime.node.parameters.widget.text.TextInputWidget;
@@ -80,6 +82,12 @@ class ColumnNameParameters implements NodeParameters {
     @Inside(ReaderLayout.DataArea.class)
     @After(ReadAreaParameters.ReadAreaLayout.class)
     interface ColumnNameLayout {
+
+        @Effect(predicate = IsCustomRowMode.class, type = EffectType.SHOW)
+        @HorizontalLayout
+        interface EmptyColumnFallback {
+        }
+
     }
 
     static final class ColumnNameModeRef implements ParameterReference<ColumnNameModeOption> {
@@ -89,6 +97,9 @@ class ColumnNameParameters implements NodeParameters {
     }
 
     static final class EmptyColHeaderPrefixRef implements ParameterReference<String> {
+    }
+
+    static final class EmptyColHeaderSuffixRef implements ParameterReference<EmptyColHeaderSuffixOption> {
     }
 
     private enum ColumnNameModeOption {
@@ -102,6 +113,41 @@ class ColumnNameParameters implements NodeParameters {
             @Label(value = "Enumerate columns (Col1, Col2...)",
                 description = "Use enumerated column names (Col1, Col2, ...) as column names.")
             ENUMERATE_COLUMNS,
+    }
+
+    enum EmptyColHeaderSuffixOption {
+            @Label(value = "A, B, ...",
+                description = "Use Excel column headers (A, B, C, ...) as column name suffix for empty columns.")
+            EXCEL_HEADERS,
+
+            @Label(value = "1, 2, ...",
+                description = "Use enumerated indices (1, 2, ...) as column name suffix for empty columns.")
+            ENUMERATE_COLUMNS;
+
+        /**
+         * Converts this suffix option to the corresponding legacy ColumnNameMode.
+         *
+         * @return the ColumnNameMode for fallback in case of empty column headers
+         */
+        private ColumnNameMode toColumnNameMode() {
+            return switch (this) {
+                case EXCEL_HEADERS -> ColumnNameMode.EXCEL_COL_NAME;
+                case ENUMERATE_COLUMNS -> ColumnNameMode.COL_INDEX;
+            };
+        }
+
+        /**
+         * Converts a legacy ColumnNameMode to the corresponding suffix option.
+         *
+         * @param mode the ColumnNameMode
+         * @return the corresponding EmptyColHeaderSuffixOption
+         */
+        private static EmptyColHeaderSuffixOption fromColumnNameMode(final ColumnNameMode mode) {
+            return switch (mode) {
+                case EXCEL_COL_NAME -> EXCEL_HEADERS;
+                case COL_INDEX -> ENUMERATE_COLUMNS;
+            };
+        }
     }
 
     private static final class IsCustomRowMode implements EffectPredicateProvider {
@@ -122,11 +168,18 @@ class ColumnNameParameters implements NodeParameters {
     @Effect(predicate = IsCustomRowMode.class, type = EffectType.SHOW)
     long m_columnNamesRowNumber = 1;
 
-    @Widget(title = "Prefix for empty column headers", description = "Prefix to use for empty column headers.")
+    @Widget(title = "Prefix for empty headers", description = "Prefix to use for empty column headers.")
     @TextInputWidget
     @ValueReference(EmptyColHeaderPrefixRef.class)
-    @Effect(predicate = IsCustomRowMode.class, type = EffectType.SHOW)
+    @Layout(ColumnNameLayout.EmptyColumnFallback.class)
     String m_emptyColHeaderPrefix = "empty_";
+
+    @Widget(title = "Suffix for empty headers",
+        description = "Choose the suffix format for empty column headers.")
+    @ValueSwitchWidget
+    @ValueReference(EmptyColHeaderSuffixRef.class)
+    @Layout(ColumnNameLayout.EmptyColumnFallback.class)
+    EmptyColHeaderSuffixOption m_emptyColHeaderSuffix = EmptyColHeaderSuffixOption.EXCEL_HEADERS;
 
     void saveToConfig(final ExcelMultiTableReadConfig config) {
         final var excelConfig = config.getReaderSpecificConfig();
@@ -142,7 +195,7 @@ class ColumnNameParameters implements NodeParameters {
                 tableReadConfig.setUseColumnHeaderIdx(false);
                 break;
             case CUSTOM_ROW:
-                excelConfig.setColumnNameMode(ColumnNameMode.EXCEL_COL_NAME); // does not matter
+                excelConfig.setColumnNameMode(m_emptyColHeaderSuffix.toColumnNameMode());
                 tableReadConfig.setUseColumnHeaderIdx(true);
                 tableReadConfig.setColumnHeaderIdx(m_columnNamesRowNumber - 1); // Convert to 0-based
                 excelConfig.setEmptyColHeaderPrefix(m_emptyColHeaderPrefix);
@@ -158,6 +211,7 @@ class ColumnNameParameters implements NodeParameters {
         m_emptyColHeaderPrefix = excelConfig.getEmptyColHeaderPrefix();
         if (tableReadConfig.useColumnHeaderIdx()) {
             m_columnNameMode = ColumnNameModeOption.CUSTOM_ROW;
+            m_emptyColHeaderSuffix = EmptyColHeaderSuffixOption.fromColumnNameMode(excelConfig.getColumnNameMode());
         } else {
             switch (excelConfig.getColumnNameMode()) {
                 case EXCEL_COL_NAME:
