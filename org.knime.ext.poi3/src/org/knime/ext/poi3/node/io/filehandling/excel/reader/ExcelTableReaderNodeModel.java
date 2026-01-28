@@ -49,6 +49,7 @@
 package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import org.knime.base.node.io.filehandling.webui.reader2.MultiFileSelectionPath;
 import org.knime.core.node.ExecutionContext;
@@ -76,14 +77,16 @@ import org.knime.filehandling.core.node.table.reader.paths.SourceSettings;
 final class ExcelTableReaderNodeModel extends
     BackwardsCompatibleCommonTableReaderNodeModel<FSPath, MultiFileSelectionPath, ExcelTableReaderConfig, KNIMECellType, ExcelMultiTableReadConfig> {
 
-    ExcelTableReaderNodeModel(final ExcelMultiTableReadConfig config, final MultiFileSelectionPath pathSettingsModel,
+    ExcelTableReaderNodeModel(final Supplier<ExcelMultiTableReadConfig> config,
+        final MultiFileSelectionPath pathSettingsModel,
         final MultiTableReader<FSPath, ExcelTableReaderConfig, KNIMECellType> tableReader,
         final CommonTableReaderNodeFactory.ConfigAndSourceSerializer<FSPath, MultiFileSelectionPath, ExcelTableReaderConfig, KNIMECellType, ExcelMultiTableReadConfig> serializer,
         final SourceSettings<FSPath> legacySourceSettings, final Predicate<NodeSettingsRO> isLegacySettingsPredicate) {
         super(config, pathSettingsModel, tableReader, serializer, legacySourceSettings, isLegacySettingsPredicate);
     }
 
-    ExcelTableReaderNodeModel(final ExcelMultiTableReadConfig config, final MultiFileSelectionPath pathSettingsModel,
+    ExcelTableReaderNodeModel(final Supplier<ExcelMultiTableReadConfig> config,
+        final MultiFileSelectionPath pathSettingsModel,
         final MultiTableReader<FSPath, ExcelTableReaderConfig, KNIMECellType> tableReader,
         final CommonTableReaderNodeFactory.ConfigAndSourceSerializer<FSPath, MultiFileSelectionPath, ExcelTableReaderConfig, KNIMECellType, ExcelMultiTableReadConfig> serializer,
         final PortsConfiguration portsConfig, final SourceSettings<FSPath> legacySourceSettings,

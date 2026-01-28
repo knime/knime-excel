@@ -51,6 +51,7 @@ import static org.knime.node.impl.description.PortDescription.fixedPort;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import org.knime.base.node.io.filehandling.webui.reader2.BackwardsCompatibleWebUITableReaderNodeFactory;
 import org.knime.base.node.io.filehandling.webui.reader2.MultiFileSelectionPath;
@@ -115,16 +116,16 @@ public class ExcelTableReaderNodeFactory
     public
         CommonTableReaderNodeModel<FSPath, MultiFileSelectionPath, ExcelTableReaderConfig, KNIMECellType, ExcelMultiTableReadConfig>
         createNodeModel(final NodeCreationConfiguration creationConfig) {
-        final var config = createConfig(creationConfig);
+        final Supplier<ExcelMultiTableReadConfig> configCreator = () -> createConfig(creationConfig);
         final var pathSettings = createPathSettings(creationConfig);
         final var reader = createMultiTableReader();
         final var serializer = createSerializer();
         final var portConfig = creationConfig.getPortConfig();
         final var legacySourceSettings = createLegacySourceSettings(creationConfig);
         return portConfig.isPresent()
-            ? new ExcelTableReaderNodeModel(config, pathSettings, reader, serializer, portConfig.get(),
+            ? new ExcelTableReaderNodeModel(configCreator, pathSettings, reader, serializer, portConfig.get(),
                 legacySourceSettings, this::isLegacyConfiguration)
-            : new ExcelTableReaderNodeModel(config, pathSettings, reader, serializer, legacySourceSettings,
+            : new ExcelTableReaderNodeModel(configCreator, pathSettings, reader, serializer, legacySourceSettings,
                 this::isLegacyConfiguration);
     }
 
