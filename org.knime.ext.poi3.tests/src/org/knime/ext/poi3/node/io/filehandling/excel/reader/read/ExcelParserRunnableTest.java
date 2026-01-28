@@ -59,6 +59,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.OptionalLong;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -164,7 +165,9 @@ class ExcelParserRunnableTest {
         static final RandomAccessible<ExcelCell> START =
             RandomAccessibleUtils.createFromArray(new ExcelCell(KNIMECellType.STRING, "START"));
 
-        /** Latch used in test to coordinate when the parser should throw the exception. */
+        /**
+         * Latch used in test to coordinate when the parser should throw the exception.
+         */
         private final CountDownLatch m_throwNow = new CountDownLatch(1);
 
         protected TestRead(final Path path, final TableReadConfig<ExcelTableReaderConfig> config,
@@ -199,6 +202,9 @@ class ExcelParserRunnableTest {
                 @Override
                 protected void parse() throws Throwable {
                     TestRead.this.addToQueue(START);
+                    // Wait for latch to be initialized - handles race condition where parser thread
+                    // starts before the outer anonymous TestRead instance is fully constructed
+                    waitForCondition(() -> m_throwNow != null);
                     // fake blocking on I/O and throwing an exception (but wait not too long such that test stalls)
                     m_throwNow.await(30, TimeUnit.SECONDS);
                     throwException();
@@ -217,4 +223,21 @@ class ExcelParserRunnableTest {
     @SuppressWarnings("serial")
     static final class UnhandledException extends RuntimeException {
     }
+
+    /**
+     * Waits for a condition to become true, checking periodically with a 10-second timeout.
+     *
+     * @param condition the condition to wait for
+     */
+    private static void waitForCondition(final Callable<Boolean> condition) throws Exception {
+        final long startTime = System.currentTimeMillis();
+        final long timeoutMillis = 10_000;
+        while (!condition.call()) {
+            if (System.currentTimeMillis() - startTime > timeoutMillis) {
+                throw new IllegalStateException("Timeout after 10 seconds waiting for condition");
+            }
+            Thread.sleep(10); // NOSONAR
+        }
+    }
+
 }
