@@ -51,9 +51,12 @@ package org.knime.ext.poi3.node.io.filehandling.excel.reader.read;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.knime.core.data.DataType;
 import org.knime.core.data.convert.map.BooleanCellValueProducer;
@@ -76,15 +79,20 @@ import org.knime.core.data.time.localdatetime.LocalDateTimeCellFactory;
 import org.knime.core.data.time.localtime.LocalTimeCellFactory;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderConfig;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
+import org.knime.filehandling.core.node.table.reader.HierarchyAwareProductionPathProvider;
 import org.knime.filehandling.core.node.table.reader.ReadAdapter;
 import org.knime.filehandling.core.node.table.reader.ReadAdapter.ReadAdapterParams;
 import org.knime.filehandling.core.node.table.reader.ReadAdapterFactory;
+import org.knime.filehandling.core.node.table.reader.type.hierarchy.TreeTypeHierarchy;
+import org.knime.filehandling.core.node.table.reader.type.hierarchy.TypeTester;
+import org.knime.filehandling.core.node.table.reader.util.MultiTableUtils;
 
 /**
  * Factory for {@link ExcelReadAdapter} objects.
  *
  * @author Simon Schmid, KNIME GmbH, Konstanz, Germany
  * @author Adrian Nembach, KNIME GmbH, Konstanz, Germany
+ * @author Thomas Reifenberger, TNG Technology Consulting GmbH, Germany
  */
 @SuppressWarnings("javadoc")
 public enum ExcelReadAdapterFactory implements ReadAdapterFactory<KNIMECellType, ExcelCell> {
@@ -199,7 +207,6 @@ public enum ExcelReadAdapterFactory implements ReadAdapterFactory<KNIMECellType,
             final ReadAdapterParams<ExcelReadAdapter, ExcelTableReaderConfig> params) throws MappingException {
             return source.get(params).getLongValue();
         }
-
     }
 
     private static class StringToBooleanCellValueProducer
@@ -222,6 +229,36 @@ public enum ExcelReadAdapterFactory implements ReadAdapterFactory<KNIMECellType,
     @Override
     public ProducerRegistry<KNIMECellType, ExcelReadAdapter> getProducerRegistry() {
         return PRODUCER_REGISTRY;
+    }
+
+    public HierarchyAwareProductionPathProvider<KNIMECellType> createProductionPathProvider() {
+        final Set<DataType> reachableDataTypes = new HashSet<>(MultiTableUtils.extractReachableKnimeTypes(PRODUCER_REGISTRY));
+        return new HierarchyAwareProductionPathProvider<>(getProducerRegistry(), TYPE_HIERARCHY, this::getDefaultType,
+                (t, p) -> true, reachableDataTypes);
+    }
+
+    public static final TreeTypeHierarchy<KNIMECellType, ExcelCell> TYPE_HIERARCHY = createHierarchy();
+
+    public static final TreeTypeHierarchy<KNIMECellType, ExcelCell> STRING_ONLY_HIERARCHY =
+            TreeTypeHierarchy.builder(createTypeTester(KNIMECellType.STRING, KNIMECellType.values())).build();
+
+
+    private static TreeTypeHierarchy<KNIMECellType, ExcelCell> createHierarchy() {
+        return TreeTypeHierarchy.builder(createTypeTester(KNIMECellType.STRING, KNIMECellType.values()))
+                .addType(KNIMECellType.STRING,
+                        createTypeTester(KNIMECellType.DOUBLE, KNIMECellType.LONG, KNIMECellType.INT))
+                .addType(KNIMECellType.DOUBLE, createTypeTester(KNIMECellType.LONG, KNIMECellType.INT))
+                .addType(KNIMECellType.LONG, createTypeTester(KNIMECellType.INT))
+                .addType(KNIMECellType.STRING, createTypeTester(KNIMECellType.BOOLEAN))
+                .addType(KNIMECellType.STRING, createTypeTester(KNIMECellType.LOCAL_DATE_TIME, KNIMECellType.LOCAL_DATE))
+                .addType(KNIMECellType.LOCAL_DATE_TIME, createTypeTester(KNIMECellType.LOCAL_DATE))
+                .addType(KNIMECellType.STRING, createTypeTester(KNIMECellType.LOCAL_TIME)).build();
+    }
+
+    private static TypeTester<KNIMECellType, ExcelCell> createTypeTester(final KNIMECellType type,
+                                                                         final KNIMECellType... compatibleTypes) {
+        return TypeTester.createTypeTester(type,
+                e -> type == e.getType() || Arrays.binarySearch(compatibleTypes, e.getType()) >= 0);
     }
 
     @Override
