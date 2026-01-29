@@ -102,6 +102,7 @@ public class ExcelTableReaderParameters implements NodeParameters {
     ConfigID saveToConfig(final ExcelMultiTableReadConfig config) {
         final var tableReadConfig = config.getTableReadConfig();
         tableReadConfig.setDecorateRead(false);
+        tableReadConfig.setAllowShortRows(true);
 
         m_ifSchemaChangesParams.saveToConfig(config);
         m_multiFileReaderParams.saveToConfig(config);
