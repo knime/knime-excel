@@ -77,7 +77,7 @@ class ExcelTableReaderMigration implements NodeParametersMigration<ExcelTableRea
 
         newSettings.m_excelTableReaderParameters.m_multiFileSelectionParams.loadFromLegacySettings(settings);
         newSettings.m_excelTableReaderParameters.m_ifSchemaChangesParams.loadFromConfig(config);
-        newSettings.m_excelTableReaderParameters.m_multiFileReaderParams.loadFromConfig(config);
+        newSettings.m_excelTableReaderParameters.m_multiFileReaderParams.loadFromConfigAfter4_4(config);
         newSettings.m_excelTableReaderParameters.m_selectSheetParams.loadFromConfig(config);
         newSettings.m_excelTableReaderParameters.m_readAreaParams.loadFromConfig(config);
         newSettings.m_excelTableReaderParameters.m_columnNameParams.loadFromConfig(config);

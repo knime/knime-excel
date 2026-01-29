@@ -36,7 +36,7 @@
         <config key="multiFileReaderParams">
             <entry key="appendPathColumn" type="xstring" isnull="true" value=""/>
             <entry key="appendPathColumn_is_present" type="xboolean" value="false"/>
-            <entry key="howToCombineColumns" type="xstring" value="UNION"/>
+            <entry key="howToCombineColumns" type="xstring" value="FAIL"/>
         </config>
         <config key="selectSheetParams">
             <entry key="sheetSelection" type="xstring" value="NAME"/>
