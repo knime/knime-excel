@@ -179,7 +179,12 @@ public abstract class AbstractStreamedParserRunnable extends ExcelParserRunnable
                 m_lastNonEmptyRowIdx = m_currentRowIdx;
                 m_hiddenColumns = getHiddenCols();
 
-                // Note: underful rows must be filled at the output, where we know the spec
+                // Fill row up to m_lastCol if a read area is specified
+                // This ensures consistent behavior with XLS format and ensures trailing empty columns
+                // within the read area are included in the output table spec
+                if (m_lastCol >= 0 && m_lastNonEmptyCol < m_lastCol) {
+                    appendMissingCells(m_lastNonEmptyCol + 1, m_lastCol - m_lastNonEmptyCol);
+                }
 
                 // insert the row id at the beginning
                 insertRowIDAtBeginning(m_row, m_rowId);
