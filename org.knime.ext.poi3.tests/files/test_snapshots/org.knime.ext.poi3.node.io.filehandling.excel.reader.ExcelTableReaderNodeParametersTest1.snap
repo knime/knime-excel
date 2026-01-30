@@ -809,7 +809,7 @@
                   "formulaErrorPattern" : {
                     "type" : "string",
                     "title" : "String",
-                    "description" : "The string value to insert when a formula evaluation error occurs.",
+                    "description" : "The string value to insert into a cell with a formula evaluation error.",
                     "default" : "#XL_EVAL_ERROR#"
                   },
                   "reevaluateFormulas" : {
@@ -1587,15 +1587,6 @@
         "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/valuesParams/properties/formulaErrorHandling",
         "options" : {
           "format" : "valueSwitch"
-        },
-        "rule" : {
-          "effect" : "SHOW",
-          "condition" : {
-            "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/valuesParams/properties/reevaluateFormulas",
-            "schema" : {
-              "const" : true
-            }
-          }
         }
       }, {
         "type" : "Control",
@@ -1603,20 +1594,12 @@
         "rule" : {
           "effect" : "SHOW",
           "condition" : {
-            "type" : "AND",
-            "conditions" : [ {
-              "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/valuesParams/properties/reevaluateFormulas",
-              "schema" : {
-                "const" : true
-              }
-            }, {
-              "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/valuesParams/properties/formulaErrorHandling",
-              "schema" : {
-                "oneOf" : [ {
-                  "const" : "PATTERN"
-                } ]
-              }
-            } ]
+            "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/valuesParams/properties/formulaErrorHandling",
+            "schema" : {
+              "oneOf" : [ {
+                "const" : "PATTERN"
+              } ]
+            }
           }
         }
       } ]

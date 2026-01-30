@@ -100,18 +100,10 @@ class ValuesParameters implements NodeParameters {
             MISSING
     }
 
-    private static final class IsReevaluateFormulasEnabled implements EffectPredicateProvider {
-        @Override
-        public EffectPredicate init(final PredicateInitializer i) {
-            return i.getBoolean(ReevaluateFormulasRef.class).isTrue();
-        }
-    }
-
     private static final class IsFormulaErrorPatternEnabled implements EffectPredicateProvider {
         @Override
         public EffectPredicate init(final PredicateInitializer i) {
-            return i.getBoolean(ReevaluateFormulasRef.class).isTrue()
-                .and(i.getEnum(FormulaErrorHandlingRef.class).isOneOf(FormulaErrorHandlingOption.PATTERN));
+            return i.getEnum(FormulaErrorHandlingRef.class).isOneOf(FormulaErrorHandlingOption.PATTERN);
         }
     }
 
@@ -140,10 +132,9 @@ class ValuesParameters implements NodeParameters {
     @Widget(title = "On error insert", description = "Choose how to handle formula evaluation errors.")
     @ValueSwitchWidget
     @ValueReference(FormulaErrorHandlingRef.class)
-    @Effect(predicate = IsReevaluateFormulasEnabled.class, type = EffectType.SHOW)
     FormulaErrorHandlingOption m_formulaErrorHandling = FormulaErrorHandlingOption.PATTERN;
 
-    @Widget(title = "String", description = "The string value to insert when a formula evaluation error occurs.")
+    @Widget(title = "String", description = "The string value to insert into a cell with a formula evaluation error.")
     @TextInputWidget
     @ValueReference(FormulaErrorPatternRef.class)
     @Effect(predicate = IsFormulaErrorPatternEnabled.class, type = EffectType.SHOW)
