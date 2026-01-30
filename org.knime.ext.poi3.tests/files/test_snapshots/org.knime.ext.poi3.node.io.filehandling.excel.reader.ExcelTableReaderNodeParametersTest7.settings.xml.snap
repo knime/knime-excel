@@ -130,11 +130,10 @@
         <config key="columnTransformation">
             <config key="0">
                 <entry key="columnName" type="xstring" isnull="true" value=""/>
-                <entry key="originalType" type="xstring" value="&lt;default-columntype&gt;"/>
                 <entry key="originalTypeLabel" type="xstring" value="Default columntype"/>
                 <entry key="includeInOutput" type="xboolean" value="true"/>
                 <entry key="columnRename" type="xstring" isnull="true" value=""/>
-                <entry key="type" type="xstring" value="&lt;default-columntype&gt;"/>
+                <entry key="unknownsColumnDataType" type="xstring" value="&lt;default-columntype&gt;"/>
             </config>
         </config>
     </config>

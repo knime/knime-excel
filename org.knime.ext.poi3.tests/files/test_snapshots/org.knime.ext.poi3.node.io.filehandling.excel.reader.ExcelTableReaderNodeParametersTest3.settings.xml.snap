@@ -158,43 +158,66 @@
         <config key="columnTransformation">
             <config key="0">
                 <entry key="columnName" type="xstring" value="value"/>
-                <entry key="originalType" type="xstring" value="org.knime.core.data.def.StringCell$StringCellFactory.createCell(class java.lang.String)"/>
+                <config key="originalProductionPath">
+                    <entry key="_converter" type="xstring" value="org.knime.core.data.def.StringCell$StringCellFactory.createCell(class java.lang.String)"/>
+                    <entry key="_producer" type="xstring" value="STRING-&gt;java.lang.String"/>
+                </config>
                 <entry key="originalTypeLabel" type="xstring" value="String"/>
                 <entry key="includeInOutput" type="xboolean" value="true"/>
                 <entry key="columnRename" type="xstring" value="renamed"/>
-                <entry key="type" type="xstring" value="org.knime.core.data.def.StringCell$StringCellFactory.createCell(class java.lang.String)"/>
+                <config key="productionPath">
+                    <entry key="_converter" type="xstring" value="org.knime.core.data.def.StringCell$StringCellFactory.createCell(class java.lang.String)"/>
+                    <entry key="_producer" type="xstring" value="STRING-&gt;java.lang.String"/>
+                </config>
             </config>
             <config key="1">
                 <entry key="columnName" type="xstring" value="empty_1"/>
-                <entry key="originalType" type="xstring" value="org.knime.core.data.def.StringCell$StringCellFactory.createCell(class java.lang.String)"/>
+                <config key="originalProductionPath">
+                    <entry key="_converter" type="xstring" value="org.knime.core.data.def.StringCell$StringCellFactory.createCell(class java.lang.String)"/>
+                    <entry key="_producer" type="xstring" value="STRING-&gt;java.lang.String"/>
+                </config>
                 <entry key="originalTypeLabel" type="xstring" value="String"/>
                 <entry key="includeInOutput" type="xboolean" value="true"/>
                 <entry key="columnRename" type="xstring" value="empty_1"/>
-                <entry key="type" type="xstring" value="org.knime.core.data.def.StringCell$StringCellFactory.createCell(class java.lang.String)"/>
+                <config key="productionPath">
+                    <entry key="_converter" type="xstring" value="org.knime.core.data.def.StringCell$StringCellFactory.createCell(class java.lang.String)"/>
+                    <entry key="_producer" type="xstring" value="STRING-&gt;java.lang.String"/>
+                </config>
             </config>
             <config key="2">
                 <entry key="columnName" type="xstring" value="another value"/>
-                <entry key="originalType" type="xstring" value="org.knime.core.data.def.IntCell$IntCellFactory.create(class java.lang.Integer)"/>
+                <config key="originalProductionPath">
+                    <entry key="_converter" type="xstring" value="org.knime.core.data.def.IntCell$IntCellFactory.create(class java.lang.Integer)"/>
+                    <entry key="_producer" type="xstring" value="INT-&gt;java.lang.Integer"/>
+                </config>
                 <entry key="originalTypeLabel" type="xstring" value="Number (Integer)"/>
                 <entry key="includeInOutput" type="xboolean" value="true"/>
                 <entry key="columnRename" type="xstring" value="another value"/>
-                <entry key="type" type="xstring" value="org.knime.core.data.def.LongCell$LongCellFactory.create(class java.lang.Integer)"/>
+                <config key="productionPath">
+                    <entry key="_converter" type="xstring" value="org.knime.core.data.def.LongCell$LongCellFactory.create(class java.lang.Integer)"/>
+                    <entry key="_producer" type="xstring" value="INT-&gt;java.lang.Integer"/>
+                </config>
             </config>
             <config key="3">
                 <entry key="columnName" type="xstring" value="hidden col"/>
-                <entry key="originalType" type="xstring" value="org.knime.core.data.def.StringCell$StringCellFactory.createCell(class java.lang.String)"/>
+                <config key="originalProductionPath">
+                    <entry key="_converter" type="xstring" value="org.knime.core.data.def.StringCell$StringCellFactory.createCell(class java.lang.String)"/>
+                    <entry key="_producer" type="xstring" value="STRING-&gt;java.lang.String"/>
+                </config>
                 <entry key="originalTypeLabel" type="xstring" value="String"/>
                 <entry key="includeInOutput" type="xboolean" value="true"/>
                 <entry key="columnRename" type="xstring" value="hidden col"/>
-                <entry key="type" type="xstring" value="org.knime.core.data.def.StringCell$StringCellFactory.createCell(class java.lang.String)"/>
+                <config key="productionPath">
+                    <entry key="_converter" type="xstring" value="org.knime.core.data.def.StringCell$StringCellFactory.createCell(class java.lang.String)"/>
+                    <entry key="_producer" type="xstring" value="STRING-&gt;java.lang.String"/>
+                </config>
             </config>
             <config key="4">
                 <entry key="columnName" type="xstring" isnull="true" value=""/>
-                <entry key="originalType" type="xstring" value="&lt;default-columntype&gt;"/>
                 <entry key="originalTypeLabel" type="xstring" value="Default columntype"/>
                 <entry key="includeInOutput" type="xboolean" value="true"/>
                 <entry key="columnRename" type="xstring" isnull="true" value=""/>
-                <entry key="type" type="xstring" value="&lt;default-columntype&gt;"/>
+                <entry key="unknownsColumnDataType" type="xstring" value="&lt;default-columntype&gt;"/>
             </config>
         </config>
     </config>
