@@ -47,6 +47,7 @@
 package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 
 import org.knime.base.node.io.filehandling.webui.reader2.ReaderSpecific;
+import org.knime.core.data.convert.map.ProducerRegistry;
 import org.knime.core.webui.node.dialog.defaultdialog.NodeParametersInputImpl;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelReadAdapterFactory;
@@ -70,6 +71,11 @@ final class ExcelTableReaderSpecific {
         }
 
         @Override
+        default ProducerRegistry<KNIMECellType, ?> getProducerRegistry() {
+            return ExcelReadAdapterFactory.INSTANCE.getProducerRegistry();
+        }
+
+        @Override
         default TypeHierarchy<KNIMECellType, KNIMECellType> getTypeHierarchy() {
             return ExcelReadAdapterFactory.TYPE_HIERARCHY.createTypeFocusedHierarchy();
         }
@@ -79,7 +85,7 @@ final class ExcelTableReaderSpecific {
         extends ReaderSpecific.ConfigAndReader<ExcelTableReaderConfig, KNIMECellType, ExcelMultiTableReadConfig> {
 
         @Override
-        default ExcelMultiTableReadConfig createMultiTableReadConfig(NodeParametersInput input) {
+        default ExcelMultiTableReadConfig createMultiTableReadConfig(final NodeParametersInput input) {
             ExcelMultiTableReadConfig excelMultiTableReadConfig = new ExcelMultiTableReadConfig();
             var credentialsProvider = ((NodeParametersInputImpl)input).getCredentialsProvider().orElse(null);
             excelMultiTableReadConfig.getReaderSpecificConfig().setCredentialsProvider(credentialsProvider);
