@@ -89,7 +89,7 @@ public class ExcelTableReaderParameters implements NodeParameters {
     }
 
     ExcelTableReaderParameters(final URL url) {
-        // Initialize URL-dependent defaults here if needed
+        m_multiFileSelectionParams = new MultiFileSelectionParameters(url);
     }
 
     ExcelTableReaderParameters() {
