@@ -123,6 +123,7 @@ class ExcelTableReaderNodeParameters implements NodeParameters {
             config, m_excelTableReaderParameters.getSourcePath(), //
             existingConfigId, //
             m_excelTableReaderParameters.getMultiFileParameters(), //
+            m_excelTableReaderParameters.getIfSchemaChangesParameters(), //
             config.skipEmptyColumns() //
         );
     }
