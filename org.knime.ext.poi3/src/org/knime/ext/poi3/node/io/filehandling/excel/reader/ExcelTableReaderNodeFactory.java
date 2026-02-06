@@ -167,10 +167,11 @@ public class ExcelTableReaderNodeFactory
         }
 
         @Override
-        protected void saveToSourceAndConfig(final ExcelTableReaderNodeParameters params, final ConfigID configId,
-            final MultiFileSelectionPath sourceSettings, final ExcelMultiTableReadConfig config) {
+        protected void saveToSourceAndConfig(final ExcelTableReaderNodeParameters params, final String existingSourceId,
+            final ConfigID configId, final MultiFileSelectionPath sourceSettings,
+            final ExcelMultiTableReadConfig config) {
             params.saveToSource(sourceSettings);
-            params.saveToConfig(config, configId);
+            params.saveToConfig(config, existingSourceId, configId);
         }
 
         @Override

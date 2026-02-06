@@ -122,6 +122,7 @@
             </config>
         </config>
     </config>
+    <entry key="sourceId_Internals" type="xstring" value="/tmp/excel_reader_encrypted.xlsx"/>
     <config key="transformationParameters">
         <config key="specs">
             <entry key="is_null" type="xboolean" value="true"/>

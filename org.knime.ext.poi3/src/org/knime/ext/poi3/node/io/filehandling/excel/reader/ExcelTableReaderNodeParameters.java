@@ -98,6 +98,11 @@ class ExcelTableReaderNodeParameters implements NodeParameters {
         protected ConfigID createConfigID(final ExcelTableReaderParameters param) {
             return param.saveToConfig(new ExcelMultiTableReadConfig());
         }
+
+        @Override
+        protected String getSourceID(final ExcelTableReaderParameters param) {
+            return param.getSourcePath();
+        }
     }
 
     ExcelTableReaderTransformationParameters m_transformationParameters =
@@ -107,20 +112,23 @@ class ExcelTableReaderNodeParameters implements NodeParameters {
         m_excelTableReaderParameters.saveToSource(sourceSettings);
     }
 
-    void saveToConfig(final ExcelMultiTableReadConfig config, final ConfigID existingConfigId) {
+    void saveToConfig(final ExcelMultiTableReadConfig config, final String existingSourceId,
+        final ConfigID existingConfigId) {
         m_excelTableReaderParameters.saveToConfig(config);
-        saveTransformationParametersToConfig(config, existingConfigId);
+        saveTransformationParametersToConfig(config, existingSourceId, existingConfigId);
     }
 
     void saveToConfig(final ExcelMultiTableReadConfig config) {
         final var configId = m_excelTableReaderParameters.saveToConfig(config);
-        saveTransformationParametersToConfig(config, configId);
+        final var sourceId = m_excelTableReaderParameters.getSourcePath();
+        saveTransformationParametersToConfig(config, sourceId, configId);
     }
 
     private void saveTransformationParametersToConfig(final ExcelMultiTableReadConfig config,
-        final ConfigID existingConfigId) {
+        final String existingSourceId, final ConfigID existingConfigId) {
         m_transformationParameters.saveToConfig(//
-            config, m_excelTableReaderParameters.getSourcePath(), //
+            config, //
+            existingSourceId, //
             existingConfigId, //
             m_excelTableReaderParameters.getMultiFileParameters(), //
             m_excelTableReaderParameters.getIfSchemaChangesParameters(), //
