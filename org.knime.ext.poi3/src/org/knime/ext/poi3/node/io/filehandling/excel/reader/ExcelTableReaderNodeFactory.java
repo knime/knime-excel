@@ -59,7 +59,6 @@ import org.knime.base.node.io.filehandling.webui.reader2.NodeParametersConfigAnd
 import org.knime.core.node.NodeDescription;
 import org.knime.core.node.context.NodeCreationConfiguration;
 import org.knime.core.node.context.url.URLConfiguration;
-import org.knime.core.util.Version;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelReadAdapterFactory;
@@ -109,7 +108,7 @@ public class ExcelTableReaderNodeFactory
             null, //
             NodeType.Source, //
             List.of("Input", "Read", "Excel", "XLSX", "XLS", "XLSM", "XLSB", "Spreadsheet"), //
-            new Version(5, 9, 0));
+            null);
     }
 
     @Override
