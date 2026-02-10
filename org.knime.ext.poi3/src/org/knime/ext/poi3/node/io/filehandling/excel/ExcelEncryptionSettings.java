@@ -54,6 +54,7 @@ import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
 import org.knime.core.node.defaultnodesettings.SettingsModelAuthentication;
+import org.knime.core.node.workflow.CredentialsProvider;
 import org.knime.core.node.workflow.FlowVariable;
 import org.knime.core.node.workflow.VariableType;
 import org.knime.core.webui.node.dialog.defaultdialog.NodeParametersInputImpl;
@@ -170,10 +171,19 @@ public class ExcelEncryptionSettings implements NodeParameters {
     @PasswordWidget
     Credentials m_password = new Credentials();
 
+    @SuppressWarnings("restriction")
     private static final class CredentialFlowVariablesProvider implements FlowVariableChoicesProvider {
 
         @Override
         public List<FlowVariable> flowVariableChoices(final NodeParametersInput context) {
+            // can't just use 'context.getAvailableInputFlowVariables(VariableType.CredentialsType.INSTANCE)'
+            // as this will not provide workflow variables (deprecated concept but still supported in migrations)
+            if (context instanceof NodeParametersInputImpl impl) {
+                return impl.getCredentialsProvider() //
+                    .map(CredentialsProvider::listVariables) //
+                    .map(List::copyOf) //
+                    .orElse(List.of());
+            }
             return context.getAvailableInputFlowVariables(VariableType.CredentialsType.INSTANCE).values().stream()
                 .toList();
         }
