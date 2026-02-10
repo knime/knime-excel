@@ -86,7 +86,7 @@ class ExcelTableReaderMigration implements NodeParametersMigration<ExcelTableRea
         newSettings.m_excelTableReaderParameters.m_schemaDetectionParams.loadFromConfig(config);
         newSettings.m_excelTableReaderParameters.m_valuesParams.loadFromConfig(config);
         newSettings.m_excelTableReaderParameters.m_encryptionParams.loadFromConfig(config);
-        newSettings.m_transformationParameters.loadFromLegacySettings(settings);
+        newSettings.m_transformationParameters.loadFromTableSpecConfig(config.getTableSpecConfig());
 
         return newSettings;
     }
