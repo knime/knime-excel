@@ -50,10 +50,6 @@ import org.knime.base.node.io.filehandling.webui.reader2.TransformationParameter
 import org.knime.core.webui.node.dialog.defaultdialog.widget.Modification;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.ExcelTableReaderSpecific.ProductionPathProviderAndTypeHierarchy;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
-import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelReadAdapterFactory;
-import org.knime.filehandling.core.node.table.reader.config.tablespec.ConfigIDLoader;
-import org.knime.filehandling.core.node.table.reader.config.tablespec.DefaultProductionPathSerializer;
-import org.knime.filehandling.core.node.table.reader.config.tablespec.TableSpecConfigSerializer;
 
 /**
  * @author Thomas Reifenberger, TNG Technology Consulting GmbH, Germany
@@ -62,13 +58,6 @@ import org.knime.filehandling.core.node.table.reader.config.tablespec.TableSpecC
 @Modification(ExcelTableReaderTransformationParametersStateProviders.TransformationSettingsWidgetModification.class)
 final class ExcelTableReaderTransformationParameters extends TransformationParameters<KNIMECellType>
     implements ProductionPathProviderAndTypeHierarchy, KNIMECellTypeSerializer {
-
-    @Override
-    protected TableSpecConfigSerializer<KNIMECellType> createTableSpecConfigSerializer(ConfigIDLoader configIdLoader) {
-        return TableSpecConfigSerializer.createStartingV43(
-            new DefaultProductionPathSerializer(ExcelReadAdapterFactory.INSTANCE.getProducerRegistry()), configIdLoader,
-            ExcelMultiTableReadConfigSerializer.ExcelTypeSerializer.SERIALIZER);
-    }
 
     @Override
     protected String getConfigIdSettingsKey() {
