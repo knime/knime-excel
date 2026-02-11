@@ -47,11 +47,12 @@
 package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 
 import org.knime.base.node.io.filehandling.webui.reader2.ReaderSpecific;
-import org.knime.core.data.convert.map.ProducerRegistry;
 import org.knime.core.webui.node.dialog.defaultdialog.NodeParametersInputImpl;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIMECellType;
 import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelReadAdapterFactory;
 import org.knime.filehandling.core.node.table.reader.ProductionPathProvider;
+import org.knime.filehandling.core.node.table.reader.config.tablespec.DefaultProductionPathSerializer;
+import org.knime.filehandling.core.node.table.reader.config.tablespec.ProductionPathSerializer;
 import org.knime.filehandling.core.node.table.reader.type.hierarchy.TypeHierarchy;
 import org.knime.node.parameters.NodeParametersInput;
 
@@ -71,8 +72,8 @@ final class ExcelTableReaderSpecific {
         }
 
         @Override
-        default ProducerRegistry<KNIMECellType, ?> getProducerRegistry() {
-            return ExcelReadAdapterFactory.INSTANCE.getProducerRegistry();
+        default ProductionPathSerializer getProductionPathSerializer() {
+            return new DefaultProductionPathSerializer(ExcelReadAdapterFactory.INSTANCE.getProducerRegistry());
         }
 
         @Override

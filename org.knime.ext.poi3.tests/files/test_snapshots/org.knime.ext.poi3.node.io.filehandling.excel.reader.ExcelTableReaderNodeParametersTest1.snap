@@ -107,10 +107,6 @@
           },
           "sourceIdentifier" : "/tmp/test.xlsx",
           "spec" : [ {
-            "name" : "Universe_0_0",
-            "type" : "DOUBLE",
-            "hasType" : true
-          }, {
             "name" : "Universe_0_1",
             "type" : "DOUBLE",
             "hasType" : true
@@ -126,44 +122,48 @@
             "name" : "Cluster Membership",
             "type" : "STRING",
             "hasType" : true
+          }, {
+            "name" : "empty_4",
+            "type" : "STRING",
+            "hasType" : false
           } ]
         } ],
         "enforceTypes" : true,
         "columnTransformation" : [ {
-          "columnName" : "Universe_0_0",
-          "originalProductionPath" : "DOUBLE->java.lang.Double\u0000org.knime.core.data.def.DoubleCell$DoubleCellFactory.create(class java.lang.Double)",
-          "originalTypeLabel" : "Number (Float)",
-          "includeInOutput" : true,
-          "columnRename" : "Universe_0_0 renamed",
-          "productionPath" : "STRING->java.lang.String\u0000org.knime.core.data.def.StringCell$StringCellFactory.createCell(class java.lang.String)"
-        }, {
           "columnName" : "Universe_0_1",
-          "originalProductionPath" : "DOUBLE->java.lang.Double\u0000org.knime.core.data.def.DoubleCell$DoubleCellFactory.create(class java.lang.Double)",
+          "originalProductionPath" : "{\"name\":\"\",\"value\":{\"_producer\":{\"type\":\"string\",\"value\":\"DOUBLE->java.lang.Double\"},\"_converter_name\":{\"type\":\"string\",\"value\":\"Double\"},\"_converter_config\":{\"type\":\"tree\",\"value\":{}},\"_converter_src\":{\"type\":\"string\",\"value\":\"java.lang.Double\"},\"_converter_dst\":{\"type\":\"string\",\"value\":\"Number (Float)\"},\"_producer_src\":{\"type\":\"string\",\"value\":\"DOUBLE\"},\"_producer_name\":{\"type\":\"string\",\"value\":\"java.lang.Double\"},\"_producer_dst\":{\"type\":\"string\",\"value\":\"java.lang.Double\"},\"_converter\":{\"type\":\"string\",\"value\":\"org.knime.core.data.def.DoubleCell$DoubleCellFactory.create(class java.lang.Double)\"},\"_producer_config\":{\"type\":\"tree\",\"value\":{}}}}",
           "originalTypeLabel" : "Number (Float)",
           "includeInOutput" : true,
           "columnRename" : "Universe_0_1",
-          "productionPath" : "DOUBLE->java.lang.Double\u0000org.knime.core.data.def.DoubleCell$DoubleCellFactory.create(class java.lang.Double)"
+          "productionPath" : "{\"name\":\"\",\"value\":{\"_producer\":{\"type\":\"string\",\"value\":\"DOUBLE->java.lang.Double\"},\"_converter_name\":{\"type\":\"string\",\"value\":\"Double\"},\"_converter_config\":{\"type\":\"tree\",\"value\":{}},\"_converter_src\":{\"type\":\"string\",\"value\":\"java.lang.Double\"},\"_converter_dst\":{\"type\":\"string\",\"value\":\"Number (Float)\"},\"_producer_src\":{\"type\":\"string\",\"value\":\"DOUBLE\"},\"_producer_name\":{\"type\":\"string\",\"value\":\"java.lang.Double\"},\"_producer_dst\":{\"type\":\"string\",\"value\":\"java.lang.Double\"},\"_converter\":{\"type\":\"string\",\"value\":\"org.knime.core.data.def.DoubleCell$DoubleCellFactory.create(class java.lang.Double)\"},\"_producer_config\":{\"type\":\"tree\",\"value\":{}}}}"
         }, {
           "columnName" : "Universe_1_0",
-          "originalProductionPath" : "DOUBLE->java.lang.Double\u0000org.knime.core.data.def.DoubleCell$DoubleCellFactory.create(class java.lang.Double)",
+          "originalProductionPath" : "{\"name\":\"\",\"value\":{\"_producer\":{\"type\":\"string\",\"value\":\"DOUBLE->java.lang.Double\"},\"_converter_name\":{\"type\":\"string\",\"value\":\"Double\"},\"_converter_config\":{\"type\":\"tree\",\"value\":{}},\"_converter_src\":{\"type\":\"string\",\"value\":\"java.lang.Double\"},\"_converter_dst\":{\"type\":\"string\",\"value\":\"Number (Float)\"},\"_producer_src\":{\"type\":\"string\",\"value\":\"DOUBLE\"},\"_producer_name\":{\"type\":\"string\",\"value\":\"java.lang.Double\"},\"_producer_dst\":{\"type\":\"string\",\"value\":\"java.lang.Double\"},\"_converter\":{\"type\":\"string\",\"value\":\"org.knime.core.data.def.DoubleCell$DoubleCellFactory.create(class java.lang.Double)\"},\"_producer_config\":{\"type\":\"tree\",\"value\":{}}}}",
           "originalTypeLabel" : "Number (Float)",
           "includeInOutput" : true,
           "columnRename" : "Universe_1_0",
-          "productionPath" : "DOUBLE->java.lang.Double\u0000org.knime.core.data.def.DoubleCell$DoubleCellFactory.create(class java.lang.Double)"
+          "productionPath" : "{\"name\":\"\",\"value\":{\"_producer\":{\"type\":\"string\",\"value\":\"DOUBLE->java.lang.Double\"},\"_converter_name\":{\"type\":\"string\",\"value\":\"Double\"},\"_converter_config\":{\"type\":\"tree\",\"value\":{}},\"_converter_src\":{\"type\":\"string\",\"value\":\"java.lang.Double\"},\"_converter_dst\":{\"type\":\"string\",\"value\":\"Number (Float)\"},\"_producer_src\":{\"type\":\"string\",\"value\":\"DOUBLE\"},\"_producer_name\":{\"type\":\"string\",\"value\":\"java.lang.Double\"},\"_producer_dst\":{\"type\":\"string\",\"value\":\"java.lang.Double\"},\"_converter\":{\"type\":\"string\",\"value\":\"org.knime.core.data.def.DoubleCell$DoubleCellFactory.create(class java.lang.Double)\"},\"_producer_config\":{\"type\":\"tree\",\"value\":{}}}}"
         }, {
           "columnName" : "Universe_1_1",
-          "originalProductionPath" : "DOUBLE->java.lang.Double\u0000org.knime.core.data.def.DoubleCell$DoubleCellFactory.create(class java.lang.Double)",
+          "originalProductionPath" : "{\"name\":\"\",\"value\":{\"_producer\":{\"type\":\"string\",\"value\":\"DOUBLE->java.lang.Double\"},\"_converter_name\":{\"type\":\"string\",\"value\":\"Double\"},\"_converter_config\":{\"type\":\"tree\",\"value\":{}},\"_converter_src\":{\"type\":\"string\",\"value\":\"java.lang.Double\"},\"_converter_dst\":{\"type\":\"string\",\"value\":\"Number (Float)\"},\"_producer_src\":{\"type\":\"string\",\"value\":\"DOUBLE\"},\"_producer_name\":{\"type\":\"string\",\"value\":\"java.lang.Double\"},\"_producer_dst\":{\"type\":\"string\",\"value\":\"java.lang.Double\"},\"_converter\":{\"type\":\"string\",\"value\":\"org.knime.core.data.def.DoubleCell$DoubleCellFactory.create(class java.lang.Double)\"},\"_producer_config\":{\"type\":\"tree\",\"value\":{}}}}",
           "originalTypeLabel" : "Number (Float)",
           "includeInOutput" : true,
           "columnRename" : "Universe_1_1",
-          "productionPath" : "DOUBLE->java.lang.Double\u0000org.knime.core.data.def.DoubleCell$DoubleCellFactory.create(class java.lang.Double)"
+          "productionPath" : "{\"name\":\"\",\"value\":{\"_producer\":{\"type\":\"string\",\"value\":\"DOUBLE->java.lang.Double\"},\"_converter_name\":{\"type\":\"string\",\"value\":\"Double\"},\"_converter_config\":{\"type\":\"tree\",\"value\":{}},\"_converter_src\":{\"type\":\"string\",\"value\":\"java.lang.Double\"},\"_converter_dst\":{\"type\":\"string\",\"value\":\"Number (Float)\"},\"_producer_src\":{\"type\":\"string\",\"value\":\"DOUBLE\"},\"_producer_name\":{\"type\":\"string\",\"value\":\"java.lang.Double\"},\"_producer_dst\":{\"type\":\"string\",\"value\":\"java.lang.Double\"},\"_converter\":{\"type\":\"string\",\"value\":\"org.knime.core.data.def.DoubleCell$DoubleCellFactory.create(class java.lang.Double)\"},\"_producer_config\":{\"type\":\"tree\",\"value\":{}}}}"
         }, {
           "columnName" : "Cluster Membership",
-          "originalProductionPath" : "STRING->java.lang.String\u0000org.knime.core.data.def.StringCell$StringCellFactory.createCell(class java.lang.String)",
+          "originalProductionPath" : "{\"name\":\"\",\"value\":{\"_producer\":{\"type\":\"string\",\"value\":\"STRING->java.lang.String\"},\"_converter_name\":{\"type\":\"string\",\"value\":\"String\"},\"_converter_config\":{\"type\":\"tree\",\"value\":{}},\"_converter_src\":{\"type\":\"string\",\"value\":\"java.lang.String\"},\"_converter_dst\":{\"type\":\"string\",\"value\":\"String\"},\"_producer_src\":{\"type\":\"string\",\"value\":\"STRING\"},\"_producer_name\":{\"type\":\"string\",\"value\":\"java.lang.String\"},\"_producer_dst\":{\"type\":\"string\",\"value\":\"java.lang.String\"},\"_converter\":{\"type\":\"string\",\"value\":\"org.knime.core.data.def.StringCell$StringCellFactory.createCell(class java.lang.String)\"},\"_producer_config\":{\"type\":\"tree\",\"value\":{}}}}",
           "originalTypeLabel" : "String",
           "includeInOutput" : true,
           "columnRename" : "Cluster Membership",
-          "productionPath" : "STRING->java.lang.String\u0000org.knime.core.data.def.StringCell$StringCellFactory.createCell(class java.lang.String)"
+          "productionPath" : "{\"name\":\"\",\"value\":{\"_producer\":{\"type\":\"string\",\"value\":\"STRING->java.lang.String\"},\"_converter_name\":{\"type\":\"string\",\"value\":\"String\"},\"_converter_config\":{\"type\":\"tree\",\"value\":{}},\"_converter_src\":{\"type\":\"string\",\"value\":\"java.lang.String\"},\"_converter_dst\":{\"type\":\"string\",\"value\":\"String\"},\"_producer_src\":{\"type\":\"string\",\"value\":\"STRING\"},\"_producer_name\":{\"type\":\"string\",\"value\":\"java.lang.String\"},\"_producer_dst\":{\"type\":\"string\",\"value\":\"java.lang.String\"},\"_converter\":{\"type\":\"string\",\"value\":\"org.knime.core.data.def.StringCell$StringCellFactory.createCell(class java.lang.String)\"},\"_producer_config\":{\"type\":\"tree\",\"value\":{}}}}"
+        }, {
+          "columnName" : "empty_4",
+          "originalProductionPath" : "{\"name\":\"\",\"value\":{\"_producer\":{\"type\":\"string\",\"value\":\"STRING->java.lang.String\"},\"_converter_name\":{\"type\":\"string\",\"value\":\"String\"},\"_converter_config\":{\"type\":\"tree\",\"value\":{}},\"_converter_src\":{\"type\":\"string\",\"value\":\"java.lang.String\"},\"_converter_dst\":{\"type\":\"string\",\"value\":\"String\"},\"_producer_src\":{\"type\":\"string\",\"value\":\"STRING\"},\"_producer_name\":{\"type\":\"string\",\"value\":\"java.lang.String\"},\"_producer_dst\":{\"type\":\"string\",\"value\":\"java.lang.String\"},\"_converter\":{\"type\":\"string\",\"value\":\"org.knime.core.data.def.StringCell$StringCellFactory.createCell(class java.lang.String)\"},\"_producer_config\":{\"type\":\"tree\",\"value\":{}}}}",
+          "originalTypeLabel" : "String",
+          "includeInOutput" : true,
+          "columnRename" : "empty_4",
+          "productionPath" : "{\"name\":\"\",\"value\":{\"_producer\":{\"type\":\"string\",\"value\":\"STRING->java.lang.String\"},\"_converter_name\":{\"type\":\"string\",\"value\":\"String\"},\"_converter_config\":{\"type\":\"tree\",\"value\":{}},\"_converter_src\":{\"type\":\"string\",\"value\":\"java.lang.String\"},\"_converter_dst\":{\"type\":\"string\",\"value\":\"String\"},\"_producer_src\":{\"type\":\"string\",\"value\":\"STRING\"},\"_producer_name\":{\"type\":\"string\",\"value\":\"java.lang.String\"},\"_producer_dst\":{\"type\":\"string\",\"value\":\"java.lang.String\"},\"_converter\":{\"type\":\"string\",\"value\":\"org.knime.core.data.def.StringCell$StringCellFactory.createCell(class java.lang.String)\"},\"_producer_config\":{\"type\":\"tree\",\"value\":{}}}}"
         }, {
           "columnName" : null,
           "originalProductionPath" : "<default-columntype>",
