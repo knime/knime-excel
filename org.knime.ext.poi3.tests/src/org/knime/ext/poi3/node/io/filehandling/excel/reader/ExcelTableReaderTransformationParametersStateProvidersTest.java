@@ -73,6 +73,7 @@ import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell;
 import org.knime.ext.poi3.testing.MountPointFileSystemAccessMock;
 import org.knime.filehandling.core.connections.FSLocation;
 import org.knime.filehandling.core.node.table.reader.ProductionPathProvider;
+import org.knime.filehandling.core.node.table.reader.config.tablespec.ProductionPathSerializer;
 import org.knime.node.parameters.NodeParametersInput;
 
 /**
@@ -206,6 +207,11 @@ final class ExcelTableReaderTransformationParametersStateProvidersTest
     @Override
     protected ExcelCell.KNIMECellType getDoubleType() {
         return ExcelCell.KNIMECellType.DOUBLE;
+    }
+
+    @Override
+    protected ProductionPathSerializer getProductionPathSerializer() {
+        return new ExcelTableReaderTransformationParameters().getProductionPathSerializer();
     }
 
     @Override

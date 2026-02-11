@@ -59,8 +59,4 @@ import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelCell.KNIME
 final class ExcelTableReaderTransformationParameters extends TransformationParameters<KNIMECellType>
     implements ProductionPathProviderAndTypeHierarchy, KNIMECellTypeSerializer {
 
-    @Override
-    protected String getConfigIdSettingsKey() {
-        return "excel_reader";
-    }
 }
