@@ -104,7 +104,8 @@
           "includeInOutput" : true,
           "columnRename" : null,
           "productionPath" : "<default-columntype>"
-        } ]
+        } ],
+        "initialColumnTransformation" : [ ]
       }
     }
   },
@@ -911,11 +912,42 @@
                   "productionPath" : "<default-columntype>"
                 } ]
               },
+              "dirtyTracker" : {
+                "type" : "object"
+              },
               "enforceTypes" : {
                 "type" : "boolean",
                 "title" : "Enforce types",
                 "description" : "Controls how columns whose type changes are dealt with.\nIf selected, the mapping to the KNIME type you configured is attempted.\nThe node will fail if that is not possible.\nIf unselected, the KNIME type corresponding to the new type is used.\n",
                 "default" : true
+              },
+              "initialColumnTransformation" : {
+                "type" : "array",
+                "items" : {
+                  "type" : "object",
+                  "properties" : {
+                    "columnName" : {
+                      "type" : "string"
+                    },
+                    "columnRename" : {
+                      "type" : "string"
+                    },
+                    "includeInOutput" : {
+                      "type" : "boolean",
+                      "default" : false
+                    },
+                    "originalProductionPath" : {
+                      "type" : "string"
+                    },
+                    "originalTypeLabel" : {
+                      "type" : "string"
+                    },
+                    "productionPath" : {
+                      "type" : "string"
+                    }
+                  }
+                },
+                "default" : [ ]
               },
               "specs" : {
                 "type" : "array",
@@ -959,7 +991,8 @@
                 "includeInOutput" : true,
                 "columnRename" : null,
                 "productionPath" : "<default-columntype>"
-              } ]
+              } ],
+              "initialColumnTransformation" : [ ]
             }
           }
         }
@@ -968,6 +1001,13 @@
   },
   "ui_schema" : {
     "elements" : [ {
+      "type" : "Control",
+      "id" : "#/properties/model/properties/transformationParameters/properties/dirtyTracker",
+      "options" : {
+        "format" : "dirtyTracker"
+      },
+      "providedOptions" : [ "makeDirty" ]
+    }, {
       "label" : "File and Sheet",
       "type" : "Section",
       "elements" : [ {
@@ -1956,6 +1996,7 @@
                 }
               },
               "enforceTypes" : { },
+              "dirtyTracker" : { },
               "columnTransformation" : {
                 "type" : "array",
                 "items" : {
@@ -1973,6 +2014,9 @@
                     }
                   }
                 }
+              },
+              "initialColumnTransformation" : {
+                "configPaths" : [ ]
               }
             }
           }
@@ -1997,6 +2041,17 @@
       "value" : "File Path"
     } ]
   }, {
+    "scope" : "#/properties/model/properties/transformationParameters/properties/initialColumnTransformation",
+    "values" : [ {
+      "indices" : [ ],
+      "value" : [ {
+        "originalProductionPath" : "<default-columntype>",
+        "originalTypeLabel" : "Default columntype",
+        "includeInOutput" : true,
+        "productionPath" : "<default-columntype>"
+      } ]
+    } ]
+  }, {
     "id" : "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/fileSystemFromPortNotAvailableMessage",
     "providedOptionName" : "message",
     "values" : [ {
@@ -2016,6 +2071,11 @@
       "id" : "ElementResetButton"
     },
     "dependencies" : [ "#/properties/model/properties/transformationParameters/properties/columnTransformation/items/properties/columnName", "#/properties/model/properties/transformationParameters/properties/columnTransformation/items/properties/originalProductionPath" ]
+  }, {
+    "trigger" : {
+      "id" : "after-apply-dialog"
+    },
+    "dependencies" : [ "#/properties/model/properties/transformationParameters/properties/columnTransformation" ]
   }, {
     "trigger" : {
       "id" : "after-open-dialog"
@@ -2167,6 +2227,11 @@
       "scope" : "#/properties/model/properties/excelTableReaderParameters/properties/valuesParams/properties/use15DigitsPrecision"
     },
     "dependencies" : [ "#/properties/model/properties/excelTableReaderParameters", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileReaderParams/properties/howToCombineColumns", "#/properties/model/properties/excelTableReaderParameters/properties/multiFileSelectionParams/properties/source", "#/properties/model/properties/transformationParameters/properties/columnTransformation", "#/properties/model/properties/transformationParameters/properties/specs" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/transformationParameters/properties/columnTransformation"
+    },
+    "dependencies" : [ "#/properties/model/properties/transformationParameters/properties/columnTransformation", "#/properties/model/properties/transformationParameters/properties/initialColumnTransformation" ]
   }, {
     "trigger" : {
       "scope" : "#/properties/model/properties/transformationParameters/properties/specs"
