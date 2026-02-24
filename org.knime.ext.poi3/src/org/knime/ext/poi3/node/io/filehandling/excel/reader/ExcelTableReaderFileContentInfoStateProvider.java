@@ -47,49 +47,47 @@
 package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 
 import java.util.Optional;
-import java.util.function.Supplier;
 
-import org.knime.ext.poi3.node.io.filehandling.excel.ExcelFileContentInfoStateProvider.ExcelFileInfo;
-import org.knime.node.parameters.NodeParameters;
+import org.knime.base.node.io.filehandling.webui.FileChooserPathAccessor;
+import org.knime.base.node.io.filehandling.webui.reader2.MultiFileSelectionParameters;
+import org.knime.core.webui.node.dialog.defaultdialog.NodeParametersInputImpl;
+import org.knime.core.webui.node.dialog.defaultdialog.internal.file.DefaultFileChooserFilters;
+import org.knime.core.webui.node.dialog.defaultdialog.internal.file.MultiFileSelection;
+import org.knime.ext.poi3.node.io.filehandling.excel.ExcelFileContentInfoStateProvider;
+import org.knime.filehandling.core.connections.FSConnection;
 import org.knime.node.parameters.NodeParametersInput;
-import org.knime.node.parameters.layout.After;
-import org.knime.node.parameters.layout.Layout;
-import org.knime.node.parameters.updates.StateProvider;
-import org.knime.node.parameters.widget.message.TextMessage;
 
 /**
- * Shows info message if decrypting the (first) Excel file did not work.
+ * Concrete state provider for the Excel Table Reader node. Reads sheet names and encryption state from the selected
+ * Excel file, using {@link MultiFileSelection} for file access and {@link EncryptionParameters} for password
+ * resolution.
  *
  * @author Thomas Reifenberger, TNG Technology Consulting GmbH, Germany
  */
-@Layout(ExcelFileInfoMessage.FileInfoMessageLayout.class)
-class ExcelFileInfoMessage implements NodeParameters {
+@SuppressWarnings("restriction")
+class ExcelTableReaderFileContentInfoStateProvider
+    extends ExcelFileContentInfoStateProvider<MultiFileSelection<DefaultFileChooserFilters>, EncryptionParameters> {
 
-    @After(ExcelTableReaderParameters.FileAndSheetSection.Source.class)
-    interface FileInfoMessageLayout {
+    @Override
+    protected void initFileAndEncryptionSuppliers(final StateProviderInitializer initializer) {
+        m_fileSelection = initializer.computeFromValueSupplier(MultiFileSelectionParameters.FileSelectionRef.class);
+        m_encryption = initializer.computeFromValueSupplier(ExcelTableReaderParameters.EncryptionParametersRef.class);
     }
 
-    @TextMessage(FileInfoMessageProvider.class)
-    Void m_fileInfoMessage;
+    @Override
+    protected FileChooserPathAccessor createPathAccessor(
+        final MultiFileSelection<DefaultFileChooserFilters> fileSelection, final Optional<FSConnection> fsConnection) {
+        return new FileChooserPathAccessor(fileSelection, fsConnection);
+    }
 
-    private static class FileInfoMessageProvider implements StateProvider<Optional<TextMessage.Message>> {
-
-        Supplier<ExcelFileInfo> m_excelFileInfo;
-
-        @Override
-        public void init(final StateProviderInitializer initializer) {
-            m_excelFileInfo = initializer.computeFromProvidedState(ExcelTableReaderFileContentInfoStateProvider.class);
-        }
-
-        @Override
-        public Optional<TextMessage.Message> computeState(NodeParametersInput parametersInput) {
-            if (m_excelFileInfo.get().isPasswordMissing()) {
-                return Optional.of(new TextMessage.Message("Password required",
-                    "Found an encrypted file that cannot be opened with the provided credentials "
-                        + "(see advanced settings).",
-                    TextMessage.MessageType.INFO));
+    @Override
+    protected String getPassword(final EncryptionParameters encryption, final NodeParametersInput context) {
+        return switch (encryption.m_encryptionMode) {
+            case NO_ENCRYPTION -> null;
+            case PASSWORD -> {
+                var credentialsProvider = ((NodeParametersInputImpl)context).getCredentialsProvider().orElseThrow();
+                yield encryption.m_credentials.toCredentials(credentialsProvider).getPassword();
             }
-            return Optional.empty();
-        }
+        };
     }
 }

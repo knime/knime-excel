@@ -43,74 +43,97 @@
  *  when such Node is propagated with or for interoperation with KNIME.
  * ---------------------------------------------------------------------
  *
+ * History
+ *   Feb 24, 2026 (Thomas Reifenberger, TNG Technology Consulting GmbH): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.reader;
-
-import org.apache.poi.EncryptedDocumentException;
-import org.knime.base.node.io.filehandling.webui.FileChooserPathAccessor;
-import org.knime.base.node.io.filehandling.webui.FileSystemPortConnectionUtil;
-import org.knime.base.node.io.filehandling.webui.reader2.MultiFileSelectionParameters;
-import org.knime.core.node.NodeLogger;
-import org.knime.core.webui.node.dialog.defaultdialog.NodeParametersInputImpl;
-import org.knime.core.webui.node.dialog.defaultdialog.internal.file.DefaultFileChooserFilters;
-import org.knime.core.webui.node.dialog.defaultdialog.internal.file.MultiFileSelection;
-import org.knime.ext.poi3.node.io.filehandling.excel.CryptUtil;
-import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelUtils;
-import org.knime.filehandling.core.connections.FSFiles;
-import org.knime.node.parameters.NodeParametersInput;
-import org.knime.node.parameters.updates.StateProvider;
+package org.knime.ext.poi3.node.io.filehandling.excel;
 
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 
+import org.apache.poi.EncryptedDocumentException;
+import org.knime.base.node.io.filehandling.webui.FileChooserPathAccessor;
+import org.knime.base.node.io.filehandling.webui.FileSystemPortConnectionUtil;
+import org.knime.core.node.NodeLogger;
+import org.knime.ext.poi3.node.io.filehandling.excel.reader.read.ExcelUtils;
+import org.knime.filehandling.core.connections.FSConnection;
+import org.knime.filehandling.core.connections.FSFiles;
+import org.knime.node.parameters.NodeParametersInput;
+import org.knime.node.parameters.updates.StateProvider;
+
 /**
- * Intermediate state provider reading all relevant information from the selected Excel file (or the first one for a
- * multi-file selection). The result is used by other state providers to provide choices etc. in the UI.
+ * Abstract base state provider that reads content information (sheet names, encryption state) from a selected Excel
+ * file. Subclasses provide the file selection and encryption types via the generic parameters {@code F} and {@code E},
+ * and implement the two abstract methods to create a {@link FileChooserPathAccessor} and resolve the password.
+ *
+ * @param <F> the type of the file selection
+ * @param <E> the type of the encryption settings
  *
  * @author Thomas Reifenberger, TNG Technology Consulting GmbH, Germany
+ * @noextend non-public API
  */
-class ExcelFileContentInfoStateProvider implements StateProvider<ExcelFileContentInfoStateProvider.ExcelFileInfo> {
+@SuppressWarnings("restriction")
+public abstract class ExcelFileContentInfoStateProvider<F, E>
+    implements StateProvider<ExcelFileContentInfoStateProvider.ExcelFileInfo> {
+
     private static final NodeLogger LOGGER = NodeLogger.getLogger(ExcelFileContentInfoStateProvider.class);
 
-    Supplier<MultiFileSelection<DefaultFileChooserFilters>> m_fileSelection;
+    /** Supplier for the file selection, to be initialised in {@link #initFileAndEncryptionSuppliers}. */
+    protected Supplier<F> m_fileSelection;
 
-    Supplier<EncryptionParameters> m_encryption;
+    /** Supplier for the encryption settings, to be initialised in {@link #initFileAndEncryptionSuppliers}. */
+    protected Supplier<E> m_encryption;
+
+    /**
+     * Called during {@link #init} after {@code computeAfterOpenDialog()} has been set. Subclasses must assign
+     * {@link #m_fileSelection} and {@link #m_encryption} using the provided initializer.
+     *
+     * @param initializer the state provider initializer
+     */
+    protected abstract void initFileAndEncryptionSuppliers(StateProviderInitializer initializer);
+
+    /**
+     * Creates a {@link FileChooserPathAccessor} for the given file selection and optional file system connection.
+     *
+     * @param fileSelection the current file selection value
+     * @param fsConnection the optional file system port connection
+     * @return a new {@link FileChooserPathAccessor}
+     */
+    @SuppressWarnings("java:S3553") // Optional parameter is part of the established file-handling API
+    protected abstract FileChooserPathAccessor createPathAccessor(F fileSelection, Optional<FSConnection> fsConnection);
+
+    /**
+     * Resolves the password from the given encryption settings and node parameters input.
+     *
+     * @param encryption the current encryption settings value
+     * @param context the node parameters input (may contain credentials provider)
+     * @return the password string, or {@code null} if no password is set
+     */
+    protected abstract String getPassword(E encryption, NodeParametersInput context);
 
     @Override
-    public void init(final StateProvider.StateProviderInitializer initializer) {
+    public final void init(final StateProviderInitializer initializer) {
         /*
          * Looking up sheet names can take time, especially for large files or remote file systems
          * -> do it after opening the dialog (otherwise the dialog opening is blocked)
          */
         initializer.computeAfterOpenDialog();
-        m_fileSelection = initializer.computeFromValueSupplier(MultiFileSelectionParameters.FileSelectionRef.class);
-        m_encryption = initializer.computeFromValueSupplier(ExcelTableReaderParameters.EncryptionParametersRef.class);
+        initFileAndEncryptionSuppliers(initializer);
     }
 
     @Override
-    public ExcelFileInfo computeState(final NodeParametersInput context) {
-
-        var fsConnection = FileSystemPortConnectionUtil.getFileSystemConnection(context);
-        // Note: there is some duplication, as the reader framework also instantiates a FileChooserPathAccessor
-        // If this becomes a performance issue, we could think about introducing an intermediate state provider
-        try (final var accessor = new FileChooserPathAccessor(m_fileSelection.get(), fsConnection)) {
+    public final ExcelFileInfo computeState(final NodeParametersInput context) {
+        final var fsConnection = FileSystemPortConnectionUtil.getFileSystemConnection(context);
+        try (final var accessor = createPathAccessor(m_fileSelection.get(), fsConnection)) {
             final var path = accessor.getPaths(s -> {
             }).get(0);
             if (!Files.exists(path)) {
                 return new ExcelFileInfo(false, Collections.emptyList());
             }
-            final String password = switch (m_encryption.get().m_encryptionMode) {
-                case NO_ENCRYPTION -> null;
-                case PASSWORD -> {
-                    var credentialsProvider = ((NodeParametersInputImpl)context).getCredentialsProvider().orElseThrow();
-                    yield m_encryption.get().m_credentials.toCredentials(credentialsProvider).getPassword();
-                }
-            };
-            try (final var inputStream = FSFiles.newInputStream(path)) {
-                CryptUtil.verifyPassword(inputStream, password);
-            }
+            final String password = getPassword(m_encryption.get(), context);
             try (final var inputStream = FSFiles.newInputStream(path)) {
                 final var sheetNames = ExcelUtils.readSheetNames(inputStream, password);
                 return new ExcelFileInfo(false, sheetNames);
@@ -118,29 +141,43 @@ class ExcelFileContentInfoStateProvider implements StateProvider<ExcelFileConten
         } catch (final EncryptedDocumentException e) { // NOSONAR swallowing exception is intentional
             return new ExcelFileInfo(true, Collections.emptyList());
         } catch (final Exception e) {
-            // in case of any error, return no choices
             LOGGER.warn("Could not read sheet names for suggestions.", e);
             return new ExcelFileInfo(false, Collections.emptyList());
         }
     }
 
-    static class ExcelFileInfo {
+    /**
+     * Holds the information read from the Excel input file: sheet names and whether a password is missing.
+     */
+    public static class ExcelFileInfo {
+
         private final List<String> m_sheetNames;
 
         private final boolean m_isPasswordMissing;
 
-        public ExcelFileInfo(boolean isPasswordMissing, List<String> sheetNames) {
+        /**
+         * Creates a new {@link ExcelFileInfo} with the given password state and sheet names.
+         *
+         * @param isPasswordMissing {@code true} if the file is encrypted and no valid password was supplied
+         * @param sheetNames the list of sheet names read from the file
+         */
+        public ExcelFileInfo(final boolean isPasswordMissing, final List<String> sheetNames) {
             m_isPasswordMissing = isPasswordMissing;
             m_sheetNames = sheetNames;
         }
 
-        boolean isPasswordMissing() {
+        /**
+         * @return {@code true} if the file is encrypted and no valid password was supplied
+         */
+        public boolean isPasswordMissing() {
             return m_isPasswordMissing;
         }
 
-        List<String> getSheetNames() {
+        /**
+         * @return the sheet names read from the file, or an empty list if the file could not be read
+         */
+        public List<String> getSheetNames() {
             return m_sheetNames;
         }
     }
-
 }
