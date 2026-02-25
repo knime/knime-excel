@@ -1,0 +1,644 @@
+{
+  "data" : {
+    "model" : {
+      "srcFileSelection" : {
+        "path" : {
+          "fsCategory" : "relative-to-current-hubspace",
+          "path" : "tmp/excel_reader_encrypted.xlsx",
+          "timeout" : 10000,
+          "context" : {
+            "fsToString" : "(RELATIVE, knime.space, tmp/excel_reader_encrypted.xlsx)"
+          }
+        }
+      },
+      "fileInfoMessage" : { },
+      "encryption" : {
+        "type" : "PWD",
+        "credentials" : "",
+        "password" : {
+          "isHiddenPassword" : true,
+          "isHiddenSecondFactor" : false,
+          "username" : null
+        }
+      },
+      "createNewFile" : true,
+      "destFileSelection" : {
+        "file" : {
+          "path" : {
+            "fsCategory" : "relative-to-embedded-data",
+            "path" : "encrypted.xlsx",
+            "timeout" : 10000,
+            "context" : {
+              "fsToString" : "(RELATIVE, knime.workflow.data, encrypted.xlsx)"
+            }
+          }
+        },
+        "createMissingFolders" : true,
+        "overwritePolicy" : "overwrite"
+      },
+      "sheetUpdates" : [ {
+        "index" : 0,
+        "sheetName" : "Sheet1",
+        "coordinateColumnName" : "id"
+      }, {
+        "index" : 1,
+        "sheetName" : "Sheet2",
+        "coordinateColumnName" : "identifier"
+      } ],
+      "replaceMissings" : true,
+      "missingValuePattern" : "nothing_to_see_here",
+      "evaluateFormulas" : false
+    }
+  },
+  "schema" : {
+    "type" : "object",
+    "properties" : {
+      "model" : {
+        "type" : "object",
+        "properties" : {
+          "createNewFile" : {
+            "type" : "boolean",
+            "title" : "Create a new file",
+            "description" : "If selected, a copy of the original file is created and updated instead of the original file.\nThe newly created file must have the same file type as the original file.\n",
+            "default" : false
+          },
+          "destFileSelection" : {
+            "type" : "object",
+            "properties" : {
+              "createMissingFolders" : {
+                "type" : "boolean",
+                "title" : "Create missing folders",
+                "description" : "If enabled, missing folders in the specified path will be created automatically.",
+                "default" : false
+              },
+              "file" : {
+                "type" : "object",
+                "properties" : {
+                  "path" : {
+                    "type" : "object",
+                    "default" : {
+                      "fsCategory" : "LOCAL",
+                      "path" : "",
+                      "timeout" : 10000,
+                      "context" : {
+                        "fsToString" : "(LOCAL, )"
+                      }
+                    }
+                  }
+                },
+                "title" : "Output file",
+                "description" : "Provide the path to the new file that should be created as a copy of the original file.\nThe output file must have the same file type (.xls or .xlsx) as the input file.\n",
+                "default" : {
+                  "path" : {
+                    "fsCategory" : "LOCAL",
+                    "path" : "",
+                    "timeout" : 10000,
+                    "context" : {
+                      "fsToString" : "(LOCAL, )"
+                    }
+                  }
+                }
+              },
+              "overwritePolicy" : {
+                "oneOf" : [ {
+                  "const" : "fail",
+                  "title" : "Fail"
+                }, {
+                  "const" : "overwrite",
+                  "title" : "Overwrite"
+                }, {
+                  "const" : "ignore",
+                  "title" : "Ignore"
+                }, {
+                  "const" : "append",
+                  "title" : "Append"
+                } ],
+                "title" : "If exists",
+                "description" : "Specify the behavior of the node in case the output file already exists.<ul><li><b>Fail</b>: Will issue an error during the node's execution (to prevent unintentional overwrite).</li><li><b>Overwrite</b>: Will replace any existing file.</li></ul>",
+                "default" : "overwrite"
+              }
+            },
+            "default" : {
+              "file" : {
+                "path" : {
+                  "fsCategory" : "LOCAL",
+                  "path" : "",
+                  "timeout" : 10000,
+                  "context" : {
+                    "fsToString" : "(LOCAL, )"
+                  }
+                }
+              },
+              "createMissingFolders" : false,
+              "overwritePolicy" : "overwrite"
+            }
+          },
+          "encryption" : {
+            "type" : "object",
+            "properties" : {
+              "credentials" : {
+                "type" : "string",
+                "title" : "Workflow credentials",
+                "description" : "Select the workflow credentials to use.",
+                "default" : ""
+              },
+              "password" : {
+                "type" : "object",
+                "properties" : {
+                  "password" : {
+                    "type" : "string",
+                    "default" : ""
+                  },
+                  "secondFactor" : {
+                    "type" : "string",
+                    "default" : ""
+                  },
+                  "username" : {
+                    "type" : "string",
+                    "default" : ""
+                  }
+                },
+                "title" : "Password",
+                "description" : "Enter the password to protect the file.",
+                "default" : {
+                  "isHiddenPassword" : false,
+                  "isHiddenSecondFactor" : false,
+                  "username" : ""
+                }
+              },
+              "type" : {
+                "oneOf" : [ {
+                  "const" : "NONE",
+                  "title" : "None"
+                }, {
+                  "const" : "CREDENTIALS",
+                  "title" : "Credentials"
+                }, {
+                  "const" : "PWD",
+                  "title" : "Password"
+                } ],
+                "title" : "Password to protect files",
+                "description" : "Allows you to specify a password to protect the output file with. In case the \"append\" option is selected and the file already exists, the password must be valid for the existing file.\n<ul>\n<li><b>None</b>: Only files without password protection can be updated.</li>\n<li><b>Credentials</b>: Use a password set via workflow credentials.</li>\n<li><b>Password</b>: Specify a password.</li>\n</ul>",
+                "default" : "NONE"
+              }
+            },
+            "default" : {
+              "type" : "NONE",
+              "credentials" : "",
+              "password" : {
+                "isHiddenPassword" : false,
+                "isHiddenSecondFactor" : false,
+                "username" : ""
+              }
+            }
+          },
+          "evaluateFormulas" : {
+            "type" : "boolean",
+            "title" : "Evaluate formulas",
+            "description" : "If checked, all formulas in the file will be evaluated after the sheet's updates have been\nperformed. This is useful if values that are used in formulas in the sheets have been updated.\nNote: This can cause errors when there are functions not implemented by the Apache POI library.\n",
+            "default" : false
+          },
+          "fileInfoMessage" : {
+            "type" : "object",
+            "properties" : {
+              "fileInfoMessage" : {
+                "type" : "object"
+              }
+            },
+            "default" : { }
+          },
+          "missingValuePattern" : {
+            "type" : "string",
+            "title" : "Replacement value",
+            "description" : "The value to write in place of a missing value.",
+            "default" : ""
+          },
+          "replaceMissings" : {
+            "type" : "boolean",
+            "title" : "Replace missing values by",
+            "description" : "If selected, the node will write the specified value as a string to the address if only\nmissing values are found in that row. Otherwise, a blank cell is created.\n",
+            "default" : false
+          },
+          "sheetUpdates" : {
+            "type" : "array",
+            "items" : {
+              "type" : "object",
+              "properties" : {
+                "coordinateColumnName" : {
+                  "type" : "string",
+                  "title" : "Based on address column",
+                  "description" : "Select the name of the column which contains the addresses of the cells which should be updated."
+                },
+                "index" : {
+                  "type" : "integer",
+                  "format" : "int32",
+                  "default" : 0
+                },
+                "sheetName" : {
+                  "type" : "string",
+                  "title" : "Excel sheet",
+                  "description" : "Specify which sheet should be updated by the corresponding input table."
+                }
+              }
+            },
+            "title" : "Input tables",
+            "description" : "For each input table, specify which sheet in the Excel file should be updated.",
+            "default" : [ ]
+          },
+          "srcFileSelection" : {
+            "type" : "object",
+            "properties" : {
+              "path" : {
+                "type" : "object",
+                "default" : {
+                  "fsCategory" : "LOCAL",
+                  "path" : "",
+                  "timeout" : 10000,
+                  "context" : {
+                    "fsToString" : "(LOCAL, )"
+                  }
+                }
+              }
+            },
+            "title" : "Input file",
+            "description" : "Select the Excel file (.xls or .xlsx) to read from and update. The file system can be a local\nfile system, a mountpoint, or a file system connected via an input port.\n",
+            "default" : {
+              "path" : {
+                "fsCategory" : "LOCAL",
+                "path" : "",
+                "timeout" : 10000,
+                "context" : {
+                  "fsToString" : "(LOCAL, )"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "ui_schema" : {
+    "elements" : [ {
+      "label" : "Input",
+      "type" : "Section",
+      "elements" : [ {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/srcFileSelection",
+        "options" : {
+          "fileExtensions" : [ "xls", "xlsx" ],
+          "isLocal" : true,
+          "spaceFSOptions" : {
+            "mountId" : "Local space"
+          },
+          "format" : "fileChooser"
+        }
+      }, {
+        "type" : "Control",
+        "id" : "#/properties/model/properties/fileInfoMessage/properties/fileInfoMessage",
+        "options" : {
+          "format" : "textMessage"
+        },
+        "providedOptions" : [ "message" ]
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/encryption/properties/type",
+        "options" : {
+          "isAdvanced" : true,
+          "format" : "valueSwitch"
+        }
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/encryption/properties/credentials",
+        "options" : {
+          "isAdvanced" : true,
+          "format" : "dropDown"
+        },
+        "providedOptions" : [ "possibleValues" ],
+        "rule" : {
+          "effect" : "SHOW",
+          "condition" : {
+            "scope" : "#/properties/model/properties/encryption/properties/type",
+            "schema" : {
+              "oneOf" : [ {
+                "const" : "CREDENTIALS"
+              } ]
+            }
+          }
+        }
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/encryption/properties/password",
+        "options" : {
+          "hasUsername" : false,
+          "passwordLabel" : "Password",
+          "format" : "credentials",
+          "isAdvanced" : true
+        },
+        "rule" : {
+          "effect" : "SHOW",
+          "condition" : {
+            "scope" : "#/properties/model/properties/encryption/properties/type",
+            "schema" : {
+              "oneOf" : [ {
+                "const" : "PWD"
+              } ]
+            }
+          }
+        }
+      } ]
+    }, {
+      "label" : "Output",
+      "type" : "Section",
+      "elements" : [ {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/createNewFile",
+        "options" : {
+          "format" : "checkbox"
+        }
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/destFileSelection/properties/file",
+        "options" : {
+          "isLocal" : true,
+          "isWriter" : true,
+          "spaceFSOptions" : {
+            "mountId" : "Local space"
+          },
+          "format" : "fileChooser"
+        },
+        "rule" : {
+          "effect" : "SHOW",
+          "condition" : {
+            "scope" : "#/properties/model/properties/createNewFile",
+            "schema" : {
+              "const" : true
+            }
+          }
+        }
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/destFileSelection/properties/createMissingFolders",
+        "options" : {
+          "format" : "checkbox"
+        },
+        "rule" : {
+          "effect" : "SHOW",
+          "condition" : {
+            "scope" : "#/properties/model/properties/createNewFile",
+            "schema" : {
+              "const" : true
+            }
+          }
+        }
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/destFileSelection/properties/overwritePolicy",
+        "options" : {
+          "format" : "valueSwitch"
+        },
+        "providedOptions" : [ "possibleValues" ],
+        "rule" : {
+          "effect" : "SHOW",
+          "condition" : {
+            "scope" : "#/properties/model/properties/createNewFile",
+            "schema" : {
+              "const" : true
+            }
+          }
+        }
+      } ]
+    }, {
+      "label" : "Update",
+      "type" : "Section",
+      "elements" : [ {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/sheetUpdates",
+        "options" : {
+          "detail" : [ {
+            "type" : "Control",
+            "scope" : "#/properties/sheetName",
+            "options" : {
+              "format" : "dropDown"
+            },
+            "providedOptions" : [ "possibleValues" ]
+          }, {
+            "type" : "Control",
+            "scope" : "#/properties/coordinateColumnName",
+            "options" : {
+              "format" : "dropDown"
+            },
+            "providedOptions" : [ "possibleValues" ]
+          } ],
+          "arrayElementTitle" : "Input table",
+          "hasFixedSize" : true
+        }
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/replaceMissings",
+        "options" : {
+          "format" : "checkbox",
+          "isAdvanced" : true
+        }
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/missingValuePattern",
+        "options" : {
+          "isAdvanced" : true
+        },
+        "rule" : {
+          "effect" : "SHOW",
+          "condition" : {
+            "scope" : "#/properties/model/properties/replaceMissings",
+            "schema" : {
+              "const" : true
+            }
+          }
+        }
+      }, {
+        "type" : "Control",
+        "scope" : "#/properties/model/properties/evaluateFormulas",
+        "options" : {
+          "format" : "checkbox",
+          "isAdvanced" : true
+        }
+      } ]
+    } ]
+  },
+  "persist" : {
+    "type" : "object",
+    "properties" : {
+      "model" : {
+        "type" : "object",
+        "properties" : {
+          "srcFileSelection" : {
+            "configPaths" : [ [ "src_file_selection", "path" ] ]
+          },
+          "fileInfoMessage" : {
+            "type" : "object",
+            "properties" : {
+              "fileInfoMessage" : { }
+            },
+            "propertiesRoute" : [ ".." ]
+          },
+          "encryption" : {
+            "type" : "object",
+            "properties" : {
+              "type" : {
+                "configKey" : "selectedType"
+              },
+              "credentials" : {
+                "configKey" : "credentials"
+              },
+              "password" : {
+                "configPaths" : [ ]
+              }
+            },
+            "configKey" : "authentication_method"
+          },
+          "createNewFile" : {
+            "configKey" : "create_new_file"
+          },
+          "destFileSelection" : {
+            "type" : "object",
+            "properties" : {
+              "file" : {
+                "configPaths" : [ [ "path" ] ]
+              },
+              "createMissingFolders" : {
+                "configKey" : "create_missing_folders"
+              },
+              "overwritePolicy" : {
+                "configKey" : "if_path_exists"
+              }
+            },
+            "configKey" : "dest_file_selection"
+          },
+          "sheetUpdates" : {
+            "type" : "array",
+            "items" : {
+              "type" : "object",
+              "properties" : {
+                "index" : {
+                  "route" : [ "..", ".." ],
+                  "configPaths" : [ ]
+                },
+                "sheetName" : {
+                  "route" : [ "..", ".." ],
+                  "configPaths" : [ [ "sheet_names" ] ]
+                },
+                "coordinateColumnName" : {
+                  "route" : [ "..", ".." ],
+                  "configPaths" : [ [ "coordinate_column_names" ] ]
+                }
+              }
+            }
+          },
+          "replaceMissings" : {
+            "configKey" : "replace_missings"
+          },
+          "missingValuePattern" : {
+            "configKey" : "missing_value_pattern"
+          },
+          "evaluateFormulas" : {
+            "configKey" : "evaluate_formulas"
+          }
+        }
+      }
+    }
+  },
+  "initialUpdates" : [ {
+    "scope" : "#/properties/model/properties/destFileSelection/properties/overwritePolicy",
+    "providedOptionName" : "possibleValues",
+    "values" : [ {
+      "indices" : [ ],
+      "value" : [ {
+        "id" : "fail",
+        "text" : "Fail"
+      }, {
+        "id" : "overwrite",
+        "text" : "Overwrite"
+      } ]
+    } ]
+  }, {
+    "scope" : "#/properties/model/properties/encryption/properties/credentials",
+    "providedOptionName" : "possibleValues",
+    "values" : [ {
+      "indices" : [ ],
+      "value" : [ ]
+    } ]
+  }, {
+    "scope" : "#/properties/model/properties/sheetUpdates",
+    "values" : [ {
+      "indices" : [ ],
+      "value" : [ {
+        "index" : 0,
+        "sheetName" : "Sheet1",
+        "coordinateColumnName" : "id"
+      }, {
+        "index" : 1,
+        "sheetName" : "Sheet2",
+        "coordinateColumnName" : "identifier"
+      } ]
+    } ]
+  }, {
+    "scope" : "#/properties/model/properties/sheetUpdates/items/properties/coordinateColumnName",
+    "providedOptionName" : "possibleValues",
+    "values" : [ {
+      "indices" : [ 0 ],
+      "value" : [ {
+        "id" : "id",
+        "text" : "id",
+        "type" : {
+          "id" : "org.knime.core.data.StringValue",
+          "text" : "String"
+        }
+      }, {
+        "id" : "stringValue",
+        "text" : "stringValue",
+        "type" : {
+          "id" : "org.knime.core.data.StringValue",
+          "text" : "String"
+        }
+      } ]
+    }, {
+      "indices" : [ 1 ],
+      "value" : [ {
+        "id" : "address",
+        "text" : "address",
+        "type" : {
+          "id" : "org.knime.core.data.StringValue",
+          "text" : "String"
+        }
+      }, {
+        "id" : "stringValue",
+        "text" : "stringValue",
+        "type" : {
+          "id" : "org.knime.core.data.StringValue",
+          "text" : "String"
+        }
+      } ]
+    } ]
+  } ],
+  "globalUpdates" : [ {
+    "trigger" : {
+      "id" : "after-open-dialog"
+    },
+    "triggerInitially" : true,
+    "dependencies" : [ "#/properties/model/properties/encryption", "#/properties/model/properties/sheetUpdates/items/properties/coordinateColumnName", "#/properties/model/properties/sheetUpdates/items/properties/index", "#/properties/model/properties/sheetUpdates/items/properties/sheetName", "#/properties/model/properties/srcFileSelection" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/encryption"
+    },
+    "dependencies" : [ "#/properties/model/properties/encryption", "#/properties/model/properties/sheetUpdates/items/properties/sheetName", "#/properties/model/properties/srcFileSelection" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/sheetUpdates/items/properties/index"
+    },
+    "dependencies" : [ "#/properties/model/properties/sheetUpdates/items/properties/coordinateColumnName", "#/properties/model/properties/sheetUpdates/items/properties/index" ]
+  }, {
+    "trigger" : {
+      "scope" : "#/properties/model/properties/srcFileSelection"
+    },
+    "dependencies" : [ "#/properties/model/properties/encryption", "#/properties/model/properties/sheetUpdates/items/properties/sheetName", "#/properties/model/properties/srcFileSelection" ]
+  } ]
+}

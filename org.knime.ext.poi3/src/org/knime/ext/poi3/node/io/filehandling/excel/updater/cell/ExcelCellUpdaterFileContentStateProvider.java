@@ -43,53 +43,46 @@
  *  when such Node is propagated with or for interoperation with KNIME.
  * ---------------------------------------------------------------------
  *
+ * History
+ *   Feb 24, 2026 (Thomas Reifenberger, TNG Technology Consulting GmbH): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.reader;
+package org.knime.ext.poi3.node.io.filehandling.excel.updater.cell;
 
 import java.util.Optional;
-import java.util.function.Supplier;
 
-import org.knime.ext.poi3.node.io.filehandling.excel.ExcelFileContentInfoStateProvider.ExcelFileInfo;
-import org.knime.node.parameters.NodeParameters;
+import org.knime.base.node.io.filehandling.webui.FileChooserPathAccessor;
+import org.knime.core.webui.node.dialog.defaultdialog.internal.file.FileSelection;
+import org.knime.ext.poi3.node.io.filehandling.excel.ExcelEncryptionSettings;
+import org.knime.ext.poi3.node.io.filehandling.excel.ExcelFileContentInfoStateProvider;
+import org.knime.filehandling.core.connections.FSConnection;
 import org.knime.node.parameters.NodeParametersInput;
-import org.knime.node.parameters.layout.After;
-import org.knime.node.parameters.layout.Layout;
-import org.knime.node.parameters.updates.StateProvider;
-import org.knime.node.parameters.widget.message.TextMessage;
 
 /**
- * Shows info message if decrypting the (first) Excel file did not work.
+ * State provider that reads the content information (sheet names, encryption state) from the selected Excel input file
+ * for the Excel Cell Updater node.
  *
  * @author Thomas Reifenberger, TNG Technology Consulting GmbH, Germany
  */
-@Layout(ExcelFileInfoMessage.FileInfoMessageLayout.class)
-class ExcelFileInfoMessage implements NodeParameters {
+@SuppressWarnings("restriction")
+class ExcelCellUpdaterFileContentStateProvider
+    extends ExcelFileContentInfoStateProvider<FileSelection, ExcelEncryptionSettings> {
 
-    @After(ExcelTableReaderParameters.FileAndSheetSection.Source.class)
-    interface FileInfoMessageLayout {
+    @Override
+    protected void initFileAndEncryptionSuppliers(final StateProviderInitializer initializer) {
+        m_fileSelection =
+            initializer.computeFromValueSupplier(ExcelCellUpdaterNodeParameters.SrcFileSelectionRef.class);
+        m_encryption =
+            initializer.computeFromValueSupplier(ExcelCellUpdaterNodeParameters.EncryptionRef.class);
     }
 
-    @TextMessage(FileInfoMessageProvider.class)
-    Void m_fileInfoMessage;
+    @Override
+    protected FileChooserPathAccessor createPathAccessor(final FileSelection fileSelection,
+        final Optional<FSConnection> fsConnection) {
+        return new FileChooserPathAccessor(fileSelection, fsConnection);
+    }
 
-    private static class FileInfoMessageProvider implements StateProvider<Optional<TextMessage.Message>> {
-
-        Supplier<ExcelFileInfo> m_excelFileInfo;
-
-        @Override
-        public void init(final StateProviderInitializer initializer) {
-            m_excelFileInfo = initializer.computeFromProvidedState(ExcelTableReaderFileContentInfoStateProvider.class);
-        }
-
-        @Override
-        public Optional<TextMessage.Message> computeState(NodeParametersInput parametersInput) {
-            if (m_excelFileInfo.get().isPasswordMissing()) {
-                return Optional.of(new TextMessage.Message("Password required",
-                    "Found an encrypted file that cannot be opened with the provided credentials "
-                        + "(see advanced settings).",
-                    TextMessage.MessageType.INFO));
-            }
-            return Optional.empty();
-        }
+    @Override
+    protected String getPassword(final ExcelEncryptionSettings encryption, final NodeParametersInput context) {
+        return encryption.getPassword(context);
     }
 }

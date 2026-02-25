@@ -43,8 +43,10 @@
  *  when such Node is propagated with or for interoperation with KNIME.
  * ---------------------------------------------------------------------
  *
+ * History
+ *   Feb 24, 2026 (Thomas Reifenberger, TNG Technology Consulting GmbH): created
  */
-package org.knime.ext.poi3.node.io.filehandling.excel.reader;
+package org.knime.ext.poi3.node.io.filehandling.excel.updater.cell;
 
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -52,22 +54,15 @@ import java.util.function.Supplier;
 import org.knime.ext.poi3.node.io.filehandling.excel.ExcelFileContentInfoStateProvider.ExcelFileInfo;
 import org.knime.node.parameters.NodeParameters;
 import org.knime.node.parameters.NodeParametersInput;
-import org.knime.node.parameters.layout.After;
-import org.knime.node.parameters.layout.Layout;
 import org.knime.node.parameters.updates.StateProvider;
 import org.knime.node.parameters.widget.message.TextMessage;
 
 /**
- * Shows info message if decrypting the (first) Excel file did not work.
+ * Shows an info message if the selected input file cannot be decrypted with the provided password.
  *
  * @author Thomas Reifenberger, TNG Technology Consulting GmbH, Germany
  */
-@Layout(ExcelFileInfoMessage.FileInfoMessageLayout.class)
-class ExcelFileInfoMessage implements NodeParameters {
-
-    @After(ExcelTableReaderParameters.FileAndSheetSection.Source.class)
-    interface FileInfoMessageLayout {
-    }
+class ExcelCellUpdaterFileInfoMessage implements NodeParameters {
 
     @TextMessage(FileInfoMessageProvider.class)
     Void m_fileInfoMessage;
@@ -78,14 +73,15 @@ class ExcelFileInfoMessage implements NodeParameters {
 
         @Override
         public void init(final StateProviderInitializer initializer) {
-            m_excelFileInfo = initializer.computeFromProvidedState(ExcelTableReaderFileContentInfoStateProvider.class);
+            m_excelFileInfo =
+                initializer.computeFromProvidedState(ExcelCellUpdaterFileContentStateProvider.class);
         }
 
         @Override
-        public Optional<TextMessage.Message> computeState(NodeParametersInput parametersInput) {
+        public Optional<TextMessage.Message> computeState(final NodeParametersInput context) {
             if (m_excelFileInfo.get().isPasswordMissing()) {
                 return Optional.of(new TextMessage.Message("Password required",
-                    "Found an encrypted file that cannot be opened with the provided credentials "
+                    "The input file cannot be opened with the provided credentials "
                         + "(see advanced settings).",
                     TextMessage.MessageType.INFO));
             }
@@ -93,3 +89,4 @@ class ExcelFileInfoMessage implements NodeParameters {
         }
     }
 }
+

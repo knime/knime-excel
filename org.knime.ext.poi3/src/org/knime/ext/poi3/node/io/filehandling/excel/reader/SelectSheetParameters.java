@@ -48,6 +48,7 @@ package org.knime.ext.poi3.node.io.filehandling.excel.reader;
 
 import org.knime.core.node.InvalidSettingsException;
 import org.knime.core.webui.node.dialog.defaultdialog.util.updates.StateComputationFailureException;
+import org.knime.ext.poi3.node.io.filehandling.excel.ExcelFileContentInfoStateProvider.ExcelFileInfo;
 import org.knime.node.parameters.NodeParameters;
 import org.knime.node.parameters.NodeParametersInput;
 import org.knime.node.parameters.Widget;
@@ -153,11 +154,11 @@ class SelectSheetParameters implements NodeParameters {
 
     private static class SheetNamesChoicesProvider implements StringChoicesProvider {
 
-        Supplier<ExcelFileContentInfoStateProvider.ExcelFileInfo> m_excelFileInfo;
+        Supplier<ExcelFileInfo> m_excelFileInfo;
 
         @Override
         public void init(final StateProviderInitializer initializer) {
-            m_excelFileInfo = initializer.computeFromProvidedState(ExcelFileContentInfoStateProvider.class);
+            m_excelFileInfo = initializer.computeFromProvidedState(ExcelTableReaderFileContentInfoStateProvider.class);
         }
 
         @Override
@@ -171,12 +172,12 @@ class SelectSheetParameters implements NodeParameters {
             super(SheetNameRef.class);
         }
 
-        Supplier<ExcelFileContentInfoStateProvider.ExcelFileInfo> m_excelFileInfo;
+        Supplier<ExcelFileInfo> m_excelFileInfo;
 
         @Override
         public void init(final StateProviderInitializer initializer) {
             super.init(initializer);
-            m_excelFileInfo = initializer.computeFromProvidedState(ExcelFileContentInfoStateProvider.class);
+            m_excelFileInfo = initializer.computeFromProvidedState(ExcelTableReaderFileContentInfoStateProvider.class);
         }
 
         @Override
@@ -195,11 +196,11 @@ class SelectSheetParameters implements NodeParameters {
 
     private static class MaxSheetIndexProvider implements StateProvider<NumberInputWidgetValidation.MaxValidation> {
 
-        Supplier<ExcelFileContentInfoStateProvider.ExcelFileInfo> m_excelFileInfo;
+        Supplier<ExcelFileInfo> m_excelFileInfo;
 
         @Override
         public void init(final StateProviderInitializer initializer) {
-            m_excelFileInfo = initializer.computeFromProvidedState(ExcelFileContentInfoStateProvider.class);
+            m_excelFileInfo = initializer.computeFromProvidedState(ExcelTableReaderFileContentInfoStateProvider.class);
         }
 
         @Override
