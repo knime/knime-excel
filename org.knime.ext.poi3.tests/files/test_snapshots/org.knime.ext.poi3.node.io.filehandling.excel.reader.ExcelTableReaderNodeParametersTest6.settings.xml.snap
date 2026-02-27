@@ -125,11 +125,6 @@
     <config key="transformationParameters">
         <config key="specs">
             <config key="0">
-                <config key="fsLocation">
-                    <entry key="location_present" type="xboolean" value="true"/>
-                    <entry key="file_system_type" type="xstring" value="RELATIVE"/>
-                    <entry key="path" type="xstring" value=""/>
-                </config>
                 <entry key="sourceIdentifier" type="xstring" value="/tmp/excel_reader_values.xlsx"/>
                 <config key="spec">
                     <config key="0">
@@ -157,6 +152,11 @@
                         <entry key="type" type="xstring" value="STRING"/>
                         <entry key="hasType" type="xboolean" value="false"/>
                     </config>
+                </config>
+                <config key="fsLocation">
+                    <entry key="location_present" type="xboolean" value="true"/>
+                    <entry key="file_system_type" type="xstring" value="RELATIVE"/>
+                    <entry key="path" type="xstring" value=""/>
                 </config>
             </config>
         </config>
